@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", hideLoader);
 window.addEventListener("load", hideLoader);
 
 // ==========================================
-// 2. SIDE MENU TOGGLE & OVERLAY (إغلاق القائمة عند النقر في أي مكان)
+// 2. SIDE MENU TOGGLE & OVERLAY
 // ==========================================
 const menuBtn = document.getElementById("menuBtn");
 const sideMenu = document.getElementById("sideMenu");
@@ -87,7 +87,6 @@ if (closeCart) {
     };
 }
 
-// إغلاق نافذة السلة عند النقر خارج صندوق المحتوى
 window.onclick = (e) => {
     if (e.target === cartModal) {
         cartModal.classList.remove("open");
@@ -111,7 +110,6 @@ document.addEventListener("click", function (e) {
             }
             updateCartUI();
             
-            // إشعار بسيط بالزر عند الإضافة
             btn.style.background = "#25D366";
             btn.style.color = "#fff";
             setTimeout(() => {
@@ -122,7 +120,34 @@ document.addEventListener("click", function (e) {
     }
 });
 
-// تحديث واجهة السلة
+// التبديل الديناميكي لإخفاء/إظهار حقل العنوان وقائمة كلفة التوصيل عند اختيار (استلام من المطعم)
+document.addEventListener("change", function(e) {
+    if (e.target.name === "orderType") {
+        const addressInput = document.getElementById("custAddress");
+        const areaSelectorBox = document.getElementById("areaSelectorBox");
+        
+        if (e.target.value === "استلام من المطعم") {
+            if (addressInput) {
+                addressInput.style.display = "none";
+                addressInput.removeAttribute("required");
+            }
+            if (areaSelectorBox) areaSelectorBox.style.display = "none";
+        } else {
+            if (addressInput) {
+                addressInput.style.display = "block";
+                addressInput.setAttribute("required", "required");
+            }
+            if (areaSelectorBox) areaSelectorBox.style.display = "block";
+        }
+        updateCartUI();
+    }
+    
+    if (e.target.id === "deliveryArea") {
+        updateCartUI();
+    }
+});
+
+// تحديث واجهة السلة وتضمين كلفة التوصيل
 function updateCartUI() {
     const cartItems = document.getElementById("cartItems");
     const cartCount = document.getElementById("cartCount");
@@ -131,14 +156,15 @@ function updateCartUI() {
     if (!cartItems) return;
 
     cartItems.innerHTML = "";
-    let total = 0;
+    let itemsSubtotal = 0;
     let count = 0;
 
     if (cart.length === 0) {
         cartItems.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
     } else {
         cart.forEach((item, index) => {
-            total += item.price * item.qty;
+            const sum = item.price * item.qty;
+            itemsSubtotal += sum;
             count += item.qty;
 
             cartItems.innerHTML += `
@@ -157,11 +183,28 @@ function updateCartUI() {
         });
     }
 
+    let deliveryFee = 0;
+    const orderTypeRadio = document.querySelector('input[name="orderType"]:checked');
+    const isDelivery = orderTypeRadio ? orderTypeRadio.value === "توصيل للمنزل" : true;
+    const areaSelect = document.getElementById("deliveryArea");
+
+    if (isDelivery && areaSelect && cart.length > 0) {
+        deliveryFee = parseFloat(areaSelect.value) || 0;
+    }
+
+    const finalTotal = itemsSubtotal + deliveryFee;
+
     if (cartCount) cartCount.textContent = count;
-    if (cartTotal) cartTotal.textContent = total.toLocaleString() + " د.ع";
+    if (cartTotal) {
+        if (deliveryFee > 0 && cart.length > 0) {
+            cartTotal.innerHTML = `${finalTotal.toLocaleString()} د.ع <small style="font-size: 11px; color: #aaa;">(شامل التوصيل ${deliveryFee.toLocaleString()} د.ع)</small>`;
+        } else {
+            cartTotal.textContent = `${finalTotal.toLocaleString()} د.ع`;
+        }
+    }
 }
 
-// تغيير الكميات (+ / -)
+// تغيير الكمية (+ / -)
 window.changeQty = function (index, change) {
     cart[index].qty += change;
     if (cart[index].qty <= 0) {
@@ -182,26 +225,54 @@ if (sendOrderBtn) {
         const name = document.getElementById("custName").value.trim();
         const address = document.getElementById("custAddress").value.trim();
         const notes = document.getElementById("custNotes").value.trim();
+        
+        const orderType = document.querySelector('input[name="orderType"]:checked').value;
+        const payType = document.querySelector('input[name="payType"]:checked').value;
+        
+        const areaSelect = document.getElementById("deliveryArea");
+        const selectedAreaOption = areaSelect ? areaSelect.options[areaSelect.selectedIndex] : null;
+        const areaName = selectedAreaOption ? selectedAreaOption.getAttribute("data-name") : "";
+        const deliveryFee = (orderType === "توصيل للمنزل" && areaSelect) ? parseFloat(areaSelect.value) : 0;
 
-        if (!name || !address) {
-            alert("يرجى كتابة الاسم والعنوان لإكمال الطلب.");
+        if (!name) {
+            alert("يرجى كتابة الاسم لإكمال الطلب.");
+            return;
+        }
+
+        if (orderType === "توصيل للمنزل" && !address) {
+            alert("يرجى كتابة العنوان التفصيلي للتوصيل.");
             return;
         }
 
         let message = `*طلب جديد من مطعم MIM89* 🍔\n\n`;
         message += `*الاسم:* ${name}\n`;
-        message += `*العنوان:* ${address}\n`;
+        message += `*نوع الطلب:* ${orderType}\n`;
+        if (orderType === "توصيل للمنزل") {
+            message += `*المنطقة:* ${areaName}\n`;
+            message += `*العنوان:* ${address}\n`;
+        }
+        message += `*طريقة الدفع:* ${payType}\n`;
         if (notes) message += `*ملاحظات:* ${notes}\n`;
-        message += `\n*تفاصيل الطلب:*\n`;
+        
+        message += `\n*تفاصيل الوجبات:*\n`;
 
-        let total = 0;
+        let itemsSubtotal = 0;
         cart.forEach(item => {
             const sum = item.price * item.qty;
-            total += sum;
+            itemsSubtotal += sum;
             message += `• ${item.name} (عدد ${item.qty}) = ${sum.toLocaleString()} د.ع\n`;
         });
 
-        message += `\n*المجموع الكلي:* ${total.toLocaleString()} د.ع`;
+        if (orderType === "توصيل للمنزل") {
+            message += `• كلفة التوصيل = ${deliveryFee > 0 ? deliveryFee.toLocaleString() + " د.ع" : "مجاناً"}\n`;
+        }
+
+        const grandTotal = itemsSubtotal + deliveryFee;
+        message += `\n*المجموع الكلي:* ${grandTotal.toLocaleString()} د.ع`;
+
+        if (payType.includes("زين كاش")) {
+            message += `\n\n*(يرجى تزويدنا بتأكيد تحويل زين كاش لإكمال تجهيز الطلب)*`;
+        }
 
         const encodedMsg = encodeURIComponent(message);
         window.open(`https://wa.me/${whatsappNumber}?text=${encodedMsg}`, "_blank");
