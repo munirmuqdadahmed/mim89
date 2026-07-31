@@ -580,3 +580,44 @@ background:#00c853;
 color:white;
 
 }
+.search-box{
+
+padding:50px 8%;
+
+text-align:center;
+
+background:#111;
+
+}
+
+.search-box input{
+
+width:100%;
+
+max-width:700px;
+
+padding:18px 25px;
+
+font-size:20px;
+
+border:none;
+
+outline:none;
+
+border-radius:50px;
+
+background:#222;
+
+color:white;
+
+border:2px solid #ff9800;
+
+transition:.3s;
+
+}
+
+.search-box input:focus{
+
+box-shadow:0 0 20px rgba(255,152,0,.4);
+
+}
