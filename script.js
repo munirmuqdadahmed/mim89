@@ -125,3 +125,14 @@ navbar.classList.remove("scrolled");
 }
 
 });
+const menuBtn=document.getElementById("menuBtn");
+
+const sideMenu=document.getElementById("sideMenu");
+
+menuBtn.onclick=function(e){
+
+e.preventDefault();
+
+sideMenu.classList.toggle("show");
+
+}
