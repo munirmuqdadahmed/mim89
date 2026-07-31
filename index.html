@@ -24,16 +24,7 @@
         <h2>MIM89</h2>
     </div>
 
-    <!-- Quick Floating Action Buttons -->
-    <a href="https://wa.me/9647750008630" class="whatsapp" target="_blank" aria-label="WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </a>
-
-    <a href="tel:07750008630" class="call" aria-label="Call Us">
-        <i class="fas fa-phone"></i>
-    </a>
-
-    <!-- Floating Cart Button -->
+    <!-- Floating Cart Button (أعلى اليسار أو اليمين بدون الازدحام) -->
     <div id="cartBtn" class="cart-btn">
         <i class="fas fa-shopping-cart"></i>
         <span id="cartCount">0</span>
@@ -41,11 +32,12 @@
 
     <!-- Side Menu -->
     <div class="side-menu" id="sideMenu">
-        <a href="tel:07750008630">📞 اتصال</a>
-        <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب</a>
+        <a href="tel:07750008630">📞 اتصال مباشر</a>
+        <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
+        <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
         <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 انستغرام</a>
         <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 فيسبوك</a>
-        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 الموقع</a>
+        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
     </div>
 
     <!-- Header & Main Nav -->
@@ -109,77 +101,6 @@
         </div>
     </section>
 
-    <!-- Slider Section -->
-    <section class="slider">
-        <div class="slide active">
-            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1600&q=80" alt="بركر اللحم">
-            <div class="caption">
-                <h2>بركر اللحم</h2>
-                <p>أفضل طعم</p>
-            </div>
-        </div>
-        <div class="slide">
-            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=1600&q=80" alt="شاورما">
-            <div class="caption">
-                <h2>شاورما MIM89</h2>
-                <p>طازجة يومياً</p>
-            </div>
-        </div>
-        <div class="slide">
-            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1600&q=80" alt="ريزو">
-            <div class="caption">
-                <h2>ريزو</h2>
-                <p>نكهة مميزة</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Promo Section -->
-    <section class="promo">
-        <div class="promo-left">
-            <h2>🔥 عرض الأسبوع</h2>
-            <h3>بركر + بطاطا + بيبسي</h3>
-            <p>يمكنك تعديل هذا العرض في أي وقت.</p>
-            <a href="#burger" class="promo-btn">اطلب الآن</a>
-        </div>
-        <div class="promo-right">
-            <div class="countdown">
-                <div><span id="days">03</span><p>يوم</p></div>
-                <div><span id="hours">12</span><p>ساعة</p></div>
-                <div><span id="minutes">30</span><p>دقيقة</p></div>
-                <div><span id="seconds">45</span><p>ثانية</p></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Best Seller Section -->
-    <section class="best-seller">
-        <h2>⭐ الأكثر مبيعاً</h2>
-        <div class="best-grid">
-            <div class="best-card">
-                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80" alt="بركر دبل">
-                <h3>بركر دبل</h3>
-                <div class="stars">★★★★★</div>
-                <p>أكثر وجبة طلباً في MIM89</p>
-                <a href="#burger">اطلب الآن</a>
-            </div>
-            <div class="best-card">
-                <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=900&q=80" alt="شاورما دجاج">
-                <h3>شاورما دجاج</h3>
-                <div class="stars">★★★★★</div>
-                <p>خبز صاج وصوص خاص</p>
-                <a href="#shawarma">اطلب الآن</a>
-            </div>
-            <div class="best-card">
-                <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80" alt="ريزو سبايسي">
-                <h3>ريزو سبايسي</h3>
-                <div class="stars">★★★★★</div>
-                <p>طعم مميز وحار</p>
-                <a href="#rizo">اطلب الآن</a>
-            </div>
-        </div>
-    </section>
-
     <!-- Menu Header & Search -->
     <section id="menu">
         <h2 class="title">قائمة الطعام</h2>
@@ -190,10 +111,10 @@
     </section>
 
     <!-- Menu Categories -->
-    <section id="burger">
+    <section id="burger" class="menu-section">
         <h2>🍔 البركر</h2>
         <div class="card" data-name="Classic Burger" data-price="6000">
-            <img src="images/burger1.jpg" alt="Classic Burger">
+            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="Classic Burger">
             <h3>Classic Burger</h3>
             <p>بركر لحم مشوي مع الجبن</p>
             <div class="card-price-row">
@@ -202,7 +123,7 @@
             </div>
         </div>
         <div class="card" data-name="Double Burger" data-price="8500">
-            <img src="images/burger2.jpg" alt="Double Burger">
+            <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="Double Burger">
             <h3>Double Burger</h3>
             <p>قطعتين لحم مع جبن</p>
             <div class="card-price-row">
@@ -212,10 +133,10 @@
         </div>
     </section>
 
-    <section id="shawarma">
+    <section id="shawarma" class="menu-section">
         <h2>🌯 الشاورما</h2>
         <div class="card" data-name="شاورما دجاج" data-price="4000">
-            <img src="images/shawarma1.jpg" alt="شاورما دجاج">
+            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80" alt="شاورما دجاج">
             <h3>شاورما دجاج</h3>
             <p>خبز صاج مع الثوم</p>
             <div class="card-price-row">
@@ -224,7 +145,7 @@
             </div>
         </div>
         <div class="card" data-name="شاورما لحم" data-price="5000">
-            <img src="images/shawarma2.jpg" alt="شاورما لحم">
+            <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="شاورما لحم">
             <h3>شاورما لحم</h3>
             <p>لحم طازج</p>
             <div class="card-price-row">
@@ -234,10 +155,10 @@
         </div>
     </section>
 
-    <section id="rizo">
+    <section id="rizo" class="menu-section">
         <h2>🍚 الريزو</h2>
         <div class="card" data-name="ريزو كلاسيك" data-price="5000">
-            <img src="images/rizo1.jpg" alt="ريزو كلاسيك">
+            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="ريزو كلاسيك">
             <h3>ريزو كلاسيك</h3>
             <p>أرز مع صوص خاص وقطع دجاج</p>
             <div class="card-price-row">
@@ -246,7 +167,7 @@
             </div>
         </div>
         <div class="card" data-name="ريزو سبايسي" data-price="5500">
-            <img src="images/rizo2.jpg" alt="ريزو سبايسي">
+            <img src="https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80" alt="ريزو سبايسي">
             <h3>ريزو سبايسي</h3>
             <p>نكهة حارة مميزة</p>
             <div class="card-price-row">
@@ -256,26 +177,18 @@
         </div>
     </section>
 
-    <section id="drinks">
+    <section id="drinks" class="menu-section">
         <h2>🥤 المشروبات</h2>
         <div class="card" data-name="بيبسي" data-price="1000">
-            <img src="images/drink1.jpg" alt="بيبسي">
+            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" alt="بيبسي">
             <h3>بيبسي</h3>
             <div class="card-price-row">
                 <span>1,000 د.ع</span>
                 <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
             </div>
         </div>
-        <div class="card" data-name="ميرندا" data-price="1000">
-            <img src="images/drink2.jpg" alt="ميرندا">
-            <h3>ميرندا</h3>
-            <div class="card-price-row">
-                <span>1,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
         <div class="card" data-name="7UP" data-price="1000">
-            <img src="images/drink3.jpg" alt="7UP">
+            <img src="https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" alt="7UP">
             <h3>7UP</h3>
             <div class="card-price-row">
                 <span>1,000 د.ع</span>
