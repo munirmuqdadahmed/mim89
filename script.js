@@ -1,10 +1,10 @@
-document.querySelectorAll("nav a").forEach(link=>{
+document.querySelectorAll("nav a").forEach(link => {
 
-link.addEventListener("click",function(e){
+link.addEventListener("click", function(e){
 
 const id=this.getAttribute("href");
 
-if(id.startsWith("#")){
+if(id.startsWith("#") && document.querySelector(id)){
 
 e.preventDefault();
 
@@ -20,21 +20,29 @@ behavior:"smooth"
 
 });
 
-console.log("MIM89 Ready");
 window.onload=function(){
 
 setTimeout(function(){
 
-document.getElementById("loader").style.display="none";
+const loader=document.getElementById("loader");
+
+if(loader){
+
+loader.style.display="none";
+
+}
 
 },1500);
 
-}
+};
+
 const slides=document.querySelectorAll(".slide");
+
+if(slides.length){
 
 let current=0;
 
-setInterval(()=>{
+setInterval(function(){
 
 slides[current].classList.remove("active");
 
@@ -49,34 +57,40 @@ current=0;
 slides[current].classList.add("active");
 
 },4000);
+
+}
+
 const search=document.getElementById("search");
+
+if(search){
 
 search.addEventListener("keyup",function(){
 
 const value=this.value.toLowerCase();
 
-const cards=document.querySelectorAll(".card");
+document.querySelectorAll(".card").forEach(function(card){
 
-cards.forEach(card=>{
+card.style.display=
 
-const text=card.innerText.toLowerCase();
+card.innerText.toLowerCase().includes(value)
 
-if(text.includes(value)){
+? "inline-block"
 
-card.style.display="inline-block";
+: "none";
 
-}else{
+});
 
-card.style.display="none";
+});
 
 }
 
-});
+const days=document.getElementById("days");
 
-});
+if(days){
+
 let total=172800;
 
-setInterval(()=>{
+setInterval(function(){
 
 let d=Math.floor(total/86400);
 
@@ -86,13 +100,13 @@ let m=Math.floor((total%3600)/60);
 
 let s=total%60;
 
-document.getElementById("days").innerHTML=d;
+document.getElementById("days").textContent=d;
 
-document.getElementById("hours").innerHTML=h;
+document.getElementById("hours").textContent=h;
 
-document.getElementById("minutes").innerHTML=m;
+document.getElementById("minutes").textContent=m;
 
-document.getElementById("seconds").innerHTML=s;
+document.getElementById("seconds").textContent=s;
 
 if(total>0){
 
@@ -101,3 +115,7 @@ total--;
 }
 
 },1000);
+
+}
+
+console.log("MIM89 Ready");
