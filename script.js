@@ -1,22 +1,16 @@
-// ==========================================
-// 1. LOADER
-// ==========================================
+// LOADER
 function hideLoader() {
     const loader = document.getElementById("loader");
     if (loader) {
         loader.style.opacity = "0";
         loader.style.transition = "opacity 0.3s ease";
-        setTimeout(() => {
-            loader.style.display = "none";
-        }, 300);
+        setTimeout(() => { loader.style.display = "none"; }, 300);
     }
 }
 document.addEventListener("DOMContentLoaded", hideLoader);
 window.addEventListener("load", hideLoader);
 
-// ==========================================
-// 2. SIDE MENU TOGGLE & OVERLAY
-// ==========================================
+// SIDE MENU TOGGLE
 const menuBtn = document.getElementById("menuBtn");
 const sideMenu = document.getElementById("sideMenu");
 const menuOverlay = document.getElementById("menuOverlay");
@@ -33,28 +27,9 @@ if (menuBtn) {
         menuOverlay.classList.toggle("active");
     };
 }
+if (menuOverlay) menuOverlay.onclick = closeSideMenu;
 
-if (menuOverlay) {
-    menuOverlay.onclick = closeSideMenu;
-}
-
-// ==========================================
-// 3. SMOOTH SCROLL
-// ==========================================
-document.querySelectorAll('a[href^="#"]').forEach(link => {
-    link.addEventListener("click", function (e) {
-        const id = this.getAttribute("href");
-        if (id && id.startsWith("#") && id !== "#" && document.querySelector(id)) {
-            e.preventDefault();
-            document.querySelector(id).scrollIntoView({ behavior: "smooth" });
-            closeSideMenu();
-        }
-    });
-});
-
-// ==========================================
-// 4. SEARCH MENU
-// ==========================================
+// SEARCH MENU
 const search = document.getElementById("search");
 if (search) {
     search.addEventListener("keyup", function () {
@@ -65,9 +40,7 @@ if (search) {
     });
 }
 
-// ==========================================
-// 5. SHOPPING CART SYSTEM
-// ==========================================
+// SHOPPING CART LOGIC
 let cart = [];
 let currentOrderType = "delivery";
 const whatsappNumber = "9647750008630";
@@ -76,58 +49,52 @@ const cartBtn = document.getElementById("cartBtn");
 const cartModal = document.getElementById("cartModal");
 const closeCart = document.getElementById("closeCart");
 
-if (cartBtn) {
-    cartBtn.onclick = () => {
-        cartModal.classList.add("open");
-    };
-}
-
-if (closeCart) {
-    closeCart.onclick = () => {
-        cartModal.classList.remove("open");
-    };
-}
+if (cartBtn) cartBtn.onclick = () => cartModal.classList.add("open");
+if (closeCart) closeCart.onclick = () => cartModal.classList.remove("open");
 
 window.onclick = (e) => {
-    if (e.target === cartModal) {
-        cartModal.classList.remove("open");
-    }
+    if (e.target === cartModal) cartModal.classList.remove("open");
 };
 
-// التبديل بين توصيل / استلام
-document.querySelectorAll(".segment-btn").forEach(btn => {
-    btn.addEventListener("click", function() {
-        document.querySelectorAll(".segment-btn").forEach(b => b.classList.remove("active"));
-        this.classList.add("active");
+// أزرار التوصيل والاستلام
+const btnDelivery = document.getElementById("btnDelivery");
+const btnTakeaway = document.getElementById("btnTakeaway");
+const addressInput = document.getElementById("custAddress");
+const areaSelectorBox = document.getElementById("areaSelectorBox");
 
-        currentOrderType = this.getAttribute("data-type");
-        const addressInput = document.getElementById("custAddress");
-        const areaSelectorBox = document.getElementById("areaSelectorBox");
-
-        if (currentOrderType === "takeaway") {
-            if (addressInput) {
-                addressInput.style.display = "none";
-                addressInput.removeAttribute("required");
-            }
-            if (areaSelectorBox) areaSelectorBox.style.display = "none";
-        } else {
-            if (addressInput) {
-                addressInput.style.display = "block";
-                addressInput.setAttribute("required", "required");
-            }
-            if (areaSelectorBox) areaSelectorBox.style.display = "block";
+if (btnDelivery && btnTakeaway) {
+    btnDelivery.onclick = function() {
+        btnDelivery.classList.add("active");
+        btnTakeaway.classList.remove("active");
+        currentOrderType = "delivery";
+        if (addressInput) {
+            addressInput.style.display = "block";
+            addressInput.setAttribute("required", "required");
         }
+        if (areaSelectorBox) areaSelectorBox.style.display = "block";
         updateCartUI();
-    });
-});
+    };
 
-// إعادة حساب المجموع عند اختيار المنطقة
+    btnTakeaway.onclick = function() {
+        btnTakeaway.classList.add("active");
+        btnDelivery.classList.remove("active");
+        currentOrderType = "takeaway";
+        if (addressInput) {
+            addressInput.style.display = "none";
+            addressInput.removeAttribute("required");
+        }
+        if (areaSelectorBox) areaSelectorBox.style.display = "none";
+        updateCartUI();
+    };
+}
+
+// حساب سعر المنطقة
 const deliveryAreaSelect = document.getElementById("deliveryArea");
 if (deliveryAreaSelect) {
     deliveryAreaSelect.addEventListener("change", updateCartUI);
 }
 
-// إضافة الوجبات للسلة
+// إضافة وجبة للسلة
 document.addEventListener("click", function (e) {
     const btn = e.target.closest(".add-to-cart-btn");
     if (btn) {
@@ -154,7 +121,7 @@ document.addEventListener("click", function (e) {
     }
 });
 
-// تحديث السلة وحساب كلفة التوصيل
+// تحديث السلة
 function updateCartUI() {
     const cartItems = document.getElementById("cartItems");
     const cartCount = document.getElementById("cartCount");
@@ -209,16 +176,14 @@ function updateCartUI() {
     }
 }
 
-// تغيير الكمية (+ / -)
+// تغيير الكمية
 window.changeQty = function (index, change) {
     cart[index].qty += change;
-    if (cart[index].qty <= 0) {
-        cart.splice(index, 1);
-    }
+    if (cart[index].qty <= 0) cart.splice(index, 1);
     updateCartUI();
 };
 
-// إرسال الطلب عبر الواتساب
+// تأكيد الطلب إرسال الواتساب
 const sendOrderBtn = document.getElementById("sendOrderBtn");
 if (sendOrderBtn) {
     sendOrderBtn.onclick = function () {
