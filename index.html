@@ -587,7 +587,7 @@
         </div>
     </section>
 
-    <!-- Cart Modal Box (سلة قابلة للتمرير وسريعة الطلب) -->
+    <!-- Cart Modal Box (سلة نسيجية بسيطة وسريعة) -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <div class="cart-header">
@@ -607,15 +607,15 @@
                     </div>
                     
                     <div class="user-details">
-                        <!-- أزرار الاختيار (توصيل / استلام) -->
+                        <!-- خيار توصيل / استلام بأسلوب أزرار ممتازة -->
                         <div class="segmented-control">
-                            <button type="button" class="segment-btn active" data-type="delivery">🛵 توصيل</button>
-                            <button type="button" class="segment-btn" data-type="takeaway">🛍️ استلام من المطعم</button>
+                            <button type="button" class="segment-btn active" id="btnDelivery">🛵 توصيل</button>
+                            <button type="button" class="segment-btn" id="btnTakeaway">🛍️ استلام من المطعم</button>
                         </div>
 
                         <input type="text" id="custName" placeholder="الاسم الكامل" required>
 
-                        <!-- خيار المنطقة والتوصيل -->
+                        <!-- خيار المنطقة للتوصيل -->
                         <div id="areaSelectorBox">
                             <select id="deliveryArea" class="area-select">
                                 <option value="0" data-name="القاهرة (توصيل مجاني)">منطقة القاهرة — مجاناً 🛵</option>
