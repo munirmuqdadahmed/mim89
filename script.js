@@ -70,20 +70,11 @@ const value=this.value.toLowerCase();
 
 document.querySelectorAll(".card").forEach(function(card){
 
-card.style.display=
-
-card.innerText.toLowerCase().includes(value)
-
-? "inline-block"
-
-: "none";
-
-});
-
-});
-
+if(card.innerText.toLowerCase().includes(value)){
+    card.style.display = "";
+}else{
+    card.style.display = "none";
 }
-
 const days=document.getElementById("days");
 
 if(days){
