@@ -56,7 +56,7 @@ window.onclick = (e) => {
     if (e.target === cartModal) cartModal.classList.remove("open");
 };
 
-// التبديل بين التوصيل والاستلام بالضغط المباشر
+// التبديل بين التوصيل والاستلام
 document.addEventListener("click", function(e) {
     const btnDelivery = e.target.closest("#btnDelivery");
     const btnTakeaway = e.target.closest("#btnTakeaway");
@@ -193,6 +193,7 @@ if (sendOrderBtn) {
         }
 
         const name = document.getElementById("custName").value.trim();
+        const phone = document.getElementById("custPhone").value.trim();
         const address = document.getElementById("custAddress").value.trim();
         const notes = document.getElementById("custNotes").value.trim();
 
@@ -207,6 +208,11 @@ if (sendOrderBtn) {
             return;
         }
 
+        if (!phone) {
+            alert("يرجى كتابة رقم الهاتف للتواصل والدلفري.");
+            return;
+        }
+
         if (isDelivery && !address) {
             alert("يرجى كتابة العنوان التفصيلي للتوصيل.");
             return;
@@ -214,6 +220,7 @@ if (sendOrderBtn) {
 
         let message = `*طلب جديد من مطعم MIM89* 🍔\n\n`;
         message += `*الاسم:* ${name}\n`;
+        message += `*رقم الهاتف:* ${phone}\n`;
         message += `*نوع الطلب:* ${isDelivery ? 'توصيل للمنزل 🛵' : 'استلام من المطعم 🛍️'}\n`;
 
         if (isDelivery) {
