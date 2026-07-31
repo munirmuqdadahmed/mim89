@@ -69,7 +69,7 @@
         <div class="hero-content">
             <h2>MIM89 FAST FOOD</h2>
             <p>كل الطعم... في مكان واحد</p>
-            <a href="#menuContainer" class="btn">عرض المنيو</a>
+            <a href="#offers" class="btn">عرض المنيو</a>
         </div>
 
         <nav class="bottom-nav">
@@ -81,7 +81,7 @@
                 <i class="fas fa-fire"></i>
                 <span>العروض</span>
             </a>
-            <a href="#menuContainer" class="center-btn">
+            <a href="#offers" class="center-btn">
                 <i class="fas fa-utensils"></i>
             </a>
             <a href="#contact">
@@ -95,13 +95,478 @@
         </nav>
     </header>
 
-    <!-- Search Section -->
     <section class="search-box">
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- Dynamic Menu Container (توليد الوجبات ديناميكياً) -->
-    <div id="menuContainer"></div>
+    <!-- العروض الخاصة -->
+    <section id="offers" class="menu-section">
+        <h2>🔥 العروض الخاصة واليومية</h2>
+
+        <div class="card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="10000">
+            <span class="badge">وفر 2,000 د.ع</span>
+            <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f6?auto=format&fit=crop&w=600&q=80" alt="عرض الفردي">
+            <h3>🔥 عرض الفردي المميز</h3>
+            <p>بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد</p>
+            <div class="card-price-row">
+                <span>10,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">12,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+
+        <div class="card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="10000">
+            <span class="badge">الأكثر طلباً</span>
+            <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="عرض الشاورما">
+            <h3>🌯 عرض ميكس الشاورما</h3>
+            <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
+            <div class="card-price-row">
+                <span>10,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">11,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+
+        <div class="card" data-name="عرض الثنائي (2 بركر كلاسيك + فنكر دبل + 2 بيبسي)" data-price="13000">
+            <span class="badge">عرض لشخصين</span>
+            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" alt="عرض الثنائي">
+            <h3>🍔🍔 عرض الثنائي (2 بركر)</h3>
+            <p>2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي</p>
+            <div class="card-price-row">
+                <span>13,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">14,500 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+
+        <div class="card" data-name="عرض العائلة واللمة (4 بركر + كنتاكي 4 قطع + 2 فنكر + لتر بيبسي)" data-price="32000">
+            <span class="badge new">توفير عائلي ضخم</span>
+            <img src="https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80" alt="عرض العائلة">
+            <h3>👑 عرض اللمة والعائلة</h3>
+            <p>4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي</p>
+            <div class="card-price-row">
+                <span>32,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">37,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. قسم البركر -->
+    <section id="burger" class="menu-section">
+        <h2>🍔 قسم البركر</h2>
+        <div class="card" data-name="بركر كلاسيك" data-price="5000">
+            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="بركر كلاسيك">
+            <h3>بركر كلاسيك</h3>
+            <p>لحم طازج مع الصوص الخاص والخضار</p>
+            <div class="card-price-row">
+                <span>5,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر الجبن" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="بركر الجبن">
+            <h3>بركر الجبن</h3>
+            <p>شريحة لحم غنية بجبنة الشيدر الذائبة</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="دبل تشيز بركر" data-price="8000">
+            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" alt="دبل تشيز بركر">
+            <h3>دبل تشيز بركر</h3>
+            <p>قطعتين لحم مع طبقات مضاعفة من الجبن</p>
+            <div class="card-price-row">
+                <span>8,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر 89 الخاص" data-price="8500">
+            <img src="https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=600&q=80" alt="بركر 89 الخاص">
+            <h3>بركر 89 الخاص</h3>
+            <p>الخلطة الخاصة المبتكرة من مطعم MIM89</p>
+            <div class="card-price-row">
+                <span>8,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="تشكن فيليه" data-price="5500">
+            <img src="https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80" alt="تشكن فيليه">
+            <h3>تشكن فيليه</h3>
+            <p>صدر دجاج مقرمش مع الصوص والمايونيز</p>
+            <div class="card-price-row">
+                <span>5,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر دجاج سبايسي" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1610440042657-612c34d95e9f?auto=format&fit=crop&w=600&q=80" alt="بركر دجاج سبايسي">
+            <h3>بركر دجاج سبايسي</h3>
+            <p>دجاج المقرمش الحار مع صوص الهالابينو</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر كرسبي" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1525164286253-04e68b9d94c3?auto=format&fit=crop&w=600&q=80" alt="بركر كرسبي">
+            <h3>بركر كرسبي</h3>
+            <p>دجاج مقرمش ذهبي الخلطة الممتازة</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر مشروم" data-price="7000">
+            <img src="https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?auto=format&fit=crop&w=600&q=80" alt="بركر مشروم">
+            <h3>بركر مشروم</h3>
+            <p>شريحة لحم مع صوص الفطر والجبن</p>
+            <div class="card-price-row">
+                <span>7,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر مكسيكي" data-price="7000">
+            <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f6?auto=format&fit=crop&w=600&q=80" alt="بركر مكسيكي">
+            <h3>بركر مكسيكي</h3>
+            <p>نكهة حارة ولذيذة مع قطع الهالابينو</p>
+            <div class="card-price-row">
+                <span>7,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="بركر لحم مزدوج" data-price="9000">
+            <img src="https://images.unsplash.com/photo-1583778176476-4a8b02a64c01?auto=format&fit=crop&w=600&q=80" alt="بركر لحم مزدوج">
+            <h3>بركر لحم مزدوج</h3>
+            <p>وجبة مشبعة بقطعتين من اللحم المشوي</p>
+            <div class="card-price-row">
+                <span>9,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. قسم الشاورما -->
+    <section id="shawarma" class="menu-section">
+        <h2>🌯 قسم الشاورما</h2>
+        <div class="card" data-name="شاورما صاج عادي" data-price="3500">
+            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80" alt="شاورما صاج عادي">
+            <h3>شاورما صاج عادي</h3>
+            <p>خبز صاج، شاورما دجاج، ثوم، وبطاطا</p>
+            <div class="card-price-row">
+                <span>3,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما صاج دبل" data-price="5000">
+            <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="شاورما صاج دبل">
+            <h3>شاورما صاج دبل</h3>
+            <p>شاورما مضاعفة في خبز الصاج المميز</p>
+            <div class="card-price-row">
+                <span>5,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما صاج سوبر" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="شاورما صاج سوبر">
+            <h3>شاورما صاج سوبر</h3>
+            <p>حجم كبير جداً مليء بالشاورما والجبن</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما وزن 250 غرام" data-price="7000">
+            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80" alt="شاورما 250g">
+            <h3>شاورما وزن 250 غرام</h3>
+            <p>شاورما دجاج صافي بالصحن</p>
+            <div class="card-price-row">
+                <span>7,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما وزن 500 غرام" data-price="13000">
+            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80" alt="شاورما 500g">
+            <h3>شاورما وزن 500 غرام</h3>
+            <p>نصف كيلو شاورما دجاج صافي مع المرفقات</p>
+            <div class="card-price-row">
+                <span>13,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما عربي" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="شاورما عربي">
+            <h3>شاورما عربي</h3>
+            <p>تقطيع عربي مع بطاطا، ثومية ومخلل</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="وجبة شاورما" data-price="7000">
+            <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="وجبة شاورما">
+            <h3>وجبة شاورما</h3>
+            <p>وجبة متكاملة مع المشروب والبطاطا</p>
+            <div class="card-price-row">
+                <span>7,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="وجبة شاورما دبل" data-price="9000">
+            <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="وجبة شاورما دبل">
+            <h3>وجبة شاورما دبل</h3>
+            <p>وجبة دبل مشبعة مع مقبلات وثومية</p>
+            <div class="card-price-row">
+                <span>9,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="شاورما 89 الخاص" data-price="8000">
+            <img src="https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80" alt="شاورما 89 الخاص">
+            <h3>شاورما 89 الخاص</h3>
+            <p>طبق الشاورما الخاص المضاف له الجبن والبطاطا والصوصات</p>
+            <div class="card-price-row">
+                <span>8,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. قسم الريزو -->
+    <section id="rizo" class="menu-section">
+        <h2>🍚 قسم الريزو</h2>
+        <div class="card" data-name="ريزو كلاسيك" data-price="5000">
+            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="ريزو كلاسيك">
+            <h3>ريزو كلاسيك</h3>
+            <p>أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو</p>
+            <div class="card-price-row">
+                <span>5,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ريزو سبايسي" data-price="5500">
+            <img src="https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80" alt="ريزو سبايسي">
+            <h3>ريزو سبايسي</h3>
+            <p>نكهة حارة ممتازة مع قطع الدجاج السبايسي</p>
+            <div class="card-price-row">
+                <span>5,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ريزو جبنة" data-price="6000">
+            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="ريزو جبنة">
+            <h3>ريزو جبنة</h3>
+            <p>ريزو مغطى بصوص الجبن الذائب الشهي</p>
+            <div class="card-price-row">
+                <span>6,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ريزو مشروم" data-price="6500">
+            <img src="https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80" alt="ريزو مشروم">
+            <h3>ريزو مشروم</h3>
+            <p>ريزو مع قطع الفطر الطازج والصوص الكريمي</p>
+            <div class="card-price-row">
+                <span>6,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ريزو 89 الخاص" data-price="7500">
+            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80" alt="ريزو 89 الخاص">
+            <h3>ريزو 89 الخاص</h3>
+            <p>خلطة الريزو الخاصة مع دبل دجاج، جبن ومشروم</p>
+            <div class="card-price-row">
+                <span>7,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ريزو دبل تشكن" data-price="7000">
+            <img src="https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80" alt="ريزو دبل تشكن">
+            <h3>ريزو دبل تشكن</h3>
+            <p>كمية مضاعفة من الدجاج المقرمش فوق أرز الريزو</p>
+            <div class="card-price-row">
+                <span>7,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. قسم الكنتاكي -->
+    <section id="kentucky" class="menu-section">
+        <h2>🍗 قسم الكنتاكي</h2>
+        <div class="card" data-name="كنتاكي قطعتين" data-price="5000">
+            <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=600&q=80" alt="كنتاكي قطعتين">
+            <h3>كنتاكي قطعتين</h3>
+            <p>قطعتين دجاج مقرمش + بطاطا وثومية</p>
+            <div class="card-price-row">
+                <span>5,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="كنتاكي 4 قطع" data-price="9000">
+            <img src="https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80" alt="كنتاكي 4 قطع">
+            <h3>كنتاكي 4 قطع</h3>
+            <p>4 قطع دجاج ذهبي + بطاطا وثومية وخبز</p>
+            <div class="card-price-row">
+                <span>9,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="كنتاكي 6 قطع" data-price="13000">
+            <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=600&q=80" alt="كنتاكي 6 قطع">
+            <h3>كنتاكي 6 قطع</h3>
+            <p>6 قطع كنتاكي المقرمش مع السلطة والبطاطا</p>
+            <div class="card-price-row">
+                <span>13,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="وجبة كنتاكي" data-price="10000">
+            <img src="https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80" alt="وجبة كنتاكي">
+            <h3>وجبة كنتاكي كاملة</h3>
+            <p>قطع كنتاكي مع المشروب، البطاطا، الكولسلو والثومية</p>
+            <div class="card-price-row">
+                <span>10,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. قسم الفنكر والمقبلات والإضافات -->
+    <section id="appetizers" class="menu-section">
+        <h2>🍟 قسم الفنكر والمقبلات والإضافات</h2>
+        
+        <div class="card" data-name="فنكر كلاسيك" data-price="2500">
+            <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80" alt="فنكر كلاسيك">
+            <h3>فنكر كلاسيك</h3>
+            <p>بطاطا مقرمشة ذهبية</p>
+            <div class="card-price-row">
+                <span>2,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="فنكر سبايسي" data-price="3000">
+            <img src="https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=600&q=80" alt="فنكر سبايسي">
+            <h3>فنكر سبايسي</h3>
+            <p>بطاطا مبهرة بالنكهة الحارة</p>
+            <div class="card-price-row">
+                <span>3,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="فنكر جبنة" data-price="3500">
+            <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80" alt="فنكر جبنة">
+            <h3>فنكر جبنة</h3>
+            <p>فنكر مغطى بجبنة الشيدر الذائبة</p>
+            <div class="card-price-row">
+                <span>3,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="فنكر 89 الخاص" data-price="4500">
+            <img src="https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=600&q=80" alt="فنكر 89 الخاص">
+            <h3>فنكر 89 الخاص</h3>
+            <p>بطاطا مقرمشة محملة بالجبن والهالابينو والصوصات</p>
+            <div class="card-price-row">
+                <span>4,500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+
+        <div class="card" data-name="أصابع موزاريلا" data-price="4000">
+            <img src="https://images.unsplash.com/photo-1531749668029-2db88e4276c7?auto=format&fit=crop&w=600&q=80" alt="أصابع موزاريلا">
+            <h3>أصابع موزاريلا</h3>
+            <p>أصابع جبن الموزاريلا المقرمشة والذائبة</p>
+            <div class="card-price-row">
+                <span>4,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="حلقات بصل" data-price="3000">
+            <img src="https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&w=600&q=80" alt="حلقات بصل">
+            <h3>حلقات بصل</h3>
+            <p>حلقات بصل مقرمشة بالخلطة الذهبية</p>
+            <div class="card-price-row">
+                <span>3,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+
+        <div class="card" data-name="إضافة جبنة" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=600&q=80" alt="جبنة إضافية">
+            <h3>إضافة جبنة شيدر</h3>
+            <p>شريحة جبن أو صوص جبن إضافي</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="إضافة هالابينو" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?auto=format&fit=crop&w=600&q=80" alt="هالابينو">
+            <h3>إضافة هالابينو</h3>
+            <p>قطع فلفل هالابينو الحار</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="إضافة صوص خاص" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1472476443507-c7a5948772fc?auto=format&fit=crop&w=600&q=80" alt="صوص">
+            <h3>إضافة صوص خاص</h3>
+            <p>علبة صوص مميز (ثومية / سبايسي / 89)</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. قسم المشروبات -->
+    <section id="drinks" class="menu-section">
+        <h2>🥤 قسم المشروبات</h2>
+        <div class="card" data-name="بيبسي" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" alt="بيبسي">
+            <h3>بيبسي</h3>
+            <p>مشروب غازي بارد</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="سفن أب" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" alt="سفن أب">
+            <h3>سفن أب</h3>
+            <p>مشروب غازي منعش</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ميرندا" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=600&q=80" alt="ميرندا">
+            <h3>ميرندا</h3>
+            <p>مشروب غازي بنكهة البرتقال</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ديو" data-price="1000">
+            <img src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=600&q=80" alt="ماونتن ديو">
+            <h3>ماونتن ديو</h3>
+            <p>مشروب غازي منعش</p>
+            <div class="card-price-row">
+                <span>1,000 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+        <div class="card" data-name="ماء" data-price="500">
+            <img src="https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" alt="ماء">
+            <h3>ماء معدني</h3>
+            <p>قنينة ماء نقي مبرد</p>
+            <div class="card-price-row">
+                <span>500 د.ع</span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+            </div>
+        </div>
+    </section>
 
     <!-- Contact Section -->
     <section id="contact">
@@ -170,8 +635,6 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <!-- تحميل ملف البيانات أولاً ثم البرمجة -->
-    <script src="menuData.js"></script>
     <script src="script.js"></script>
 </body>
 
