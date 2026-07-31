@@ -66,10 +66,10 @@ if (search) {
 }
 
 // ==========================================
-// 5. SHOPPING CART SYSTEM (دقيق وأنيق)
+// 5. SHOPPING CART SYSTEM
 // ==========================================
 let cart = [];
-let currentOrderType = "delivery"; // delivery أو takeaway
+let currentOrderType = "delivery";
 const whatsappNumber = "9647750008630";
 
 const cartBtn = document.getElementById("cartBtn");
@@ -94,7 +94,7 @@ window.onclick = (e) => {
     }
 };
 
-// التبديل بين توصيل / استلام عبر أزرار الـ Segmented Control
+// التبديل بين توصيل / استلام
 document.querySelectorAll(".segment-btn").forEach(btn => {
     btn.addEventListener("click", function() {
         document.querySelectorAll(".segment-btn").forEach(b => b.classList.remove("active"));
@@ -121,7 +121,7 @@ document.querySelectorAll(".segment-btn").forEach(btn => {
     });
 });
 
-// إعادة حساب المجموع فور اختيار المنطقة
+// إعادة حساب المجموع عند اختيار المنطقة
 const deliveryAreaSelect = document.getElementById("deliveryArea");
 if (deliveryAreaSelect) {
     deliveryAreaSelect.addEventListener("change", updateCartUI);
@@ -154,7 +154,7 @@ document.addEventListener("click", function (e) {
     }
 });
 
-// تحديث واجهة السلة وحساب كلفة التوصيل التلقائية
+// تحديث السلة وحساب كلفة التوصيل
 function updateCartUI() {
     const cartItems = document.getElementById("cartItems");
     const cartCount = document.getElementById("cartCount");
@@ -202,7 +202,7 @@ function updateCartUI() {
     if (cartCount) cartCount.textContent = count;
     if (cartTotal) {
         if (deliveryFee > 0 && cart.length > 0) {
-            cartTotal.innerHTML = `${finalTotal.toLocaleString()} د.ع <small style="font-size: 11px; color: #aaa;">(شامل التوصيل ${deliveryFee.toLocaleString()} د.ع)</small>`;
+            cartTotal.innerHTML = `${finalTotal.toLocaleString()} د.ع <small style="font-size: 11px; color: #aaa;">(توصيل ${deliveryFee.toLocaleString()} د.ع)</small>`;
         } else {
             cartTotal.textContent = `${finalTotal.toLocaleString()} د.ع`;
         }
