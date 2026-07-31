@@ -74,3 +74,30 @@ card.style.display="none";
 });
 
 });
+let total=172800;
+
+setInterval(()=>{
+
+let d=Math.floor(total/86400);
+
+let h=Math.floor((total%86400)/3600);
+
+let m=Math.floor((total%3600)/60);
+
+let s=total%60;
+
+document.getElementById("days").innerHTML=d;
+
+document.getElementById("hours").innerHTML=h;
+
+document.getElementById("minutes").innerHTML=m;
+
+document.getElementById("seconds").innerHTML=s;
+
+if(total>0){
+
+total--;
+
+}
+
+},1000);
