@@ -21,3 +21,12 @@ behavior:"smooth"
 });
 
 console.log("MIM89 Ready");
+window.onload=function(){
+
+setTimeout(function(){
+
+document.getElementById("loader").style.display="none";
+
+},1500);
+
+}
