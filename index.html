@@ -44,7 +44,7 @@
         <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
     </div>
 
-    <!-- Header & Main Nav -->
+    <!-- Header & Main Nav (الهيدر) -->
     <header class="hero">
         <div class="overlay"></div>
 
@@ -56,6 +56,7 @@
             </div>
             <ul>
                 <li><a href="#">الرئيسية</a></li>
+                <li><a href="#offers">العروض 🔥</a></li>
                 <li><a href="#burger">البركر</a></li>
                 <li><a href="#shawarma">الشاورما</a></li>
                 <li><a href="#rizo">الريزو</a></li>
@@ -72,7 +73,7 @@
             <a href="#menu" class="btn">عرض المنيو</a>
         </div>
 
-        <!-- Bottom Mobile Navigation (معدل: استبدال البركر بزر العروض 🔥) -->
+        <!-- Bottom Mobile Navigation -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -94,7 +95,60 @@
                 <span>المزيد</span>
             </a>
         </nav>
-    </header>
+    </header> <!-- نهاية الهيدر -->
+
+    <!-- 🔥 قسم العروض الخاصة واليومية (مكان الكود) 🔥 -->
+    <section id="offers" class="menu-section">
+        <h2>🔥 العروض الخاصة واليومية</h2>
+
+        <!-- عرض 1: عرض الفردي القوي -->
+        <div class="card offer-card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="10000">
+            <span class="badge">وفر 2,000 د.ع</span>
+            <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f6?auto=format&fit=crop&w=600&q=80" alt="عرض الفردي">
+            <h3>🔥 عرض الفردي المميز</h3>
+            <p>بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد</p>
+            <div class="card-price-row">
+                <span>10,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">12,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+
+        <!-- عرض 2: عرض الشاورما العربي -->
+        <div class="card offer-card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="10000">
+            <span class="badge">الأكثر طلباً</span>
+            <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="عرض الشاورما">
+            <h3>🌯 عرض ميكس الشاورما</h3>
+            <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
+            <div class="card-price-row">
+                <span>10,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">11,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+
+        <!-- عرض 3: عرض الثنائي -->
+        <div class="card offer-card" data-name="عرض الثنائي (2 بركر كلاسيك + فنكر دبل + 2 بيبسي)" data-price="13000">
+            <span class="badge">عرض لشخصين</span>
+            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" alt="عرض الثنائي">
+            <h3>🍔🍔 عرض الثنائي (2 بركر)</h3>
+            <p>2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي</p>
+            <div class="card-price-row">
+                <span>13,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">14,500 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+
+        <!-- عرض 4: العرض العائلي / اللمة -->
+        <div class="card offer-card" data-name="عرض العائلة واللمة (4 بركر + كنتاكي 4 قطع + 2 فنكر + لتر بيبسي)" data-price="32000">
+            <span class="badge new">توفير عائلي ضخم</span>
+            <img src="https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80" alt="عرض العائلة">
+            <h3>👑 عرض اللمة والعائلة</h3>
+            <p>4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي</p>
+            <div class="card-price-row">
+                <span>32,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">37,000 د.ع</small></span>
+                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+    </section>
 
     <!-- Menu Header & Search -->
     <section id="menu">
