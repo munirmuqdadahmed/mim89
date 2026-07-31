@@ -1029,3 +1029,38 @@ font-size:26px;
 }
 
 }
+/* شريط علوي ثابت */
+
+#navbar{
+
+position:fixed;
+
+top:0;
+
+right:0;
+
+left:0;
+
+z-index:9999;
+
+background:rgba(15,15,15,.92);
+
+backdrop-filter:blur(12px);
+
+transition:.35s;
+
+}
+
+#navbar.scrolled{
+
+padding:10px 8%;
+
+box-shadow:0 10px 30px rgba(0,0,0,.4);
+
+}
+
+body{
+
+padding-top:90px;
+
+}
