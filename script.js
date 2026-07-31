@@ -56,16 +56,16 @@ window.onclick = (e) => {
     if (e.target === cartModal) cartModal.classList.remove("open");
 };
 
-// أزرار التوصيل والاستلام
-const btnDelivery = document.getElementById("btnDelivery");
-const btnTakeaway = document.getElementById("btnTakeaway");
-const addressInput = document.getElementById("custAddress");
-const areaSelectorBox = document.getElementById("areaSelectorBox");
+// التبديل بين التوصيل والاستلام بالضغط المباشر
+document.addEventListener("click", function(e) {
+    const btnDelivery = e.target.closest("#btnDelivery");
+    const btnTakeaway = e.target.closest("#btnTakeaway");
+    const addressInput = document.getElementById("custAddress");
+    const areaSelectorBox = document.getElementById("areaSelectorBox");
 
-if (btnDelivery && btnTakeaway) {
-    btnDelivery.onclick = function() {
-        btnDelivery.classList.add("active");
-        btnTakeaway.classList.remove("active");
+    if (btnDelivery) {
+        document.getElementById("btnDelivery").classList.add("active");
+        document.getElementById("btnTakeaway").classList.remove("active");
         currentOrderType = "delivery";
         if (addressInput) {
             addressInput.style.display = "block";
@@ -73,11 +73,11 @@ if (btnDelivery && btnTakeaway) {
         }
         if (areaSelectorBox) areaSelectorBox.style.display = "block";
         updateCartUI();
-    };
+    }
 
-    btnTakeaway.onclick = function() {
-        btnTakeaway.classList.add("active");
-        btnDelivery.classList.remove("active");
+    if (btnTakeaway) {
+        document.getElementById("btnTakeaway").classList.add("active");
+        document.getElementById("btnDelivery").classList.remove("active");
         currentOrderType = "takeaway";
         if (addressInput) {
             addressInput.style.display = "none";
@@ -85,8 +85,8 @@ if (btnDelivery && btnTakeaway) {
         }
         if (areaSelectorBox) areaSelectorBox.style.display = "none";
         updateCartUI();
-    };
-}
+    }
+});
 
 // حساب سعر المنطقة
 const deliveryAreaSelect = document.getElementById("deliveryArea");
