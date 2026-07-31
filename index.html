@@ -30,7 +30,7 @@
         <span id="cartCount">0</span>
     </div>
 
-    <!-- Overlay لإغلاق القائمة الجانبية بالضغط في أي مكان -->
+    <!-- Overlay -->
     <div id="menuOverlay" class="menu-overlay"></div>
 
     <!-- Side Menu -->
@@ -48,7 +48,6 @@
     <header class="hero">
         <div class="overlay"></div>
 
-        <!-- Top Navigation Bar -->
         <nav class="top-nav">
             <div class="logo">
                 <h1>MIM89</h1>
@@ -73,7 +72,6 @@
             <a href="#menu" class="btn">عرض المنيو</a>
         </div>
 
-        <!-- Bottom Mobile Navigation -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -97,11 +95,10 @@
         </nav>
     </header>
 
-    <!-- قسم العروض الخاصة واليومية -->
+    <!-- العروض الخاصة -->
     <section id="offers" class="menu-section">
         <h2>🔥 العروض الخاصة واليومية</h2>
 
-        <!-- عرض 1 -->
         <div class="card offer-card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="10000">
             <span class="badge">وفر 2,000 د.ع</span>
             <img src="https://images.unsplash.com/photo-1594212699903-ec8a3eca50f6?auto=format&fit=crop&w=600&q=80" alt="عرض الفردي">
@@ -113,7 +110,6 @@
             </div>
         </div>
 
-        <!-- عرض 2 -->
         <div class="card offer-card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="10000">
             <span class="badge">الأكثر طلباً</span>
             <img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80" alt="عرض الشاورما">
@@ -125,7 +121,6 @@
             </div>
         </div>
 
-        <!-- عرض 3 -->
         <div class="card offer-card" data-name="عرض الثنائي (2 بركر كلاسيك + فنكر دبل + 2 بيبسي)" data-price="13000">
             <span class="badge">عرض لشخصين</span>
             <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80" alt="عرض الثنائي">
@@ -137,7 +132,6 @@
             </div>
         </div>
 
-        <!-- عرض 4 -->
         <div class="card offer-card" data-name="عرض العائلة واللمة (4 بركر + كنتاكي 4 قطع + 2 فنكر + لتر بيبسي)" data-price="32000">
             <span class="badge new">توفير عائلي ضخم</span>
             <img src="https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80" alt="عرض العائلة">
@@ -593,7 +587,7 @@
         </div>
     </section>
 
-    <!-- Cart Modal Box -->
+    <!-- Cart Modal Box (تصميم أنيق ومبسط جداً) -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <div class="cart-header">
@@ -612,37 +606,23 @@
                 </div>
                 
                 <div class="user-details">
-                    <input type="text" id="custName" placeholder="الاسم الكامل" required>
-
-                    <!-- خيار نوع الطلب (توصيل / استلام) -->
-                    <div class="order-type-selector">
-                        <label>نوع الطلب:</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="orderType" value="توصيل للمنزل" checked id="typeDelivery"> 🛵 توصيل</label>
-                            <label><input type="radio" name="orderType" value="استلام من المطعم" id="typeTakeaway"> 🛍️ استلام من المطعم</label>
-                        </div>
+                    <!-- خيار نوع الطلب الأنيق -->
+                    <div class="segmented-control">
+                        <button type="button" class="segment-btn active" data-type="delivery">🛵 توصيل</button>
+                        <button type="button" class="segment-btn" data-type="takeaway">🛍️ استلام من المطعم</button>
                     </div>
 
-                    <!-- خيار اختيار المنطقة لكلفة التوصيل -->
-                    <div class="order-type-selector" id="areaSelectorBox">
-                        <label for="deliveryArea">اختر المنطقة (لكلفة التوصيل):</label>
+                    <input type="text" id="custName" placeholder="الاسم الكامل" required>
+
+                    <!-- خيار المنطقة للتوصيل -->
+                    <div id="areaSelectorBox">
                         <select id="deliveryArea" class="area-select">
-                            <option value="0" data-name="القاهرة (توصيل مجاني)">القاهرة — مجاناً 🛵</option>
+                            <option value="0" data-name="القاهرة (توصيل مجاني)">منطقة القاهرة — مجاناً 🛵</option>
                             <option value="3000" data-name="باقي المناطق">باقي المناطق — 3,000 د.ع 🛵</option>
                         </select>
                     </div>
 
                     <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة" required>
-
-                    <!-- خيار طريقة الدفع -->
-                    <div class="order-type-selector">
-                        <label>طريقة الدفع:</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="payType" value="كاش عند الاستلام" checked> 💵 كاش</label>
-                            <label><input type="radio" name="payType" value="زين كاش / أونلاين"> 📲 زين كاش / أونلاين</label>
-                        </div>
-                    </div>
-
                     <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                 </div>
 
