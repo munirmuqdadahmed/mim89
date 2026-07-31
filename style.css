@@ -621,3 +621,28 @@ transition:.3s;
 box-shadow:0 0 20px rgba(255,152,0,.4);
 
 }
+html{
+
+scroll-padding-top:100px;
+
+}
+
+::-webkit-scrollbar{
+
+width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+background:#111;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+background:#ff9800;
+
+border-radius:30px;
+
+}
