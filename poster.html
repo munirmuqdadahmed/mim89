@@ -19,7 +19,7 @@
         .details { font-size: 13px; color: #ccc; line-height: 1.8; text-align: right; margin-bottom: 15px; padding: 0 5px; }
         .site-link-btn { display: block; background: #222; border: 1px solid #ff9f00; color: #ff9f00; text-decoration: none; padding: 8px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; font-size: 13px; direction: ltr; }
         .footer-info { border-top: 1px solid #333; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; text-align: right; font-size: 12px; }
-        .qr-code-img { width: 95px; height: 95px; border-radius: 10px; border: 2px solid #ff9f00; background: #fff; padding: 2px; object-fit: contain; }
+        .qr-code-img { width: 95px; height: 95px; border-radius: 10px; border: 2px solid #ff9f00; background: #fff; padding: 3px; display: block; }
     </style>
 </head>
 <body>
@@ -42,7 +42,6 @@
             <p>💥 <strong>نصف السعر (50%):</strong> على البركر 🍔، الريزو 🍚، والكنتاكي 🍗</p>
         </div>
 
-        <!-- رابط الموقع المباشر والخاص بالمطعم -->
         <a href="https://munirmuqdadahmed.github.io/mim89/" target="_blank" class="site-link-btn">
             🌐 munirmuqdadahmed.github.io/mim89
         </a>
@@ -55,8 +54,8 @@
             </div>
             
             <div>
-                <!-- صورة الـ QR المرفوعة في المستودع -->
-                <img src="Images/QR.jpeg" alt="MIM89 QR Code" class="qr-code-img">
+                <!-- توليد الـ QR التلقائي برابط موقع المطعم دون الاعتماد على صورة مرفوعة -->
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://munirmuqdadahmed.github.io/mim89/" alt="MIM89 QR Code" class="qr-code-img">
             </div>
         </div>
     </div>
