@@ -19,6 +19,18 @@
         .details { font-size: 13px; color: #ccc; line-height: 1.8; text-align: right; margin-bottom: 15px; padding: 0 5px; }
         .site-link-btn { display: block; background: #222; border: 1px solid #ff9f00; color: #ff9f00; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; font-size: 15px; direction: ltr; }
         .footer-info { border-top: 1px solid #333; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; text-align: right; font-size: 12px; }
+        
+        /* تثبيت ألوان وأحجام الأرقام لتظهر بصورة واضحة جداً */
+        .phone-number { 
+            color: #ff9f00 !important; 
+            text-decoration: none !important; 
+            font-size: 16px; 
+            font-weight: bold; 
+            direction: ltr; 
+            display: inline-block; 
+            margin: 2px 0;
+        }
+        
         .qr-code-img { width: 95px; height: 95px; border-radius: 10px; border: 2px solid #ff9f00; background: #fff; padding: 2px; display: block; }
     </style>
 </head>
@@ -42,20 +54,19 @@
             <p>💥 <strong>نصف السعر (50%):</strong> على البركر 🍔، الريزو 🍚، والكنتاكي 🍗</p>
         </div>
 
-        <!-- رابط موقع المطعم الرسمي المباشر -->
+        <!-- رابط الموقع المباشر -->
         <a href="https://mim89.com" target="_blank" class="site-link-btn">
             🌐 mim89.com
         </a>
 
         <div class="footer-info">
             <div>
-                <p>📞 07750008630</p>
-                <p>📞 07850008630</p>
-                <p style="color:#ff9f00; margin-top:2px;">امسح الرمز للطلب المباشر 📲</p>
+                <p>📞 <a href="tel:07750008630" class="phone-number">07750008630</a></p>
+                <p>📞 <a href="tel:07850008630" class="phone-number">07850008630</a></p>
+                <p style="color:#ffffff; margin-top:4px;">امسح الرمز للطلب المباشر 📲</p>
             </div>
             
             <div>
-                <!-- مولد الـ QR البرمجي المباشر لموقع mim89.com بضمان بعدم الانكسار -->
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://mim89.com" alt="MIM89 QR Code" class="qr-code-img">
             </div>
         </div>
