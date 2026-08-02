@@ -10,7 +10,7 @@
         body { background: #111; color: #fff; padding: 15px; max-width: 650px; margin: 0 auto; padding-bottom: 100px; }
         h1 { text-align: center; color: #ff9f00; margin: 15px 0 20px; font-size: 22px; font-weight: 900; }
         .login-box { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-top: 50px; }
-        input, textarea { width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; text-align: right; }
+        input, textarea { width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; text-align: right; }
         input[type="file"] { background: #2a2a2a; padding: 8px; border: 1px dashed #ff9f00; cursor: pointer; }
         button { width: 100%; padding: 12px; background: #ff9f00; color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 5px; }
         .editor-section { display: none; }
@@ -120,14 +120,50 @@
         }
     }
 
+    // دالة ضغط واقتصاص الصورة تلقائياً لحفظها بسلاسة
     function handleImage(input, index) {
         if (input.files && input.files[0]) {
+            const file = input.files[0];
             const reader = new FileReader();
-            reader.onload = function(e) {
-                currentItems[index].img = e.target.result;
-                document.getElementById(`preview-${index}`).src = e.target.result;
-            }
-            reader.readAsDataURL(input.files[0]);
+
+            reader.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const maxWidth = 500;
+                    const maxHeight = 300;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    currentItems[index].img = compressedBase64;
+                    document.getElementById(`preview-${index}`).src = compressedBase64;
+                };
+            };
+
+            reader.readAsDataURL(file);
         }
     }
 
