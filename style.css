@@ -117,7 +117,7 @@ a {
     display: block;
 }
 
-/* Side Menu - القائمة الجانبية السلسة */
+/* Side Menu - القائمة الجانبية مع التمرير السلس */
 .side-menu {
     position: fixed;
     top: 0;
@@ -591,7 +591,7 @@ select {
     font-size: 16px !important;
 }
 
-/* إخفاء التمرير الخارجي بحجم طبيعي عند فتح القوائم */
+/* منع تمرير الخلفية بشكل آمن عند فتح القائمة فقط */
 body.menu-open {
     overflow: hidden !important;
 }
