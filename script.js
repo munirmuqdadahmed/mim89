@@ -8,22 +8,32 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 300);
     }
 
-    // 2. القائمة الجانبية (Side Menu) مع تثبيت المينيو الخلفي
+    // 2. القائمة الجانبية (Side Menu) مع تثبيت المينيو الخلفي التام
     const menuBtn = document.getElementById("menuBtn");
     const sideMenu = document.getElementById("sideMenu");
     const menuOverlay = document.getElementById("menuOverlay");
+
+    function preventScroll(e) {
+        if (!sideMenu.contains(e.target)) {
+            e.preventDefault();
+        }
+    }
 
     if (menuBtn && sideMenu && menuOverlay) {
         menuBtn.addEventListener("click", () => {
             sideMenu.classList.add("active");
             menuOverlay.classList.add("active");
+            document.documentElement.classList.add("menu-open");
             document.body.classList.add("menu-open");
+            document.addEventListener("touchmove", preventScroll, { passive: false });
         });
 
         menuOverlay.addEventListener("click", () => {
             sideMenu.classList.remove("active");
             menuOverlay.classList.remove("active");
+            document.documentElement.classList.remove("menu-open");
             document.body.classList.remove("menu-open");
+            document.removeEventListener("touchmove", preventScroll);
         });
     }
 
@@ -51,7 +61,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const cartTotal = document.getElementById("cartTotal");
     const sendOrderBtn = document.getElementById("sendOrderBtn");
 
-    // فتح وإغلاق النافذة
     if (cartBtn && cartModal) {
         cartBtn.addEventListener("click", () => cartModal.style.display = "flex");
     }
@@ -59,7 +68,6 @@ document.addEventListener("DOMContentLoaded", function () {
         closeCart.addEventListener("click", () => cartModal.style.display = "none");
     }
 
-    // أزرار تحديد نوع الطلب (توصيل / استلام)
     const btnDelivery = document.getElementById("btnDelivery");
     const btnTakeaway = document.getElementById("btnTakeaway");
     let isDelivery = true;
@@ -80,7 +88,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // إضافة منتج عند الضغط على زر "إضافة"
     document.addEventListener("click", function (e) {
         if (e.target && (e.target.classList.contains("add-to-cart-btn") || e.target.closest(".add-to-cart-btn"))) {
             const btn = e.target.classList.contains("add-to-cart-btn") ? e.target : e.target.closest(".add-to-cart-btn");
@@ -106,7 +113,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // دالة فحص التوصيل المجاني للقاهرة
     function calculateDeliveryFee() {
         if (!isDelivery) return 0;
 
@@ -114,19 +120,17 @@ document.addEventListener("DOMContentLoaded", function () {
         const addressText = addressInput ? addressInput.value.trim().toLowerCase() : "";
 
         if (addressText.includes("القاهرة") || addressText.includes("قاهرة") || addressText.includes("القاهره")) {
-            return 0; // مجاني للقاهرة
+            return 0;
         } else {
-            return 3000; // باقي المناطق
+            return 3000;
         }
     }
 
-    // الاستماع أثناء كتابة العنوان
     const custAddressInput = document.getElementById("custAddress");
     if (custAddressInput) {
         custAddressInput.addEventListener("input", updateCartUI);
     }
 
-    // تحديث واجهة السلة
     function updateCartUI() {
         if (!cartItems) return;
 
@@ -187,7 +191,6 @@ document.addEventListener("DOMContentLoaded", function () {
         updateCartUI();
     };
 
-    // 5. إرسال الطلب للواتساب
     if (sendOrderBtn) {
         sendOrderBtn.addEventListener("click", function (e) {
             e.preventDefault();
@@ -240,7 +243,7 @@ document.addEventListener("DOMContentLoaded", function () {
             
             if (notes !== "لا يوجد") msg += `📝 *ملاحظات:* ${notes}\n`;
 
-            msg += `\n--- *تفاصيل الوجبات* ---\n`;
+            msg += `\n--- *تفاصيل الوجبات* -- me\n`;
             let subtotal = 0;
             cart.forEach(item => {
                 const itemTotal = item.price * item.qty;
