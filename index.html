@@ -12,7 +12,7 @@
         
         /* الهيدر والشعار */
         header { text-align: center; padding: 25px 0; background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%); border-bottom: 2px solid #ff9f00; margin-bottom: 20px; }
-        .logo h1 { font-size: 38px; color: #ff9f00; font-weight: 900; letter-spacing: 2px; }
+        .logo h1 { font-size: 38px; color: #ff9f00; font-weight: 900; letter-spacing: 2px; margin: 0; }
         .logo span { font-size: 13px; color: #aaa; letter-spacing: 4px; font-weight: bold; }
         
         /* بنر العرض */
@@ -32,11 +32,7 @@
         .item-desc { font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 10px; }
         .item-price { font-size: 18px; font-weight: 900; color: #ff9f00; margin-top: 5px; }
 
-        /* أزرار الأدمن */
-        #save-changes-btn { display: none; position: fixed; bottom: 20px; left: 20px; background-color: #ff9f00; color: #000; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,159,0,0.4); z-index: 1000; }
-
         footer { text-align: center; padding: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; margin-top: 40px; }
-        #admin-trigger { color: #222; font-size: 11px; cursor: pointer; user-select: none; }
     </style>
 </head>
 <body>
@@ -201,57 +197,11 @@
 
 </div>
 
-<button id="save-changes-btn" onclick="saveAdminChanges()">💾 حفظ التعديلات</button>
-
 <footer>
     <p>📍 بغداد - القاهرة - قرب صيدلية جوهرة الشفاء</p>
     <p>📞 07750008630 | 07850008630</p>
     <p style="margin-top: 8px;">© 2026 MIM89 FAST FOOD. جميع الحقوق محفوظة.</p>
-    <span id="admin-trigger" onclick="promptAdminLogin()">MIM</span>
 </footer>
-
-<script>
-    const ADMIN_PASSWORD = "MIM123";
-
-    function promptAdminLogin() {
-        const pass = prompt("أدخل كلمة مرور الأدمن للتعديل:");
-        if (pass === ADMIN_PASSWORD) {
-            enableEditMode();
-            alert("تم تفعيل وضع التعديل! اضغط الآن على أي اسم، سعر، أو وصف لتعديله المباشر.");
-        } else if (pass !== null) {
-            alert("كلمة المرور غير صحيحة.");
-        }
-    }
-
-    function enableEditMode() {
-        document.querySelectorAll('.item-name, .item-desc, .item-price, .category-title, .promo-banner').forEach(el => {
-            el.contentEditable = "true";
-            el.style.border = "1px dashed #ff9f00";
-            el.style.padding = "2px";
-        });
-        document.getElementById('save-changes-btn').style.display = 'block';
-    }
-
-    function saveAdminChanges() {
-        localStorage.setItem('mim89_full_html', document.body.innerHTML);
-        
-        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
-            el.contentEditable = "false";
-            el.style.border = "none";
-            el.style.padding = "0";
-        });
-        
-        document.getElementById('save-changes-btn').style.display = 'none';
-        alert("تم حفظ التعديلات بنجاح!");
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedHTML = localStorage.getItem('mim89_full_html');
-        if (savedHTML) {
-            document.body.innerHTML = savedHTML;
-        }
-    });
-</script>
 
 </body>
 </html>
