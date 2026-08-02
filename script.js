@@ -49,12 +49,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const cartTotal = document.getElementById("cartTotal");
     const sendOrderBtn = document.getElementById("sendOrderBtn");
 
-    // إخفاء صندوق الأقسام القديم
-    const areaSelectorBox = document.getElementById("areaSelectorBox");
-    if (areaSelectorBox) {
-        areaSelectorBox.style.display = "none";
-    }
-
     // فتح وإغلاق النافذة
     if (cartBtn && cartModal) {
         cartBtn.addEventListener("click", () => cartModal.style.display = "flex");
@@ -84,30 +78,33 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // إضافة منتج عند الضغط على زر "إضافة" في الكروت
-    document.querySelectorAll(".add-to-cart-btn").forEach(btn => {
-        btn.addEventListener("click", function () {
-            const card = this.closest(".card");
-            const name = card.getAttribute("data-name");
-            const price = parseInt(card.getAttribute("data-price"));
+    // إضافة منتج عند الضغط على زر "إضافة"
+    document.addEventListener("click", function (e) {
+        if (e.target && (e.target.classList.contains("add-to-cart-btn") || e.target.closest(".add-to-cart-btn"))) {
+            const btn = e.target.classList.contains("add-to-cart-btn") ? e.target : e.target.closest(".add-to-cart-btn");
+            const card = btn.closest(".card");
+            if (card) {
+                const name = card.getAttribute("data-name");
+                const price = parseInt(card.getAttribute("data-price"));
 
-            const existingItem = cart.find(item => item.name === name);
-            if (existingItem) {
-                existingItem.qty += 1;
-            } else {
-                cart.push({ name, price, qty: 1 });
+                const existingItem = cart.find(item => item.name === name);
+                if (existingItem) {
+                    existingItem.qty += 1;
+                } else {
+                    cart.push({ name, price, qty: 1 });
+                }
+
+                updateCartUI();
+                
+                btn.innerHTML = '<i class="fas fa-check"></i> تمت الإضافة';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة';
+                }, 1000);
             }
-
-            updateCartUI();
-            
-            this.innerHTML = '<i class="fas fa-check"></i> تمت الإضافة';
-            setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة';
-            }, 1000);
-        });
+        }
     });
 
-    // دالة فحص كلفة التوصيل تلقائياً حسب عنوان القاهرة
+    // دالة فحص التوصيل المجاني للقاهرة
     function calculateDeliveryFee() {
         if (!isDelivery) return 0;
 
@@ -115,19 +112,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const addressText = addressInput ? addressInput.value.trim().toLowerCase() : "";
 
         if (addressText.includes("القاهرة") || addressText.includes("قاهرة") || addressText.includes("القاهره")) {
-            return 0; // توصيل مجاني لمنطقة القاهرة
+            return 0; // مجاني للقاهرة
         } else {
-            return 3000; // باقي المناطق 3,000 د.ع
+            return 3000; // باقي المناطق
         }
     }
 
-    // الاستماع الفوري للكتابة في خانة العنوان وتحديث الحالة تلقائياً
+    // الاستماع أثناء كتابة العنوان
     const custAddressInput = document.getElementById("custAddress");
     if (custAddressInput) {
         custAddressInput.addEventListener("input", updateCartUI);
     }
 
-    // تحديث الواجهة والأسعار للسلة
+    // تحديث واجهة السلة
     function updateCartUI() {
         if (!cartItems) return;
 
@@ -163,7 +160,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         cartItems.innerHTML = itemsHTML;
 
-        // حساب التوصيل وإظهار عبارة التوصيل المجاني باللون الأخضر
         const deliveryFee = calculateDeliveryFee();
         const grandTotal = itemsSubtotal + deliveryFee;
 
@@ -189,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
         updateCartUI();
     };
 
-    // 5. إرسال الطلب للواتساب مع التحقق الإجباري
+    // 5. إرسال الطلب للواتساب
     if (sendOrderBtn) {
         sendOrderBtn.addEventListener("click", function (e) {
             e.preventDefault();
