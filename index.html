@@ -758,15 +758,41 @@
 
 </html>
 
-<script>
-    // كود احترافي يقرأ الأسعار المحدثة من لوحة التحكم الخاصة بك فقط
+<<script>
+    // سكربت ذكي يعرض كافة التعديلات والأصناف الجديدة التي تضيفها من اللوحة
     window.addEventListener('DOMContentLoaded', () => {
-        const savedPrices = JSON.parse(localStorage.getItem('mim89_custom_prices'));
-        if (savedPrices) {
-            // تحديث الأسعار تلقائياً إن وجدت
-            for (let id in savedPrices) {
-                const el = document.getElementById(id);
-                if (el) el.innerText = savedPrices[id];
+        const savedData = localStorage.getItem('mim89_full_menu_data');
+        if (savedData) {
+            const menuData = JSON.parse(savedData);
+            const container = document.querySelector('.container');
+            if (container && menuData.length > 0) {
+                container.innerHTML = '';
+                const categories = [...new Set(menuData.map(item => item.cat))];
+                
+                categories.forEach(cat => {
+                    const catTitle = document.createElement('div');
+                    catTitle.className = 'category-title';
+                    catTitle.innerText = cat;
+                    container.appendChild(catTitle);
+                    
+                    const grid = document.createElement('div');
+                    grid.className = 'menu-grid';
+                    
+                    menuData.filter(item => item.cat === cat).forEach(item => {
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'menu-item';
+                        itemEl.innerHTML = `
+                            <img src="${item.img}" alt="${item.name}" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+                            <div class="item-details">
+                                <h3 class="item-name">${item.name}</h3>
+                                <p class="item-desc">${item.desc}</p>
+                                <p class="item-price">${item.price}</p>
+                            </div>
+                        `;
+                        grid.appendChild(itemEl);
+                    });
+                    container.appendChild(grid);
+                });
             }
         }
     });
