@@ -49,6 +49,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const cartTotal = document.getElementById("cartTotal");
     const sendOrderBtn = document.getElementById("sendOrderBtn");
 
+    // إخفاء صندوق الأقسام القديم
+    const areaSelectorBox = document.getElementById("areaSelectorBox");
+    if (areaSelectorBox) {
+        areaSelectorBox.style.display = "none";
+    }
+
     // فتح وإغلاق النافذة
     if (cartBtn && cartModal) {
         cartBtn.addEventListener("click", () => cartModal.style.display = "flex");
@@ -60,7 +66,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // أزرار تحديد نوع الطلب (توصيل / استلام)
     const btnDelivery = document.getElementById("btnDelivery");
     const btnTakeaway = document.getElementById("btnTakeaway");
-    const areaSelectorBox = document.getElementById("areaSelectorBox");
     let isDelivery = true;
 
     if (btnDelivery && btnTakeaway) {
@@ -68,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function () {
             isDelivery = true;
             btnDelivery.classList.add("active");
             btnTakeaway.classList.remove("active");
-            if (areaSelectorBox) areaSelectorBox.style.display = "block";
             updateCartUI();
         });
 
@@ -76,7 +80,6 @@ document.addEventListener("DOMContentLoaded", function () {
             isDelivery = false;
             btnTakeaway.classList.add("active");
             btnDelivery.classList.remove("active");
-            if (areaSelectorBox) areaSelectorBox.style.display = "none";
             updateCartUI();
         });
     }
@@ -97,7 +100,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             updateCartUI();
             
-            // تأثير بصري بسيط للزر عند الإضافة
             this.innerHTML = '<i class="fas fa-check"></i> تمت الإضافة';
             setTimeout(() => {
                 this.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة';
@@ -105,7 +107,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // تحديث الواجهة للسلة
+    // دالة فحص كلفة التوصيل تلقائياً حسب عنوان القاهرة
+    function calculateDeliveryFee() {
+        if (!isDelivery) return 0;
+
+        const addressInput = document.getElementById("custAddress");
+        const addressText = addressInput ? addressInput.value.trim().toLowerCase() : "";
+
+        if (addressText.includes("القاهرة") || addressText.includes("قاهرة") || addressText.includes("القاهره")) {
+            return 0; // توصيل مجاني لمنطقة القاهرة
+        } else {
+            return 3000; // باقي المناطق 3,000 د.ع
+        }
+    }
+
+    // الاستماع الفوري للكتابة في خانة العنوان وتحديث الحالة تلقائياً
+    const custAddressInput = document.getElementById("custAddress");
+    if (custAddressInput) {
+        custAddressInput.addEventListener("input", updateCartUI);
+    }
+
+    // تحديث الواجهة والأسعار للسلة
     function updateCartUI() {
         if (!cartItems) return;
 
@@ -141,15 +163,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
         cartItems.innerHTML = itemsHTML;
 
-        // حساب رسوم التوصيل
-        let deliveryFee = 0;
-        const areaSelect = document.getElementById("deliveryArea");
-        if (isDelivery && areaSelect) {
-            deliveryFee = parseInt(areaSelect.value) || 0;
+        // حساب التوصيل وإظهار عبارة التوصيل المجاني باللون الأخضر
+        const deliveryFee = calculateDeliveryFee();
+        const grandTotal = itemsSubtotal + deliveryFee;
+
+        let totalText = grandTotal.toLocaleString() + " د.ع";
+        
+        if (isDelivery) {
+            const currentAddress = custAddressInput ? custAddressInput.value.trim() : "";
+            if (deliveryFee === 0 && currentAddress !== "") {
+                totalText += ` <span style="color: #25d366; font-size: 13px; font-weight: bold;">(التوصيل مجاني 🛵)</span>`;
+            } else if (deliveryFee > 0 && currentAddress !== "") {
+                totalText += ` <span style="color: #ff9f00; font-size: 12px;">(+ 3,000 توصيل 🛵)</span>`;
+            }
         }
 
-        const grandTotal = itemsSubtotal + deliveryFee;
-        if (cartTotal) cartTotal.innerText = grandTotal.toLocaleString() + " د.ع";
+        if (cartTotal) cartTotal.innerHTML = totalText;
     }
 
     window.changeQty = function (index, change) {
@@ -160,17 +189,13 @@ document.addEventListener("DOMContentLoaded", function () {
         updateCartUI();
     };
 
-    // تغيير كلفة التوصيل عند تغيير المنطقة
-    const deliveryArea = document.getElementById("deliveryArea");
-    if (deliveryArea) {
-        deliveryArea.addEventListener("change", updateCartUI);
-    }
-
-    // 5. إرسال الطلب للواتساب مع التحقق الإجباري من البيانات
+    // 5. إرسال الطلب للواتساب مع التحقق الإجباري
     if (sendOrderBtn) {
-        sendOrderBtn.addEventListener("click", function () {
+        sendOrderBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+
             if (cart.length === 0) {
-                alert("السلة فارغة! يرجى إضافة وجبة أولاً.");
+                alert("⚠️ السلة فارغة! يرجى إضافة وجبة أولاً.");
                 return;
             }
 
@@ -184,26 +209,26 @@ document.addEventListener("DOMContentLoaded", function () {
             const address = addressInput ? addressInput.value.trim() : "";
             const notes = notesInput && notesInput.value.trim() !== "" ? notesInput.value.trim() : "لا يوجد";
 
-            // فحص إدخال الاسم
             if (!name) {
-                alert("⚠️ يرجى كتابة الاسم الكامل أولاً لخدمتك بشكل أفضل!");
+                alert("⚠️ يرجى كتابة الاسم الكامل أولاً لتأكيد الطلب!");
                 if (nameInput) nameInput.focus();
                 return;
             }
 
-            // فحص إدخال الهاتف
             if (!phone) {
                 alert("⚠️ يرجى كتابة رقم الهاتف للتواصل والدليفري!");
                 if (phoneInput) phoneInput.focus();
                 return;
             }
 
-            // فحص إدخال العنوان عند التوصيل
             if (isDelivery && !address) {
-                alert("⚠️ يرجى كتابة العنوان التفصيلي / المنطقة لتوصيل الطلب إليك!");
+                alert("⚠️ يرجى كتابة العنوان التفصيلي / المنطقة لتوصيل الطلب!");
                 if (addressInput) addressInput.focus();
                 return;
             }
+
+            const deliveryFee = calculateDeliveryFee();
+            const isFreeDelivery = (deliveryFee === 0 && isDelivery);
 
             let msg = `*طلب جديد - MIM89 FAST FOOD* 🍔\n\n`;
             msg += `👤 *الاسم:* ${name}\n`;
@@ -211,10 +236,8 @@ document.addEventListener("DOMContentLoaded", function () {
             msg += `🛵 *نوع الطلب:* ${isDelivery ? "توصيل للمنزل" : "استلام من المطعم"}\n`;
             
             if (isDelivery) {
-                const areaSelect = document.getElementById("deliveryArea");
-                const areaName = areaSelect.options[areaSelect.selectedIndex].getAttribute("data-name");
-                msg += `📍 *المنطقة:* ${areaName}\n`;
-                msg += `🏠 *العنوان:* ${address}\n`;
+                msg += `🏠 *العنوان والمنطقة:* ${address}\n`;
+                msg += `🛵 *حالة التوصيل:* ${isFreeDelivery ? "مجاني (منطقة القاهرة)" : "3,000 د.ع (باقي المناطق)"}\n`;
             }
             
             if (notes !== "لا يوجد") msg += `📝 *ملاحظات:* ${notes}\n`;
@@ -227,18 +250,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 msg += `• ${item.name} (${item.qty}x) = ${itemTotal.toLocaleString()} د.ع\n`;
             });
 
-            let deliveryFee = 0;
-            if (isDelivery) {
-                const areaSelect = document.getElementById("deliveryArea");
-                deliveryFee = parseInt(areaSelect.value) || 0;
-            }
-
-            msg += `\n💵 *المجموع:* ${subtotal.toLocaleString()} د.ع`;
-            if (isDelivery) msg += `\n🛵 *التوصيل:* ${deliveryFee.toLocaleString()} د.ع`;
-            msg += `\n💰 *الإجمالي الكلي:* ${(subtotal + deliveryFee).toLocaleString()} د.ع`;
+            msg += `\n💵 *مجموع الوجبات:* ${subtotal.toLocaleString()} د.ع`;
+            if (isDelivery) msg += `\n🛵 *كلفة التوصيل:* ${isFreeDelivery ? "مجاناً" : "3,000 د.ع"}`;
+            msg += `\n💰 *الإجمالي الكلي:* ${(subtotal + (isDelivery ? deliveryFee : 0)).toLocaleString()} د.ع`;
 
             const whatsappNumber = "9647750008630";
-            window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+            window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
         });
     }
 });
