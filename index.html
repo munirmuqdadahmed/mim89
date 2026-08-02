@@ -15,7 +15,7 @@
         .logo h1 { font-size: 38px; color: #ff9f00; font-weight: 900; letter-spacing: 2px; }
         .logo span { font-size: 13px; color: #aaa; letter-spacing: 4px; font-weight: bold; }
         
-        /* بنر العرض الاستثنائي */
+        /* بنر العرض */
         .promo-banner { background-color: #e63946; color: #fff; text-align: center; padding: 10px; font-weight: bold; font-size: 14px; margin-bottom: 15px; border-radius: 8px; margin-left: 15px; margin-right: 15px; }
 
         /* الأقسام والمينيو */
@@ -31,15 +31,9 @@
         .item-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 5px; }
         .item-desc { font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 10px; }
         .item-price { font-size: 18px; font-weight: 900; color: #ff9f00; margin-top: 5px; }
-        
-        /* عناصر لوحة التحكم خفية للأدمن */
-        .admin-controls { display: none; position: absolute; top: 10px; left: 10px; gap: 5px; z-index: 10; }
-        .admin-btn { background: rgba(0,0,0,0.8); border: 1px solid #ff9f00; color: #ff9f00; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-        .edit-input { background: #fff; color: #000; border: 1px solid #ff9f00; padding: 5px; font-size: 14px; width: 100%; margin-bottom: 5px; display: none; border-radius: 5px; }
-        .file-input { display: none; }
 
+        /* أزرار الأدمن */
         #save-changes-btn { display: none; position: fixed; bottom: 20px; left: 20px; background-color: #ff9f00; color: #000; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,159,0,0.4); z-index: 1000; }
-        #add-item-btn { display: none; background-color: #222; border: 2px solid #ff9f00; color: #ff9f00; padding: 10px 20px; border-radius: 10px; font-weight: bold; margin: 20px auto; cursor: pointer; text-align: center; width: 220px; }
 
         footer { text-align: center; padding: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; margin-top: 40px; }
         #admin-trigger { color: #222; font-size: 11px; cursor: pointer; user-select: none; }
@@ -59,11 +53,152 @@
 </div>
 
 <div class="container">
-    <div id="menu-container">
-        <!-- يتم تحميل المينيو الأصلي بالكامل برمجياً -->
-    </div>
     
-    <button id="add-item-btn" onclick="addNewItem()">➕ إضافة وجبة جديدة</button>
+    <!-- قسم الشاورما -->
+    <div class="category-title">قسم الشاورما 🌯</div>
+    <div class="menu-grid">
+        <div class="menu-item">
+            <img src="Images/shawarma_chicken.jpg" alt="شاورما صاج دجاج" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">شاورما صاج دجاج (عادي)</h3>
+                <p class="item-desc">ثومية، مخلل، خبز صاج، بطاطا</p>
+                <p class="item-price">4,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/shawarma_chicken_double.jpg" alt="شاورما صاج دجاج دبل" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">شاورما صاج دجاج (دبل)</h3>
+                <p class="item-desc">ثومية مضاعفة، مخلل، صاج دبل، بطاطا</p>
+                <p class="item-price">6,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/shawarma_beef.jpg" alt="شاورما صاج لحم" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">شاورما صاج لحم (عادي)</h3>
+                <p class="item-desc">عمبة عراقية، طماطة، بصل، بقدونس</p>
+                <p class="item-price">5,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/shawarma_beef_double.jpg" alt="شاورما صاج لحم دبل" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">شاورما صاج لحم (دبل)</h3>
+                <p class="item-desc">عمبة، طماطة، بصل، وجبة دبل</p>
+                <p class="item-price">7,500 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/shawarma_plate.jpg" alt="صحن شاورما مشكل" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">صحن شاورما مشكل MIM89</h3>
+                <p class="item-desc">لحم ودجاج، بطاطا، ثومية، عمبة، خبز صاج</p>
+                <p class="item-price">10,000 د.ع</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم البركر -->
+    <div class="category-title">قسم البركر 🍔</div>
+    <div class="menu-grid">
+        <div class="menu-item">
+            <img src="Images/burger_single.jpg" alt="بركر لحم سنجل" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">بركر لحم MIM89 (سنجل)</h3>
+                <p class="item-desc">شريحة لحم صافي، جبنة شيدر، صوص MIM الخاص، خضار</p>
+                <p class="item-price">5,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/burger_double.jpg" alt="بركر لحم دبل" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">بركر لحم MIM89 (دبل)</h3>
+                <p class="item-desc">شريحتين لحم، دبل جبن شيدر، صوص خاص، بطاطا</p>
+                <p class="item-price">7,500 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/burger_crispy.jpg" alt="بركر دجاج كرسبي" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">بركر دجاج كرسبي</h3>
+                <p class="item-desc">صدر دجاج مقرمش، جبن، خس، صوص المايونيز الحار</p>
+                <p class="item-price">5,500 د.ع</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم الريزو -->
+    <div class="category-title">أطباق الريزو 🍚</div>
+    <div class="menu-grid">
+        <div class="menu-item">
+            <img src="Images/rizo_chicken.jpg" alt="طبق ريزو دجاج" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">طبق ريزو دجاج عادي</h3>
+                <p class="item-desc">أرز ريزو مبهر، قطع دجاج كرسبي، صوص ريزو خاص</p>
+                <p class="item-price">5,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/rizo_spicy.jpg" alt="طبق ريزو حار" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">طبق ريزو MIM89 حار (سبايسي)</h3>
+                <p class="item-desc">أرز ريزو، قطع دجاج حارة، صوص سبايسي نار</p>
+                <p class="item-price">5,500 د.ع</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم الكنتاكي -->
+    <div class="category-title">الكنتاكي والوجبات المقرمشة 🍗</div>
+    <div class="menu-grid">
+        <div class="menu-item">
+            <img src="Images/kentucky_3.jpg" alt="وجبة كنتاكي 3 قطع" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">وجبة كنتاكي (3 قطع)</h3>
+                <p class="item-desc">3 قطع دجاج مقرمش، بطاطا، ثومية، خبز، كولسلو</p>
+                <p class="item-price">7,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/strips.jpg" alt="وجبة ستربس" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">وجبة ستربس دجاج (4 قطع)</h3>
+                <p class="item-desc">4 أصابع ستربس مقرمشة، بطاطا، صوص ثومية</p>
+                <p class="item-price">6,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/kentucky_family.jpg" alt="وجبة عائلية كنتاكي" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">وجبة عائلية كنتاكي (8 قطع)</h3>
+                <p class="item-desc">8 قطع دجاج، بطاطا حجم عائلي، 3 ثومية، كولسلو، لتر بيبسي</p>
+                <p class="item-price">18,000 د.ع</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- المقبلات والمشروبات -->
+    <div class="category-title">المقبلات والمشروبات 🍟🥤</div>
+    <div class="menu-grid">
+        <div class="menu-item">
+            <img src="Images/fries.jpg" alt="بطاطا مقلية" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">باكيت بطاطا مقلية (فينجر)</h3>
+                <p class="item-desc">بطاطا مقرمشة ذهبية مع صوص الجبن</p>
+                <p class="item-price">2,000 د.ع</p>
+            </div>
+        </div>
+        <div class="menu-item">
+            <img src="Images/drinks.jpg" alt="مشروبات غازية" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+            <div class="item-details">
+                <h3 class="item-name">مشروبات غازية</h3>
+                <p class="item-desc">بيبسي، سفن آب، ميرندا (330 مل)</p>
+                <p class="item-price">1,000 د.ع</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <button id="save-changes-btn" onclick="saveAdminChanges()">💾 حفظ التعديلات</button>
@@ -76,166 +211,46 @@
 </footer>
 
 <script>
-    const ADMIN_PASSWORD = "MIM123"; 
-
-    // المينيو القديم الكامل بكافة أصناف المطعم
-    const originalMenu = [
-        // قسم الشاورما
-        { id: 1, category: "قسم الشاورما 🌯", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "4,000 د.ع", img: "Images/shawarma_chicken.jpg" },
-        { id: 2, category: "قسم الشاورما 🌯", name: "شاورما صاج دجاج (دبل)", desc: "ثومية مضاعفة، مخلل، صاج دبل، بطاطا", price: "6,000 د.ع", img: "Images/shawarma_chicken_double.jpg" },
-        { id: 3, category: "قسم الشاورما 🌯", name: "شاورما صاج لحم (عادي)", desc: "عمبة عراقية، طماطة، بصل، بقدونس", price: "5,000 د.ع", img: "Images/shawarma_beef.jpg" },
-        { id: 4, category: "قسم الشاورما 🌯", name: "شاورما صاج لحم (دبل)", desc: "عمبة، طماطة، بصل، وجبة دبل", price: "7,500 د.ع", img: "Images/shawarma_beef_double.jpg" },
-        { id: 5, category: "قسم الشاورما 🌯", name: "صحن شاورما مشكل MIM89", desc: "لحم ودجاج، بطاطا، ثومية، عمبة، خبز صاج", price: "10,000 د.ع", img: "Images/shawarma_plate.jpg" },
-
-        // قسم البركر
-        { id: 6, category: "قسم البركر 🍔", name: "بركر لحم MIM89 (سنجل)", desc: "شريحة لحم صافي، جبنة شيدر، صوص MIM الخاص، خضار", price: "5,000 د.ع", img: "Images/burger_single.jpg" },
-        { id: 7, category: "قسم البركر 🍔", name: "بركر لحم MIM89 (دبل)", desc: "شريحتين لحم، دبل جبن شيدر، صوص خاص، بطاطا", price: "7,500 د.ع", img: "Images/burger_double.jpg" },
-        { id: 8, category: "قسم البركر 🍔", name: "بركر دجاج كرسبي", desc: "صدر دجاج مقرمش، جبن، خس، صوص المايونيز الحار", price: "5,500 د.ع", img: "Images/burger_crispy.jpg" },
-
-        // قسم الريزو
-        { id: 9, category: "أطباق الريزو 🍚", name: "طبق ريزو دجاج عادي", desc: "أرز ريزو مبهر، قطع دجاج كرسبي، صوص ريزو خاص", price: "5,000 د.ع", img: "Images/rizo_chicken.jpg" },
-        { id: 10, category: "أطباق الريزو 🍚", name: "طبق ريزو MIM89 حار (سبايسي)", desc: "أرز ريزو، قطع دجاج حارة، صوص سبايسي نار", price: "5,500 د.ع", img: "Images/rizo_spicy.jpg" },
-
-        // قسم الكنتاكي والوجبات المقرمشة
-        { id: 11, category: "الكنتاكي والوجبات المقرمشة 🍗", name: "وجبة كنتاكي (3 قطع)", desc: "3 قطع دجاج مقرمش، بطاطا، ثومية، خبز، كولسلو", price: "7,000 د.ع", img: "Images/kentucky_3.jpg" },
-        { id: 12, category: "الكنتاكي والوجبات المقرمشة 🍗", name: "وجبة ستربس دجاج (4 قطع)", desc: "4 أصابع ستربس مقرمشة، بطاطا، صوص ثومية", price: "6,000 د.ع", img: "Images/strips.jpg" },
-        { id: 13, category: "الكنتاكي والوجبات المقرمشة 🍗", name: "وجبة عائلية كنتاكي (8 قطع)", desc: "8 قطع دجاج، بطاطا حجم عائلي، 3 ثومية، كولسلو، لتر بيبسي", price: "18,000 د.ع", img: "Images/kentucky_family.jpg" },
-
-        // المقبلات والمشروبات
-        { id: 14, category: "المقبلات والمشروبات 🍟🥤", name: "باكيت بطاطا مقلية (فينجر)", desc: "بطاطا مقرمشة ذهبية مع صوص الجبن", price: "2,000 د.ع", img: "Images/fries.jpg" },
-        { id: 15, category: "المقبلات والمشروبات 🍟🥤", name: "مشروبات غازية", desc: "بيبسي، سفن آب، ميرندا (330 مل)", price: "1,000 د.ع", img: "Images/drinks.jpg" }
-    ];
-
-    let isAdminMode = false;
-    // تحميل التعديلات المحفوظة أو إرجاع المينيو الأصلي الكامل
-    let menuData = JSON.parse(localStorage.getItem('mim89_menu_data')) || originalMenu;
-
-    function renderMenu() {
-        const container = document.getElementById('menu-container');
-        container.innerHTML = '';
-        
-        const categories = [...new Set(menuData.map(item => item.category))];
-        
-        categories.forEach(category => {
-            const catTitle = document.createElement('div');
-            catTitle.className = 'category-title';
-            catTitle.innerText = category;
-            container.appendChild(catTitle);
-            
-            const grid = document.createElement('div');
-            grid.className = 'menu-grid';
-            
-            const itemsInCategory = menuData.filter(item => item.category === category);
-            
-            itemsInCategory.forEach(item => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'menu-item';
-                itemEl.id = `item-${item.id}`;
-                itemEl.innerHTML = `
-                    <div class="admin-controls" style="${isAdminMode ? 'display: flex;' : ''}">
-                        <button class="admin-btn" onclick="deleteItem(${item.id})">🗑️ حذف</button>
-                        <button class="admin-btn" onclick="triggerFile('${item.id}')">📷 تغيير صورة</button>
-                    </div>
-                    <input type="file" id="file-${item.id}" class="file-input" accept="image/*" onchange="handleFile(this, ${item.id})">
-                    <img src="${item.img}" alt="${item.name}" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
-                    <div class="item-details">
-                        <h3 class="item-name view-mode">${item.name}</h3>
-                        <p class="item-desc view-mode">${item.desc}</p>
-                        <p class="item-price view-mode">${item.price}</p>
-                        
-                        <input type="text" value="${item.name}" class="edit-mode edit-input name-input" placeholder="اسم الوجبة">
-                        <textarea class="edit-mode edit-input desc-input" placeholder="الوصف">${item.desc}</textarea>
-                        <input type="text" value="${item.price}" class="edit-mode edit-input price-input" placeholder="السعر (مثال: 5,000 د.ع)">
-                    </div>
-                `;
-                grid.appendChild(itemEl);
-            });
-            container.appendChild(grid);
-        });
-        
-        toggleAdminElements();
-    }
-
-    function toggleAdminElements() {
-        document.getElementById('save-changes-btn').style.display = isAdminMode ? 'block' : 'none';
-        document.getElementById('add-item-btn').style.display = isAdminMode ? 'block' : 'none';
-        
-        const controls = document.querySelectorAll('.admin-controls');
-        const views = document.querySelectorAll('.view-mode');
-        const edits = document.querySelectorAll('.edit-mode');
-        
-        controls.forEach(el => el.style.display = isAdminMode ? 'flex' : 'none');
-        views.forEach(el => el.style.display = isAdminMode ? 'none' : 'block');
-        edits.forEach(el => el.style.display = isAdminMode ? 'block' : 'none');
-    }
+    const ADMIN_PASSWORD = "MIM123";
 
     function promptAdminLogin() {
         const pass = prompt("أدخل كلمة مرور الأدمن للتعديل:");
         if (pass === ADMIN_PASSWORD) {
-            isAdminMode = true;
-            renderMenu();
-            alert("مرحباً بك في لوحة التحكم! يمكنك الآن تعديل الأسعار، الوجبات، والصور مباشرة.");
-        } else {
+            enableEditMode();
+            alert("تم تفعيل وضع التعديل! اضغط الآن على أي اسم، سعر، أو وصف لتعديله المباشر.");
+        } else if (pass !== null) {
             alert("كلمة المرور غير صحيحة.");
         }
     }
 
+    function enableEditMode() {
+        document.querySelectorAll('.item-name, .item-desc, .item-price, .category-title, .promo-banner').forEach(el => {
+            el.contentEditable = "true";
+            el.style.border = "1px dashed #ff9f00";
+            el.style.padding = "2px";
+        });
+        document.getElementById('save-changes-btn').style.display = 'block';
+    }
+
     function saveAdminChanges() {
-        menuData = menuData.map(item => {
-            const itemEl = document.getElementById(`item-${item.id}`);
-            if (itemEl) {
-                return {
-                    ...item,
-                    name: itemEl.querySelector('.name-input').value,
-                    desc: itemEl.querySelector('.desc-input').value,
-                    price: itemEl.querySelector('.price-input').value
-                };
-            }
-            return item;
+        localStorage.setItem('mim89_full_html', document.body.innerHTML);
+        
+        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            el.contentEditable = "false";
+            el.style.border = "none";
+            el.style.padding = "0";
         });
         
-        localStorage.setItem('mim89_menu_data', JSON.stringify(menuData));
-        isAdminMode = false;
-        renderMenu();
-        alert("تم حفظ جميع التعديلات بنجاح وستظهر للزبائن بالطريقة الجديدة!");
+        document.getElementById('save-changes-btn').style.display = 'none';
+        alert("تم حفظ التعديلات بنجاح!");
     }
 
-    function addNewItem() {
-        const id = Date.now();
-        menuData.push({ id: id, category: "قسم جديد 🍔", name: "اسم الوجبة الجديد", desc: "وصف المكونات...", price: "5,000 د.ع", img: "Images/default.jpg" });
-        renderMenu();
-        document.getElementById(`item-${id}`).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function deleteItem(id) {
-        if (confirm("هل تريد حذف هذه الوجبة من المينيو؟")) {
-            menuData = menuData.filter(item => item.id !== id);
-            renderMenu();
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedHTML = localStorage.getItem('mim89_full_html');
+        if (savedHTML) {
+            document.body.innerHTML = savedHTML;
         }
-    }
-
-    function triggerFile(id) {
-        document.getElementById(`file-${id}`).click();
-    }
-    
-    function handleFile(input, id) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById(`item-${id}`).querySelector('.item-img').src = e.target.result;
-                menuData = menuData.map(item => {
-                    if (item.id === id) {
-                        return { ...item, img: e.target.result };
-                    }
-                    return item;
-                });
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    // تشغيل المينيو عند التحميل
-    renderMenu();
+    });
 </script>
 
 </body>
