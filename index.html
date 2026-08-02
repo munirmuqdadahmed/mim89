@@ -1,759 +1,246 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 | Fast Food</title>
-    <meta name="description" content="MIM89 Fast Food">
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background-color: #111; color: #fff; padding-bottom: 80px; }
+        a { text-decoration: none; color: inherit; }
+        
+        /* الهيدر والشعار */
+        header { text-align: center; padding: 25px 0; background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%); border-bottom: 2px solid #ff9f00; margin-bottom: 20px; }
+        .logo h1 { font-size: 38px; color: #ff9f00; font-weight: 900; letter-spacing: 2px; }
+        .logo span { font-size: 13px; color: #aaa; letter-spacing: 4px; font-weight: bold; }
+        
+        /* التنبيه البنري (اختياري) */
+        .promo-banner { background-color: #e63946; color: #fff; text-align: center; padding: 8px; font-weight: bold; font-size: 14px; margin-bottom: 15px; }
 
-    <link rel="stylesheet" href="style.css">
+        /* الأقسام والمينيو */
+        .container { max-width: 800px; margin: 0 auto; padding: 0 15px; }
+        .category-title { color: #ff9f00; font-size: 22px; font-weight: 700; border-right: 4px solid #ff9f00; padding-right: 10px; margin: 25px 0 15px; text-align: right; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        
+        /* كارت الوجبة */
+        .menu-item { background-color: #1a1a1a; border-radius: 15px; overflow: hidden; border: 1px solid #333; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .menu-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(255,159,0,0.15); }
+        .item-img { width: 100%; height: 180px; object-fit: contain; background-color: #222; border-bottom: 1px solid #333; }
+        .item-details { padding: 15px; text-align: right; }
+        .item-name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .item-desc { font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 10px; height: 40px; overflow: hidden; }
+        .item-price { font-size: 18px; font-weight: 900; color: #ff9f00; }
+        
+        /* أزرار وضع الأدمن - مخفية تلقائياً */
+        .admin-controls { display: none; position: absolute; top: 10px; left: 10px; gap: 5px; z-index: 10; }
+        .admin-btn { background: rgba(0,0,0,0.7); border: 1px solid #ff9f00; color: #ff9f00; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .edit-input { background: #fff; color: #000; border: 1px solid #ff9f00; padding: 3px; font-size: 14px; width: 100%; margin-bottom: 5px; display: none; }
+        .file-input { display: none; }
 
-    <!-- Fonts & Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+        /* زر حفظ التعديلات للأدمن - مخفي تلقائياً */
+        #save-changes-btn { display: none; position: fixed; bottom: 20px; left: 20px; background-color: #ff9f00; color: #000; border: none; padding: 12px 25px; border-radius: 50px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,159,0,0.4); z-index: 1000; }
+        #add-item-btn { display: none; background-color: #222; border: 2px solid #ff9f00; color: #ff9f00; padding: 10px 20px; border-radius: 10px; font-weight: bold; margin: 20px auto; cursor: pointer; text-align: center; max-width: 200px; }
+
+        /* تذييل الصفحة */
+        footer { text-align: center; padding: 20px; font-size: 12px; color: #666; border-top: 1px solid #333; margin-top: 40px; }
+        /* زر الأدمن الخفي */
+        #admin-trigger { color: #222; font-size: 10px; cursor: pointer; user-select: none; }
+
+    </style>
 </head>
-
 <body>
 
-    <!-- Loader -->
-    <div id="loader">
-        <div class="spinner"></div>
-        <h2>MIM89</h2>
+<header>
+    <div class="logo">
+        <h1>MIM89</h1>
+        <span>FAST FOOD</span>
     </div>
+</header>
 
-    <!-- Floating Cart Button -->
-    <div id="cartBtn" class="cart-btn">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cartCount">0</span>
+<div class="promo-banner">
+    🎁 عرض اليوم الأول: لفة شاورما مجاناً + خصم 50% على المينيو! 🔥
+</div>
+
+<div class="container">
+    <div id="menu-container">
+        <!-- سيتم توليد المينيو برمجياً هنا -->
     </div>
+    
+    <!-- أزرار تحكم للأدمن - مخفية -->
+    <button id="add-item-btn" onclick="addNewItem()">➕ إضافة وجبة جديدة</button>
+</div>
 
-    <!-- Overlay -->
-    <div id="menuOverlay" class="menu-overlay"></div>
+<!-- زر حفظ التعديلات للأدمن - مخفي -->
+<button id="save-changes-btn" onclick="saveAdminChanges()">💾 حفظ كافة التعديلات</button>
 
-    <!-- Side Menu -->
-    <div class="side-menu" id="sideMenu">
-        <a href="tel:07750008630">📞 07750008630</a>
-        <a href="tel:07850008630">📞 07850008630</a>
-        <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
-        <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
-        <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 انستغرام</a>
-        <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 فيسبوك</a>
-        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
-    </div>
+<footer>
+    <p>© 2026 MIM89 FAST FOOD. كافة الحقوق محفوظة.</p>
+    <!-- زر خفي للدخول للأدمن -->
+    <span id="admin-trigger" onclick="promptAdminLogin()">MIM</span>
+</footer>
 
-    <!-- Header & Main Nav -->
-    <header class="hero">
-        <div class="overlay"></div>
+<script>
+    // كلمة المرور الافتراضية (غيّرها لشيء قوي!)
+    const ADMIN_PASSWORD = "MIM123"; 
+    
+    // المينيو الافتراضي الأولي
+    let defaultMenu = [
+        { id: 1, category: "شاورما صاج", name: "لفة شاورما دجاج (كبير)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "5000 د.ع", img: "Images/shawarma.jpg" },
+        { id: 2, category: "شاورما صاج", name: "لفة شاورما لحم (دبل)", desc: "عمبة، طماطة، بصل، خبز صاج، بطاطا", price: "7000 د.ع", img: "Images/shawarma_beef.jpg" },
+        { id: 3, category: "بركر MIM89", name: "بركر لحم دبل شيدر", desc: "قطعتين لحم 89 خاص، جبنة شيدر، صوص MIM", price: "8000 د.ع", img: "Images/burger_cheddar.jpg" },
+        { id: 4, category: "الريزو", name: "طبق ريزو MIM89 خاص", desc: "تمن ريزو، دجاج ستربس، صوص حار/بارد", price: "6000 د.ع", img: "Images/rizo.jpg" }
+    ];
 
-        <nav class="top-nav">
-            <div class="logo">
-                <h1>MIM89</h1>
-                <span>FAST FOOD</span>
-            </div>
-            <ul>
-                <li><a href="#">الرئيسية</a></li>
-                <li><a href="#offers">العروض 🔥</a></li>
-                <li><a href="#burger">البركر</a></li>
-                <li><a href="#fajita">الفاهيتا</a></li>
-                <li><a href="#shawarma">الشاورما</a></li>
-                <li><a href="#rizo">الريزو</a></li>
-                <li><a href="#kentucky">الكنتاكي</a></li>
-                <li><a href="#appetizers">المقبلات والفنكر</a></li>
-                <li><a href="#drinks">المشروبات</a></li>
-                <li><a href="#contact">تواصل معنا</a></li>
-            </ul>
-        </nav>
+    // وضع الأدمن الحالي
+    let isAdminMode = false;
+    // تحميل المينيو المحفوظ محلياً أو استخدام الافتراضي
+    let menuData = JSON.parse(localStorage.getItem('mim89_menu_data')) || defaultMenu;
 
-        <div class="hero-content">
-            <h2>MIM89 FAST FOOD</h2>
-            <p>كل الطعم... في مكان واحد</p>
-            <a href="#offers" class="btn">عرض المنيو</a>
-        </div>
-
-        <nav class="bottom-nav">
-            <a href="#">
-                <i class="fas fa-house"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="#offers">
-                <i class="fas fa-fire"></i>
-                <span>العروض</span>
-            </a>
-            <a href="#offers" class="center-btn">
-                <i class="fas fa-utensils"></i>
-            </a>
-            <a href="#contact">
-                <i class="fas fa-location-dot"></i>
-                <span>الموقع</span>
-            </a>
-            <a href="javascript:void(0);" id="menuBtn">
-                <i class="fas fa-bars"></i>
-                <span>المزيد</span>
-            </a>
-        </nav>
-    </header>
-
-    <section class="search-box">
-        <input type="text" id="search" placeholder="ابحث عن أي صنف...">
-    </section>
-
-    <!-- العروض الخاصة -->
-    <section id="offers" class="menu-section">
-        <h2>🔥 العروض الخاصة واليومية</h2>
-
-        <div class="card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="5500">
-            <span class="badge">وفر 2,000 د.ع</span>
-            <img src="https://foodish-api.com/images/burger/burger2.jpg" alt="عرض الفردي">
-            <h3>🔥 عرض الفردي المميز</h3>
-            <p>بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">7,500 د.ع</small></span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="8500">
-            <span class="badge">الأكثر طلباً</span>
-            <img src="https://foodish-api.com/images/samosa/samosa1.jpg" alt="عرض الشاورما">
-            <h3>🌯 عرض ميكس الشاورما</h3>
-            <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
-            <div class="card-price-row">
-                <span>8,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">11,000 د.ع</small></span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="عرض الثنائي (2 بركر كلاسيك + فنكر دبل + 2 بيبسي)" data-price="10500">
-            <span class="badge">عرض لشخصين</span>
-            <img src="https://foodish-api.com/images/burger/burger5.jpg" alt="عرض الثنائي">
-            <h3>🍔🍔 عرض الثنائي (2 بركر)</h3>
-            <p>2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي</p>
-            <div class="card-price-row">
-                <span>10,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">14,500 د.ع</small></span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="عرض العائلة واللمة (4 بركر + كنتاكي 4 قطع + 2 فنكر + لتر بيبسي)" data-price="28000">
-            <span class="badge new">توفير عائلي ضخم</span>
-            <img src="https://foodish-api.com/images/burger/burger10.jpg" alt="عرض العائلة">
-            <h3>👑 عرض اللمة والعائلة</h3>
-            <p>4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي</p>
-            <div class="card-price-row">
-                <span>28,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">32,000 د.ع</small></span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 1. قسم البركر -->
-    <section id="burger" class="menu-section">
-        <h2>🍔 قسم البركر</h2>
+    // دالة لتوليد المينيو وعرضه في الصفحة
+    function renderMenu() {
+        const container = document.getElementById('menu-container');
+        container.innerHTML = '';
         
-        <div class="card" data-name="بركر كلاسيك لحم" data-price="4000">
-            <img src="https://foodish-api.com/images/burger/burger1.jpg" alt="بركر كلاسيك">
-            <h3>بركر كلاسيك (لحم)</h3>
-            <p>لحم طازج مع الصوص الخاص والخضار مع فنكر</p>
-            <div class="card-price-row">
-                <span>4,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر الجبن لحم" data-price="5000">
-            <img src="https://foodish-api.com/images/burger/burger3.jpg" alt="بركر الجبن">
-            <h3>بركر الجبن (لحم)</h3>
-            <p>شريحة لحم غنية بجبنة الشيدر الذائبة مع فنكر</p>
-            <div class="card-price-row">
-                <span>5,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="دبل تشيز بركر لحم" data-price="8000">
-            <img src="https://foodish-api.com/images/burger/burger4.jpg" alt="دبل تشيز بركر">
-            <h3>دبل تشيز بركر (لحم)</h3>
-            <p>قطعتين لحم مع طبقات مضاعفة من الجبن مع فنكر</p>
-            <div class="card-price-row">
-                <span>8,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر RGB العملاق" data-price="10000">
-            <span class="badge new">مميز وجديد</span>
-            <img src="https://foodish-api.com/images/burger/burger6.jpg" alt="بركر RGB">
-            <h3>👑 بركر RGB العملاق</h3>
-            <p>3 قطع بركر لحم + 3 قطع جبن شيدر + صوص خاص مع فنكر</p>
-            <div class="card-price-row">
-                <span>10,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر مشروم لحم" data-price="7000">
-            <img src="https://foodish-api.com/images/burger/burger7.jpg" alt="بركر مشروم لحم">
-            <h3>بركر مشروم (لحم)</h3>
-            <p>شريحة لحم مشوية مع صوص الفطر والجبن الغني مع بيبسي</p>
-            <div class="card-price-row">
-                <span>7,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر هالابينو لحم" data-price="7000">
-            <img src="https://foodish-api.com/images/burger/burger8.jpg" alt="بركر هالابينو لحم">
-            <h3>بركر هالابينو (لحم)</h3>
-            <p>شريحة لحم مشوي بنكهة حارة مع قطع الهالابينو والصوص الخاص مع بيبسي</p>
-            <div class="card-price-row">
-                <span>7,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر 89 الخاص" data-price="8500">
-            <img src="https://foodish-api.com/images/burger/burger9.jpg" alt="بركر 89 الخاص">
-            <h3>بركر 89 الخاص</h3>
-            <p>الخلطة الخاصة المبتكرة من مطعم MIM89 مع حلقات البصل المقرمشة وأصابع الجبن الموزاريلا</p>
-            <div class="card-price-row">
-                <span>8,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <!-- أصناف بركر الدجاج -->
-        <div class="card" data-name="بركر دجاج كلاسيك" data-price="4000">
-            <img src="https://foodish-api.com/images/burger/burger11.jpg" alt="بركر دجاج كلاسيك">
-            <h3>بركر دجاج كلاسيك</h3>
-            <p>شريحة دجاج طازجة مع الخس والمايونيز والصوص الخاص مع فنكر</p>
-            <div class="card-price-row">
-                <span>4,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="تشكن فيليه" data-price="5500">
-            <img src="https://foodish-api.com/images/burger/burger12.jpg" alt="تشكن فيليه">
-            <h3>تشكن فيليه</h3>
-            <p>سندويش صدر دجاج مقرمش مع الصوص والمايونيز مع بيبسي</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر دجاج سبايسي" data-price="6000">
-            <img src="https://foodish-api.com/images/burger/burger13.jpg" alt="بركر دجاج سبايسي">
-            <h3>بركر دجاج سبايسي</h3>
-            <p>دجاج المقرمش الحار مع صوص الهالابينو مع بيبسي</p>
-            <div class="card-price-row">
-                <span>6,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر كرسبي دجاج" data-price="6000">
-            <img src="https://foodish-api.com/images/burger/burger14.jpg" alt="بركر كرسبي">
-            <h3>بركر كرسبي (دجاج)</h3>
-            <p>دجاج مقرمش ذهبي الخلطة الممتازة مع بيبسي</p>
-            <div class="card-price-row">
-                <span>6,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر مكسيكي BBQ مع بيبسي" data-price="7000">
-            <img src="https://foodish-api.com/images/burger/burger15.jpg" alt="بركر مكسيكي">
-            <h3>بركر مكسيكي BBQ</h3>
-            <p>نكهة حارة ولذيذة مع صوص الباربكيو وقطع الهالابينو مع بيبسي</p>
-            <div class="card-price-row">
-                <span>7,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="بركر لحم مزدوج" data-price="8000">
-            <img src="https://foodish-api.com/images/burger/burger16.jpg" alt="بركر لحم مزدوج">
-            <h3>بركر لحم مزدوج</h3>
-            <p>وجبة مشبعة بقطعتين من اللحم المشوي</p>
-            <div class="card-price-row">
-                <span>8,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 2. قسم الفاهيتا -->
-    <section id="fajita" class="menu-section">
-        <h2>🌮 قسم الفاهيتا</h2>
+        // تجميع الوجبات حسب الأقسام
+        const categories = [...new Set(menuData.map(item => item.category))];
         
-        <div class="card" data-name="سندويش فاهيتا دجاج" data-price="5000">
-            <img src="https://foodish-api.com/images/pasta/pasta1.jpg" alt="فاهيتا دجاج">
-            <h3>سندويش فاهيتا دجاج</h3>
-            <p>شرائح دجاج متبلة ومقلية مع الفلفل الألوان والبصل والجبن</p>
-            <div class="card-price-row">
-                <span>5,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="وجبة فاهيتا دجاج متكاملة" data-price="7500">
-            <img src="https://foodish-api.com/images/pasta/pasta2.jpg" alt="وجبة فاهيتا دجاج">
-            <h3>وجبة فاهيتا دجاج كاملة</h3>
-            <p>طبق فاهيتا دجاج محمر مع الفنكر، الثومية، المخلل ومشروب بيبسي</p>
-            <div class="card-price-row">
-                <span>7,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. قسم الشاورما -->
-    <section id="shawarma" class="menu-section">
-        <h2>🌯 قسم الشاورما</h2>
-
-        <div class="card" data-name="شاورما صاج عادي" data-price="2500">
-            <img src="https://foodish-api.com/images/samosa/samosa2.jpg" alt="شاورما صاج عادي">
-            <h3>شاورما صاج عادي</h3>
-            <p>خبز صاج، شاورما دجاج، ثوم، وبطاطا</p>
-            <div class="card-price-row">
-                <span>2,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما صاج دبل" data-price="5500">
-            <img src="https://foodish-api.com/images/samosa/samosa3.jpg" alt="شاورما صاج دبل">
-            <h3>شاورما صاج دبل</h3>
-            <p>شاورما مضاعفة في خبز الصاج المميز مع فنكر وبيبسي</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما صاج سوبر" data-price="6000">
-            <img src="https://foodish-api.com/images/samosa/samosa4.jpg" alt="شاورما صاج سوبر">
-            <h3>شاورما صاج سوبر</h3>
-            <p>حجم كبير جداً مليء بالشاورما والجبن مع بيبسي</p>
-            <div class="card-price-row">
-                <span>6,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما وزن 250 غرام" data-price="7500">
-            <img src="https://foodish-api.com/images/samosa/samosa5.jpg" alt="شاورما 250g">
-            <h3>شاورما وزن 250 غرام</h3>
-            <p>شاورما دجاج صافي بالصحن</p>
-            <div class="card-price-row">
-                <span>7,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما وزن 500 غرام" data-price="15000">
-            <img src="https://foodish-api.com/images/samosa/samosa6.jpg" alt="شاورما 500g">
-            <h3>شاورما وزن 500 غرام</h3>
-            <p>نصف كيلو شاورما دجاج صافي مع المرفقات</p>
-            <div class="card-price-row">
-                <span>15,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما عربي" data-price="5500">
-            <img src="https://foodish-api.com/images/samosa/samosa7.jpg" alt="شاورما عربي">
-            <h3>شاورما عربي</h3>
-            <p>صحن شاورما عربي 16 قطعة مع بطاطا، ثومية ومخلل مع بيبسي</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="وجبة شاورما" data-price="3000">
-            <img src="https://foodish-api.com/images/samosa/samosa8.jpg" alt="وجبة شاورما">
-            <h3>وجبة شاورما</h3>
-            <p>وجبة متكاملة مع المشروب والبطاطا</p>
-            <div class="card-price-row">
-                <span>3,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="وجبة شاورما دبل" data-price="9000">
-            <img src="https://foodish-api.com/images/samosa/samosa9.jpg" alt="وجبة شاورما دبل">
-            <h3>وجبة شاورما دبل</h3>
-            <p>وجبة دبل مشبعة مع مقبلات وثومية</p>
-            <div class="card-price-row">
-                <span>9,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="شاورما 89 الخاص" data-price="8000">
-            <img src="https://foodish-api.com/images/samosa/samosa10.jpg" alt="شاورما 89 الخاص">
-            <h3>شاورما 89 الخاص</h3>
-            <p>طبق الشاورما الخاص المضاف له الجبن والبطاطا والصوصات وبيبسي</p>
-            <div class="card-price-row">
-                <span>8,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. قسم الريزو (روابط حقيقية من سيرفر الأرز والدجاج) -->
-    <section id="rizo" class="menu-section">
-        <h2>🍚 قسم الريزو</h2>
-
-        <div class="card" data-name="ريزو كلاسيك" data-price="5000">
-            <img src="https://foodish-api.com/images/rice/rice1.jpg" alt="ريزو كلاسيك">
-            <h3>ريزو كلاسيك</h3>
-            <p>أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو</p>
-            <div class="card-price-row">
-                <span>5,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو كص دجاج" data-price="5500">
-            <img src="https://foodish-api.com/images/rice/rice2.jpg" alt="ريزو كص دجاج">
-            <h3>ريزو كص دجاج</h3>
-            <p>أرز الريزو المبهر يعلوه قص دجاج طازج محمر مع صوص الريزو</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو سبايسي" data-price="5500">
-            <img src="https://foodish-api.com/images/rice/rice3.jpg" alt="ريزو سبايسي">
-            <h3>ريزو سبايسي</h3>
-            <p>نكهة حارة ممتازة مع قطع الدجاج السبايسي</p>
-            <div class="card-price-row">
-                <span>5,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو جبنة" data-price="6000">
-            <img src="https://foodish-api.com/images/rice/rice4.jpg" alt="ريزو جبنة">
-            <h3>ريزو جبنة</h3>
-            <p>ريزو مغطى بصوص الجبن الذائب الشهي</p>
-            <div class="card-price-row">
-                <span>6,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو مشروم" data-price="6500">
-            <img src="https://foodish-api.com/images/rice/rice5.jpg" alt="ريزو مشروم">
-            <h3>ريزو مشروم</h3>
-            <p>ريزو مع قطع الفطر الطازج والصوص الخاص</p>
-            <div class="card-price-row">
-                <span>6,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو 89 الخاص" data-price="7500">
-            <img src="https://foodish-api.com/images/rice/rice6.jpg" alt="ريزو 89 الخاص">
-            <h3>ريزو 89 الخاص</h3>
-            <p>خلطة الريزو الخاصة مع دبل دجاج وجبن</p>
-            <div class="card-price-row">
-                <span>7,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ريزو دبل تشكن" data-price="7000">
-            <img src="https://foodish-api.com/images/rice/rice7.jpg" alt="ريزو دبل تشكن">
-            <h3>ريزو دبل تشكن</h3>
-            <p>كمية مضاعفة من الدجاج المقرمش فوق الريزو</p>
-            <div class="card-price-row">
-                <span>7,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 5. قسم الكنتاكي -->
-    <section id="kentucky" class="menu-section">
-        <h2>🍗 قسم الكنتاكي</h2>
-
-        <div class="card" data-name="كنتاكي قطعتين" data-price="5000">
-            <img src="https://foodish-api.com/images/butter-chicken/butter-chicken1.jpg" alt="كنتاكي قطعتين">
-            <h3>كنتاكي قطعتين</h3>
-            <p>قطعتين دجاج مقرمش + بطاطا وثومية</p>
-            <div class="card-price-row">
-                <span>5,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="كنتاكي 4 قطع" data-price="9000">
-            <img src="https://foodish-api.com/images/butter-chicken/butter-chicken2.jpg" alt="كنتاكي 4 قطع">
-            <h3>كنتاكي 4 قطع</h3>
-            <p>4 قطع دجاج ذهبي + بطاطا وثومية وخبز مع بيبسي</p>
-            <div class="card-price-row">
-                <span>9,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="كنتاكي 6 قطع" data-price="13000">
-            <img src="https://foodish-api.com/images/butter-chicken/butter-chicken3.jpg" alt="كنتاكي 6 قطع">
-            <h3>كنتاكي 6 قطع</h3>
-            <p>6 قطع كنتاكي المقرمش مع الكولسلو والبطاطا</p>
-            <div class="card-price-row">
-                <span>13,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="وجبة كنتاكي" data-price="20000">
-            <img src="https://foodish-api.com/images/butter-chicken/butter-chicken4.jpg" alt="وجبة كنتاكي">
-            <h3>وجبة كنتاكي كاملة</h3>
-            <p>10 قطع كنتاكي مع المشروب، البطاطا، الكولسلو والثومية</p>
-            <div class="card-price-row">
-                <span>20,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 6. قسم الفنكر والمقبلات والإضافات -->
-    <section id="appetizers" class="menu-section">
-        <h2>🍟 قسم الفنكر والمقبلات والإضافات</h2>
-        
-        <div class="card" data-name="قدح فنكر كلاسيك" data-price="2500">
-            <img src="https://foodish-api.com/images/pasta/pasta3.jpg" alt="فنكر كلاسيك">
-            <h3>قدح فنكر كلاسيك</h3>
-            <p>بطاطا مقرمشة ذهبية مع جبن وبيبسي</p>
-            <div class="card-price-row">
-                <span>2,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="قدح فنكر سبايسي" data-price="1000">
-            <img src="https://foodish-api.com/images/pasta/pasta4.jpg" alt="فنكر سبايسي">
-            <h3>قدح فنكر سبايسي</h3>
-            <p>بطاطا مبهرة بالنكهة الحارة</p>
-            <div class="card-price-row">
-                <span>1,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="قدح فنكر دوريتوس بجبن" data-price="3500">
-            <img src="https://foodish-api.com/images/pasta/pasta5.jpg" alt="فنكر دوريتوس">
-            <h3>قدح فنكر دوريتوس بالجبن</h3>
-            <p>قدح فنكر مقرمش محمل بقطع الدوريتوس والجبنة السائلة</p>
-            <div class="card-price-row">
-                <span>3,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="قدح فنكر هالابينو بجبن" data-price="3500">
-            <img src="https://foodish-api.com/images/pasta/pasta6.jpg" alt="فنكر هالابينو">
-            <h3>قدح فنكر هالابينو بالجبن</h3>
-            <p>بطاطا مقرمشة مغطاة بصوص الجبن الذائب وقطع الهالابينو الحار</p>
-            <div class="card-price-row">
-                <span>3,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="فنكر 89 الخاص" data-price="4500">
-            <img src="https://foodish-api.com/images/pasta/pasta7.jpg" alt="فنكر 89 الخاص">
-            <h3>فنكر 89 الخاص</h3>
-            <p>بطاطا مقرمشة محملة بالجبن والهالابينو والصوصات والدوريتوس</p>
-            <div class="card-price-row">
-                <span>4,500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="أصابع موزاريلا" data-price="750">
-            <img src="https://foodish-api.com/images/samosa/samosa1.jpg" alt="أصابع موزاريلا">
-            <h3>أصابع موزاريلا</h3>
-            <p>قطعة أصابع جبن الموزاريلا المقرمشة والذائبة</p>
-            <div class="card-price-row">
-                <span>750 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="حلقات بصل" data-price="2000">
-            <img src="https://foodish-api.com/images/samosa/samosa2.jpg" alt="حلقات بصل">
-            <h3>حلقات بصل</h3>
-            <p>خمس حلقات بصل مقرمشة بالخلطة الذهبية</p>
-            <div class="card-price-row">
-                <span>2,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="إضافة جبنة" data-price="1000">
-            <img src="https://foodish-api.com/images/samosa/samosa3.jpg" alt="جبنة إضافية">
-            <h3>إضافة جبنة شيدر</h3>
-            <p>شريحة جبن أو صوص جبن إضافي</p>
-            <div class="card-price-row">
-                <span>1,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="إضافة هالابينو" data-price="1000">
-            <img src="https://foodish-api.com/images/samosa/samosa4.jpg" alt="هالابينو">
-            <h3>إضافة هالابينو</h3>
-            <p>قطع فلفل هالابينو الحار</p>
-            <div class="card-price-row">
-                <span>1,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="إضافة صوص خاص" data-price="1000">
-            <img src="https://foodish-api.com/images/samosa/samosa5.jpg" alt="صوص">
-            <h3>إضافة صوص خاص</h3>
-            <p>علبة صوص مميز (ثومية / سبايسي / 89)</p>
-            <div class="card-price-row">
-                <span>1,000 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 7. قسم المشروبات -->
-    <section id="drinks" class="menu-section">
-        <h2>🥤 قسم المشروبات</h2>
-
-        <div class="card" data-name="بيبسي" data-price="500">
-            <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" alt="بيبسي">
-            <h3>بيبسي</h3>
-            <p>مشروب غازي بارد</p>
-            <div class="card-price-row">
-                <span>500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="سفن أب" data-price="500">
-            <img src="https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" alt="سفن أب">
-            <h3>سفن أب</h3>
-            <p>قدح ثلج منعش</p>
-            <div class="card-price-row">
-                <span>500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ميرندا" data-price="500">
-            <img src="https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=600&q=80" alt="ميرندا">
-            <h3>ميرندا</h3>
-            <p>مشروب غازي بنكهة البرتقال</p>
-            <div class="card-price-row">
-                <span>500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ديو" data-price="500">
-            <img src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=600&q=80" alt="ماونتن ديو">
-            <h3>ماونتن ديو</h3>
-            <p>مشروب غازي منعش</p>
-            <div class="card-price-row">
-                <span>500 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-
-        <div class="card" data-name="ماء" data-price="250">
-            <img src="https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" alt="ماء">
-            <h3>ماء معدني</h3>
-            <p>قنينة ماء نقي مبرد</p>
-            <div class="card-price-row">
-                <span>250 د.ع</span>
-                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact">
-        <h2>📍 تواصل معنا وخدمة التوصيل</h2>
-        <div class="contact-box">
-            <a href="tel:07750008630">📞 07750008630</a>
-            <a href="tel:07850008630">📞 07850008630</a>
-            <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
-            <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
-            <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
-            <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 Instagram</a>
-            <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 Facebook</a>
-        </div>
-    </section>
-
-    <!-- Cart Modal Box -->
-    <div id="cartModal" class="cart-modal">
-        <div class="cart-content">
-            <div class="cart-header">
-                <h3><i class="fas fa-shopping-bag"></i> سلة الطلبات</h3>
-                <span id="closeCart" class="close-cart">&times;</span>
-            </div>
+        categories.forEach(category => {
+            const catTitle = document.createElement('div');
+            catTitle.className = 'category-title';
+            catTitle.innerText = category;
+            container.appendChild(catTitle);
             
-            <div class="cart-scroll-body">
-                <div id="cartItems" class="cart-items">
-                    <p class="empty-msg">السلة فارغة حالياً</p>
-                </div>
-
-                <div class="cart-footer">
-                    <div class="total-price">
-                        <span>المجموع الكلي:</span>
-                        <span id="cartTotal">0 د.ع</span>
+            const grid = document.createElement('div');
+            grid.className = 'menu-grid';
+            
+            const itemsInCategory = menuData.filter(item => item.category === category);
+            
+            itemsInCategory.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'menu-item';
+                itemEl.id = `item-${item.id}`;
+                itemEl.innerHTML = `
+                    <div class="admin-controls" style="${isAdminMode ? 'display: flex;' : ''}">
+                        <button class="admin-btn delete-btn" onclick="deleteItem(${item.id})">🗑️</button>
+                        <button class="admin-btn edit-img-btn" onclick="triggerFile('${item.id}')">📷</button>
                     </div>
-                    
-                    <div class="user-details">
-                        <!-- أزرار نوع الطلب -->
-                        <div class="segmented-control">
-                            <button type="button" class="segment-btn active" id="btnDelivery">🛵 توصيل</button>
-                            <button type="button" class="segment-btn" id="btnTakeaway">🛍️ استلام من المطعم</button>
-                        </div>
-
-                        <input type="text" id="custName" placeholder="الاسم الكامل" required>
-                        <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required>
-
-                        <!-- خيار المنطقة للتوصيل -->
-                        <div id="areaSelectorBox">
-                            <select id="deliveryArea" class="area-select">
-                                <option value="0" data-name="القاهرة (توصيل مجاني)">منطقة القاهرة — مجاناً 🛵</option>
-                                <option value="3000" data-name="باقي المناطق">باقي المناطق — 3,000 د.ع 🛵</option>
-                            </select>
-                        </div>
-
-                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة" required>
-                        <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
+                    <input type="file" id="file-${item.id}" class="file-input" accept="image/*" onchange="handleFile(this, ${item.id})">
+                    <img src="${item.img}" alt="${item.name}" class="item-img">
+                    <div class="item-details">
+                        <!-- وضع التصفح للزبون -->
+                        <h3 class="item-name view-mode">${item.name}</h3>
+                        <p class="item-desc view-mode">${item.desc}</p>
+                        <p class="item-price view-mode">${item.price}</p>
+                        
+                        <!-- وضع التعديل للأدمن - مخفي -->
+                        <input type="text" value="${item.name}" class="edit-mode edit-input name-input" placeholder="اسم الوجبة">
+                        <textarea class="edit-mode edit-input desc-input" placeholder="الوصف">${item.desc}</textarea>
+                        <input type="text" value="${item.price}" class="edit-mode edit-input price-input" placeholder="السعر (مثلاً 5000 د.ع)">
                     </div>
+                `;
+                grid.appendChild(itemEl);
+            });
+            container.appendChild(grid);
+        });
+        
+        toggleAdminElements();
+    }
 
-                    <button id="sendOrderBtn" class="send-order-btn">
-                        <i class="fab fa-whatsapp"></i> تأكيد الطلب عبر الواتساب
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    // دالة لتفعيل/تعطيل عناصر الأدمن في وضع التعديل
+    function toggleAdminElements() {
+        document.getElementById('save-changes-btn').style.display = isAdminMode ? 'block' : 'none';
+        document.getElementById('add-item-btn').style.display = isAdminMode ? 'block' : 'none';
+        
+        const controls = document.querySelectorAll('.admin-controls');
+        const views = document.querySelectorAll('.view-mode');
+        const edits = document.querySelectorAll('.edit-mode');
+        
+        controls.forEach(el => el.style.display = isAdminMode ? 'flex' : 'none');
+        views.forEach(el => el.style.display = isAdminMode ? 'none' : 'block');
+        edits.forEach(el => el.style.display = isAdminMode ? 'block' : 'none');
+    }
 
-    <footer>
-        <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
-    </footer>
+    // دالة تسجيل دخول الأدمن
+    function promptAdminLogin() {
+        const pass = prompt("أدخل كلمة مرور الأدمن:");
+        if (pass === ADMIN_PASSWORD) {
+            isAdminMode = true;
+            renderMenu();
+            alert("تم الدخول لوضع الأدمن بنجاح! يمكنك الآن تعديل الوجبات مباشرة.");
+        } else {
+            alert("كلمة مرور خاطئة.");
+        }
+    }
 
-    <script src="script.js"></script>
+    // دالة لحفظ التعديلات التي قام بها الأدمن محلياً
+    function saveAdminChanges() {
+        menuData = menuData.map(item => {
+            const itemEl = document.getElementById(`item-${item.id}`);
+            if (itemEl) {
+                return {
+                    ...item,
+                    name: itemEl.querySelector('.name-input').value,
+                    desc: itemEl.querySelector('.desc-input').value,
+                    price: itemEl.querySelector('.price-input').value
+                    // تم حفظ مسار الصورة عند الرفع
+                };
+            }
+            return item;
+        });
+        
+        // حفظ البيانات محلياً في المتصفح
+        localStorage.setItem('mim89_menu_data', JSON.stringify(menuData));
+        isAdminMode = false;
+        renderMenu();
+        alert("تم حفظ كافة التعديلات بنجاح وستظهر للزبائن!");
+    }
+
+    // دالة لإضافة وجبة جديدة
+    function addNewItem() {
+        const id = Date.now();
+        menuData.push({ id: id, category: "قسم جديد (عدله)", name: "اسم وجبة جديدة", desc: "وصف الوجبة...", price: "السعر د.ع", img: "Images/default_food.jpg" });
+        renderMenu();
+        // تمرير لآخر عنصر
+        document.getElementById(`item-${id}`).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // دالة لحذف وجبة
+    function deleteItem(id) {
+        if (confirm("هل أنت متأكد من حذف هذه الوجبة نهائياً؟")) {
+            menuData = menuData.filter(item => item.id !== id);
+            renderMenu();
+        }
+    }
+
+    // دوال التعامل مع رفع الملفات/الصور
+    function triggerFile(id) {
+        document.getElementById(`file-${id}`).click();
+    }
+    
+    function handleFile(input, id) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // تحديث مسار الصورة في كارت الوجبة مؤقتاً
+                document.getElementById(`item-${id}`).querySelector('.item-img').src = e.target.result;
+                
+                // تحديث مسار الصورة في قاعدة البيانات (Base64)
+                menuData = menuData.map(item => {
+                    if (item.id === id) {
+                        return { ...item, img: e.target.result };
+                    }
+                    return item;
+                });
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // البدء بتوليد المينيو عند فتح الصفحة
+    renderMenu();
+
+</script>
+
 </body>
-
 </html>
