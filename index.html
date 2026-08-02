@@ -406,7 +406,7 @@
         </div>
     </section>
 
-    <!-- 4. قسم الريزو (روابط حقيقية من سيرفر الأرز والدجاج) -->
+    <!-- 4. قسم الريزو -->
     <section id="rizo" class="menu-section">
         <h2>🍚 قسم الريزو</h2>
 
@@ -754,46 +754,77 @@
     </footer>
 
     <script src="script.js"></script>
+
+    <!-- سكربت الربط الموحد والذكي لقراءة بيانات لوحة الإدارة والسلة -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('mim89_full_menu_data');
+            if (savedData) {
+                const menuData = JSON.parse(savedData);
+                if (menuData && menuData.length > 0) {
+                    
+                    const categories = [...new Set(menuData.map(item => item.cat))];
+                    
+                    categories.forEach(cat => {
+                        let sectionEl = Array.from(document.querySelectorAll('.menu-section')).find(sec => {
+                            const h2 = sec.querySelector('h2');
+                            return h2 && h2.innerText.trim().includes(cat.trim());
+                        });
+
+                        if (!sectionEl) {
+                            sectionEl = document.createElement('section');
+                            sectionEl.className = 'menu-section';
+                            sectionEl.innerHTML = `<h2>${cat}</h2>`;
+                            const contactSec = document.getElementById('contact');
+                            if (contactSec) {
+                                contactSec.parentNode.insertBefore(sectionEl, contactSec);
+                            } else {
+                                document.body.appendChild(sectionEl);
+                            }
+                        }
+
+                        menuData.filter(item => item.cat === cat).forEach(item => {
+                            const cleanPrice = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
+                            
+                            let cardEl = Array.from(sectionEl.querySelectorAll('.card')).find(c => c.getAttribute('data-name') === item.name);
+                            
+                            if (!cardEl) {
+                                cardEl = document.createElement('div');
+                                cardEl.className = 'card';
+                                sectionEl.appendChild(cardEl);
+                            }
+
+                            cardEl.setAttribute('data-name', item.name);
+                            cardEl.setAttribute('data-price', cleanPrice);
+                            cardEl.innerHTML = `
+                                <img src="${item.img}" alt="${item.name}" style="object-fit: cover; object-position: center;" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+                                <h3>${item.name}</h3>
+                                <p>${item.desc}</p>
+                                <div class="card-price-row">
+                                    <span>${cleanPrice.toLocaleString()} د.ع</span>
+                                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+                                </div>
+                            `;
+                        });
+                    });
+
+                    // تفعيل أزرار السلة
+                    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                        btn.onclick = function() {
+                            const card = this.closest('.card');
+                            if (card) {
+                                const name = card.getAttribute('data-name');
+                                const price = parseInt(card.getAttribute('data-price'));
+                                if (window.addToCart) {
+                                    window.addToCart(name, price);
+                                }
+                            }
+                        };
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>
-
-<<script>
-    // سكربت ذكي يعرض كافة التعديلات والأصناف الجديدة التي تضيفها من اللوحة
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedData = localStorage.getItem('mim89_full_menu_data');
-        if (savedData) {
-            const menuData = JSON.parse(savedData);
-            const container = document.querySelector('.container');
-            if (container && menuData.length > 0) {
-                container.innerHTML = '';
-                const categories = [...new Set(menuData.map(item => item.cat))];
-                
-                categories.forEach(cat => {
-                    const catTitle = document.createElement('div');
-                    catTitle.className = 'category-title';
-                    catTitle.innerText = cat;
-                    container.appendChild(catTitle);
-                    
-                    const grid = document.createElement('div');
-                    grid.className = 'menu-grid';
-                    
-                    menuData.filter(item => item.cat === cat).forEach(item => {
-                        const itemEl = document.createElement('div');
-                        itemEl.className = 'menu-item';
-                        itemEl.innerHTML = `
-                            <img src="${item.img}" alt="${item.name}" class="item-img" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
-                            <div class="item-details">
-                                <h3 class="item-name">${item.name}</h3>
-                                <p class="item-desc">${item.desc}</p>
-                                <p class="item-price">${item.price}</p>
-                            </div>
-                        `;
-                        grid.appendChild(itemEl);
-                    });
-                    container.appendChild(grid);
-                });
-            }
-        }
-    });
-</script>
