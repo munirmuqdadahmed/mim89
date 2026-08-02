@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 300);
     }
 
-    // 2. القائمة الجانبية (Side Menu)
+    // 2. القائمة الجانبية (Side Menu) مع تثبيت المينيو الخلفي
     const menuBtn = document.getElementById("menuBtn");
     const sideMenu = document.getElementById("sideMenu");
     const menuOverlay = document.getElementById("menuOverlay");
@@ -17,11 +17,13 @@ document.addEventListener("DOMContentLoaded", function () {
         menuBtn.addEventListener("click", () => {
             sideMenu.classList.add("active");
             menuOverlay.classList.add("active");
+            document.body.classList.add("menu-open");
         });
 
         menuOverlay.addEventListener("click", () => {
             sideMenu.classList.remove("active");
             menuOverlay.classList.remove("active");
+            document.body.classList.remove("menu-open");
         });
     }
 
