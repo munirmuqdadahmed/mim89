@@ -45,14 +45,14 @@
 
         <div class="side-menu-sections">
             <h4>📋 أقسام المينيو السريعة:</h4>
-            <a href="#offers" class="close-menu-link">🔥 العروض الخاصة</a>
-            <a href="#burger" class="close-menu-link">🍔 قسم البركر</a>
-            <a href="#fajita" class="close-menu-link">🌮 قسم الفاهيتا</a>
-            <a href="#shawarma" class="close-menu-link">🌯 قسم الشاورما</a>
-            <a href="#rizo" class="close-menu-link">🍚 قسم الريزو</a>
-            <a href="#kentucky" class="close-menu-link">🍗 قسم الكنتاكي</a>
-            <a href="#appetizers" class="close-menu-link">🍟 المقبلات والفنكر</a>
-            <a href="#drinks" class="close-menu-link">🥤 قسم المشروبات</a>
+            <a href="javascript:void(0);" data-target="offers" class="close-menu-link">🔥 العروض الخاصة</a>
+            <a href="javascript:void(0);" data-target="burger" class="close-menu-link">🍔 قسم البركر</a>
+            <a href="javascript:void(0);" data-target="fajita" class="close-menu-link">🌮 قسم الفاهيتا</a>
+            <a href="javascript:void(0);" data-target="shawarma" class="close-menu-link">🌯 قسم الشاورما</a>
+            <a href="javascript:void(0);" data-target="rizo" class="close-menu-link">🍚 قسم الريزو</a>
+            <a href="javascript:void(0);" data-target="kentucky" class="close-menu-link">🍗 قسم الكنتاكي</a>
+            <a href="javascript:void(0);" data-target="appetizers" class="close-menu-link">🍟 المقبلات والفنكر</a>
+            <a href="javascript:void(0);" data-target="drinks" class="close-menu-link">🥤 قسم المشروبات</a>
         </div>
     </div>
 
@@ -757,21 +757,34 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=8.0"></script>
+    <!-- استدعاء السكربت بحجم إصدار جديد كلياً لكسر كاش الآيفون -->
+    <script src="script.js?v=9.0"></script>
 
-    <!-- سكربت التنقل السلس وفك التجميد فور الضغط على أي قسم -->
+    <!-- سكربت التنقل السلس البرمجي المباشر مع فك قفل الشاشة -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            // إغلاق القائمة وفك التجميد التام عند الضغط على أي قسم
+            // التنقل البرمجي السلس وفك تجميد الشاشة المباشر
             document.querySelectorAll('.close-menu-link').forEach(link => {
-                link.addEventListener('click', function () {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('data-target');
+                    
+                    // إغلاق القائمة وفك قفل التمرير
                     document.getElementById('sideMenu').classList.remove('active');
                     document.getElementById('menuOverlay').classList.remove('active');
                     document.body.classList.remove('menu-open');
+
+                    // نقل الشاشة للقسم المطلوب فوراً بسلاسة
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        setTimeout(() => {
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                    }
                 });
             });
 
-            // قراءة التعديلات المخصصة من اللوحة وحفظ الصور
+            // قراءة التعديلات المخصصة من اللوحة
             const savedData = localStorage.getItem('mim89_full_menu_data');
             if (savedData) {
                 const menuData = JSON.parse(savedData);
