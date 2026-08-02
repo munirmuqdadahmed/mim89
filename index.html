@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MIM89 | Fast Food</title>
     <meta name="description" content="MIM89 Fast Food">
 
@@ -729,15 +729,8 @@
                         <input type="text" id="custName" placeholder="الاسم الكامل" required>
                         <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required>
 
-                        <!-- خيار المنطقة للتوصيل -->
-                        <div id="areaSelectorBox">
-                            <select id="deliveryArea" class="area-select">
-                                <option value="0" data-name="القاهرة (توصيل مجاني)">منطقة القاهرة — مجاناً 🛵</option>
-                                <option value="3000" data-name="باقي المناطق">باقي المناطق — 3,000 د.ع 🛵</option>
-                            </select>
-                        </div>
-
-                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة" required>
+                        <!-- العنوان -->
+                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة (مثال: القاهرة...)" required>
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
@@ -753,10 +746,10 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=2.0"></script>
+    <!-- استدعاء ملف السكربت مع كسر كاش المتصفح -->
+    <script src="script.js?v=3.0"></script>
 
-
-    <!-- سكربت الربط الموحد والذكي لقراءة بيانات لوحة الإدارة والسلة -->
+    <!-- سكربت الربط لبطاقات اللوحة المحدثة -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const savedData = localStorage.getItem('mim89_full_menu_data');
@@ -807,20 +800,6 @@
                                 </div>
                             `;
                         });
-                    });
-
-                    // تفعيل أزرار السلة
-                    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-                        btn.onclick = function() {
-                            const card = this.closest('.card');
-                            if (card) {
-                                const name = card.getAttribute('data-name');
-                                const price = parseInt(card.getAttribute('data-price'));
-                                if (window.addToCart) {
-                                    window.addToCart(name, price);
-                                }
-                            }
-                        };
                     });
                 }
             }
