@@ -747,9 +747,9 @@
     </footer>
 
     <!-- استدعاء ملف السكربت مع كسر كاش المتصفح -->
-    <script src="script.js?v=3.0"></script>
+    <script src="script.js?v=4.0"></script>
 
-    <!-- سكربت الربط لبطاقات اللوحة المحدثة -->
+    <!-- سكربت الربط لبطاقات اللوحة المحدثة مع دعم إظهار الصور من اللوحة -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const savedData = localStorage.getItem('mim89_full_menu_data');
@@ -790,8 +790,10 @@
 
                             cardEl.setAttribute('data-name', item.name);
                             cardEl.setAttribute('data-price', cleanPrice);
+                            
+                            // إسناد الكود المحدث الخاص بإظهار الصورة المرفوعة من اللوحة بدقة واقتطاع مناسب
                             cardEl.innerHTML = `
-                                <img src="${item.img}" alt="${item.name}" style="object-fit: cover; object-position: center;" onerror="this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD'">
+                                <img src="${item.img}" alt="${item.name}" style="width:100%; height:180px; object-fit: cover; object-position: center;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD';">
                                 <h3>${item.name}</h3>
                                 <p>${item.desc}</p>
                                 <div class="card-price-row">
