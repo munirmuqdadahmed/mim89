@@ -10,17 +10,15 @@
         body { background: #111; color: #fff; padding: 15px; max-width: 650px; margin: 0 auto; padding-bottom: 100px; }
         h1 { text-align: center; color: #ff9f00; margin: 15px 0 20px; font-size: 22px; font-weight: 900; }
         .login-box { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-top: 50px; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; text-align: right; }
+        input, textarea { width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 14px; text-align: right; }
         input[type="file"] { background: #2a2a2a; padding: 8px; border: 1px dashed #ff9f00; cursor: pointer; }
         button { width: 100%; padding: 12px; background: #ff9f00; color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 5px; }
         .editor-section { display: none; }
-        .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; }
+        .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .item-card label { display: block; font-size: 12px; color: #ff9f00; margin-top: 4px; font-weight: bold; }
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; }
         .btn-delete { background: #e63946; color: #fff; width: auto; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
         .btn-add { background: #222; border: 2px dashed #ff9f00; color: #ff9f00; margin-bottom: 25px; }
-        
-        /* اقتصاص الصور وتوحيد الحجم تلقائياً لكافة الهواتف */
         .preview-img { width: 100%; height: 160px; object-fit: cover; object-position: center; border-radius: 8px; margin-top: 8px; border: 1px solid #ff9f00; }
         .sticky-save { position: fixed; bottom: 15px; left: 15px; right: 15px; max-width: 620px; margin: 0 auto; box-shadow: 0 5px 25px rgba(255,159,0,0.4); z-index: 1000; }
     </style>
@@ -29,14 +27,12 @@
 
     <h1>إدارة مينيو MIM89 FAST FOOD 🍔</h1>
 
-    <!-- تسجيل الدخول -->
     <div id="login-section" class="login-box">
         <h3 style="margin-bottom:15px; color:#ff9f00;">رمز دخول الإدارة</h3>
         <input type="password" id="pass-input" placeholder="أدخل كلمة المرور">
         <button onclick="checkPass()">دخول اللوحة</button>
     </div>
 
-    <!-- قسم الإدارة -->
     <div id="editor-section" class="editor-section">
         <button class="btn-add" onclick="addNewItem()">➕ إضافة صنف جديد للمينيو</button>
         <div id="items-container"></div>
@@ -84,8 +80,8 @@
                     <button class="btn-delete" onclick="deleteItem(${index})">🗑️ حذف الصنف</button>
                 </div>
 
-                <label>القسم (اكتب اسماً جديداً لإنشاء قسم جديد):</label>
-                <input type="text" value="${item.cat}" id="cat-${index}" placeholder="مثال: قسم العصائر 🥤">
+                <label>اسم القسم (اكتب اسماً جديداً لفتح قسم جديد):</label>
+                <input type="text" value="${item.cat}" id="cat-${index}">
 
                 <label>اسم الوجبة:</label>
                 <input type="text" value="${item.name}" id="name-${index}">
@@ -96,7 +92,7 @@
                 <label>السعر:</label>
                 <input type="text" value="${item.price}" id="price-${index}">
 
-                <label>صورة الوجبة (يتم اقتصاصها تلقائياً لتناسب كافة الموبايلات):</label>
+                <label>صورة الوجبة:</label>
                 <input type="file" accept="image/*" onchange="handleImage(this, ${index})">
                 <img src="${item.img}" id="preview-${index}" class="preview-img">
             `;
@@ -108,7 +104,7 @@
         currentItems.unshift({
             id: Date.now(),
             cat: "قسم جديد 🍔",
-            name: "وجبة جديدة",
+            name: "اسم الوجبة الجديد",
             desc: "الوصف والمكونات...",
             price: "5,000 د.ع",
             img: "https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD"
@@ -144,7 +140,7 @@
         });
 
         localStorage.setItem('mim89_full_menu_data', JSON.stringify(currentItems));
-        alert("تم حفظ وتحديث المينيو بجميع الأقسام والصور المقتصة بنجاح!");
+        alert("تم حفظ وتحديث المينيو بجميع الأقسام والصور بنجاح!");
     }
 </script>
 
