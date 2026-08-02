@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const itemTotal = item.price * item.qty;
             itemsSubtotal += itemTotal;
             itemsHTML += `
-                <div class="cart-item-row" style="display:flex; justify-between; align-items:center; margin-bottom:10px;">
+                <div class="cart-item-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div>
                         <strong>${item.name}</strong><br>
                         <small>${item.price.toLocaleString()} د.ع × ${item.qty}</small>
@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
         deliveryArea.addEventListener("change", updateCartUI);
     }
 
-    // 5. إرسال الطلب للواتساب
+    // 5. إرسال الطلب للواتساب مع التحقق الإجباري من البيانات
     if (sendOrderBtn) {
         sendOrderBtn.addEventListener("click", function () {
             if (cart.length === 0) {
@@ -174,10 +174,36 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const name = document.getElementById("custName")?.value || "غير محدد";
-            const phone = document.getElementById("custPhone")?.value || "غير محدد";
-            const address = document.getElementById("custAddress")?.value || "غير محدد";
-            const notes = document.getElementById("custNotes")?.value || "لا يوجد";
+            const nameInput = document.getElementById("custName");
+            const phoneInput = document.getElementById("custPhone");
+            const addressInput = document.getElementById("custAddress");
+            const notesInput = document.getElementById("custNotes");
+
+            const name = nameInput ? nameInput.value.trim() : "";
+            const phone = phoneInput ? phoneInput.value.trim() : "";
+            const address = addressInput ? addressInput.value.trim() : "";
+            const notes = notesInput && notesInput.value.trim() !== "" ? notesInput.value.trim() : "لا يوجد";
+
+            // فحص إدخال الاسم
+            if (!name) {
+                alert("⚠️ يرجى كتابة الاسم الكامل أولاً لخدمتك بشكل أفضل!");
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            // فحص إدخال الهاتف
+            if (!phone) {
+                alert("⚠️ يرجى كتابة رقم الهاتف للتواصل والدليفري!");
+                if (phoneInput) phoneInput.focus();
+                return;
+            }
+
+            // فحص إدخال العنوان عند التوصيل
+            if (isDelivery && !address) {
+                alert("⚠️ يرجى كتابة العنوان التفصيلي / المنطقة لتوصيل الطلب إليك!");
+                if (addressInput) addressInput.focus();
+                return;
+            }
 
             let msg = `*طلب جديد - MIM89 FAST FOOD* 🍔\n\n`;
             msg += `👤 *الاسم:* ${name}\n`;
