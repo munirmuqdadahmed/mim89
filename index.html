@@ -757,21 +757,21 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=7.0"></script>
+    <script src="script.js?v=8.0"></script>
 
-    <!-- سكربت استبدال الصور والتحديث عند التغيير من اللوحة -->
+    <!-- سكربت التنقل السلس وفك التجميد فور الضغط على أي قسم -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            // إغلاق القائمة الجانبية عند النقر على قسم
+            // إغلاق القائمة وفك التجميد التام عند الضغط على أي قسم
             document.querySelectorAll('.close-menu-link').forEach(link => {
-                link.addEventListener('click', () => {
+                link.addEventListener('click', function () {
                     document.getElementById('sideMenu').classList.remove('active');
                     document.getElementById('menuOverlay').classList.remove('active');
                     document.body.classList.remove('menu-open');
                 });
             });
 
-            // قراءة الصور والمكونات المعدلة فقط عند وجودها
+            // قراءة التعديلات المخصصة من اللوحة وحفظ الصور
             const savedData = localStorage.getItem('mim89_full_menu_data');
             if (savedData) {
                 const menuData = JSON.parse(savedData);
