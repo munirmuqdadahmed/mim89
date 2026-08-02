@@ -565,3 +565,16 @@ footer {
     .bottom-nav { display: flex; }
     .card { width: 100%; margin: 10px 0; }
 }
+/* منع التقريب وتكبير الشاشة في الآيفون عند الضغط على الحقول */
+input[type="text"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+    font-size: 16px !important;
+}
+
+/* تثبيت النافذة العائمة للسلة بدون زحزحة */
+.cart-modal {
+    touch-action: pan-y;
+}
