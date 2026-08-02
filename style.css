@@ -1,4 +1,568 @@
-/* منع التقريب وتكبير الشاشة في الآيفون عند الضغط على الحقول */
+/* ==========================================================
+   MIM89 FAST FOOD - Full Stylesheet (style.css)
+   ========================================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Cairo', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #111;
+    color: #fff;
+    padding-bottom: 80px;
+    direction: rtl;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Loader */
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    transition: opacity 0.5s ease;
+}
+
+#loader h2 {
+    color: #ff9f00;
+    font-size: 28px;
+    font-weight: 900;
+    margin-top: 15px;
+    letter-spacing: 2px;
+}
+
+.spinner {
+    width: 45px;
+    height: 45px;
+    border: 4px solid #333;
+    border-top: 4px solid #ff9f00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Floating Cart Button */
+.cart-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: #ff9f00;
+    color: #000;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    box-shadow: 0 4px 15px rgba(255, 159, 0, 0.4);
+    z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.cart-btn:active {
+    transform: scale(0.9);
+}
+
+.cart-btn span {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e63946;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Side Menu Overlay */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1001;
+    display: none;
+}
+
+.menu-overlay.active {
+    display: block;
+}
+
+/* Side Menu */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100%;
+    background: #1a1a1a;
+    border-left: 2px solid #ff9f00;
+    z-index: 1002;
+    padding: 25px 15px;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-menu.active {
+    right: 0;
+}
+
+.side-menu a {
+    color: #fff;
+    padding: 12px 10px;
+    border-bottom: 1px solid #333;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.side-menu a:hover {
+    color: #ff9f00;
+}
+
+/* Header & Hero */
+header.hero {
+    position: relative;
+    background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%);
+    border-bottom: 2px solid #ff9f00;
+    padding: 20px 15px 30px;
+    text-align: center;
+}
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto 20px;
+}
+
+.top-nav .logo h1 {
+    font-size: 32px;
+    color: #ff9f00;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin: 0;
+    line-height: 1;
+}
+
+.top-nav .logo span {
+    font-size: 11px;
+    color: #aaa;
+    letter-spacing: 3px;
+    font-weight: bold;
+}
+
+.top-nav ul {
+    display: none;
+    list-style: none;
+    gap: 15px;
+}
+
+.top-nav ul li a {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.hero-content h2 {
+    font-size: 24px;
+    color: #fff;
+    margin-bottom: 5px;
+    font-weight: 900;
+}
+
+.hero-content p {
+    color: #aaa;
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+.hero-content .btn {
+    display: inline-block;
+    background: #ff9f00;
+    color: #000;
+    padding: 8px 25px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Bottom Nav (Mobile Navigation Bar) */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 0;
+    z-index: 999;
+}
+
+.bottom-nav a {
+    color: #aaa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    gap: 3px;
+}
+
+.bottom-nav a i {
+    font-size: 18px;
+}
+
+.bottom-nav a.center-btn {
+    background: #ff9f00;
+    color: #000;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    justify-content: center;
+    margin-top: -15px;
+    box-shadow: 0 4px 10px rgba(255, 159, 0, 0.4);
+}
+
+.bottom-nav a.center-btn i {
+    font-size: 20px;
+}
+
+/* Search Box */
+.search-box {
+    max-width: 800px;
+    margin: 15px auto;
+    padding: 0 15px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 15px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #ff9f00;
+}
+
+/* Menu Sections & Cards Grid */
+.menu-section {
+    max-width: 800px;
+    margin: 0 auto 20px;
+    padding: 10px 15px 0;
+}
+
+.menu-section h2 {
+    color: #ff9f00;
+    font-size: 20px;
+    font-weight: 800;
+    border-bottom: 2px solid #ff9f00;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+}
+
+/* Card Item Style */
+.card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid #2a2a2a;
+    overflow: hidden;
+    margin-bottom: 15px;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.card:hover {
+    border-color: #ff9f00;
+}
+
+.card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    object-position: center;
+    background: #222;
+    display: block;
+}
+
+.card h3 {
+    font-size: 17px;
+    color: #fff;
+    padding: 10px 12px 2px;
+    font-weight: 700;
+}
+
+.card p {
+    font-size: 12px;
+    color: #aaa;
+    padding: 0 12px 10px;
+    line-height: 1.4;
+}
+
+.card .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #e63946;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 5px;
+    z-index: 2;
+}
+
+.card .badge.new {
+    background: #25d366;
+    color: #000;
+}
+
+.card-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #141414;
+    border-top: 1px solid #262626;
+}
+
+.card-price-row span {
+    font-size: 16px;
+    font-weight: 900;
+    color: #ff9f00;
+}
+
+.add-to-cart-btn {
+    background: #ff9f00;
+    color: #000;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+}
+
+.add-to-cart-btn:active {
+    transform: scale(0.95);
+}
+
+/* Contact Section */
+#contact {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 0 15px;
+    text-align: center;
+}
+
+#contact h2 {
+    color: #ff9f00;
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.contact-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.contact-box a {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* Cart Modal */
+.cart-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+}
+
+.cart-content {
+    background: #1a1a1a;
+    border-radius: 15px;
+    border: 2px solid #ff9f00;
+    width: 100%;
+    max-width: 450px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #333;
+}
+
+.cart-header h3 {
+    color: #ff9f00;
+    font-size: 18px;
+}
+
+.close-cart {
+    font-size: 24px;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.cart-scroll-body {
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.cart-items {
+    margin-bottom: 15px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.empty-msg {
+    text-align: center;
+    color: #777;
+    font-size: 14px;
+    padding: 20px 0;
+}
+
+.total-price {
+    display: flex;
+    justify-content: space-between;
+    font-size: 17px;
+    font-weight: 900;
+    color: #ff9f00;
+    padding: 10px 0;
+    border-top: 1px solid #333;
+    margin-bottom: 15px;
+}
+
+/* Segmented Control (توصيل / استلام) */
+.segmented-control {
+    display: flex;
+    background: #222;
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 12px;
+}
+
+.segment-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.segment-btn.active {
+    background: #ff9f00;
+    color: #000;
+}
+
+.user-details input,
+.user-details textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+}
+
+.send-order-btn {
+    width: 100%;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 15px;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #222;
+    margin-top: 20px;
+}
+
+/* ==========================================================
+   تنسيقات الحلول الذكية المضافة للتجاوب ومنع التكبير وتثبيت القوائم
+   ========================================================== */
+
+/* 1. منع تقريب وتكبير الشاشة في الآيفون عند الكتابة داخل الحقول */
 input[type="text"],
 input[type="tel"],
 input[type="number"],
@@ -7,12 +571,12 @@ select {
     font-size: 16px !important;
 }
 
-/* تثبيت النافذة العائمة للسلة بدون زحزحة */
+/* 2. تثبيت النافذة العائمة للسلة بدون زحزحة */
 .cart-modal {
     touch-action: pan-y;
 }
 
-/* إصلاح تحريك قائمة المزيد في الموبايل ومنع تحرك المينيو الخلفي */
+/* 3. إصلاح تحريك قائمة المزيد في الموبايل وعزل تمريرها عن الخلفية */
 .side-menu {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -20,7 +584,7 @@ select {
     max-height: 100vh !important;
 }
 
-/* منع تحرك خلفية المينيو فور فتح قائمة المزيد */
+/* 4. منع تحرك خلفية المينيو فور فتح قائمة المزيد */
 body.menu-open {
     overflow: hidden !important;
     position: fixed;
