@@ -1,75 +1,190 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 Poster</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; padding: 20px; }
-        .poster { width: 100%; max-width: 450px; background: linear-gradient(180deg, #0d0d0d 0%, #1a1a1a 100%); border: 3px solid #ff9f00; border-radius: 20px; padding: 30px 20px; text-align: center; color: #fff; box-shadow: 0 10px 30px rgba(255, 159, 0, 0.3); }
-        .logo h1 { font-size: 42px; color: #ff9f00; margin: 0; font-weight: 900; letter-spacing: 2px; }
-        .logo span { font-size: 13px; color: #aaa; letter-spacing: 4px; font-weight: bold; }
-        .title-opening { margin: 15px 0; background: #ff9f00; color: #000; display: inline-block; padding: 6px 22px; border-radius: 30px; font-size: 18px; font-weight: 800; }
-        .offer-box { border: 2px dashed #ff9f00; padding: 15px 10px; border-radius: 15px; background: rgba(255, 159, 0, 0.07); margin-bottom: 15px; }
-        .offer-box h2 { font-size: 22px; color: #fff; margin: 0; }
-        .offer-box h2 span { color: #ff3b3b; font-size: 28px; display: block; margin-top: 4px; font-weight: 900; }
-        .discount-badge { background: #e63946; color: #fff; font-size: 18px; font-weight: 900; padding: 8px; border-radius: 10px; margin-top: 10px; display: block; }
-        .details { font-size: 13px; color: #ccc; line-height: 1.8; text-align: right; margin-bottom: 15px; padding: 0 5px; }
-        .site-link-btn { display: block; background: #222; border: 1px solid #ff9f00; color: #ff9f00; text-decoration: none; padding: 10px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; font-size: 15px; direction: ltr; }
-        .footer-info { border-top: 1px solid #333; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; text-align: right; font-size: 12px; }
-        
-        /* تثبيت ألوان وأحجام الأرقام لتظهر بصورة واضحة جداً */
-        .phone-number { 
-            color: #ff9f00 !important; 
-            text-decoration: none !important; 
-            font-size: 16px; 
-            font-weight: bold; 
-            direction: ltr; 
-            display: inline-block; 
-            margin: 2px 0;
-        }
-        
-        .qr-code-img { width: 95px; height: 95px; border-radius: 10px; border: 2px solid #ff9f00; background: #fff; padding: 2px; display: block; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIM89 Fast Food - Modern Menu</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #0d0d0d;
+    color: #ffffff;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .menu-card {
+    width: 100%;
+    max-width: 850px;
+    background: #141414;
+    border: 2px solid #d4af37;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(212, 175, 55, 0.15);
+  }
+  .header {
+    text-align: center;
+    border-bottom: 2px dashed #2a2a2a;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .logo-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: #f39c12;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(243, 156, 18, 0.4);
+  }
+  .logo-subtitle {
+    font-size: 15px;
+    color: #cccccc;
+    font-weight: 600;
+  }
+  .badge-tag {
+    display: inline-block;
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 8px;
+  }
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .section-box {
+    background: #1c1c1c;
+    border: 1px solid #2d2d2d;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #f39c12;
+    border-bottom: 2px solid #f39c12;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .item-name { font-weight: 600; color: #ffffff; }
+  .item-dots { flex-grow: 1; border-bottom: 1px dotted #444; margin: 0 8px; }
+  .item-price {
+    font-weight: 700;
+    color: #f39c12;
+    background: rgba(243, 156, 18, 0.12);
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .addons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  .addon-card {
+    background: #252525;
+    border: 1px solid #333;
+    padding: 8px 4px;
+    border-radius: 8px;
+  }
+  .addon-name { font-size: 12px; font-weight: 600; color: #ddd; }
+  .addon-price { font-size: 12px; font-weight: 700; color: #f39c12; margin-top: 2px; }
+  .footer {
+    margin-top: 20px;
+    background: linear-gradient(135deg, #1f1f1f, #141414);
+    border: 1px solid #f39c12;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .delivery-info { font-size: 13px; color: #ddd; margin-bottom: 8px; }
+  .delivery-info strong { color: #2ecc71; }
+  .phones { display: flex; justify-content: center; gap: 20px; font-size: 16px; font-weight: 700; color: #fff; }
+</style>
 </head>
 <body>
-    <div class="poster">
-        <div class="logo">
-            <h1>MIM89</h1>
-            <span>FAST FOOD</span>
-        </div>
 
-        <div class="title-opening">🎉 الافتتاح الكبير 🎉</div>
+<div class="menu-card">
+  <div class="header">
+    <div class="logo-title">MIM89</div>
+    <div class="logo-subtitle">FAST FOOD • كل الطعم... في مكان واحد</div>
+    <div class="badge-tag">دجاج طازج 100% 🍗 • لحم عجل طازج 🥩</div>
+  </div>
 
-        <div class="offer-box">
-            <h2>🎁 لفة شاورما صاج <span>مجاناً للجميع! 🌯</span></h2>
-            <div class="discount-badge">🔥 وخصم 50% على باقي المينيو!</div>
-        </div>
-
-        <div class="details">
-            <p>📍 <strong>الموقع:</strong> بغداد - القاهرة - قرب صيدلية جوهرة الشفاء</p>
-            <p>⏰ <strong>الشاورما المجانية:</strong> من 5:00 مساءً حتى 8:00 مساءً</p>
-            <p>💥 <strong>نصف السعر (50%):</strong> على البركر 🍔، الريزو 🍚، والكنتاكي 🍗</p>
-        </div>
-
-        <!-- رابط الموقع المباشر -->
-        <a href="https://mim89.com" target="_blank" class="site-link-btn">
-            🌐 mim89.com
-        </a>
-
-        <div class="footer-info">
-            <div>
-                <p>📞 <a href="tel:07750008630" class="phone-number">07750008630</a></p>
-                <p>📞 <a href="tel:07850008630" class="phone-number">07850008630</a></p>
-                <p style="color:#ffffff; margin-top:4px;">امسح الرمز للطلب المباشر 📲</p>
-            </div>
-            
-            <div>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://mim89.com" alt="MIM89 QR Code" class="qr-code-img">
-            </div>
-        </div>
+  <div class="grid-container">
+    <!-- قسم الشاورما -->
+    <div class="section-box">
+      <div class="section-title"><span>قسم الشاورما (دجاج)</span><span>🌯</span></div>
+      <div class="item-row"><span class="item-name">شاورما صاج عادي</span><span class="item-dots"></span><span class="item-price">2,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">وجبة شاورما</span><span class="item-dots"></span><span class="item-price">3,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما صاج دبل</span><span class="item-dots"></span><span class="item-price">5,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما عربي</span><span class="item-dots"></span><span class="item-price">5,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما صاج سوبر</span><span class="item-dots"></span><span class="item-price">6,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما وزن 250 غرام</span><span class="item-dots"></span><span class="item-price">7,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما 89 الخاص</span><span class="item-dots"></span><span class="item-price">8,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">وجبة شاورما دبل</span><span class="item-dots"></span><span class="item-price">9,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">شاورما وزن 500 غرام</span><span class="item-dots"></span><span class="item-price">15,000 د.ع</span></div>
     </div>
+
+    <!-- قسم الكنتاكي والريزو -->
+    <div class="section-box">
+      <div class="section-title"><span>قسم الكنتاكي والريزو</span><span>🍗</span></div>
+      <div class="item-row"><span class="item-name">كنتاكي قطعتين</span><span class="item-dots"></span><span class="item-price">5,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">ريزو (كلاسيك / كص)</span><span class="item-dots"></span><span class="item-price">5,000 - 5,500</span></div>
+      <div class="item-row"><span class="item-name">ريزو (جبنة / مشروم)</span><span class="item-dots"></span><span class="item-price">6,000 - 6,500</span></div>
+      <div class="item-row"><span class="item-name">ريزو 89 الخاص</span><span class="item-dots"></span><span class="item-price">7,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">كنتاكي 4 قطع</span><span class="item-dots"></span><span class="item-price">9,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">كنتاكي 6 قطع</span><span class="item-dots"></span><span class="item-price">13,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">وجبة كنتاكي كاملة (10 قطع)</span><span class="item-dots"></span><span class="item-price">20,000 د.ع</span></div>
+    </div>
+
+    <!-- قسم الفنكر والمقبلات -->
+    <div class="section-box">
+      <div class="section-title"><span>الفنكر والمقبلات</span><span>🍟</span></div>
+      <div class="item-row"><span class="item-name">أصابع موزاريلا</span><span class="item-dots"></span><span class="item-price">750 د.ع</span></div>
+      <div class="item-row"><span class="item-name">قدح فنكر سبايسي</span><span class="item-dots"></span><span class="item-price">1,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">حلقات بصل (5 قطع)</span><span class="item-dots"></span><span class="item-price">2,000 د.ع</span></div>
+      <div class="item-row"><span class="item-name">قدح فنكر كلاسيك</span><span class="item-dots"></span><span class="item-price">2,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">قدح فنكر (دوريتوس/هالابينو)</span><span class="item-dots"></span><span class="item-price">3,500 د.ع</span></div>
+      <div class="item-row"><span class="item-name">فنكر 89 الخاص</span><span class="item-dots"></span><span class="item-price">4,500 د.ع</span></div>
+    </div>
+
+    <!-- قسم الإضافات -->
+    <div class="section-box">
+      <div class="section-title"><span>قسم الإضافات</span><span>➕</span></div>
+      <div class="addons-grid">
+        <div class="addon-card"><div class="addon-name">بطاطا إضافية</div><div class="addon-price">1,000</div></div>
+        <div class="addon-card"><div class="addon-name">صوص خاص</div><div class="addon-price">1,000</div></div>
+        <div class="addon-card"><div class="addon-name">هالابينو</div><div class="addon-price">1,000</div></div>
+        <div class="addon-card"><div class="addon-name">جبن شيدر</div><div class="addon-price">1,000</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="delivery-info">🛵 خدمة توصيل سريعة: <strong>منطقة القاهرة (مجاناً)</strong> • باقي المناطق (3,000 د.ع)</div>
+    <div class="phones">
+      <span>📞 07750008630</span>
+      <span>📞 07850008630</span>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
