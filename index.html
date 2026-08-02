@@ -757,3 +757,17 @@
 </body>
 
 </html>
+
+<script>
+    // كود احترافي يقرأ الأسعار المحدثة من لوحة التحكم الخاصة بك فقط
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedPrices = JSON.parse(localStorage.getItem('mim89_custom_prices'));
+        if (savedPrices) {
+            // تحديث الأسعار تلقائياً إن وجدت
+            for (let id in savedPrices) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = savedPrices[id];
+            }
+        }
+    });
+</script>
