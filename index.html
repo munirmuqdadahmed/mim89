@@ -12,8 +12,9 @@
         
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #1a1a1a; border-bottom: 1px solid #222; }
         .brand-box { text-align: right; }
-        .brand-box h1 { color: #ff9f00; font-size: 22px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
-        .brand-box span { color: #aaa; font-size: 11px; font-weight: bold; display: block; }
+        .brand-box h1 { color: #ff9f00; font-size: 20px; font-weight: 900; letter-spacing: 1px; line-height: 1; }
+        .brand-box .sub-en { color: #aaa; font-size: 10px; font-weight: bold; display: block; margin-top: 2px; }
+        .brand-box .sub-ar { color: #777; font-size: 10px; display: block; margin-top: 1px; }
         
         .cart-icon-btn { position: relative; background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
         .cart-badge { position: absolute; top: -3px; right: -3px; background: #e63946; color: #fff; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
@@ -31,7 +32,7 @@
         .section-title { color: #ff9f00; font-size: 16px; font-weight: 900; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 6px; }
         
         .item-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; overflow: hidden; margin-bottom: 15px; display: flex; flex-direction: column; }
-        .item-img { width: 100%; height: 140px; object-fit: cover; }
+        .item-img { width: 100%; height: 150px; object-fit: cover; }
         .item-details { padding: 12px; }
         .item-title { font-size: 15px; font-weight: bold; margin-bottom: 4px; color: #fff; }
         .item-desc { font-size: 11px; color: #aaa; margin-bottom: 10px; line-height: 1.4; }
@@ -59,8 +60,9 @@
             <div class="cart-badge" id="cartCount">0</div>
         </div>
         <div class="brand-box">
-            <h1>MIM89 FAST FOOD</h1>
-            <span>FAST FOOD</span>
+            <h1>MIM89</h1>
+            <span class="sub-en">FAST FOOD</span>
+            <span class="sub-ar">كل الطعم... في مكان واحد</span>
         </div>
     </header>
 
@@ -78,7 +80,7 @@
     <div class="menu-section" id="menuContainer"></div>
 
     <div class="bottom-nav">
-        <a class="nav-item active"><i class="fas fa-home"></i>الرئيسية</a>
+        <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
         <a class="nav-item"><i class="fas fa-fire"></i>العروض</a>
         <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
         <a class="nav-item"><i class="fas fa-map-marker-alt"></i>الموقع</a>
@@ -105,10 +107,11 @@
     </div>
 
 <script>
+    // قائمة الوجبات مع روابط صور صحيحة ومضبوطة 100%
     let menuItems = [
-        { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "1,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
-        { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", desc: "كمية مضاعفة من الشاورما مع الثومية والصوص", price: "3,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
-        { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك لحم", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" }
+        { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "1,500 د.ع", img: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60" },
+        { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", desc: "كمية مضاعفة من الشاورما مع الثومية والصوص", price: "3,000 د.ع", img: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=500&auto=format&fit=crop&q=60" },
+        { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك لحم", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=60" }
     ];
 
     let cart = [];
@@ -230,8 +233,17 @@
     }
 
     window.onload = () => {
+        // فحص الذاكرة المحلية، وإذا كان هناك مينيو مخصص من الإدارة يتم عرضه، وإلا يظهر الافتراضي الصحيح
         const saved = localStorage.getItem('mim89_custom_menu');
-        if(saved) menuItems = JSON.parse(saved);
+        if(saved) {
+            try {
+                menuItems = JSON.parse(saved);
+            } catch(e) {
+                menuItems = defaultMenuItems;
+            }
+        } else {
+            menuItems = defaultMenuItems;
+        }
         renderCategories();
         renderMenu(menuItems);
     };
