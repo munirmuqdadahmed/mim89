@@ -40,14 +40,12 @@
         .item-price { color: #ff9f00; font-size: 15px; font-weight: 900; }
         .add-btn { background: #ff9f00; color: #000; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* شريط التنقل السفلي */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; }
         .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
         .nav-item i { font-size: 16px; }
         .nav-item.active { color: #ff9f00; }
         .nav-item.center-btn { background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; }
 
-        /* سلة الطلبات المنبثقة */
         .cart-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
         .cart-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; }
         .cart-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
@@ -81,16 +79,14 @@
 
     <div class="menu-section" id="menuContainer"></div>
 
-    <!-- شريط التنقل السفلي المتكامل -->
     <div class="bottom-nav">
-        <a class="nav-item active"><i class="fas fa-home"></i>الرئيسية</a>
+        <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
         <a class="nav-item"><i class="fas fa-fire"></i>العروض</a>
         <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
         <a class="nav-item"><i class="fas fa-map-marker-alt"></i>الموقع</a>
         <a class="nav-item" href="admin.html"><i class="fas fa-bars"></i>المزيد</a>
     </div>
 
-    <!-- نافذة السلة -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
