@@ -7,7 +7,7 @@
     <title>MIM89 | Fast Food</title>
     <meta name="description" content="MIM89 Fast Food">
 
-    <link rel="stylesheet" href="style.css?v=600.0">
+    <link rel="stylesheet" href="style.css?v=800.0">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,7 +112,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- حاوية المينيو الكاملة (تتعبأ تلقائياً وبأمان تام) -->
+    <!-- الحاوية الرئيسية للمينيو -->
     <div id="main-menu-container"></div>
 
     <!-- Contact Section -->
@@ -172,19 +172,16 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=600.0"></script>
+    <script src="script.js?v=800.0"></script>
 
-    <!-- سكربت الأمان والتزامن الشامل لضمان ظهور كل الأصناف وعدم اختفائها نهائياً -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const defaultItems = [
-                // العروض الخاصة
                 { id: 101, cat: "🔥 العروض الخاصة واليومية", name: "🔥 عرض الفردي المميز", desc: "بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
                 { id: 102, cat: "🔥 العروض الخاصة واليومية", name: "🌯 عرض ميكس الشاورما", desc: "وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي", price: "8,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
                 { id: 103, cat: "🔥 العروض الخاصة واليومية", name: "🍔🍔 عرض الثنائي (2 بركر)", desc: "2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي", price: "10,500 د.ع", img: "https://foodish-api.com/images/burger/burger5.jpg" },
                 { id: 104, cat: "🔥 العروض الخاصة واليومية", name: "👑 عرض اللمة والعائلة", desc: "4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي", price: "28,000 د.ع", img: "https://foodish-api.com/images/burger/burger10.jpg" },
 
-                // البركر
                 { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك (لحم)", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" },
                 { id: 202, cat: "🍔 قسم البركر", name: "بركر الجبن (لحم)", desc: "شريحة لحم غنية بجبنة الشيدر الذائبة مع فنكر", price: "5,000 د.ع", img: "https://foodish-api.com/images/burger/burger3.jpg" },
                 { id: 203, cat: "🍔 قسم البركر", name: "دبل تشيز بركر (لحم)", desc: "قطعتين لحم مع طبقات مضاعفة من الجبن مع فنكر", price: "8,000 د.ع", img: "https://foodish-api.com/images/burger/burger4.jpg" },
@@ -199,11 +196,9 @@
                 { id: 212, cat: "🍔 قسم البركر", name: "بركر مكسيكي BBQ", desc: "نكهة حارة ولذيذة مع صوص الباربكيو وقطع الهالابينو مع بيبسي", price: "7,000 د.ع", img: "https://foodish-api.com/images/burger/burger15.jpg" },
                 { id: 213, cat: "🍔 قسم البركر", name: "بركر لحم مزدوج", desc: "وجبة مشبعة بقطعتين من اللحم المشوي", price: "8,000 د.ع", img: "https://foodish-api.com/images/burger/burger16.jpg" },
 
-                // الفاهيتا
                 { id: 301, cat: "🌮 قسم الفاهيتا", name: "سندويش فاهيتا دجاج", desc: "شرائح دجاج متبلة ومقلية مع الفلفل الألوان والبصل والجبن", price: "5,000 د.ع", img: "https://foodish-api.com/images/pasta/pasta1.jpg" },
                 { id: 302, cat: "🌮 قسم الفاهيتا", name: "وجبة فاهيتا دجاج كاملة", desc: "طبق فاهيتا دجاج محمر مع الفنكر، الثومية، المخلل ومشروب بيبسي", price: "7,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta2.jpg" },
 
-                // الشاورما
                 { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج عادي", desc: "خبز صاج، شاورما دجاج، ثوم، وبطاطا", price: "2,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
                 { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دبل", desc: "شاورما مضاعفة في خبز الصاج المميز مع فنكر وبيبسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
                 { id: 403, cat: "🌯 قسم الشاورما", name: "شاورما صاج سوبر", desc: "حجم كبير جداً مليء بالشاورما والجبن مع بيبسي", price: "6,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa4.jpg" },
@@ -214,7 +209,6 @@
                 { id: 408, cat: "🌯 قسم الشاورما", name: "وجبة شاورما دبل", desc: "وجبة دبل مشبعة مع مقبلات وثومية", price: "9,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa9.jpg" },
                 { id: 409, cat: "🌯 قسم الشاورما", name: "شاورما 89 الخاص", desc: "طبق الشاورما الخاص المضاف له الجبن والبطاطا والصوصات وبيبسي", price: "8,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa10.jpg" },
 
-                // الريزو
                 { id: 501, cat: "🍚 قسم الريزو", name: "ريزو كلاسيك", desc: "أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو", price: "5,000 د.ع", img: "https://foodish-api.com/images/rice/rice1.jpg" },
                 { id: 502, cat: "🍚 قسم الريزو", name: "ريزو كص دجاج", desc: "أرز الريزو المبهر يعلوه قص دجاج طازج محمر مع صوص الريزو", price: "5,500 د.ع", img: "https://foodish-api.com/images/rice/rice2.jpg" },
                 { id: 503, cat: "🍚 قسم الريزو", name: "ريزو سبايسي", desc: "نكهة حارة ممتازة مع قطع الدجاج السبايسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/rice/rice3.jpg" },
@@ -223,13 +217,11 @@
                 { id: 506, cat: "🍚 قسم الريزو", name: "ريزو 89 الخاص", desc: "خلطة الريزو الخاصة مع دبل دجاج وجبن", price: "7,500 د.ع", img: "https://foodish-api.com/images/rice/rice6.jpg" },
                 { id: 507, cat: "🍚 قسم الريزو", name: "ريزو دبل تشكن", desc: "كمية مضاعفة من الدجاج المقرمش فوق الريزو", price: "7,000 د.ع", img: "https://foodish-api.com/images/rice/rice7.jpg" },
 
-                // الكنتاكي
                 { id: 601, cat: "🍗 قسم الكنتاكي", name: "كنتاكي قطعتين", desc: "قطعتين دجاج مقرمش + بطاطا وثومية", price: "5,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken1.jpg" },
                 { id: 602, cat: "🍗 قسم الكنتاكي", name: "كنتاكي 4 قطع", desc: "4 قطع دجاج ذهبي + بطاطا وثومية وخبز مع بيبسي", price: "9,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken2.jpg" },
                 { id: 603, cat: "🍗 قسم الكنتاكي", name: "كنتاكي 6 قطع", desc: "6 قطع كنتاكي المقرمش مع الكولسلو والبطاطا", price: "13,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken3.jpg" },
                 { id: 604, cat: "🍗 قسم الكنتاكي", name: "وجبة كنتاكي كاملة", desc: "10 قطع كنتاكي مع المشروب، البطاطا، الكولسلو والثومية", price: "20,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken4.jpg" },
 
-                // المقبلات
                 { id: 701, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر كلاسيك", desc: "بطاطا مقرمشة ذهبية مع جبن وبيبسي", price: "2,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta3.jpg" },
                 { id: 702, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر سبايسي", desc: "بطاطا مبهرة بالنكهة الحارة", price: "1,000 د.ع", img: "https://foodish-api.com/images/pasta/pasta4.jpg" },
                 { id: 703, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر دوريتوس بالجبن", desc: "قدح فنكر مقرمش محمل بقطع الدوريتوس والجبنة السائلة", price: "3,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta5.jpg" },
@@ -241,7 +233,6 @@
                 { id: 709, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "إضافة هالابينو", desc: "قطع فلفل هالابينو الحار", price: "1,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa4.jpg" },
                 { id: 710, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "إضافة صوص خاص", desc: "علبة صوص مميز (ثومية / سبايسي / 89)", price: "1,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa5.jpg" },
 
-                // المشروبات
                 { id: 801, cat: "🥤 قسم المشروبات", name: "بيبسي", desc: "مشروب غازي بارد", price: "500 د.ع", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" },
                 { id: 802, cat: "🥤 قسم المشروبات", name: "سفن أب", desc: "قدح ثلج منعش", price: "500 د.ع", img: "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" },
                 { id: 803, cat: "🥤 قسم المشروبات", name: "ميرندا", desc: "مشروب غازي بنكهة البرتقال", price: "500 د.ع", img: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=600&q=80" },
@@ -249,14 +240,12 @@
                 { id: 805, cat: "🥤 قسم المشروبات", name: "ماء معدني", desc: "قنينة ماء نقي مبرد", price: "250 د.ع", img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" }
             ];
 
-            // دمج ذكي وآمن: إذا وجدنا تعديلات محفوظة نأخذها، وإلا فنعتمد القائمة الكاملة الثابتة بالكامل
             let menuItems = defaultItems;
             const savedData = localStorage.getItem('mim89_full_menu_data');
             if (savedData) {
                 try {
                     const parsed = JSON.parse(savedData);
                     if (Array.isArray(parsed) && parsed.length > 0) {
-                        // دمج الأصناف المحفوظة مع التأكد من عدم ضياع أي قسم أساسي
                         menuItems = parsed;
                     }
                 } catch(e) {
@@ -310,7 +299,6 @@
                 });
             }
 
-            // التنقل السلس عبر القائمة الجانبية
             document.querySelectorAll('.close-menu-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
