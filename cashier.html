@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير والمخزن الاحترافي</title>
+    <title>MIM89 - نظام الكاشير الآمن والمحمي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -59,27 +59,19 @@
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* النوافذ المنبثقة */
+        /* نافذة إدخال الرمز السري والنوافذ المنبثقة */
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 95%; max-width: 650px; padding: 20px; color: #fff; font-family: 'Cairo'; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 450px; padding: 20px; color: #fff; font-family: 'Cairo'; }
         .modal-content h3 { color: #ff9f00; margin-bottom: 15px; text-align: center; }
-        .date-filter-box { display: flex; gap: 10px; margin-bottom: 15px; }
-        .date-filter-box div { flex: 1; }
-        .date-filter-box label { font-size: 11px; color: #aaa; display: block; margin-bottom: 3px; }
-        .date-filter-box input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; font-family: 'Cairo'; }
-        .report-results { background: #222; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; line-height: 1.6; }
+        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-family: 'Cairo'; text-align: center; font-size: 16px; }
+        .modal-content label { font-size: 12px; color: #aaa; display: block; margin-bottom: 4px; }
 
-        /* جدول المخزن الاحترافي */
         .inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         .inv-table th, .inv-table td { border: 1px solid #333; padding: 8px; text-align: center; }
         .inv-table th { background: #222; color: #ff9f00; }
         .inv-table input { width: 60px; background: #111; color: #fff; border: 1px solid #444; text-align: center; padding: 4px; border-radius: 4px; }
         .action-btn { background: #ff9f00; color: #000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .delete-btn { background: #e63946; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-
-        .add-item-box { background: #222; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 8px; align-items: flex-end; }
-        .add-item-box div { flex: 1; }
-        .add-item-box input { width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; font-size: 12px; }
 
         @media print {
             body, html { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
@@ -93,14 +85,15 @@
 
     <header>
         <div class="logo-area" onclick="toggleMenuDropdown()">
-            <span>MIM89 FAST FOOD 🍔 <i class="fas fa-chevron-down" style="font-size:12px;"></i></span>
+            <span id="headerTitle">MIM89 FAST FOOD 🍔 (<span id="activeCashierName">الكاشير الأول</span>) <i class="fas fa-chevron-down" style="font-size:12px;"></i></span>
         </div>
 
         <div id="navDropdown" class="dropdown-menu">
-            <a href="index.html"><i class="fas fa-utensils"></i> عرض المينيو</a>
-            <a href="admin.html"><i class="fas fa-cog"></i> لوحة الإدارة</a>
-            <a href="javascript:void(0);" onclick="openReportModal()"><i class="fas fa-chart-pie"></i> جرد وتقارير الصندوق</a>
-            <a href="javascript:void(0);" onclick="openInventoryModal()"><i class="fas fa-boxes"></i> إدارة وجرد المخزن العالمي</a>
+            <a href="javascript:void(0);" onclick="requestPin('cashier1')"><i class="fas fa-cash-register"></i> تبديل إلى: الكاشير الأول</a>
+            <a href="javascript:void(0);" onclick="requestPin('cashier2')"><i class="fas fa-cash-register"></i> تبديل إلى: الكاشير الثاني</a>
+            <a href="javascript:void(0);" onclick="requestPin('admin')"><i class="fas fa-cog"></i> لوحة الإدارة</a>
+            <a href="javascript:void(0);" onclick="requestPin('report')"><i class="fas fa-chart-pie"></i> تقارير وجرد الصندوق</a>
+            <a href="javascript:void(0);" onclick="requestPin('inventory')"><i class="fas fa-boxes"></i> إدارة وجرد المخزن</a>
         </div>
     </header>
 
@@ -156,72 +149,72 @@
         </div>
     </div>
 
+    <!-- نافذة إدخال الرمز السري (PIN) -->
+    <div id="pinModal" class="custom-modal">
+        <div class="modal-content">
+            <h3 id="pinModalTitle">🔐 مطلوب الرمز السري</h3>
+            <label id="pinLabel">أدخل الرمز السري للوصول:</label>
+            <input type="password" id="pinInput" placeholder="****" autofocus>
+            <button class="pos-btn print" onclick="verifyPin()">تحقق ودخول</button>
+            <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('pinModal')">إلغاء</button>
+        </div>
+    </div>
+
     <!-- نافذة تقارير الصندوق -->
     <div id="reportModal" class="custom-modal">
-        <div class="modal-content">
-            <h3>📊 جرد الصندوق والمبيعات</h3>
-            <div class="date-filter-box">
-                <div>
-                    <label>من تاريخ:</label>
-                    <input type="date" id="startDate">
-                </div>
-                <div>
-                    <label>إلى تاريخ:</label>
-                    <input type="date" id="endDate">
-                </div>
+        <div class="modal-content" style="max-width:550px;">
+            <h3>📊 تقارير وجرد الصندوق</h3>
+            <div class="date-filter-box" style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;"><label>من تاريخ:</label><input type="date" id="startDate" style="width:100%; background:#222; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
+                <div style="flex:1;"><label>إلى تاريخ:</label><input type="date" id="endDate" style="width:100%; background:#222; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
             </div>
-            <button class="pos-btn print" style="margin-bottom:12px;" onclick="calculateReport()">عرض تقرير الفترة</button>
-            <div class="report-results" id="reportResultsBox">اختر التواريخ واضغط على عرض التقرير...</div>
-            <button class="pos-btn" style="background:#444;" onclick="closeModal('reportModal')">إغلاق النافذة</button>
+            <button class="pos-btn print" style="margin-bottom:12px;" onclick="calculateReport()">عرض التقرير</button>
+            <div class="report-results" id="reportResultsBox" style="background:#222; padding:10px; border-radius:8px; font-size:13px; margin-bottom:15px;">اختر التواريخ...</div>
+            <button class="pos-btn" style="background:#444;" onclick="closeModal('reportModal')">إغلاق</button>
         </div>
     </div>
 
-    <!-- نافذة إدارة وجرد المخزن العالمي -->
+    <!-- نافذة إدارة وجرد المخزن -->
     <div id="inventoryModal" class="custom-modal">
-        <div class="modal-content">
-            <h3>📦 إدارة وجرد المخزن العالمي</h3>
-            
-            <!-- إضافة مادة جديدة للمخزن -->
-            <div class="add-item-box">
-                <div>
-                    <label style="font-size:11px; color:#aaa;">اسم المادة:</label>
-                    <input type="text" id="newItemName" placeholder="مثال: صدور دجاج (كغ)">
-                </div>
-                <div style="flex:0.6;">
-                    <label style="font-size:11px; color:#aaa;">الرصيد الابتدائي:</label>
-                    <input type="number" id="newItemStock" placeholder="0">
-                </div>
-                <div>
-                    <button class="action-btn" style="width:100%; padding:7px;" onclick="addNewInventoryItem()">+ إضافة للمخزن</button>
-                </div>
+        <div class="modal-content" style="max-width:650px;">
+            <h3>📦 إدارة وجرد المخزن</h3>
+            <div style="background:#222; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:8px; align-items:flex-end;">
+                <div style="flex:1;"><label style="font-size:11px; color:#aaa;">اسم المادة:</label><input type="text" id="newItemName" placeholder="مثال: صدور دجاج (كغ)" style="width:100%; background:#111; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
+                <div style="flex:0.5;"><label style="font-size:11px; color:#aaa;">الرصيد:</label><input type="number" id="newItemStock" placeholder="0" style="width:100%; background:#111; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
+                <div><button class="action-btn" style="padding:7px; background:#ff9f00; color:#000; font-weight:bold;" onclick="addNewInventoryItem()">+ إضافة</button></div>
             </div>
-
-            <!-- جدول المواد في المخزن -->
-            <div style="max-height: 300px; overflow-y: auto;">
+            <div style="max-height: 250px; overflow-y: auto;">
                 <table class="inv-table" id="inventoryTable">
-                    <thead>
-                        <tr>
-                            <th>المادة الأولية</th>
-                            <th>الرصيد الحالي</th>
-                            <th>تحديث الرصيد</th>
-                            <th>إدارة</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTableBody">
-                        <tr><td colspan="4">جاري تحميل البيانات...</td></tr>
-                    </tbody>
+                    <thead><tr><th>المادة</th><th>الرصيد</th><th>تحديث</th><th>حذف</th></tr></thead>
+                    <tbody id="inventoryTableBody"></tbody>
                 </table>
             </div>
-
-            <button class="pos-btn" style="background:#444; margin-top:15px;" onclick="closeModal('inventoryModal')">إغلاق النافذة</button>
+            <button class="pos-btn" style="background:#444; margin-top:15px;" onclick="closeModal('inventoryModal')">إغلاق</button>
         </div>
     </div>
 
-    <!-- 1. وصل الزبون -->
+    <!-- لوحة الإدارة وتغيير الرموز السرية -->
+    <div id="adminModal" class="custom-modal">
+        <div class="modal-content" style="max-width:450px;">
+            <h3>⚙️ لوحة الإدارة وتغيير الرموز السرية</h3>
+            <label>رمز الكاشير الأول:</label>
+            <input type="text" id="adminPinC1">
+            <label>رمز الكاشير الثاني:</label>
+            <input type="text" id="adminPinC2">
+            <label>رمز المخزن:</label>
+            <input type="text" id="adminPinInv">
+            <label>رمز الإدارة:</label>
+            <input type="text" id="adminPinAdm">
+            <button class="pos-btn print" style="margin-top:10px;" onclick="saveNewPins()">حفظ التغييرات</button>
+            <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('adminModal')">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- طباعة الزبون والمطبخ -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
         <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">طريقة الدفع: <span id="c_payMethod" style="font-weight:bold;">كاش</span></p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="c_cashierName">الكاشير الأول</span> | الدفع: <span id="c_payMethod">كاش</span></p>
         <p style="text-align:center; font-size:10px; margin:2px 0;">التاريخ: <span id="c_date"></span></p>
         <p id="c_custDetails" style="font-size:11px; margin:3px 0; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:3px 0;"></p>
         <hr style="border: 1px dashed #000; margin:4px 0;">
@@ -231,12 +224,10 @@
         <p style="text-align:center; font-size:10px; margin-top:6px;">شكراً لزيارتكم مطعمنا ❤️</p>
     </div>
 
-    <!-- 2. وصل المطبخ -->
     <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
         <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">الوقت: <span id="k_time"></span></p>
-        <p id="k_custDetails" style="font-size:12px; margin:3px 0; font-weight:bold; border-top:1px solid #000; border-bottom:1px solid #000; padding:3px 0;"></p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="k_cashierName">الكاشير الأول</span></p>
         <hr style="border: 2px solid #000; margin:4px 0;">
         <div id="k_itemsBody" style="font-size:16px; font-weight:bold;"></div>
         <hr style="border: 2px solid #000; margin:4px 0;">
@@ -244,49 +235,86 @@
     </div>
 
 <script>
-    let db;
-    const request = indexedDB.open("MIM89_Secure_DB", 3);
+    // تهيئة الرموز السرية الافتراضية في النظام (يمكن تغييرها لاحقاً)
+    if (!localStorage.getItem('mim89_pins')) {
+        localStorage.setItem('mim89_pins', JSON.stringify({
+            cashier1: "1111",
+            cashier2: "2222",
+            inventory: "3333",
+            admin: "9999"
+        }));
+    }
 
-    request.onerror = function(event) { console.error("خطأ في قاعدة البيانات"); };
+    let currentCashier = "الكاشير الأول";
+    let targetAction = "";
+
+    function requestPin(action) {
+        targetAction = action;
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinModal').style.display = 'flex';
+        document.getElementById('pinInput').focus();
+        document.getElementById('navDropdown').style.display = 'none';
+    }
+
+    function verifyPin() {
+        const pin = document.getElementById('pinInput').value;
+        const pins = JSON.parse(localStorage.getItem('mim89_pins'));
+
+        let authorized = false;
+        if (targetAction === 'cashier1' && pin === pins.cashier1) {
+            currentCashier = "الكاشير الأول";
+            authorized = true;
+        } else if (targetAction === 'cashier2' && pin === pins.cashier2) {
+            currentCashier = "الكاشير الثاني";
+            authorized = true;
+        } else if (targetAction === 'inventory' && pin === pins.inventory) {
+            authorized = true;
+            closeModal('pinModal');
+            openInventoryModal();
+            return;
+        } else if (targetAction === 'report' && pin === pins.admin) {
+            authorized = true;
+            closeModal('pinModal');
+            openReportModal();
+            return;
+        } else if (targetAction === 'admin' && pin === pins.admin) {
+            authorized = true;
+            closeModal('pinModal');
+            openAdminModal();
+            return;
+        }
+
+        if (authorized) {
+            document.getElementById('activeCashierName').innerText = currentCashier;
+            closeModal('pinModal');
+            alert(`✅ تم التحويل بنجاح إلى: ${currentCashier}`);
+        } else {
+            alert("❌ الرمز السري غير صحيح!");
+        }
+    }
+
+    let db;
+    const request = indexedDB.open("MIM89_Secure_DB", 4);
     request.onsuccess = function(event) {
         db = event.target.result;
         loadPosMenu();
-        initInventory();
     };
     request.onupgradeneeded = function(event) {
         db = event.target.result;
-        if (!db.objectStoreNames.contains("orders")) {
-            db.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
-        }
+        if (!db.objectStoreNames.contains("orders")) db.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
         if (!db.objectStoreNames.contains("inventory")) {
-            const invStore = db.createObjectStore("inventory", { keyPath: "name" });
-            invStore.add({ name: "شرائح دجاج (كغ)", stock: 50 });
-            invStore.add({ name: "خبز صاج (عدد)", stock: 500 });
-            invStore.add({ name: "بطاطا فنكر (كغ)", stock: 40 });
-            invStore.add({ name: "جبن شيدر (شرائح)", stock: 200 });
-            invStore.add({ name: "علب بيبسي", stock: 300 });
+            const inv = db.createObjectStore("inventory", { keyPath: "name" });
+            inv.add({ name: "شرائح دجاج (كغ)", stock: 50 });
+            inv.add({ name: "خبز صاج (عدد)", stock: 500 });
+            inv.add({ name: "بطاطا فنكر (كغ)", stock: 40 });
+            inv.add({ name: "جبن شيدر (شرائح)", stock: 200 });
         }
     };
-
-    function initInventory() {
-        const transaction = db.transaction(["inventory"], "readwrite");
-        const store = transaction.objectStore("inventory");
-        store.get("شرائح دجاج (كغ)").onsuccess = function(e) {
-            if (!e.target.result) {
-                store.put({ name: "شرائح دجاج (كغ)", stock: 50 });
-                store.put({ name: "خبز صاج (عدد)", stock: 500 });
-                store.put({ name: "بطاطا فنكر (كغ)", stock: 40 });
-                store.put({ name: "جبن شيدر (شرائح)", stock: 200 });
-                store.put({ name: "علب بيبسي", stock: 300 });
-            }
-        };
-    }
 
     function saveOrderToDB(orderData) {
         if (!db) return;
         const transaction = db.transaction(["orders"], "readwrite");
-        const store = transaction.objectStore("orders");
-        store.add(orderData);
+        transaction.objectStore("orders").add(orderData);
         deductInventory(orderData.items);
     }
 
@@ -294,22 +322,16 @@
         if (!db) return;
         const transaction = db.transaction(["inventory"], "readwrite");
         const store = transaction.objectStore("inventory");
-
         items.forEach(item => {
-            let deductionName = "شرائح دجاج (كغ)";
+            let name = "شرائح دجاج (كغ)";
             let qty = item.qty * 0.2;
+            if(item.name.includes("شاورما")) { name = "خبز صاج (عدد)"; qty = item.qty * 1; }
+            else if(item.name.includes("بركر")) { name = "جبن شيدر (شرائح)"; qty = item.qty * 1; }
+            else if(item.name.includes("فنكر")) { name = "بطاطا فنكر (كغ)"; qty = item.qty * 0.3; }
 
-            if(item.name.includes("شاورما")) { deductionName = "خبز صاج (عدد)"; qty = item.qty * 1; }
-            else if(item.name.includes("بركر")) { deductionName = "جبن شيدر (شرائح)"; qty = item.qty * 1; }
-            else if(item.name.includes("فنكر") || item.name.includes("كنتاكي")) { deductionName = "بطاطا فنكر (كغ)"; qty = item.qty * 0.3; }
-            else if(item.name.includes("بيبسي") || item.name.includes("مشروب")) { deductionName = "علب بيبسي"; qty = item.qty * 1; }
-
-            store.get(deductionName).onsuccess = function(e) {
-                let data = e.target.result;
-                if (data) {
-                    data.stock = Math.max(0, data.stock - qty);
-                    store.put(data);
-                }
+            store.get(name).onsuccess = function(e) {
+                let d = e.target.result;
+                if(d) { d.stock = Math.max(0, d.stock - qty); store.put(d); }
             };
         });
     }
@@ -318,66 +340,16 @@
     let currentInvoice = [];
     let orderType = "صالة";
     let paymentMethod = "كاش (نقداً)";
-    let activeCustomerData = null;
     let orderCounter = parseInt(localStorage.getItem('mim89_order_counter')) || 1;
-
     document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
 
     const defaultItems = [
-        { id: 101, cat: "🔥 العروض الخاصة واليومية", name: "🔥 عرض الفردي المميز", desc: "بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
-        { id: 102, cat: "🔥 العروض الخاصة واليومية", name: "🌯 عرض ميكس الشاورما", desc: "وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي", price: "8,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
-        { id: 103, cat: "🔥 العروض الخاصة واليومية", name: "🍔🍔 عرض الثنائي (2 بركر)", desc: "2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي", price: "10,500 د.ع", img: "https://foodish-api.com/images/burger/burger5.jpg" },
-        { id: 104, cat: "🔥 العروض الخاصة واليومية", name: "👑 عرض اللمة والعائلة", desc: "4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي", price: "28,000 د.ع", img: "https://foodish-api.com/images/burger/burger10.jpg" },
-        { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك (لحم)", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" },
-        { id: 202, cat: "🍔 قسم البركر", name: "بركر الجبن (لحم)", desc: "شريحة لحم غنية بجبنة الشيدر الذائبة مع فنكر", price: "5,000 د.ع", img: "https://foodish-api.com/images/burger/burger3.jpg" },
-        { id: 203, cat: "🍔 قسم البركر", name: "دبل تشيز بركر (لحم)", desc: "قطعتين لحم مع طبقات مضاعفة من الجبن مع فنكر", price: "8,000 د.ع", img: "https://foodish-api.com/images/burger/burger4.jpg" },
-        { id: 204, cat: "🍔 قسم البركر", name: "👑 بركر RGB العملاق", desc: "3 قطع بركر لحم + 3 قطع جبن شيدر + صوص خاص مع فنكر", price: "10,000 د.ع", img: "https://foodish-api.com/images/burger/burger6.jpg" },
-        { id: 205, cat: "🍔 قسم البركر", name: "بركر مشروم (لحم)", desc: "شريحة لحم مشوية مع صوص الفطر والجبن الغني مع بيبسي", price: "7,000 د.ع", img: "https://foodish-api.com/images/burger/burger7.jpg" },
-        { id: 206, cat: "🍔 قسم البركر", name: "بركر هالابينو (لحم)", desc: "شريحة لحم مشوي بنكهة حارة مع قطع الهالابينو والصوص الخاص", price: "7,000 د.ع", img: "https://foodish-api.com/images/burger/burger8.jpg" },
-        { id: 207, cat: "🍔 قسم البركر", name: "بركر 89 الخاص", desc: "الخلطة الخاصة المبتكرة من مطعم MIM89 مع حلقات البصل وأصابع الجبن", price: "8,500 د.ع", img: "https://foodish-api.com/images/burger/burger9.jpg" },
-        { id: 208, cat: "🍔 قسم البركر", name: "بركر دجاج كلاسيك", desc: "شريحة دجاج طازجة مع الخس والمايونيز والصوص الخاص مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger11.jpg" },
-        { id: 209, cat: "🍔 قسم البركر", name: "تشكن فيليه", desc: "سندويش صدر دجاج مقرمش مع الصوص والمايونيز مع بيبسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger12.jpg" },
-        { id: 210, cat: "🍔 قسم البركر", name: "بركر دجاج سبايسي", desc: "دجاج المقرمش الحار مع صوص الهالابينو مع بيبسي", price: "6,000 د.ع", img: "https://foodish-api.com/images/burger/burger13.jpg" },
-        { id: 211, cat: "🍔 قسم البركر", name: "بركر كرسبي (دجاج)", desc: "دجاج مقرمش ذهبي الخلطة الممتازة مع بيبسي", price: "6,000 د.ع", img: "https://foodish-api.com/images/burger/burger14.jpg" },
-        { id: 212, cat: "🍔 قسم البركر", name: "بركر مكسيكي BBQ", desc: "نكهة حارة ولذيذة مع صوص الباربكيو وقطع الهالابينو مع بيبسي", price: "7,000 د.ع", img: "https://foodish-api.com/images/burger/burger15.jpg" },
-        { id: 213, cat: "🍔 قسم البركر", name: "بركر لحم مزدوج", desc: "وجبة مشبعة بقطعتين من اللحم المشوي", price: "8,000 د.ع", img: "https://foodish-api.com/images/burger/burger16.jpg" },
-        { id: 301, cat: "🌮 قسم الفاهيتا", name: "سندويش فاهيتا دجاج", desc: "شرائح دجاج متبلة ومقلية مع الفلفل الألوان والبصل والجبن", price: "5,000 د.ع", img: "https://foodish-api.com/images/pasta/pasta1.jpg" },
-        { id: 302, cat: "🌮 قسم الفاهيتا", name: "وجبة فاهيتا دجاج كاملة", desc: "طبق فاهيتا دجاج محمر مع الفنكر، الثومية، المخلل ومشروب بيبسي", price: "7,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta2.jpg" },
-        { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج عادي", desc: "خبز صاج، شاورما دجاج، ثوم، وبطاطا", price: "2,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
-        { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دبل", desc: "شاورما مضاعفة في خبز الصاج المميز مع فنكر وبيبسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
-        { id: 403, cat: "🌯 قسم الشاورما", name: "شاورما صاج سوبر", desc: "حجم كبير جداً مليء بالشاورما والجبن مع بيبسي", price: "6,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa4.jpg" },
-        { id: 404, cat: "🌯 قسم الشاورما", name: "شاورما وزن 250 غرام", desc: "شاورما دجاج صافي بالصحن", price: "7,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa5.jpg" },
-        { id: 405, cat: "🌯 قسم الشاورما", name: "شاورما وزن 500 غرام", desc: "نصف كيلو شاورما دجاج صافي مع المرفقات", price: "15,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa6.jpg" },
-        { id: 406, cat: "🌯 قسم الشاورما", name: "شاورما عربي", desc: "صحن شاورما عربي 16 قطعة مع بطاطا، ثومية ومخلل مع بيبسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa7.jpg" },
-        { id: 407, cat: "🌯 قسم الشاورما", name: "وجبة شاورما", desc: "وجبة متكاملة مع المشروب والبطاطا", price: "3,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa8.jpg" },
-        { id: 408, cat: "🌯 قسم الشاورما", name: "وجبة شاورما دبل", desc: "وجبة دبل مشبعة مع مقبلات وثومية", price: "9,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa9.jpg" },
-        { id: 409, cat: "🌯 قسم الشاورما", name: "شاورما 89 الخاص", desc: "طبق الشاورما الخاص المضاف له الجبن والبطاطا والصوصات وبيبسي", price: "8,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa10.jpg" },
-        { id: 501, cat: "🍚 قسم الريزو", name: "ريزو كلاسيك", desc: "أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو", price: "5,000 د.ع", img: "https://foodish-api.com/images/rice/rice1.jpg" },
-        { id: 502, cat: "🍚 قسم الريزو", name: "ريزو كص دجاج", desc: "أرز الريزو المبهر يعلوه قص دجاج طازج محمر مع صوص الريزو", price: "5,500 د.ع", img: "https://foodish-api.com/images/rice/rice2.jpg" },
-        { id: 503, cat: "🍚 قسم الريزو", name: "ريزو سبايسي", desc: "نكهة حارة ممتازة مع قطع الدجاج السبايسي", price: "5,500 د.ع", img: "https://foodish-api.com/images/rice/rice3.jpg" },
-        { id: 504, cat: "🍚 قسم الريزو", name: "ريزو جبنة", desc: "ريزو مغطى بصوص الجبن الذائب الشهي", price: "6,000 د.ع", img: "https://foodish-api.com/images/rice/rice4.jpg" },
-        { id: 505, cat: "🍚 قسم الريزو", name: "ريزو مشروم", desc: "ريزو مع قطع الفطر الطازج والصوص الخاص", price: "6,500 د.ع", img: "https://foodish-api.com/images/rice/rice5.jpg" },
-        { id: 506, cat: "🍚 قسم الريزو", name: "ريزو 89 الخاص", desc: "خلطة الريزو الخاصة مع دبل دجاج وجبن", price: "7,500 د.ع", img: "https://foodish-api.com/images/rice/rice6.jpg" },
-        { id: 507, cat: "🍚 قسم الريزو", name: "ريزو دبل تشكن", desc: "كمية مضاعفة من الدجاج المقرمش فوق الريزو", price: "7,000 د.ع", img: "https://foodish-api.com/images/rice/rice7.jpg" },
-        { id: 601, cat: "🍗 قسم الكنتاكي", name: "كنتاكي قطعتين", desc: "قطعتين دجاج مقرمش + بطاطا وثومية", price: "5,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken1.jpg" },
-        { id: 602, cat: "🍗 قسم الكنتاكي", name: "كنتاكي 4 قطع", desc: "4 قطع دجاج ذهبي + بطاطا وثومية وخبز مع بيبسي", price: "9,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken2.jpg" },
-        { id: 603, cat: "🍗 قسم الكنتاكي", name: "كنتاكي 6 قطع", desc: "6 قطع كنتاكي المقرمش مع الكولسلو والبطاطا", price: "13,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken3.jpg" },
-        { id: 604, cat: "🍗 قسم الكنتاكي", name: "وجبة كنتاكي كاملة", desc: "10 قطع كنتاكي مع المشروب، البطاطا، الكولسلو والثومية", price: "20,000 د.ع", img: "https://foodish-api.com/images/butter-chicken/butter-chicken4.jpg" },
-        { id: 701, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر كلاسيك", desc: "بطاطا مقرمشة ذهبية مع جبن وبيبسي", price: "2,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta3.jpg" },
-        { id: 702, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر سبايسي", desc: "بطاطا مبهرة بالنكهة الحارة", price: "1,000 د.ع", img: "https://foodish-api.com/images/pasta/pasta4.jpg" },
-        { id: 703, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر دوريتوس بالجبن", desc: "قدح فنكر مقرمش محمل بقطع الدوريتوس والجبنة السائلة", price: "3,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta5.jpg" },
-        { id: 704, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "قدح فنكر هالابينو بالجبن", desc: "بطاطا مقرمشة مغطاة بصوص الجبن الذائب وقطع الهالابينو الحار", price: "3,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta6.jpg" },
-        { id: 705, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "فنكر 89 الخاص", desc: "بطاطا مقرمشة محملة بالجبن والهالابينو والصوصات والدوريتوس", price: "4,500 د.ع", img: "https://foodish-api.com/images/pasta/pasta7.jpg" },
-        { id: 706, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "أصابع موزاريلا", desc: "قطعة أصابع جبن الموزاريلا المقرمشة والذائبة", price: "750 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
-        { id: 707, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "حلقات بصل", desc: "خمس حلقات بصل مقرمشة بالخلطة الذهبية", price: "2,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
-        { id: 708, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "إضافة جبنة شيدر", desc: "شريحة جبن أو صوص جبن إضافي", price: "1,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
-        { id: 709, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "إضافة هالابينو", desc: "قطع فلفل هالابينو الحار", price: "1,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa4.jpg" },
-        { id: 710, cat: "🍟 قسم الفنكر والمقبلات والإضافات", name: "إضافة صوص خاص", desc: "علبة صوص مميز (ثومية / سبايسي / 89)", price: "1,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa5.jpg" },
-        { id: 801, cat: "🥤 قسم المشروبات", name: "بيبسي", desc: "مشروب غازي بارد", price: "500 د.ع", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" },
-        { id: 802, cat: "🥤 قسم المشروبات", name: "سفن أب", desc: "قدح ثلج منعش", price: "500 د.ع", img: "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" },
-        { id: 803, cat: "🥤 قسم المشروبات", name: "ميرندا", desc: "مشروب غازي بنكهة البرتقال", price: "500 د.ع", img: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=600&q=80" },
-        { id: 804, cat: "🥤 قسم المشروبات", name: "ماونتن ديو", desc: "مشروب غازي منعش", price: "500 د.ع", img: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=600&q=80" },
-        { id: 805, cat: "🥤 قسم المشروبات", name: "ماء معدني", desc: "قنينة ماء نقي مبرد", price: "250 د.ع", img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" }
+        { id: 101, cat: "🔥 العروض الخاصة", name: "🔥 عرض الفردي المميز", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
+        { id: 102, cat: "🔥 العروض الخاصة", name: "🌯 عرض ميكس الشاورما", price: "8,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
+        { id: 201, cat: "🍔 البركر", name: "بركر كلاسيك (لحم)", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" },
+        { id: 202, cat: "🍔 البركر", name: "بركر الجبن (لحم)", price: "5,000 د.ع", img: "https://foodish-api.com/images/burger/burger3.jpg" },
+        { id: 401, cat: "🌯 الشاورما", name: "شاورما صاج عادي", price: "2,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
+        { id: 402, cat: "🌯 الشاورما", name: "شاورما عربي", price: "5,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa7.jpg" }
     ];
 
     function toggleMenuDropdown() {
@@ -385,35 +357,10 @@
         drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
     }
 
-    window.onclick = function(event) {
-        if (!event.target.closest('.logo-area')) {
-            document.getElementById('navDropdown').style.display = 'none';
-        }
-    }
-
     function loadPosMenu() {
-        const saved = localStorage.getItem('mim89_full_menu_data');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                menuItems = defaultItems.map(def => {
-                    const found = parsed.find(p => p.id === def.id || p.name === def.name);
-                    return found ? found : def;
-                });
-                parsed.forEach(p => {
-                    if (!defaultItems.some(def => def.id === p.id || def.name === p.name)) {
-                        menuItems.push(p);
-                    }
-                });
-            } catch(e) {
-                menuItems = defaultItems;
-            }
-        } else {
-            menuItems = defaultItems;
-        }
+        menuItems = defaultItems;
         renderCategories();
         renderPosGrid(menuItems);
-        checkIncomingOrders();
     }
 
     function renderCategories() {
@@ -425,25 +372,17 @@
     function filterCat(catName, btn) {
         document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
-        if (catName === 'الكل') {
-            renderPosGrid(menuItems);
-        } else {
-            renderPosGrid(menuItems.filter(i => i.cat === catName));
-        }
+        renderPosGrid(catName === 'الكل' ? menuItems : menuItems.filter(i => i.cat === catName));
     }
 
     function renderPosGrid(items) {
-        const grid = document.getElementById('posGrid');
-        grid.innerHTML = items.map((item) => {
-            const cleanPrice = parseInt(item.price.toString().replace(/[^0-9]/g, '')) || 0;
-            return `
-                <div class="pos-card" onclick="addToInvoice('${item.name.replace(/'/g, "")}', ${cleanPrice})">
-                    <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150x100/222/ff9f00?text=MIM89';">
-                    <h4>${item.name}</h4>
-                    <span>${cleanPrice.toLocaleString()} د.ع</span>
-                </div>
-            `;
-        }).join('');
+        document.getElementById('posGrid').innerHTML = items.map(item => `
+            <div class="pos-card" onclick="addToInvoice('${item.name}', ${parseInt(item.price)})">
+                <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150x100/222/ff9f00?text=MIM89';">
+                <h4>${item.name}</h4>
+                <span>${item.price}</span>
+            </div>
+        `).join('');
     }
 
     function setOrderType(type, btn) {
@@ -460,19 +399,14 @@
 
     function addToInvoice(name, price) {
         const existing = currentInvoice.find(i => i.name === name);
-        if (existing) {
-            existing.qty += 1;
-        } else {
-            currentInvoice.push({ name, price, qty: 1 });
-        }
+        if (existing) existing.qty += 1;
+        else currentInvoice.push({ name, price, qty: 1 });
         updateInvoiceUI();
     }
 
     function changeQty(index, delta) {
         currentInvoice[index].qty += delta;
-        if (currentInvoice[index].qty <= 0) {
-            currentInvoice.splice(index, 1);
-        }
+        if (currentInvoice[index].qty <= 0) currentInvoice.splice(index, 1);
         updateInvoiceUI();
     }
 
@@ -483,99 +417,36 @@
             document.getElementById('grandTotal').innerText = '0 د.ع';
             return;
         }
-
         let total = 0;
         list.innerHTML = currentInvoice.map((item, idx) => {
-            let p = parseInt(item.price) || 0;
-            let itemTotal = p * item.qty;
-            total += itemTotal;
+            let sum = item.price * item.qty;
+            total += sum;
             return `
                 <div class="invoice-row">
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small>${p.toLocaleString()} × ${item.qty}</small>
-                    </div>
+                    <div><strong>${item.name}</strong><br><small>${item.price.toLocaleString()} × ${item.qty}</small></div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span>${itemTotal.toLocaleString()}</span>
+                        <span>${sum.toLocaleString()}</span>
                         <button onclick="changeQty(${idx}, 1)">+</button>
                         <button onclick="changeQty(${idx}, -1)">-</button>
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
-
         document.getElementById('grandTotal').innerText = total.toLocaleString() + ' د.ع';
     }
 
     function clearInvoice() {
         currentInvoice = [];
-        activeCustomerData = null;
-        document.getElementById('customerInfoBox').style.display = 'none';
         updateInvoiceUI();
     }
 
-    function checkIncomingOrders() {
-        setInterval(() => {
-            const pending = localStorage.getItem('mim89_online_order');
-            if (pending) {
-                document.getElementById('incomingAlert').style.display = 'block';
-            }
-        }, 2000);
-    }
-
-    function loadOnlineOrder() {
-        const pending = localStorage.getItem('mim89_online_order');
-        if (pending) {
-            try {
-                const orderData = JSON.parse(pending);
-                activeCustomerData = orderData;
-                currentInvoice = orderData.items || [];
-                orderType = orderData.type || "توصيل";
-
-                document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-                if (orderType === 'توصيل') document.getElementById('typeDelivery').classList.add('active');
-                else if (orderType === 'سفري') document.getElementById('typeTakeaway').classList.add('active');
-                else document.getElementById('typeDinein').classList.add('active');
-
-                document.getElementById('lblCustName').innerText = orderData.customerName || 'غير متوفر';
-                document.getElementById('lblCustPhone').innerText = orderData.phone || 'غير متوفر';
-                document.getElementById('lblCustAddress').innerText = orderData.address || 'بدون عنوان';
-                if (orderData.notes) {
-                    document.getElementById('lblCustNotes').innerText = orderData.notes;
-                    document.getElementById('notesRow').style.display = 'block';
-                } else {
-                    document.getElementById('notesRow').style.display = 'none';
-                }
-                document.getElementById('customerInfoBox').style.display = 'block';
-
-                updateInvoiceUI();
-                document.getElementById('incomingAlert').style.display = 'none';
-                localStorage.removeItem('mim89_online_order');
-                alert(`✅ تم جلب طلب الزبون (${orderData.customerName}) بنجاح!`);
-            } catch(e) {
-                alert("⚠️ خطأ في قراءة بيانات الطلب الوارد.");
-            }
-        }
-    }
-
     function markAsVoidOrder() {
-        if (currentInvoice.length === 0) {
-            alert("⚠️ لا توجد فاتورة لتسجيلها!");
-            return;
-        }
-        let total = currentInvoice.reduce((sum, i) => sum + (parseInt(i.price)||0) * i.qty, 0);
-        const voidOrder = {
-            num: orderCounter,
-            type: orderType,
-            payment: "خطأ / ملغي (يحتاج مراجعة المدير)",
-            total: total,
-            items: currentInvoice,
-            dateString: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleString('ar-IQ'),
-            status: "VOID_PENDING"
-        };
-        saveOrderToDB(voidOrder);
-        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي] وتثبيته في قاعدة البيانات لمراجعة المدير.");
+        if (currentInvoice.length === 0) return;
+        let total = currentInvoice.reduce((sum, i) => sum + i.price * i.qty, 0);
+        saveOrderToDB({
+            num: orderCounter, type: orderType, payment: "خطأ / ملغي", total, items: currentInvoice,
+            cashier: currentCashier, dateString: new Date().toISOString().split('T')[0], status: "VOID_PENDING"
+        });
+        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي] لمراجعة الإدارة.");
         orderCounter++;
         localStorage.setItem('mim89_order_counter', orderCounter);
         document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
@@ -583,65 +454,35 @@
     }
 
     function completeAndPrint() {
-        if (currentInvoice.length === 0) {
-            alert("⚠️ الفاتورة فارغة!");
-            return;
-        }
-
+        if (currentInvoice.length === 0) return;
         let total = 0;
         let custHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
         let kitchHtml = '<table style="width:100%; border-collapse:collapse; font-size:16px;">';
 
         currentInvoice.forEach(i => {
-            let p = parseInt(i.price) || 0;
-            let sum = p * i.qty;
+            let sum = i.price * i.qty;
             total += sum;
             custHtml += `<tr style="border-bottom:1px dashed #ccc;"><td style="padding:4px;">${i.name} (x${i.qty})</td><td style="text-align:left; padding:4px;">${sum.toLocaleString()}</td></tr>`;
-            kitchHtml += `<tr style="border-bottom:1px solid #000;"><td style="padding:6px; font-weight:bold;">${i.name}</td><td style="text-align:left; padding:6px; font-size:18px;">الكمية: ${i.qty}</td></tr>`;
+            kitchHtml += `<tr style="border-bottom:1px solid #000;"><td style="padding:6px; font-weight:bold;">${i.name}</td><td style="text-align:left; padding:6px;">الكمية: ${i.qty}</td></tr>`;
         });
-        custHtml += '</table>';
-        kitchHtml += '</table>';
+        custHtml += '</table>'; kitchHtml += '</table>';
 
-        const now = new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'});
-        const fullDate = new Date().toLocaleString('ar-IQ');
-        const dateKey = new Date().toISOString().split('T')[0];
-
-        let custDetailsText = "";
-        let kitchDetailsText = "";
-
-        if (activeCustomerData) {
-            custDetailsText = `الزبون: ${activeCustomerData.customerName} | هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
-            if(activeCustomerData.notes) custDetailsText += `<br>ملاحظات: ${activeCustomerData.notes}`;
-            kitchDetailsText = `الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
-        } else {
-            custDetailsText = `خدمة: ${orderType}`;
-            kitchDetailsText = `خدمة: ${orderType}`;
-        }
-
-        const orderRecord = {
-            num: orderCounter,
-            type: orderType,
-            payment: paymentMethod,
-            total: total,
-            items: currentInvoice,
-            dateString: dateKey,
-            time: fullDate,
-            status: "NORMAL"
-        };
-        saveOrderToDB(orderRecord);
+        saveOrderToDB({
+            num: orderCounter, type: orderType, payment: paymentMethod, total, items: currentInvoice,
+            cashier: currentCashier, dateString: new Date().toISOString().split('T')[0], status: "NORMAL"
+        });
 
         document.getElementById('c_ordNum').innerText = orderCounter;
         document.getElementById('c_ordType').innerText = orderType;
         document.getElementById('c_payMethod').innerText = paymentMethod;
-        document.getElementById('c_custDetails').innerHTML = custDetailsText;
-        document.getElementById('c_date').innerText = fullDate;
+        document.getElementById('c_cashierName').innerText = currentCashier;
+        document.getElementById('c_date').innerText = new Date().toLocaleString('ar-IQ');
         document.getElementById('c_itemsBody').innerHTML = custHtml;
-        document.getElementById('c_total').innerText = 'الإجمالي الكلي: ' + total.toLocaleString() + ' د.ع';
+        document.getElementById('c_total').innerText = 'الإجمالي: ' + total.toLocaleString() + ' د.ع';
 
         document.getElementById('k_ordNum').innerText = orderCounter;
         document.getElementById('k_ordType').innerText = orderType;
-        document.getElementById('k_custDetails').innerHTML = kitchDetailsText;
-        document.getElementById('k_time').innerText = now;
+        document.getElementById('k_cashierName').innerText = currentCashier;
         document.getElementById('k_itemsBody').innerHTML = kitchHtml;
 
         document.getElementById('customerReceipt').style.display = 'block';
@@ -652,7 +493,6 @@
             document.getElementById('customerReceipt').style.display = 'none';
             document.getElementById('kitchenReceipt').style.display = 'block';
             window.print();
-            
             document.getElementById('kitchenReceipt').style.display = 'none';
             orderCounter++;
             localStorage.setItem('mim89_order_counter', orderCounter);
@@ -662,141 +502,94 @@
     }
 
     function openReportModal() {
-        document.getElementById('navDropdown').style.display = 'none';
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('startDate').value = today;
-        document.getElementById('endDate').value = today;
+        document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('reportModal').style.display = 'flex';
         calculateReport();
-    }
-
-    function openInventoryModal() {
-        document.getElementById('navDropdown').style.display = 'none';
-        document.getElementById('inventoryModal').style.display = 'flex';
-        loadInventoryTable();
-    }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
     }
 
     function calculateReport() {
         const start = document.getElementById('startDate').value;
         const end = document.getElementById('endDate').value;
-        if (!start || !end || !db) return;
-
-        const transaction = db.transaction(["orders"], "readonly");
-        const store = transaction.objectStore("orders");
-        store.getAll().onsuccess = function(event) {
-            const allOrders = event.target.result;
-            let cashTotal = 0, visaTotal = 0, freeCount = 0, voidCount = 0, filteredCount = 0;
-
-            allOrders.forEach(o => {
+        if (!db) return;
+        db.transaction(["orders"], "readonly").objectStore("orders").getAll().onsuccess = function(e) {
+            let cash = 0, visa = 0, free = 0, voids = 0, count = 0;
+            e.target.result.forEach(o => {
                 if (o.dateString >= start && o.dateString <= end) {
-                    filteredCount++;
-                    if (o.status === "VOID_PENDING") voidCount++;
-                    else if (o.payment.includes("مجاني")) freeCount++;
-                    else if (o.payment.includes("كاش")) cashTotal += o.total;
-                    else if (o.payment.includes("فيزا")) visaTotal += o.total;
+                    count++;
+                    if (o.status === "VOID_PENDING") voids++;
+                    else if (o.payment.includes("مجاني")) free++;
+                    else if (o.payment.includes("كاش")) cash += o.total;
+                    else if (o.payment.includes("فيزا")) visa += o.total;
                 }
             });
-
-            let grandRevenue = cashTotal + visaTotal;
             document.getElementById('reportResultsBox').innerHTML = 
-                `<strong>📅 فترة الجرد:</strong> من (${start}) إلى (${end})<br>` +
-                `-----------------------------------<br>` +
-                `📦 إجمالي الطلبات: ${filteredCount}<br>` +
-                `💵 وارد الكاش: ${cashTotal.toLocaleString()} د.ع<br>` +
-                `💳 وارد الفيزا: ${visaTotal.toLocaleString()} د.ع<br>` +
-                `💰 <strong>إجمالي الوارد النهائي للصندوق:</strong> ${grandRevenue.toLocaleString()} د.ع<br>` +
-                `🎁 الطلبات المجانية: ${freeCount}<br>` +
-                `⚠️ طلبات خاطئة/ملغية: ${voidCount}`;
+                `📦 إجمالي الطلبات: ${count}<br>💵 الكاش: ${cash.toLocaleString()} د.ع<br>💳 الفيزا: ${visa.toLocaleString()} د.ع<br>💰 <strong>المجموع النهائي:</strong> ${(cash+visa).toLocaleString()} د.ع<br>🎁 مجاني: ${free}<br>⚠️ طلبات خاطئة: ${voids}`;
         };
     }
 
-    // إدارة المخزن العالمي (إضافة، تعديل، حذف، تحديث الرصيد)
+    function openInventoryModal() {
+        document.getElementById('inventoryModal').style.display = 'flex';
+        loadInventoryTable();
+    }
+
     function loadInventoryTable() {
         if (!db) return;
-        const transaction = db.transaction(["inventory"], "readonly");
-        const store = transaction.objectStore("inventory");
-        store.getAll().onsuccess = function(event) {
-            const items = event.target.result;
-            const tbody = document.getElementById('inventoryTableBody');
-            
-            if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4">لا توجد مواد في المخزن. أضف مواد جديدة بالأعلى.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = items.map(i => `
+        db.transaction(["inventory"], "readonly").objectStore("inventory").getAll().onsuccess = function(e) {
+            document.getElementById('inventoryTableBody').innerHTML = e.target.result.map(i => `
                 <tr>
-                    <td style="font-weight:bold;">${i.name}</td>
-                    <td><span id="stock-val-${i.name}">${i.stock.toFixed(1)}</span></td>
-                    <td>
-                        <input type="number" id="input-stock-${i.name}" value="${i.stock}" step="0.5" style="width:70px;">
-                    </td>
-                    <td>
-                        <button class="action-btn" onclick="updateItemStock('${i.name}')">تحديث</button>
-                        <button class="delete-btn" onclick="deleteInventoryItem('${i.name}')">حذف</button>
-                    </td>
-                </tr>
-            `).join('');
+                    <td><b>${i.name}</b></td>
+                    <td><input type="number" id="st-${i.name}" value="${i.stock}" step="0.5"></td>
+                    <td><button class="action-btn" onclick="updateStock('${i.name}')">تحديث</button></td>
+                    <td><button class="delete-btn" onclick="deleteStock('${i.name}')">حذف</button></td>
+                </tr>`).join('');
         };
+    }
+
+    function updateStock(name) {
+        let val = parseFloat(document.getElementById(`st-${name}`).value);
+        let tx = db.transaction(["inventory"], "readwrite");
+        tx.objectStore("inventory").put({ name, stock: val });
+        tx.oncomplete = () => { loadInventoryTable(); alert("✅ تم التحديث"); };
+    }
+
+    function deleteStock(name) {
+        if(!confirm("حذف هذه المادة؟")) return;
+        let tx = db.transaction(["inventory"], "readwrite");
+        tx.objectStore("inventory").delete(name);
+        tx.oncomplete = () => loadInventoryTable();
     }
 
     function addNewInventoryItem() {
-        const nameInput = document.getElementById('newItemName');
-        const stockInput = document.getElementById('newItemStock');
-        const name = nameInput.value.trim();
-        const stock = parseFloat(stockInput.value);
-
-        if (!name || isNaN(stock)) {
-            alert("⚠️ يرجى إدخال اسم المادة والرصيد الصحيح!");
-            return;
-        }
-
-        const transaction = db.transaction(["inventory"], "readwrite");
-        const store = transaction.objectStore("inventory");
-        store.put({ name, stock });
-
-        transaction.oncomplete = function() {
-            nameInput.value = '';
-            stockInput.value = '';
-            loadInventoryTable();
-            alert("✅ تمت إضافة المادة بنجاح إلى المخزن!");
-        };
+        let name = document.getElementById('newItemName').value.trim();
+        let stock = parseFloat(document.getElementById('newItemStock').value);
+        if(!name || isNaN(stock)) return alert("أدخل البيانات صحيحة");
+        let tx = db.transaction(["inventory"], "readwrite");
+        tx.objectStore("inventory").put({ name, stock });
+        tx.oncomplete = () => { document.getElementById('newItemName').value=''; document.getElementById('newItemStock').value=''; loadInventoryTable(); };
     }
 
-    function updateItemStock(name) {
-        const inputVal = parseFloat(document.getElementById(`input-stock-${name}`).value);
-        if (isNaN(inputVal)) {
-            alert("⚠️ قيمة الرصيد غير صالحة!");
-            return;
-        }
-
-        const transaction = db.transaction(["inventory"], "readwrite");
-        const store = transaction.objectStore("inventory");
-        store.put({ name, stock: inputVal });
-
-        transaction.oncomplete = function() {
-            loadInventoryTable();
-            alert(`✅ تم تحديث رصيد (${name}) بنجاح!`);
-        };
+    function openAdminModal() {
+        const pins = JSON.parse(localStorage.getItem('mim89_pins'));
+        document.getElementById('adminPinC1').value = pins.cashier1;
+        document.getElementById('adminPinC2').value = pins.cashier2;
+        document.getElementById('adminPinInv').value = pins.inventory;
+        document.getElementById('adminPinAdm').value = pins.admin;
+        document.getElementById('adminModal').style.display = 'flex';
     }
 
-    function deleteInventoryItem(name) {
-        if (!confirm(`هل أنت متأكد من حذف مادة (${name}) من المخزن؟`)) return;
-
-        const transaction = db.transaction(["inventory"], "readwrite");
-        const store = transaction.objectStore("inventory");
-        store.delete(name);
-
-        transaction.oncomplete = function() {
-            loadInventoryTable();
-        };
+    function saveNewPins() {
+        localStorage.setItem('mim89_pins', JSON.stringify({
+            cashier1: document.getElementById('adminPinC1').value,
+            cashier2: document.getElementById('adminPinC2').value,
+            inventory: document.getElementById('adminPinInv').value,
+            admin: document.getElementById('adminPinAdm').value
+        }));
+        alert("✅ تم حفظ الرموز السرية بنجاح");
+        closeModal('adminModal');
     }
 
-    window.onload = loadPosMenu;
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 
 </body>
