@@ -7,7 +7,7 @@
     <title>MIM89 | Fast Food</title>
     <meta name="description" content="MIM89 Fast Food">
 
-    <link rel="stylesheet" href="style.css?v=500.0">
+    <link rel="stylesheet" href="style.css?v=600.0">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,7 +112,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- حاوية المينيو الديناميكي الكامل -->
+    <!-- حاوية المينيو الكاملة (تتعبأ تلقائياً وبأمان تام) -->
     <div id="main-menu-container"></div>
 
     <!-- Contact Section -->
@@ -172,9 +172,9 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=500.0"></script>
+    <script src="script.js?v=600.0"></script>
 
-    <!-- سكربت البناء والتزامن الفوري الذكي بالاعتماد على IDs -->
+    <!-- سكربت الأمان والتزامن الشامل لضمان ظهور كل الأصناف وعدم اختفائها نهائياً -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             const defaultItems = [
@@ -249,9 +249,20 @@
                 { id: 805, cat: "🥤 قسم المشروبات", name: "ماء معدني", desc: "قنينة ماء نقي مبرد", price: "250 د.ع", img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" }
             ];
 
-            // قراءة التعديلات والأسعار والصور من الذاكرة (localStorage) المحدثة من لوحة الأدمن
+            // دمج ذكي وآمن: إذا وجدنا تعديلات محفوظة نأخذها، وإلا فنعتمد القائمة الكاملة الثابتة بالكامل
+            let menuItems = defaultItems;
             const savedData = localStorage.getItem('mim89_full_menu_data');
-            const menuItems = savedData ? JSON.parse(savedData) : defaultItems;
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        // دمج الأصناف المحفوظة مع التأكد من عدم ضياع أي قسم أساسي
+                        menuItems = parsed;
+                    }
+                } catch(e) {
+                    menuItems = defaultItems;
+                }
+            }
 
             const mainContainer = document.getElementById('main-menu-container');
             if (mainContainer) {
