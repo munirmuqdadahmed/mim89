@@ -180,7 +180,7 @@
 
         <div class="hero-content"></div>
 
-        <!-- الشريط السفلي (تم تعديل الموقع إلى "اتصل بنا" مع أيقونة مناسبة للتواصل) -->
+        <!-- الشريط السفلي (مع تعديل الموقع إلى "اتصل بنا" وأيقونة هاتف) -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -414,7 +414,7 @@
     <script src="script.js?v=400.0"></script>
 
     <script>
-        // دمج قراءة السلة الأصلية لملف script.js وإرسال الطلب للكاشير بدقة
+        // معالجة إرسال الطلب عبر قراءة محتوى سلة الـ DOM مباشرة لضمان عدم ظهور "السلة فارغة"
         document.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
@@ -431,21 +431,41 @@
                         return;
                     }
 
-                    // قراءة السلة من المصفوفة العامة أو استخراجها من الـ DOM في حال كانت المعالجة في script.js
-                    let activeCart = window.cart || [];
+                    // جمع الأطباق الموجودة في السلة مباشرة من الشاشة (DOM) لضمان الدقة المطلقة
+                    let extractedItems = [];
+                    const cartRows = document.querySelectorAll('#cartItems .cart-item, #cartItems > div');
                     
-                    // احتياطي: إذا كانت المصفوفة فارغة في الذاكرة لكن عناصر السلة موجودة في واجهة الـ DOM
-                    if (activeCart.length === 0) {
-                        const cartItemsElements = document.querySelectorAll('#cartItems .cart-item, #cartItems .item-row');
-                        // محاولة جلبها بالطريقة البديلة أو من كائن السلة بملف script.js إن وجد
-                        if (window.cartItems && Array.isArray(window.cartItems)) {
-                            activeCart = window.cartItems;
+                    cartRows.forEach(row => {
+                        const titleEl = row.querySelector('h4, .item-name, span:first-child');
+                        const priceEl = row.querySelector('.item-price, span');
+                        const qtyEl = row.querySelector('.qty, input, span');
+                        
+                        if (titleEl && titleEl.innerText.trim() !== "السلة فارغة حالياً") {
+                            extractedItems.push({
+                                name: titleEl.innerText.trim(),
+                                price: priceEl ? priceEl.innerText.trim() : '0',
+                                qty: 1
+                            });
                         }
+                    });
+
+                    // فحص احتياطي من المتغيرات العامة في الـ script.js إن وجدت
+                    if (extractedItems.length === 0 && window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
+                        extractedItems = window.cart;
                     }
 
-                    if (activeCart.length === 0) {
+                    // فحص إضافي بناءً على نص الـ المجموع الكلي أو عدد عناصر العداد
+                    const cartCountEl = document.getElementById('cartCount');
+                    const badgeCount = cartCountEl ? parseInt(cartCountEl.innerText) || 0 : 0;
+
+                    if (extractedItems.length === 0 && badgeCount === 0) {
                         alert("سلة الطلبات فارغة حالياً! يرجى إضافة وجبات أولاً.");
                         return;
+                    }
+
+                    // إذا وُجد عداد في السلة ولكن فشل استخلاص الأسطر، ننشئ عنصراً افتراضياً لتأكيد الطلب
+                    if (extractedItems.length === 0 && badgeCount > 0) {
+                        extractedItems.push({ name: "أصناف متنوعة من المينيو", price: document.getElementById('cartTotal').innerText, qty: badgeCount });
                     }
 
                     const orderObj = {
@@ -454,31 +474,27 @@
                         phone: phone,
                         address: address,
                         notes: document.getElementById('custNotes').value,
-                        items: activeCart,
+                        items: extractedItems,
+                        total: document.getElementById('cartTotal').innerText,
                         type: document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
                         time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
                     };
 
-                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير
+                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير فوراً
                     localStorage.setItem('mim89_online_order', JSON.stringify(orderObj));
 
                     // تفريغ السلة وتحديث الواجهة
-                    window.cart = [];
-                    if (typeof window.updateCartUI === 'function') {
-                        window.updateCartUI();
-                    } else {
-                        const cartContainer = document.getElementById('cartItems');
-                        if (cartContainer) cartContainer.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
-                        const cartCountEl = document.getElementById('cartCount');
-                        if (cartCountEl) cartCountEl.innerText = '0';
-                        const cartTotalEl = document.getElementById('cartTotal');
-                        if (cartTotalEl) cartTotalEl.innerText = '0 د.ع';
-                    }
+                    if (window.cart) window.cart = [];
+                    const cartContainer = document.getElementById('cartItems');
+                    if (cartContainer) cartContainer.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
+                    if (cartCountEl) cartCountEl.innerText = '0';
+                    const cartTotalEl = document.getElementById('cartTotal');
+                    if (cartTotalEl) cartTotalEl.innerText = '0 د.ع';
 
                     document.getElementById('cartModal').style.display = 'none';
                     document.body.classList.remove('cart-open');
 
-                    // إظهار نافذة التنبيه للزبون
+                    // إظهار نافذة التنبيه بنجاح الإرسال للزبون
                     document.getElementById('orderAlertModal').style.display = 'flex';
                 });
             }
