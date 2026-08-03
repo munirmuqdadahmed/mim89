@@ -7,18 +7,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-        body { background: #111; color: #fff; padding: 15px; max-width: 650px; margin: 0 auto; padding-bottom: 100px; }
+        body { background: #111; color: #fff; padding: 15px; max-width: 650px; margin: 0 auto; padding-bottom: 120px; }
         h1 { text-align: center; color: #ff9f00; margin: 15px 0 20px; font-size: 22px; font-weight: 900; }
-        .login-box { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; margin-top: 50px; }
+        .login-box, .pass-box { background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
+        .login-box { text-align: center; margin-top: 50px; }
         input, textarea { width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; font-size: 16px; text-align: right; }
-        input[type="file"] { background: #2a2a2a; padding: 8px; border: 1px dashed #ff9f00; cursor: pointer; }
+        input[type="file"] { background: #2a2a2a; padding: 8px; border: 1px dashed #ff9f00; cursor: pointer; color: #ff9f00; }
         button { width: 100%; padding: 12px; background: #ff9f00; color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 5px; }
         .editor-section { display: none; }
         .item-card { background: #1a1a1a; border: 1px solid #333; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .item-card label { display: block; font-size: 12px; color: #ff9f00; margin-top: 4px; font-weight: bold; }
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; }
         .btn-delete { background: #e63946; color: #fff; width: auto; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
-        .btn-add { background: #222; border: 2px dashed #ff9f00; color: #ff9f00; margin-bottom: 25px; }
+        .btn-add { background: #222; border: 2px dashed #ff9f00; color: #ff9f00; margin-bottom: 20px; }
         .preview-img { width: 100%; height: 160px; object-fit: cover; object-position: center; border-radius: 8px; margin-top: 8px; border: 1px solid #ff9f00; }
         .sticky-save { position: fixed; bottom: 15px; left: 15px; right: 15px; max-width: 620px; margin: 0 auto; box-shadow: 0 5px 25px rgba(255,159,0,0.4); z-index: 1000; }
     </style>
@@ -27,20 +28,32 @@
 
     <h1>إدارة مينيو MIM89 FAST FOOD 🍔</h1>
 
+    <!-- شاشة تسجيل الدخول -->
     <div id="login-section" class="login-box">
         <h3 style="margin-bottom:15px; color:#ff9f00;">رمز دخول الإدارة</h3>
         <input type="password" id="pass-input" placeholder="أدخل كلمة المرور">
         <button onclick="checkPass()">دخول اللوحة</button>
     </div>
 
+    <!-- لوحة التحكم وتعديل الأصناف -->
     <div id="editor-section" class="editor-section">
+        
+        <!-- قسم تغيير كلمة المرور داخل الصفحة -->
+        <div class="pass-box">
+            <h4 style="color:#ff9f00; margin-bottom:8px; font-size:15px;">🔒 تغيير رمز المرور الخاص باللوحة</h4>
+            <label style="font-size:12px; color:#aaa;">كلمة المرور الجديدة:</label>
+            <input type="text" id="new-pass-input" placeholder="أدخل الرمز الجديد هنا">
+            <button onclick="updatePassword()" style="background:#25d366; color:#fff;">حفظ كلمة المرور الجديدة</button>
+        </div>
+
         <button class="btn-add" onclick="addNewItem()">➕ إضافة صنف جديد للمينيو</button>
         <div id="items-container"></div>
         <button class="sticky-save" onclick="saveAllChanges()">💾 حفظ وتحديث المينيو فوراً</button>
     </div>
 
 <script>
-    const SECRET_PASS = "MIM123";
+    // جلب كلمة المرور المخزنة أو استخدام الافتراضية
+    let currentPass = localStorage.getItem('mim89_admin_pass') || "MIM123";
 
     const defaultItems = [
         { id: 1, cat: "🔥 العروض الخاصة واليومية", name: "🔥 عرض الفردي المميز", desc: "بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
@@ -52,13 +65,27 @@
     let currentItems = [];
 
     function checkPass() {
-        if (document.getElementById('pass-input').value === SECRET_PASS) {
+        const enteredPass = document.getElementById('pass-input').value;
+        if (enteredPass === currentPass) {
             document.getElementById('login-section').style.display = 'none';
             document.getElementById('editor-section').style.display = 'block';
+            document.getElementById('new-pass-input').value = currentPass; // عرض الرمز الحالي في خانة التعديل
             loadAdminData();
         } else {
             alert("كلمة المرور غير صحيحة!");
         }
+    }
+
+    // دالة تحديث كلمة المرور وحفظها في الذاكرة
+    function updatePassword() {
+        const newPass = document.getElementById('new-pass-input').value.trim();
+        if (newPass.length < 3) {
+            alert("⚠️ يجب أن تكون كلمة المرور 3 أحرف أو أرقام على الأقل!");
+            return;
+        }
+        currentPass = newPass;
+        localStorage.setItem('mim89_admin_pass', currentPass);
+        alert("✅ تم تغيير وتحديث كلمة المرور بنجاح!");
     }
 
     function loadAdminData() {
@@ -92,8 +119,8 @@
                 <label>السعر:</label>
                 <input type="text" value="${item.price}" id="price-${index}">
 
-                <label>صورة الوجبة:</label>
-                <input type="file" accept="image/*" onchange="handleImage(this, ${index})">
+                <label>صورة الوجبة (اختر صورة جديدة من الاستوديو/الكاميرا):</label>
+                <input type="file" accept="image/*" id="file-${index}" onchange="handleImage(this, ${index})">
                 <img src="${item.img}" id="preview-${index}" class="preview-img">
             `;
             container.appendChild(card);
@@ -120,6 +147,7 @@
         }
     }
 
+    // دالة ذكية لمعالجة وتحويل الصورة المرفوعة من الموبايل فوراً دون أخطاء
     function handleImage(input, index) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
@@ -156,6 +184,7 @@
                     ctx.drawImage(img, 0, 0, width, height);
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
 
+                    // تحديث مصفوفة البيانات والصورة المعروضة فوراً
                     currentItems[index].img = compressedBase64;
                     document.getElementById(`preview-${index}`).src = compressedBase64;
                 };
@@ -166,15 +195,16 @@
     }
 
     function saveAllChanges() {
+        // تحديث البيانات من الحقول قبل الحفظ
         currentItems.forEach((item, index) => {
             item.cat = document.getElementById(`cat-${index}`).value;
-            item.name = document.getElementById(`name-${index}`).value;
+            item.name = document.getElementById(`name-${index}`,).value;
             item.desc = document.getElementById(`desc-${index}`).value;
             item.price = document.getElementById(`price-${index}`).value;
         });
 
         localStorage.setItem('mim89_full_menu_data', JSON.stringify(currentItems));
-        alert("تم حفظ وتحديث المينيو بجميع الأقسام والصور بنجاح!");
+        alert("🎉 تم حفظ وتحديث المينيو بجميع الصور والأصناف بنجاح!");
     }
 </script>
 
