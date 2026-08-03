@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير الآمن</title>
+    <title>MIM89 - نظام الكاشير الآمن والمحمي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
         body { background: #111; color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        header { background: #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        header h1 { color: #ff9f00; font-size: 18px; font-weight: 900; }
-        .nav-links a { color: #fff; text-decoration: none; background: #333; padding: 6px 12px; border-radius: 8px; font-size: 13px; margin-left: 8px; }
+        /* شريط علوي نظيف وبسيط */
+        header { background: #1a1a1a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; position: relative; }
+        .logo-area { color: #ff9f00; font-size: 18px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        
+        /* القائمة المنسدلة عند الضغط على الشعار */
+        .dropdown-menu { display: none; position: absolute; top: 50px; right: 20px; background: #222; border: 1px solid #444; border-radius: 10px; width: 200px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .dropdown-menu a { display: block; padding: 12px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333; font-size: 13px; transition: 0.2s; }
+        .dropdown-menu a:hover { background: #ff9f00; color: #000; font-weight: bold; }
+        .dropdown-menu a:last-child { border-bottom: none; }
 
         .cashier-container { display: flex; flex: 1; overflow: hidden; }
         
@@ -55,6 +61,16 @@
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
+        /* نافذة تقارير الجرد المتقدمة بالتواريخ */
+        #reportModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .report-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 500px; padding: 20px; color: #fff; font-family: 'Cairo'; }
+        .report-content h3 { color: #ff9f00; margin-bottom: 15px; text-align: center; }
+        .date-filter-box { display: flex; gap: 10px; margin-bottom: 15px; }
+        .date-filter-box div { flex: 1; }
+        .date-filter-box label { font-size: 11px; color: #aaa; display: block; margin-bottom: 3px; }
+        .date-filter-box input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 6px; font-family: 'Cairo'; }
+        .report-results { background: #222; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; line-height: 1.6; max-height: 200px; overflow-y: auto; }
+
         @media print {
             @page { margin: 0; size: auto; }
             body, html { background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important; }
@@ -67,10 +83,16 @@
 <body>
 
     <header>
-        <h1>MIM89 | نظام الكاشير الآمن 🍔</h1>
-        <div class="nav-links">
-            <a href="admin.html">⚙️ الإدارة</a>
-            <a href="index.html">🏠 المينيو</a>
+        <!-- عند الضغط على الشعار تفتح نافذة التحكم والتقارير والمينيو -->
+        <div class="logo-area" onclick="toggleMenuDropdown()">
+            <span>MIM89 FAST FOOD 🍔 <i class="fas fa-chevron-down" style="font-size:12px;"></i></span>
+        </div>
+
+        <!-- القائمة المنسدلة الخفية -->
+        <div id="navDropdown" class="dropdown-menu">
+            <a href="index.html"><i class="fas fa-utensils"></i> عرض المينيو</a>
+            <a href="admin.html"><i class="fas fa-cog"></i> لوحة الإدارة</a>
+            <a href="javascript:void(0);" onclick="openReportModal()"><i class="fas fa-chart-pie"></i> جرد وتقارير الصندوق</a>
         </div>
     </header>
 
@@ -122,8 +144,31 @@
 
                 <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة وتثبيت الطلب</button>
                 <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ (يحتاج مراجعة المدير)</button>
-                <button class="pos-btn" style="background:#333; font-size:12px; padding:6px; margin-top:4px;" onclick="openShiftReport()"><i class="fas fa-chart-bar"></i> تقرير الجرد والوارد النهائي</button>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة تقارير الجرد المتقدمة حسب التواريخ -->
+    <div id="reportModal">
+        <div class="report-content">
+            <h3>📊 جرد الصندوق والمبيعات</h3>
+            <div class="date-filter-box">
+                <div>
+                    <label>من تاريخ:</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div>
+                    <label>إلى تاريخ:</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+            <button class="pos-btn print" style="margin-bottom:12px;" onclick="calculateReport()">عرض تقرير الفترة</button>
+            
+            <div class="report-results" id="reportResultsBox">
+                اختر التواريخ واضغط على عرض التقرير...
+            </div>
+
+            <button class="pos-btn" style="background:#444;" onclick="closeReportModal()">إغلاق النافذة</button>
         </div>
     </div>
 
@@ -154,6 +199,33 @@
     </div>
 
 <script>
+    // تهيئة قاعدة البيانات الصلبة الأمنية (IndexedDB) لضمان عدم ضياع أي فاتورة للأبد
+    let db;
+    const request = indexedDB.open("MIM89_Secure_DB", 1);
+
+    request.onerror = function(event) {
+        console.error("خطأ في فتح قاعدة البيانات الآمنة");
+    };
+
+    request.onsuccess = function(event) {
+        db = event.target.result;
+        loadPosMenu();
+    };
+
+    request.onupgradeneeded = function(event) {
+        db = event.target.result;
+        if (!db.objectStoreNames.contains("orders")) {
+            db.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
+        }
+    };
+
+    function saveOrderToDB(orderData) {
+        if (!db) return;
+        const transaction = db.transaction(["orders"], "readwrite");
+        const store = transaction.objectStore("orders");
+        store.add(orderData);
+    }
+
     let menuItems = [];
     let currentInvoice = [];
     let orderType = "صالة";
@@ -219,6 +291,17 @@
         { id: 804, cat: "🥤 قسم المشروبات", name: "ماونتن ديو", desc: "مشروب غازي منعش", price: "500 د.ع", img: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=600&q=80" },
         { id: 805, cat: "🥤 قسم المشروبات", name: "ماء معدني", desc: "قنينة ماء نقي مبرد", price: "250 د.ع", img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" }
     ];
+
+    function toggleMenuDropdown() {
+        const drop = document.getElementById('navDropdown');
+        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.logo-area')) {
+            document.getElementById('navDropdown').style.display = 'none';
+        }
+    }
 
     function loadPosMenu() {
         const saved = localStorage.getItem('mim89_full_menu_data');
@@ -387,17 +470,10 @@
         }
     }
 
-    // حفظ المبيعات لتسهيل جرد نهاية الدوام
-    function saveOrderToDailyLog(orderData) {
-        let logs = JSON.parse(localStorage.getItem('mim89_daily_sales_log')) || [];
-        logs.push(orderData);
-        localStorage.setItem('mim89_daily_sales_log', JSON.stringify(logs));
-    }
-
-    // زر تسجيل طلب خاطئ (يحتاج مراجعة المدير لاحقاً لمنع التلاعب)
+    // تسجيل طلب خطأ برقم وعلامة لمراجعة المدير
     function markAsVoidOrder() {
         if (currentInvoice.length === 0) {
-            alert("⚠️ لا توجد فاتورة لتسجيلها كخطأ!");
+            alert("⚠️ لا توجد فاتورة لتسجيلها!");
             return;
         }
         let total = currentInvoice.reduce((sum, i) => sum + (parseInt(i.price)||0) * i.qty, 0);
@@ -407,11 +483,12 @@
             payment: "خطأ / ملغي (يحتاج مراجعة المدير)",
             total: total,
             items: currentInvoice,
+            dateString: new Date().toISOString().split('T')[0],
             time: new Date().toLocaleString('ar-IQ'),
-            status: "VOID_PENDING" // علامة تحتاج مراجعة المدير
+            status: "VOID_PENDING"
         };
-        saveOrderToDailyLog(voidOrder);
-        alert("⚠️ تم تسجيل الفاتورة كـ [طلب خاطئ/ملغي] وإشعار المدير للمراجعة لاحقاً.");
+        saveOrderToDB(voidOrder);
+        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي] وتثبيته في قاعدة البيانات لمراجعة المدير.");
         orderCounter++;
         localStorage.setItem('mim89_order_counter', orderCounter);
         document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
@@ -440,6 +517,7 @@
 
         const now = new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'});
         const fullDate = new Date().toLocaleString('ar-IQ');
+        const dateKey = new Date().toISOString().split('T')[0];
 
         let custDetailsText = "";
         let kitchDetailsText = "";
@@ -453,17 +531,18 @@
             kitchDetailsText = `خدمة: ${orderType}`;
         }
 
-        // حفظ الطلب في السجل المالي لتقرير الجرد
+        // حفظ الفاتورة بقاعدة البيانات الصلبة
         const orderRecord = {
             num: orderCounter,
             type: orderType,
             payment: paymentMethod,
             total: total,
             items: currentInvoice,
+            dateString: dateKey, // للتصفية الدقيقة حسب التاريخ
             time: fullDate,
             status: "NORMAL"
         };
-        saveOrderToDailyLog(orderRecord);
+        saveOrderToDB(orderRecord);
 
         document.getElementById('c_ordNum').innerText = orderCounter;
         document.getElementById('c_ordType').innerText = orderType;
@@ -496,38 +575,72 @@
         }, 1200);
     }
 
-    // تقرير الجرد ونهاية الدوام (الصندوق والوارد النهائي)
-    function openShiftReport() {
-        let logs = JSON.parse(localStorage.getItem('mim89_daily_sales_log')) || [];
-        let cashTotal = 0;
-        let visaTotal = 0;
-        let freeCount = 0;
-        let voidCount = 0;
-        let totalOrders = logs.length;
+    // فتح وإغلاق نافذة التقارير المتقدمة بالتواريخ
+    function openReportModal() {
+        document.getElementById('navDropdown').style.display = 'none';
+        // وضع تاريخ اليوم كافتراضي
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').value = today;
+        document.getElementById('endDate').value = today;
+        document.getElementById('reportModal').style.display = 'flex';
+        calculateReport();
+    }
 
-        logs.forEach(o => {
-            if (o.status === "VOID_PENDING") {
-                voidCount++;
-            } else if (o.payment.includes("مجاني")) {
-                freeCount++;
-            } else if (o.payment.includes("كاش")) {
-                cashTotal += o.total;
-            } else if (o.payment.includes("فيزا")) {
-                visaTotal += o.total;
-            }
-        });
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
 
-        let grandRevenue = cashTotal + visaTotal;
+    // حساب تقرير الفترة المحددة يدوياً من قاعدة البيانات الصلبة
+    function calculateReport() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
 
-        let reportMsg = `📊 تقرير الجرد الصندوق والوارد النهائي:\n\n` +
-                        `📦 إجمالي عدد الطلبات: ${totalOrders}\n` +
-                        `💵 وارد الكاش (نقداً): ${cashTotal.toLocaleString()} د.ع\n` +
-                        `💳 وارد الفيزا (إلكتروني): ${visaTotal.toLocaleString()} د.ع\n` +
-                        `💰 إجمالي المبيعات المدفوعة: ${grandRevenue.toLocaleString()} د.ع\n` +
-                        `🎁 الطلبات المجانية (ضيافة): ${freeCount} طلب\n` +
-                        `⚠️ طلبات خاطئة/ملغية (تحتاج مراجعة المدير): ${voidCount}\n`;
-        
-        alert(reportMsg);
+        if (!start || !end) {
+            alert("⚠️ يرجى تحديد تاريخ البداية والنهاية بدقة!");
+            return;
+        }
+
+        if (!db) return;
+        const transaction = db.transaction(["orders"], "readonly");
+        const store = transaction.objectStore("orders");
+        const request = store.getAll();
+
+        request.onsuccess = function(event) {
+            const allOrders = event.target.result;
+            let cashTotal = 0;
+            let visaTotal = 0;
+            let freeCount = 0;
+            let voidCount = 0;
+            let filteredCount = 0;
+
+            allOrders.forEach(o => {
+                if (o.dateString >= start && o.dateString <= end) {
+                    filteredCount++;
+                    if (o.status === "VOID_PENDING") {
+                        voidCount++;
+                    } else if (o.payment.includes("مجاني")) {
+                        freeCount++;
+                    } else if (o.payment.includes("كاش")) {
+                        cashTotal += o.total;
+                    } else if (o.payment.includes("فيزا")) {
+                        visaTotal += o.total;
+                    }
+                }
+            });
+
+            let grandRevenue = cashTotal + visaTotal;
+
+            let htmlResult = `<strong>📅 فترة الجرد:</strong> من (${start}) إلى (${end})<br>` +
+                             `-----------------------------------<br>` +
+                             `📦 إجمالي الطلبات للفترة: ${filteredCount}<br>` +
+                             `💵 وارد الكاش (نقداً): ${cashTotal.toLocaleString()} د.ع<br>` +
+                             `💳 وارد الفيزا (إلكتروني): ${visaTotal.toLocaleString()} د.ع<br>` +
+                             `💰 <strong>إجمالي الوارد النهائي للصندوق:</strong> ${grandRevenue.toLocaleString()} د.ع<br>` +
+                             `🎁 الطلبات المجانية (ضيافة): ${freeCount} طلب<br>` +
+                             `⚠️ طلبات خاطئة/ملغية: ${voidCount}`;
+
+            document.getElementById('reportResultsBox').innerHTML = htmlResult;
+        };
     }
 
     window.onload = loadPosMenu;
