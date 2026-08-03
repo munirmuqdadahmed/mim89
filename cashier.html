@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير والإدارة الشاملة</title>
+    <title>MIM89 - نقطة البيع (الكاشير)</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
         body { background: #111; color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        header { background: #1a1a1a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; position: relative; }
-        .logo-area { color: #ff9f00; font-size: 18px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        header { background: #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .logo-area { color: #ff9f00; font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
         
-        .dropdown-menu { display: none; position: absolute; top: 50px; right: 20px; background: #222; border: 1px solid #444; border-radius: 10px; width: 230px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .dropdown-menu a { display: block; padding: 12px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333; font-size: 13px; transition: 0.2s; }
-        .dropdown-menu a:hover { background: #ff9f00; color: #000; font-weight: bold; }
-        .dropdown-menu a:last-child { border-bottom: none; }
-
         .cashier-container { display: flex; flex: 1; overflow: hidden; }
         
         .items-section { flex: 2; padding: 15px; overflow-y: auto; background: #151515; }
@@ -41,10 +36,7 @@
         .type-btn.active, .pay-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
         .pay-btn#payFree.active { background: #e63946; color: #fff; }
 
-        .customer-info-box { background: #222; border: 1px dashed #ff9f00; padding: 8px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none; }
-        .customer-info-box p { margin-bottom: 3px; color: #ddd; }
-
-        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 160px; }
+        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 180px; }
         .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
         .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
 
@@ -56,22 +48,10 @@
         .pos-btn.print { background: #ff9f00; color: #000; }
         .pos-btn.void-btn { background: #d90429; color: #fff; font-size: 12px; padding: 8px; }
 
-        .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-
-        /* النوافذ واللوحات */
-        .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 500px; padding: 20px; color: #fff; font-family: 'Cairo'; max-height: 90vh; overflow-y: auto; }
-        .modal-content h3 { color: #ff9f00; margin-bottom: 15px; text-align: center; }
-        .modal-content input, .modal-content select { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-family: 'Cairo'; font-size: 14px; }
-        .modal-content label { font-size: 12px; color: #aaa; display: block; margin-bottom: 4px; }
-
-        .inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .inv-table th, .inv-table td { border: 1px solid #333; padding: 8px; text-align: center; }
-        .inv-table th { background: #222; color: #ff9f00; }
-        .inv-table input { width: 60px; background: #111; color: #fff; border: 1px solid #444; text-align: center; padding: 4px; border-radius: 4px; }
-        .action-btn { background: #ff9f00; color: #000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .delete-btn { background: #e63946; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        /* نافذة الرمز السري الإجبارية عند الدخول */
+        .custom-modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 380px; padding: 20px; color: #fff; text-align: center; font-family: 'Cairo'; }
+        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-family: 'Cairo'; }
 
         @media print {
             body, html { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
@@ -84,24 +64,16 @@
 <body>
 
     <header>
-        <div class="logo-area" onclick="toggleMenuDropdown()">
-            <span id="headerTitle">MIM89 FAST FOOD 🍔 (<span id="activeCashierName">الكاشير الأول</span>) <i class="fas fa-chevron-down" style="font-size:12px;"></i></span>
+        <div class="logo-area">
+            <span>MIM89 FAST FOOD 🍔 (<span id="activeCashierName">جاري التحقق...</span>)</span>
         </div>
-
-        <div id="navDropdown" class="dropdown-menu">
-            <a href="javascript:void(0);" onclick="requestPin('cashier1')"><i class="fas fa-cash-register"></i> تبديل إلى: <span id="menuC1Label">الكاشير الأول</span></a>
-            <a href="javascript:void(0);" onclick="requestPin('cashier2')"><i class="fas fa-cash-register"></i> تبديل إلى: <span id="menuC2Label">الكاشير الثاني</span></a>
-            <a href="javascript:void(0);" onclick="requestPin('inventory')"><i class="fas fa-boxes"></i> إدارة المخزن (مسؤول المخزن)</a>
-            <a href="javascript:void(0);" onclick="requestPin('report')"><i class="fas fa-chart-pie"></i> جرد وتقارير الصندوق</a>
-            <a href="javascript:void(0);" onclick="requestPin('admin')"><i class="fas fa-cogs"></i> لوحة الإدارة الشاملة</a>
-        </div>
+        <a href="admin.html" style="color:#aaa; font-size:12px; text-decoration:none;"><i class="fas fa-cog"></i> الإدارة</a>
     </header>
 
     <div class="cashier-container">
         <div class="items-section">
-            <div id="incomingAlert" class="incoming-alert" onclick="loadOnlineOrder()">🔔 يوجد طلب جديد وارد من المينيو! اضغط لعرضه وتحميله للفاتورة</div>
             <div class="categories-bar" id="categoriesBar">
-                <button class="cat-tab active" onclick="filterCat('الكل')">الكل 🔥</button>
+                <button class="cat-tab active" onclick="filterCat('الكل', this)">الكل 🔥</button>
             </div>
             <div class="grid-menu" id="posGrid"></div>
         </div>
@@ -126,13 +98,6 @@
                 <button class="pay-btn" id="payFree" onclick="setPayment('مجاني (ضيافة)', this)">🎁 مجاني</button>
             </div>
 
-            <div id="customerInfoBox" class="customer-info-box">
-                <p><strong>👤 الزبون:</strong> <span id="lblCustName">-</span></p>
-                <p><strong>📞 الهاتف:</strong> <span id="lblCustPhone">-</span></p>
-                <p><strong>📍 العنوان:</strong> <span id="lblCustAddress">-</span></p>
-                <p id="notesRow"><strong>📝 ملاحظات:</strong> <span id="lblCustNotes">-</span></p>
-            </div>
-
             <div class="invoice-items" id="invoiceList">
                 <p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>
             </div>
@@ -142,84 +107,19 @@
                     <span>الإجمالي الكلي:</span>
                     <span id="grandTotal">0 د.ع</span>
                 </div>
-
                 <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة وتثبيت الطلب</button>
-                <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ (يحتاج مراجعة المدير)</button>
+                <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة إدخال الرمز السري (PIN) -->
+    <!-- نافذة طلب الرمز السري عند فتح الكاشير -->
     <div id="pinModal" class="custom-modal">
         <div class="modal-content">
-            <h3 id="pinModalTitle">🔐 مطلوب الرمز السري</h3>
-            <label id="pinLabel">أدخل الرمز السري:</label>
-            <input type="password" id="pinInput" placeholder="****" autofocus>
-            <button class="pos-btn print" onclick="verifyPin()">تحقق ودخول</button>
-            <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('pinModal')">إلغاء</button>
-        </div>
-    </div>
-
-    <!-- نافذة تقارير الصندوق -->
-    <div id="reportModal" class="custom-modal">
-        <div class="modal-content" style="max-width:550px;">
-            <h3>📊 جرد وتقارير الصندوق</h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <div style="flex:1;"><label>من تاريخ:</label><input type="date" id="startDate"></div>
-                <div style="flex:1;"><label>إلى تاريخ:</label><input type="date" id="endDate"></div>
-            </div>
-            <button class="pos-btn print" style="margin-bottom:12px;" onclick="calculateReport()">عرض التقرير</button>
-            <div class="report-results" id="reportResultsBox" style="background:#222; padding:10px; border-radius:8px; font-size:13px; margin-bottom:15px;">اختر التواريخ...</div>
-            <button class="pos-btn" style="background:#444;" onclick="closeModal('reportModal')">إغلاق</button>
-        </div>
-    </div>
-
-    <!-- نافذة إدارة المخزن (خاصة بمسؤول المخزن) -->
-    <div id="inventoryModal" class="custom-modal">
-        <div class="modal-content" style="max-width:650px;">
-            <h3>📦 إدارة وجرد المخزن</h3>
-            <div style="background:#222; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:8px; align-items:flex-end;">
-                <div style="flex:1;"><label style="font-size:11px; color:#aaa;">اسم المادة:</label><input type="text" id="newItemName" placeholder="مثال: صدور دجاج (كغ)"></div>
-                <div style="flex:0.5;"><label style="font-size:11px; color:#aaa;">الرصيد:</label><input type="number" id="newItemStock" placeholder="0"></div>
-                <div><button class="action-btn" style="padding:10px; background:#ff9f00; color:#000; font-weight:bold;" onclick="addNewInventoryItem()">+ إضافة مادة</button></div>
-            </div>
-            <div style="max-height: 250px; overflow-y: auto;">
-                <table class="inv-table" id="inventoryTable">
-                    <thead><tr><th>المادة الأولية</th><th>الرصيد الحالي</th><th>تحديث الرصيد</th><th>حذف</th></tr></thead>
-                    <tbody id="inventoryTableBody"></tbody>
-                </table>
-            </div>
-            <button class="pos-btn" style="background:#444; margin-top:15px;" onclick="closeModal('inventoryModal')">إغلاق</button>
-        </div>
-    </div>
-
-    <!-- لوحة الإدارة الشاملة (تعديل أسماء الكاشير، الرموز، وكل شيء) -->
-    <div id="adminModal" class="custom-modal">
-        <div class="modal-content" style="max-width:480px;">
-            <h3>⚙️ لوحة الإدارة الشاملة للنظام</h3>
-            
-            <fieldset style="border:1px solid #444; padding:10px; border-radius:8px; margin-bottom:12px;">
-                <legend style="color:#ff9f00; font-size:12px; padding:0 5px;">👤 بيانات ورموز الكاشير</legend>
-                <label>اسم الكاشير الأول:</label>
-                <input type="text" id="adminNameC1">
-                <label>رمز الكاشير الأول:</label>
-                <input type="text" id="adminPinC1">
-                <label>اسم الكاشير الثاني:</label>
-                <input type="text" id="adminNameC2">
-                <label>رمز الكاشير الثاني:</label>
-                <input type="text" id="adminPinC2">
-            </fieldset>
-
-            <fieldset style="border:1px solid #444; padding:10px; border-radius:8px; margin-bottom:12px;">
-                <legend style="color:#ff9f00; font-size:12px; padding:0 5px;">📦 أمان المخزن والأعضاء</legend>
-                <label>رمز دخول المخزن (مسؤول المخزن):</label>
-                <input type="text" id="adminPinInv">
-                <label>رمز لوحة الإدارة (المدير العام):</label>
-                <input type="text" id="adminPinAdm">
-            </fieldset>
-
-            <button class="pos-btn print" onclick="saveAdminSettings()">حفظ التعديلات والتحديثات</button>
-            <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('adminModal')">إغلاق</button>
+            <h3 style="color:#ff9f00; margin-bottom:5px;">🔐 تسجيل دخول الكاشير</h3>
+            <p style="font-size:12px; color:#aaa;">يرجى إدخال رمز الكاشير الأول أو الثاني للبدء</p>
+            <input type="password" id="cashierPinInput" placeholder="****" autofocus>
+            <button class="pos-btn print" onclick="verifyCashierPin()">دخول للنظام</button>
         </div>
     </div>
 
@@ -227,96 +127,46 @@
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
         <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="c_cashierName">الكاشير الأول</span> | الدفع: <span id="c_payMethod">كاش</span></p>
-        <p style="text-align:center; font-size:10px; margin:2px 0;">التاريخ: <span id="c_date"></span></p>
-        <p id="c_custDetails" style="font-size:11px; margin:3px 0; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:3px 0;"></p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="c_cashierName"></span> | الدفع: <span id="c_payMethod">كاش</span></p>
         <hr style="border: 1px dashed #000; margin:4px 0;">
         <div id="c_itemsBody"></div>
         <hr style="border: 1px dashed #000; margin:4px 0;">
         <h3 id="c_total" style="text-align:center; font-size:15px;"></h3>
-        <p style="text-align:center; font-size:10px; margin-top:6px;">شكراً لزيارتكم مطعمنا ❤️</p>
     </div>
 
     <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
         <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="k_cashierName">الكاشير الأول</span></p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="k_cashierName"></span></p>
         <hr style="border: 2px solid #000; margin:4px 0;">
         <div id="k_itemsBody" style="font-size:16px; font-weight:bold;"></div>
-        <hr style="border: 2px solid #000; margin:4px 0;">
-        <p style="text-align:center; font-size:12px;">يرجى التجهيز السريع ⚡</p>
     </div>
 
 <script>
-    // الإعدادات الافتراضية للنظام والرموز والأسماء
-    if (!localStorage.getItem('mim89_settings')) {
-        localStorage.setItem('mim89_settings', JSON.stringify({
-            c1Name: "الكاشير الأول",
-            c1Pin: "1111",
-            c2Name: "الكاشير الثاني",
-            c2Pin: "2222",
-            invPin: "3333",
-            admPin: "9999"
-        }));
-    }
+    let currentCashier = "";
 
-    let settings = JSON.parse(localStorage.getItem('mim89_settings'));
-    let currentCashier = settings.c1Name;
-    let targetAction = "";
+    function verifyCashierPin() {
+        const pin = document.getElementById('cashierPinInput').value.trim();
+        const settings = JSON.parse(localStorage.getItem('mim89_settings')) || { c1Name: "الكاشير الأول", c1Pin: "1111", c2Name: "الكاشير الثاني", c2Pin: "2222" };
 
-    updateHeaderUI();
-
-    function updateHeaderUI() {
-        settings = JSON.parse(localStorage.getItem('mim89_settings'));
-        document.getElementById('activeCashierName').innerText = currentCashier;
-        document.getElementById('menuC1Label').innerText = settings.c1Name;
-        document.getElementById('menuC2Label').innerText = settings.c2Name;
-    }
-
-    function requestPin(action) {
-        targetAction = action;
-        document.getElementById('pinInput').value = '';
-        document.getElementById('pinModal').style.display = 'flex';
-        document.getElementById('pinInput').focus();
-        document.getElementById('navDropdown').style.display = 'none';
-    }
-
-    function verifyPin() {
-        const pin = document.getElementById('pinInput').value;
-        settings = JSON.parse(localStorage.getItem('mim89_settings'));
-
-        if (targetAction === 'cashier1' && pin === settings.c1Pin) {
+        if (pin === settings.c1Pin) {
             currentCashier = settings.c1Name;
-            updateHeaderUI();
-            closeModal('pinModal');
-            alert(`✅ تم التبديل إلى: ${currentCashier}`);
-        } else if (targetAction === 'cashier2' && pin === settings.c2Pin) {
+        } else if (pin === settings.c2Pin) {
             currentCashier = settings.c2Name;
-            updateHeaderUI();
-            closeModal('pinModal');
-            alert(`✅ تم التبديل إلى: ${currentCashier}`);
-        } else if (targetAction === 'inventory' && pin === settings.invPin) {
-            closeModal('pinModal');
-            openInventoryModal();
-        } else if (targetAction === 'report' && pin === settings.admPin) {
-            closeModal('pinModal');
-            openReportModal();
-        } else if (targetAction === 'admin' && pin === settings.admPin) {
-            closeModal('pinModal');
-            openAdminModal();
         } else {
-            alert("❌ الرمز السري غير صحيح!");
+            alert("❌ الرمز السري غير صحيح! يجيب إدخال رمز الكاشير الأول أو الثاني.");
+            return;
         }
+
+        document.getElementById('activeCashierName').innerText = currentCashier;
+        document.getElementById('pinModal').style.display = 'none';
     }
 
     let db;
-    const request = indexedDB.open("MIM89_Secure_DB", 5);
-    request.onsuccess = function(event) {
-        db = event.target.result;
-        loadPosMenu();
-    };
-    request.onupgradeneeded = function(event) {
-        db = event.target.result;
+    const request = indexedDB.open("MIM89_Secure_DB", 6);
+    request.onsuccess = function(e) { db = e.target.result; loadPosMenu(); };
+    request.onupgradeneeded = function(e) {
+        db = e.target.result;
         if (!db.objectStoreNames.contains("orders")) db.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
         if (!db.objectStoreNames.contains("inventory")) {
             const inv = db.createObjectStore("inventory", { keyPath: "name" });
@@ -327,31 +177,6 @@
         }
     };
 
-    function saveOrderToDB(orderData) {
-        if (!db) return;
-        const transaction = db.transaction(["orders"], "readwrite");
-        transaction.objectStore("orders").add(orderData);
-        deductInventory(orderData.items);
-    }
-
-    function deductInventory(items) {
-        if (!db) return;
-        const transaction = db.transaction(["inventory"], "readwrite");
-        const store = transaction.objectStore("inventory");
-        items.forEach(item => {
-            let name = "شرائح دجاج (كغ)";
-            let qty = item.qty * 0.2;
-            if(item.name.includes("شاورما")) { name = "خبز صاج (عدد)"; qty = item.qty * 1; }
-            else if(item.name.includes("بركر")) { name = "جبن شيدر (شرائح)"; qty = item.qty * 1; }
-            else if(item.name.includes("فنكر")) { name = "بطاطا فنكر (كغ)"; qty = item.qty * 0.3; }
-
-            store.get(name).onsuccess = function(e) {
-                let d = e.target.result;
-                if(d) { d.stock = Math.max(0, d.stock - qty); store.put(d); }
-            };
-        });
-    }
-
     let menuItems = [];
     let currentInvoice = [];
     let orderType = "صالة";
@@ -360,21 +185,14 @@
     document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
 
     const defaultItems = [
-        { id: 101, cat: "🔥 العروض الخاصة", name: "🔥 عرض الفردي المميز", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
-        { id: 102, cat: "🔥 العروض الخاصة", name: "🌯 عرض ميكس الشاورما", price: "8,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
-        { id: 201, cat: "🍔 البركر", name: "بركر كلاسيك (لحم)", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" },
-        { id: 202, cat: "🍔 البركر", name: "بركر الجبن (لحم)", price: "5,000 د.ع", img: "https://foodish-api.com/images/burger/burger3.jpg" },
-        { id: 401, cat: "🌯 الشاورما", name: "شاورما صاج عادي", price: "2,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
-        { id: 402, cat: "🌯 الشاورما", name: "شاورما عربي", price: "5,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa7.jpg" }
+        { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", price: "1,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
+        { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", price: "3,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
+        { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك لحم", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" }
     ];
 
-    function toggleMenuDropdown() {
-        const drop = document.getElementById('navDropdown');
-        drop.style.display = drop.style.display === 'block' ? 'none' : 'block';
-    }
-
     function loadPosMenu() {
-        menuItems = defaultItems;
+        const saved = localStorage.getItem('mim89_custom_menu');
+        menuItems = saved ? JSON.parse(saved) : defaultItems;
         renderCategories();
         renderPosGrid(menuItems);
     }
@@ -385,15 +203,15 @@
         bar.innerHTML = cats.map(c => `<button class="cat-tab ${c==='الكل'?'active':''}" onclick="filterCat('${c}', this)">${c}</button>`).join('');
     }
 
-    function filterCat(catName, btn) {
+    function filterCat(cat, btn) {
         document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-        if(btn) btn.classList.add('active');
-        renderPosGrid(catName === 'الكل' ? menuItems : menuItems.filter(i => i.cat === catName));
+        btn.classList.add('active');
+        renderPosGrid(cat === 'الكل' ? menuItems : menuItems.filter(i => i.cat === cat));
     }
 
     function renderPosGrid(items) {
         document.getElementById('posGrid').innerHTML = items.map(item => `
-            <div class="pos-card" onclick="addToInvoice('${item.name}', ${parseInt(item.price)})">
+            <div class="pos-card" onclick="addToInvoice('${item.name}', ${parseInt(item.price.replace(/[^0-9]/g,'')) || 0})">
                 <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150x100/222/ff9f00?text=MIM89';">
                 <h4>${item.name}</h4>
                 <span>${item.price}</span>
@@ -439,7 +257,7 @@
             total += sum;
             return `
                 <div class="invoice-row">
-                    <div><strong>${item.name}</strong><br><small>${item.price.toLocaleString()} × ${item.qty}</small></div>
+                    <div><b>${item.name}</b><br><small>${item.price.toLocaleString()} × ${item.qty}</small></div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span>${sum.toLocaleString()}</span>
                         <button onclick="changeQty(${idx}, 1)">+</button>
@@ -450,9 +268,29 @@
         document.getElementById('grandTotal').innerText = total.toLocaleString() + ' د.ع';
     }
 
-    function clearInvoice() {
-        currentInvoice = [];
-        updateInvoiceUI();
+    function clearInvoice() { currentInvoice = []; updateInvoiceUI(); }
+
+    function saveOrderToDB(orderData) {
+        if (!db) return;
+        const tx = db.transaction(["orders"], "readwrite");
+        tx.objectStore("orders").add(orderData);
+        deductInventory(orderData.items);
+    }
+
+    function deductInventory(items) {
+        if (!db) return;
+        const tx = db.transaction(["inventory"], "readwrite");
+        const store = tx.objectStore("inventory");
+        items.forEach(item => {
+            let name = "شرائح دجاج (كغ)";
+            let qty = item.qty * 0.2;
+            if(item.name.includes("شاورما")) { name = "خبز صاج (عدد)"; qty = item.qty * 1; }
+            else if(item.name.includes("بركر")) { name = "جبن شيدر (شرائح)"; qty = item.qty * 1; }
+            store.get(name).onsuccess = function(e) {
+                let d = e.target.result;
+                if(d) { d.stock = Math.max(0, d.stock - qty); store.put(d); }
+            };
+        });
     }
 
     function markAsVoidOrder() {
@@ -462,9 +300,8 @@
             num: orderCounter, type: orderType, payment: "خطأ / ملغي", total, items: currentInvoice,
             cashier: currentCashier, dateString: new Date().toISOString().split('T')[0], status: "VOID_PENDING"
         });
-        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي] لمراجعة الإدارة.");
-        orderCounter++;
-        localStorage.setItem('mim89_order_counter', orderCounter);
+        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي].");
+        orderCounter++; localStorage.setItem('mim89_order_counter', orderCounter);
         document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
         clearInvoice();
     }
@@ -492,7 +329,6 @@
         document.getElementById('c_ordType').innerText = orderType;
         document.getElementById('c_payMethod').innerText = paymentMethod;
         document.getElementById('c_cashierName').innerText = currentCashier;
-        document.getElementById('c_date').innerText = new Date().toLocaleString('ar-IQ');
         document.getElementById('c_itemsBody').innerHTML = custHtml;
         document.getElementById('c_total').innerText = 'الإجمالي: ' + total.toLocaleString() + ' د.ع';
 
@@ -510,109 +346,11 @@
             document.getElementById('kitchenReceipt').style.display = 'block';
             window.print();
             document.getElementById('kitchenReceipt').style.display = 'none';
-            orderCounter++;
-            localStorage.setItem('mim89_order_counter', orderCounter);
+            orderCounter++; localStorage.setItem('mim89_order_counter', orderCounter);
             document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
             clearInvoice();
         }, 1200);
     }
-
-    function openReportModal() {
-        document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('endDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('reportModal').style.display = 'flex';
-        calculateReport();
-    }
-
-    function calculateReport() {
-        const start = document.getElementById('startDate').value;
-        const end = document.getElementById('endDate').value;
-        if (!db) return;
-        db.transaction(["orders"], "readonly").objectStore("orders").getAll().onsuccess = function(e) {
-            let cash = 0, visa = 0, free = 0, voids = 0, count = 0;
-            e.target.result.forEach(o => {
-                if (o.dateString >= start && o.dateString <= end) {
-                    count++;
-                    if (o.status === "VOID_PENDING") voids++;
-                    else if (o.payment.includes("مجاني")) free++;
-                    else if (o.payment.includes("كاش")) cash += o.total;
-                    else if (o.payment.includes("فيزا")) visa += o.total;
-                }
-            });
-            document.getElementById('reportResultsBox').innerHTML = 
-                `📦 إجمالي الطلبات: ${count}<br>💵 الكاش: ${cash.toLocaleString()} د.ع<br>💳 الفيزا: ${visa.toLocaleString()} د.ع<br>💰 <strong>المجموع النهائي:</strong> ${(cash+visa).toLocaleString()} د.ع<br>🎁 مجاني: ${free}<br>⚠️ طلبات خاطئة: ${voids}`;
-        };
-    }
-
-    function openInventoryModal() {
-        document.getElementById('inventoryModal').style.display = 'flex';
-        loadInventoryTable();
-    }
-
-    function loadInventoryTable() {
-        if (!db) return;
-        db.transaction(["inventory"], "readonly").objectStore("inventory").getAll().onsuccess = function(e) {
-            document.getElementById('inventoryTableBody').innerHTML = e.target.result.map(i => `
-                <tr>
-                    <td><b>${i.name}</b></td>
-                    <td><input type="number" id="st-${i.name}" value="${i.stock}" step="0.5"></td>
-                    <td><button class="action-btn" onclick="updateStock('${i.name}')">تحديث</button></td>
-                    <td><button class="delete-btn" onclick="deleteStock('${i.name}')">حذف</button></td>
-                </tr>`).join('');
-        };
-    }
-
-    function updateStock(name) {
-        let val = parseFloat(document.getElementById(`st-${name}`).value);
-        let tx = db.transaction(["inventory"], "readwrite");
-        tx.objectStore("inventory").put({ name, stock: val });
-        tx.oncomplete = () => { loadInventoryTable(); alert("✅ تم التحديث"); };
-    }
-
-    function deleteStock(name) {
-        if(!confirm("حذف هذه المادة؟")) return;
-        let tx = db.transaction(["inventory"], "readwrite");
-        tx.objectStore("inventory").delete(name);
-        tx.oncomplete = () => loadInventoryTable();
-    }
-
-    function addNewInventoryItem() {
-        let name = document.getElementById('newItemName').value.trim();
-        let stock = parseFloat(document.getElementById('newItemStock').value);
-        if(!name || isNaN(stock)) return alert("أدخل البيانات صحيحة");
-        let tx = db.transaction(["inventory"], "readwrite");
-        tx.objectStore("inventory").put({ name, stock });
-        tx.oncomplete = () => { document.getElementById('newItemName').value=''; document.getElementById('newItemStock').value=''; loadInventoryTable(); };
-    }
-
-    function openAdminModal() {
-        settings = JSON.parse(localStorage.getItem('mim89_settings'));
-        document.getElementById('adminNameC1').value = settings.c1Name;
-        document.getElementById('adminPinC1').value = settings.c1Pin;
-        document.getElementById('adminNameC2').value = settings.c2Name;
-        document.getElementById('adminPinC2').value = settings.c2Pin;
-        document.getElementById('adminPinInv').value = settings.invPin;
-        document.getElementById('adminPinAdm').value = settings.admPin;
-        document.getElementById('adminModal').style.display = 'flex';
-    }
-
-    function saveAdminSettings() {
-        const newSettings = {
-            c1Name: document.getElementById('adminNameC1').value.trim() || "الكاشير الأول",
-            c1Pin: document.getElementById('adminPinC1').value.trim() || "1111",
-            c2Name: document.getElementById('adminNameC2').value.trim() || "الكاشير الثاني",
-            c2Pin: document.getElementById('adminPinC2').value.trim() || "2222",
-            invPin: document.getElementById('adminPinInv').value.trim() || "3333",
-            admPin: document.getElementById('adminPinAdm').value.trim() || "9999"
-        };
-        localStorage.setItem('mim89_settings', JSON.stringify(newSettings));
-        updateHeaderUI();
-        alert("✅ تم حفظ الإعدادات وتحديث الأسماء والرموز بنجاح!");
-        closeModal('adminModal');
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
-
 </body>
 </html>
