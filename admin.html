@@ -43,10 +43,10 @@
     const SECRET_PASS = "MIM123";
 
     const defaultItems = [
-        { id: 1, cat: "قسم الشاورما 🌯", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "4,000 د.ع", img: "Images/shawarma_chicken.jpg" },
-        { id: 2, cat: "قسم البركر 🍔", name: "بركر لحم MIM89 (سنجل)", desc: "شريحة لحم صافي، جبنة شيدر، صوص MIM الخاص، خضار", price: "5,000 د.ع", img: "Images/burger_single.jpg" },
-        { id: 3, cat: "أطباق الريزو 🍚", name: "طبق ريزو دجاج عادي", desc: "أرز ريزو مبهر، قطع دجاج كرسبي، صوص ريزو خاص", price: "5,000 د.ع", img: "Images/rizo_chicken.jpg" },
-        { id: 4, cat: "الكنتاكي والوجبات المقرمشة 🍗", name: "وجبة كنتاكي (3 قطع)", desc: "3 قطع دجاج مقرمش، بطاطا، ثومية، خبز، كولسلو", price: "7,000 د.ع", img: "Images/kentucky_3.jpg" }
+        { id: 1, cat: "🔥 العروض الخاصة واليومية", name: "🔥 عرض الفردي المميز", desc: "بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
+        { id: 2, cat: "🍔 قسم البركر", name: "بركر كلاسيك (لحم)", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" },
+        { id: 3, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "خبز صاج، شاورما دجاج، ثوم، وبطاطا", price: "2,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
+        { id: 4, cat: "🍚 قسم الريزو", name: "ريزو كلاسيك", desc: "أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو", price: "5,000 د.ع", img: "https://foodish-api.com/images/rice/rice1.jpg" }
     ];
 
     let currentItems = [];
@@ -80,7 +80,7 @@
                     <button class="btn-delete" onclick="deleteItem(${index})">🗑️ حذف الصنف</button>
                 </div>
 
-                <label>اسم القسم (اكتب اسماً جديداً لفتح قسم جديد):</label>
+                <label>اسم القسم:</label>
                 <input type="text" value="${item.cat}" id="cat-${index}">
 
                 <label>اسم الوجبة:</label>
@@ -103,8 +103,8 @@
     function addNewItem() {
         currentItems.unshift({
             id: Date.now(),
-            cat: "قسم جديد 🍔",
-            name: "اسم الوجبة الجديد",
+            cat: "🍔 قسم البركر",
+            name: "وجبة جديدة",
             desc: "الوصف والمكونات...",
             price: "5,000 د.ع",
             img: "https://via.placeholder.com/300x180/222/ff9f00?text=MIM89+FAST+FOOD"
@@ -120,7 +120,6 @@
         }
     }
 
-    // دالة ضغط واقتصاص الصورة تلقائياً لحفظها بسلاسة
     function handleImage(input, index) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
@@ -155,7 +154,6 @@
                     canvas.height = height;
 
                     ctx.drawImage(img, 0, 0, width, height);
-
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
 
                     currentItems[index].img = compressedBase64;
