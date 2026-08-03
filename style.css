@@ -591,7 +591,7 @@ select {
     font-size: 16px !important;
 }
 
-/* مرونة كاملة لتنقلات الشاشة ومنع التجمد */
+/* إلغاء تجميد الصفحة تماماً لضمان حرية التصفح في الآيفون */
 body.menu-open {
-    overflow: hidden;
+    overflow: auto !important;
 }
