@@ -16,7 +16,6 @@
         button { width: 100%; padding: 12px; background: #ff9f00; color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 5px; }
         .editor-section { display: none; }
         
-        /* شريط التنقل السريع بين الأقسام داخل اللوحة */
         .quick-nav { background: #1a1a1a; padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
         .quick-btn { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; width: auto; margin: 0; }
         .quick-btn:hover { background: #ff9f00; color: #000; }
@@ -34,17 +33,13 @@
 
     <h1>إدارة مينيو MIM89 FAST FOOD 🍔</h1>
 
-    <!-- شاشة تسجيل الدخول -->
     <div id="login-section" class="login-box">
         <h3 style="margin-bottom:15px; color:#ff9f00;">رمز دخول الإدارة</h3>
         <input type="password" id="pass-input" placeholder="أدخل كلمة المرور">
         <button onclick="checkPass()">دخول اللوحة</button>
     </div>
 
-    <!-- لوحة التحكم وتعديل الأصناف -->
     <div id="editor-section" class="editor-section">
-        
-        <!-- قسم تغيير كلمة المرور -->
         <div class="pass-box">
             <h4 style="color:#ff9f00; margin-bottom:8px; font-size:15px;">🔒 تغيير رمز المرور الخاص باللوحة</h4>
             <label style="font-size:12px; color:#aaa;">كلمة المرور الجديدة:</label>
@@ -52,9 +47,8 @@
             <button onclick="updatePassword()" style="background:#25d366; color:#fff;">حفظ كلمة المرور الجديدة</button>
         </div>
 
-        <!-- أزرار التنقل السريع بين الأقسام -->
         <div class="quick-nav">
-            <span style="width:100%; text-align:center; font-size:13px; color:#ff9f00; font-weight:bold;">⚡ الانتقال السريع للأقسام:</span>
+            <span style="width:100%; text-align:center; font-size:13px; color:#ff9f00; font-weight:bold;">⚡ التنقل السريع للأقسام:</span>
             <button class="quick-btn" onclick="scrollToCat('العروض')">🔥 العروض</button>
             <button class="quick-btn" onclick="scrollToCat('البركر')">🍔 البركر</button>
             <button class="quick-btn" onclick="scrollToCat('الفاهيتا')">🌮 الفاهيتا</button>
@@ -73,7 +67,7 @@
 <script>
     let currentPass = localStorage.getItem('mim89_admin_pass') || "MIM123";
 
-    // القائمة الشاملة والكاملة لجميع وجبات وأقسام المطعم بدون أي نقص
+    // القائمة الكاملة التي تضم جميع الأصناف والأقسام دون استثناء
     const defaultItems = [
         { id: 101, cat: "🔥 العروض الخاصة واليومية", name: "🔥 عرض الفردي المميز", desc: "بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد", price: "5,500 د.ع", img: "https://foodish-api.com/images/burger/burger2.jpg" },
         { id: 102, cat: "🔥 العروض الخاصة واليومية", name: "🌯 عرض ميكس الشاورما", desc: "وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي", price: "8,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa1.jpg" },
@@ -165,7 +159,26 @@
 
     function loadAdminData() {
         const saved = localStorage.getItem('mim89_full_menu_data');
-        currentItems = saved ? JSON.parse(saved) : defaultItems;
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // دمج ذكي يضمن بقاء جميع الأصناف الأساسية الجديدة مع تحديث ما عدله المستخدم
+                currentItems = defaultItems.map(defItem => {
+                    const found = parsed.find(p => p.id === defItem.id || p.name === defItem.name);
+                    return found ? found : defItem;
+                });
+                // إضافة أي أصناف إضافية أنشأها المستخدم يدوياً
+                parsed.forEach(p => {
+                    if (!defaultItems.some(def => def.id === p.id || def.name === p.name)) {
+                        currentItems.push(p);
+                    }
+                });
+            } catch(e) {
+                currentItems = defaultItems;
+            }
+        } else {
+            currentItems = defaultItems;
+        }
         renderAdminCards();
     }
 
@@ -203,7 +216,6 @@
         });
     }
 
-    // دالة الانتقال السريع للقسم عند الضغط على أزرار الأقسام في الأعلى
     function scrollToCat(catKeyword) {
         const cards = document.querySelectorAll('.item-card');
         for (let card of cards) {
@@ -217,7 +229,6 @@
         }
     }
 
-    // دالة معالجة الصور المحلية من الموبايل
     function handleImage(event, index) {
         const file = event.target.files[0];
         if (file) {
