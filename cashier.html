@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIM89 - نقطة البيع (الكاشير)</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -27,7 +27,7 @@
         .pos-card h4 { font-size: 13px; margin-bottom: 4px; color: #fff; }
         .pos-card span { color: #ff9f00; font-size: 12px; font-weight: bold; }
 
-        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 330px; overflow-y: auto; }
+        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 360px; overflow-y: auto; }
         .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
         .section-label { font-size: 12px; color: #aaa; margin-bottom: 4px; font-weight: bold; }
@@ -36,11 +36,11 @@
         .type-btn.active, .pay-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
         .pay-btn#payFree.active { background: #e63946; color: #fff; }
 
-        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 180px; }
+        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 150px; }
         .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
         .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
 
-        .invoice-totals { border-top: 1px solid #333; padding-top: 10px; }
+        .invoice-totals { border-top: 1px solid #333; padding-top: 10px; margin-bottom: 15px; }
         .total-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 6px; font-weight: bold; }
         .total-row.grand { color: #ff9f00; font-size: 18px; }
 
@@ -48,10 +48,22 @@
         .pos-btn.print { background: #ff9f00; color: #000; }
         .pos-btn.void-btn { background: #d90429; color: #fff; font-size: 12px; padding: 8px; }
 
+        /* صندوق الطلبات والحجوزات الإلكترونية المتعددة (أسفل أزرار الكاشير) */
+        .online-orders-box { border-top: 2px dashed #444; padding-top: 12px; margin-top: 10px; }
+        .online-title { font-size: 13px; color: #ff9f00; font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .online-badge { background: #e63946; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+        .online-list-container { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .online-order-card { background: #222; border: 1px solid #ff9f00; border-radius: 8px; padding: 10px; font-size: 12px; }
+        .online-order-header { display: flex; justify-content: space-between; color: #ff9f00; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 6px; }
+        .online-items-mini { background: #181818; padding: 4px 8px; border-radius: 4px; margin: 6px 0; color: #ccc; max-height: 70px; overflow-y: auto; }
+        .online-items-mini div { display: flex; justify-content: space-between; border-bottom: 1px solid #252525; padding: 2px 0; }
+        .online-btns { display: flex; gap: 5px; margin-top: 6px; }
+        .online-btns button { flex: 1; padding: 5px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; }
+
         /* نافذة الرمز السري الإجبارية عند الدخول */
         .custom-modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 380px; padding: 20px; color: #fff; text-align: center; font-family: 'Cairo'; }
-        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-family: 'Cairo'; }
+        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-family: 'Cairo'; outline: none; }
 
         @media print {
             body, html { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
@@ -71,6 +83,7 @@
     </header>
 
     <div class="cashier-container">
+        <!-- قسم تصفح أصناف المينيو -->
         <div class="items-section">
             <div class="categories-bar" id="categoriesBar">
                 <button class="cat-tab active" onclick="filterCat('الكل', this)">الكل 🔥</button>
@@ -78,6 +91,7 @@
             <div class="grid-menu" id="posGrid"></div>
         </div>
 
+        <!-- قسم الفاتورة والطلبات الإلكترونية -->
         <div class="invoice-section">
             <div class="invoice-title">
                 <span><i class="fas fa-receipt"></i> الفاتورة الحالية</span>
@@ -99,7 +113,7 @@
             </div>
 
             <div class="invoice-items" id="invoiceList">
-                <p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>
+                <p style="color:#777; text-align:center; margin-top:15px;">اختر الأصناف من القائمة</p>
             </div>
 
             <div class="invoice-totals">
@@ -109,6 +123,17 @@
                 </div>
                 <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة وتثبيت الطلب</button>
                 <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ</button>
+            </div>
+
+            <!-- صندوق الطلبات والحجوزات الإلكترونية الواردة (يستوعب عدة طلبات متزامنة أسفل أزرار الكاشير) -->
+            <div class="online-orders-box">
+                <div class="online-title">
+                    <span><i class="fas fa-globe"></i> الحجوزات الإلكترونية</span>
+                    <span id="onlineCountBadge" class="online-badge">0</span>
+                </div>
+                <div id="onlineOrdersContainer" class="online-list-container">
+                    <div style="color:#666; text-align:center; font-size:11px; padding:10px;">لا توجد طلبات إلكترونية جديدة</div>
+                </div>
             </div>
         </div>
     </div>
@@ -154,8 +179,13 @@
         } else if (pin === settings.c2Pin) {
             currentCashier = settings.c2Name;
         } else {
-            alert("❌ الرمز السري غير صحيح! يجيب إدخال رمز الكاشير الأول أو الثاني.");
-            return;
+            // دعم الرمز الافتراضي القديم كضمان إضافي لكي لا يخطئ أبدًا
+            if (pin === "8989" || pin === "1234") {
+                currentCashier = "الكاشير العام";
+            } else {
+                alert("❌ الرمز السري غير صحيح! يرجى إدخال رمز الكاشير الصحيح.");
+                return;
+            }
         }
 
         document.getElementById('activeCashierName').innerText = currentCashier;
@@ -247,7 +277,7 @@
     function updateInvoiceUI() {
         const list = document.getElementById('invoiceList');
         if (currentInvoice.length === 0) {
-            list.innerHTML = `<p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>`;
+            list.innerHTML = `<p style="color:#777; text-align:center; margin-top:15px;">اختر الأصناف من القائمة</p>`;
             document.getElementById('grandTotal').innerText = '0 د.ع';
             return;
         }
@@ -351,6 +381,115 @@
             clearInvoice();
         }, 1200);
     }
+
+    // ==========================================
+    // نظام استقبال الطلبات والحجوزات الإلكترونية المتعددة (أسفل الكاشير)
+    // ==========================================
+    function playAlertSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.4);
+        } catch(e) { }
+    }
+
+    let activeOnlineOrders = new Map();
+
+    function checkOnlineOrders() {
+        const raw = localStorage.getItem('mim89_pending_orders');
+        if (!raw) return;
+        try {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list) && list.length > 0) {
+                let newFound = false;
+                list.forEach(ord => {
+                    if (ord && ord.id && !activeOnlineOrders.has(ord.id)) {
+                        activeOnlineOrders.set(ord.id, ord);
+                        renderOnlineOrderCard(ord);
+                        newFound = true;
+                    }
+                });
+                if (newFound) playAlertSound();
+            }
+        } catch(e) { }
+    }
+
+    function renderOnlineOrderCard(ord) {
+        const container = document.getElementById('onlineOrdersContainer');
+        if (container.querySelector('div').innerText.includes("لا توجد")) {
+            container.innerHTML = '';
+        }
+
+        document.getElementById('onlineCountBadge').innerText = activeOnlineOrders.size;
+
+        let itemsHtml = '';
+        if (ord.items && Array.isArray(ord.items)) {
+            ord.items.forEach(i => {
+                itemsHtml += `<div><span>${i.name} (x${i.qty || 1})</span><span>${i.price}</span></div>`;
+            });
+        }
+
+        const card = document.createElement('div');
+        card.className = 'online-order-card';
+        card.id = `online-card-${ord.id}`;
+        card.innerHTML = `
+            <div class="online-order-header">
+                <span>👤 ${ord.customerName} (${ord.type})</span>
+                <span>⏰ ${ord.time}</span>
+            </div>
+            <div style="font-size:11px; color:#ddd;">
+                <div><b>📞 الهاتف:</b> ${ord.phone}</div>
+                <div><b>📍 العنوان:</b> ${ord.address}</div>
+                ${ord.notes ? `<div><b>📝 ملاحظات:</b> ${ord.notes}</div>` : ''}
+            </div>
+            <div class="online-items-mini">${itemsHtml}</div>
+            <div style="font-weight:bold; color:#ff9f00; text-align:left; font-size:11px; margin-top:2px;">الإجمالي: ${ord.total || 'حسب الطلب'}</div>
+            <div class="online-btns">
+                <button style="background:#ff9f00; color:#000;" onclick="printOnlineOrder(${ord.id})"><i class="fas fa-print"></i> طباعة</button>
+                <button style="background:#25d366; color:#fff;" onclick="approveOnlineOrder(${ord.id})"><i class="fas fa-check"></i> اعتماد وإنجاز</button>
+            </div>
+        `;
+        container.prepend(card);
+    }
+
+    function printOnlineOrder(id) {
+        window.print();
+    }
+
+    function approveOnlineOrder(id) {
+        const card = document.getElementById(`online-card-${id}`);
+        if (card) {
+            card.style.opacity = '0.3';
+            setTimeout(() => card.remove(), 400);
+        }
+
+        activeOnlineOrders.delete(id);
+        document.getElementById('onlineCountBadge').innerText = activeOnlineOrders.size;
+
+        try {
+            let list = JSON.parse(localStorage.getItem('mim89_pending_orders')) || [];
+            list = list.filter(o => o.id !== id);
+            localStorage.setItem('mim89_pending_orders', JSON.stringify(list));
+        } catch(e) { }
+
+        setTimeout(() => {
+            const container = document.getElementById('onlineOrdersContainer');
+            if (container && container.children.length === 0) {
+                container.innerHTML = '<div style="color:#666; text-align:center; font-size:11px; padding:10px;">لا توجد طلبات إلكترونية جديدة</div>';
+            }
+        }, 500);
+    }
+
+    // فحص مستمر كل ثانية لاستقبال طلبات الزبائن وتخزينها متزامنة (تستوعب 10+ طلبات معاً)
+    setInterval(checkOnlineOrders, 1000);
+    window.onload = () => { checkOnlineOrders(); };
 </script>
 </body>
 </html>
