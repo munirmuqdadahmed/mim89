@@ -7,7 +7,7 @@
     <title>MIM89 | Fast Food</title>
     <meta name="description" content="MIM89 Fast Food">
 
-    <link rel="stylesheet" href="style.css?v=800.0">
+    <link rel="stylesheet" href="style.css?v=900.0">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -160,8 +160,9 @@
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
-                    <button id="sendOrderBtn" class="send-order-btn">
-                        <i class="fab fa-whatsapp"></i> تأكيد الطلب عبر الواتساب
+                    <!-- زر تأكيد وإرسال الطلب المباشر للكاشير بدلاً من الواتساب -->
+                    <button id="sendOrderBtn" class="send-order-btn" style="background:#ff9f00; color:#000; font-weight:900;">
+                        <i class="fas fa-paper-plane"></i> إرسال الطلب إلى المطعم مباشرة
                     </button>
                 </div>
             </div>
@@ -172,7 +173,7 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
-    <script src="script.js?v=800.0"></script>
+    <script src="script.js?v=900.0"></script>
 
     <script>
         window.addEventListener('DOMContentLoaded', () => {
@@ -289,7 +290,7 @@
                             <p>${item.desc}</p>
                             <div class="card-price-row">
                                 <span>${cleanPrice.toLocaleString()} د.ع</span>
-                                <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+                                <button class="add-to-cart-btn"><icon class="fas fa-cart-plus"></icon> إضافة</button>
                             </div>
                         `;
                         sectionEl.appendChild(cardEl);
@@ -299,6 +300,62 @@
                 });
             }
 
+            // تعديل زر إرسال الطلب ليذهب مباشرة إلى الكاشير مع معلومات الزبون
+            const sendBtn = document.getElementById('sendOrderBtn');
+            if (sendBtn) {
+                // إزالة أي أحداث قديمة واستبدالها بالحدث المباشر للكاشير
+                const newBtn = sendBtn.cloneNode(true);
+                sendBtn.parentNode.replaceChild(newBtn, sendBtn);
+
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const name = document.getElementById('custName').value.trim();
+                    const phone = document.getElementById('custPhone').value.trim();
+                    const address = document.getElementById('custAddress').value.trim();
+                    const notes = document.getElementById('custNotes').value.trim();
+                    const type = document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'سفري';
+
+                    if (!name || !phone) {
+                        alert("⚠️ يرجى إدخال الاسم ورقم الهاتف على الأقل لتأكيد الطلب!");
+                        return;
+                    }
+
+                    // جمع أصناف السلة الحالية
+                    const cartItems = [];
+                    document.querySelectorAll('#cartItems .cart-item-row, #cartItems > div').forEach(row => {
+                        // يتم الاعتماد على متغير cart العالمي الموجود في script.js إذا كان متاحاً
+                    });
+
+                    // استخدام مصفوفة السلة مباشرة من المتصفح أو script.js
+                    if (typeof cart === 'undefined' || cart.length === 0) {
+                        alert("⚠️ السلة فارغة!");
+                        return;
+                    }
+
+                    const orderPayload = {
+                        customerName: name,
+                        phone: phone,
+                        address: address,
+                        notes: notes,
+                        type: type,
+                        items: cart,
+                        time: new Date().toLocaleTimeString('ar-IQ')
+                    };
+
+                    // حفظ الطلب في الذاكرة المشتركة ليلتقطه الكاشير فوراً
+                    localStorage.setItem('mim89_online_order', JSON.stringify(orderPayload));
+                    
+                    alert("🎉 تم إرسال طلبك بنجاح إلى مطعم MIM89 وجاري تحضيره!");
+                    
+                    // تفريغ السلة وإغلاق النافذة
+                    cart = [];
+                    if(typeof updateCartUI === 'function') updateCartUI();
+                    document.getElementById('cartModal').style.display = 'none';
+                });
+            }
+
+            // التنقل السلس للقائمة الجانبية
             document.querySelectorAll('.close-menu-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
