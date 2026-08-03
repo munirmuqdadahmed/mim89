@@ -16,20 +16,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
-        /* تنسيق الترويسة الجديدة (محاذاة لليمين وإزالة الإنجليزي فوق) */
+        /* تنسيق الترويسة العلوية لتكون في المنتصف وبدون تكرار */
         .top-nav {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
         }
         .logo {
-            text-align: right;
+            text-align: center;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            width: 100%;
         }
         .logo h1 {
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 900;
             color: #ff9f00;
             line-height: 1;
@@ -38,7 +39,15 @@
             font-size: 11px;
             color: #ccc;
             font-weight: bold;
-            margin-top: 4px;
+            margin-top: 5px;
+        }
+        /* إخفاء التكرار غير المطلوب في محتوى الهيرو الداخلي الباقي إن وجد */
+        .hero-content h2, .hero-content p {
+            display: none;
+        }
+        .hero-content {
+            padding: 10px 0;
+            text-align: center;
         }
         /* تنسيق زر السلة المركزي الجديد في الشريط السفلي */
         .bottom-nav .center-cart-btn {
@@ -118,7 +127,7 @@
                 <h1>MIM89</h1>
                 <span>كل الطعم... في مكان واحد</span>
             </div>
-            <ul>
+            <ul style="display:none;">
                 <li><a href="#">الرئيسية</a></li>
                 <li><a href="#offers">العروض 🔥</a></li>
                 <li><a href="#burger">البركر</a></li>
@@ -133,9 +142,7 @@
         </nav>
 
         <div class="hero-content">
-            <h2>MIM89 FAST FOOD</h2>
-            <p>كل الطعم... في مكان واحد</p>
-            <!-- تم إزالة زر عرض المنيو بناءً على طلبك -->
+            <!-- تم إزالة التكرار ليبقى الاسم والوصف في الأعلى بوسط الصفحة بشكل نظيف -->
         </div>
 
         <!-- الشريط السفلي مع زر السلة المركزي الجديد -->
