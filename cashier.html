@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 - شاشة الكاشير والمطبخ</title>
+    <title>MIM89 - شاشة الكاشير والمطبخ (الطلبات المتعددة)</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -18,7 +18,7 @@
         
         .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; font-size: 14px; }
         .order-body { font-size: 13px; color: #ddd; margin-bottom: 15px; }
-        .order-items-list { background: #222; padding: 8px; border-radius: 6px; margin-top: 8px; }
+        .order-items-list { background: #222; padding: 8px; border-radius: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
         .order-items-list div { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #2a2a2a; padding-bottom: 3px; }
         
         .btn-group { display: flex; gap: 8px; }
@@ -31,7 +31,7 @@
 <body>
 
     <header>
-        <h2>💻 شاشة الطلبات الواردة - الكاشير والمطبخ</h2>
+        <h2>💻 شاشة الطلبات الواردة (تستوعب عدة حجوزات بالتزامن)</h2>
         <div id="statusIndicator" style="color: #25d366; font-size: 13px; font-weight: bold;"><i class="fas fa-circle" style="font-size:10px;"></i> المتجر متصل ويستقبل الطلبات</div>
     </header>
 
@@ -47,7 +47,7 @@
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // نوتة تنبيه
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
             gain.gain.setValueAtTime(0.1, ctx.currentTime);
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -58,29 +58,35 @@
         }
     }
 
-    let lastLoadedOrderId = localStorage.getItem('mim89_last_processed_order_id') || 0;
+    // تتبع الطلبات النشطة المعروضة منعاً للتكرار
+    let activeOrdersMap = new Map();
 
     function checkNewOrders() {
-        const rawOrder = localStorage.getItem('mim89_online_order');
-        if (!rawOrder) return;
+        const rawOrders = localStorage.getItem('mim89_pending_orders');
+        if (!rawOrders) return;
 
         try {
-            const order = JSON.parse(rawOrder);
-            if (order && order.id && order.id != lastLoadedOrderId) {
-                lastLoadedOrderId = order.id;
-                localStorage.setItem('mim89_last_processed_order_id', order.id);
-                
-                playAlertSound();
-                renderIncomingOrder(order);
+            const ordersList = JSON.parse(rawOrders);
+            if (Array.isArray(ordersList) && ordersList.length > 0) {
+                let hasNew = false;
+                ordersList.forEach(order => {
+                    if (order && order.id && !activeOrdersMap.has(order.id)) {
+                        activeOrdersMap.set(order.id, order);
+                        renderIncomingOrder(order);
+                        hasNew = true;
+                    }
+                });
+                if (hasNew) {
+                    playAlertSound();
+                }
             }
         } catch(e) {
-            console.error("Error parsing order");
+            console.error("Error parsing orders list");
         }
     }
 
     function renderIncomingOrder(order) {
         const container = document.getElementById('incomingOrdersContainer');
-        // إزالة رسالة "لا توجد طلبات" إن وجدت
         if (container.querySelector('.no-orders')) {
             container.innerHTML = '';
         }
@@ -111,8 +117,8 @@
                 <div style="margin-top:8px; font-weight:bold; color:#ff9f00; text-align:left;">الإجمالي: ${order.total || 'حسب الطلب'}</div>
             </div>
             <div class="btn-group">
-                <button class="btn-print" onclick="printOrder(${order.id})"><i class="fas fa-print"></i> طباعة الفاتورة</button>
-                <button class="btn-done" onclick="completeOrder(${order.id})"><i class="fas fa-check"></i> تأكيد وإنجاز</button>
+                <button class="btn-print" onclick="printOrder(${order.id})"><i class="fas fa-print"></i> طباعة</button>
+                <button class="btn-done" onclick="completeOrder(${order.id})"><i class="fas fa-check"></i> إنجاز</button>
             </div>
         `;
         
@@ -127,16 +133,34 @@
         const card = document.getElementById(`order-${orderId}`);
         if (card) {
             card.style.opacity = '0.3';
-            setTimeout(() => card.remove(), 500);
+            setTimeout(() => card.remove(), 400);
         }
-        // تنظيف الطلب المعلق من الذاكرة لكي لا يتكرر عند التحديث
-        localStorage.removeItem('mim89_online_order');
+        
+        // إزالة الطلب المنجز من قائمة الانتظار في الذاكرة المشتركة
+        activeOrdersMap.delete(orderId);
+        try {
+            const rawOrders = localStorage.getItem('mim89_pending_orders');
+            if (rawOrders) {
+                let ordersList = JSON.parse(rawOrders);
+                ordersList = ordersList.filter(o => o.id !== orderId);
+                localStorage.setItem('mim89_pending_orders', JSON.stringify(ordersList));
+            }
+        } catch(e) {
+            console.error("Error updating storage");
+        }
+
+        // إرجاع رسالة "لا توجد طلبات" إذا فرغت القائمة
+        setTimeout(() => {
+            const container = document.getElementById('incomingOrdersContainer');
+            if (container && container.children.length === 0) {
+                container.innerHTML = '<div class="no-orders">لا توجد طلبات جديدة حالياً...</div>';
+            }
+        }, 500);
     }
 
-    // فحص الطلبات كل ثانية لتظهر فوراً عند إرسالها من صفحة الزبون
+    // الفحص المستمر كل ثانية لاستقبال الطلبات المتعددة بالتزامن
     setInterval(checkNewOrders, 1000);
 
-    // فحص أولي عند فتح الصفحة
     window.onload = () => {
         checkNewOrders();
     };
