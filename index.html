@@ -12,9 +12,8 @@
         
         header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #1a1a1a; border-bottom: 1px solid #222; }
         .brand-box { text-align: right; }
-        .brand-box h1 { color: #ff9f00; font-size: 20px; font-weight: 900; letter-spacing: 1px; line-height: 1; }
-        .brand-box .sub-en { color: #aaa; font-size: 10px; font-weight: bold; display: block; margin-top: 2px; }
-        .brand-box .sub-ar { color: #777; font-size: 10px; display: block; margin-top: 1px; }
+        .brand-box h1 { color: #ff9f00; font-size: 22px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
+        .brand-box span { color: #aaa; font-size: 11px; font-weight: bold; display: block; }
         
         .cart-icon-btn { position: relative; background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
         .cart-badge { position: absolute; top: -3px; right: -3px; background: #e63946; color: #fff; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
@@ -60,9 +59,8 @@
             <div class="cart-badge" id="cartCount">0</div>
         </div>
         <div class="brand-box">
-            <h1>MIM89</h1>
-            <span class="sub-en">FAST FOOD</span>
-            <span class="sub-ar">كل الطعم... في مكان واحد</span>
+            <h1>MIM89 FAST FOOD</h1>
+            <span>FAST FOOD</span>
         </div>
     </header>
 
@@ -80,7 +78,7 @@
     <div class="menu-section" id="menuContainer"></div>
 
     <div class="bottom-nav">
-        <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
+        <a class="nav-item active"><i class="fas fa-home"></i>الرئيسية</a>
         <a class="nav-item"><i class="fas fa-fire"></i>العروض</a>
         <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
         <a class="nav-item"><i class="fas fa-map-marker-alt"></i>الموقع</a>
@@ -107,7 +105,7 @@
     </div>
 
 <script>
-    // قائمة الوجبات مع روابط صور صحيحة ومضبوطة 100%
+    // القائمة الافتراضية الثابتة التي لن تفرغ أبداً
     let menuItems = [
         { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "1,500 د.ع", img: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60" },
         { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", desc: "كمية مضاعفة من الشاورما مع الثومية والصوص", price: "3,000 د.ع", img: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=500&auto=format&fit=crop&q=60" },
@@ -118,7 +116,7 @@
 
     function renderMenu(items) {
         const container = document.getElementById('menuContainer');
-        if(items.length === 0) {
+        if(!items || items.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:#777; margin-top:20px;">عذراً، لا توجد أصناف مطابقة.</p>';
             return;
         }
@@ -233,16 +231,17 @@
     }
 
     window.onload = () => {
-        // فحص الذاكرة المحلية، وإذا كان هناك مينيو مخصص من الإدارة يتم عرضه، وإلا يظهر الافتراضي الصحيح
+        // التحقق من وجود مينيوم مخصص أو استخدام الافتراضي المضمون
         const saved = localStorage.getItem('mim89_custom_menu');
         if(saved) {
             try {
-                menuItems = JSON.parse(saved);
+                let parsed = JSON.parse(saved);
+                if(Array.isArray(parsed) && parsed.length > 0) {
+                    menuItems = parsed;
+                }
             } catch(e) {
                 menuItems = defaultMenuItems;
             }
-        } else {
-            menuItems = defaultMenuItems;
         }
         renderCategories();
         renderMenu(menuItems);
