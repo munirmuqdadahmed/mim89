@@ -21,12 +21,13 @@
         .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 13px; font-family: 'Cairo'; }
         .reset-btn { background: #333; color: #ff9f00; border: 1px solid #ff9f00; border-radius: 10px; padding: 0 12px; cursor: pointer; font-size: 12px; }
 
-        .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding: 10px 15px; background: #151515; white-space: nowrap; }
-        .cat-btn { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; }
-        .cat-btn.active { background: #ff9f00; color: #000; font-weight: bold; }
+        /* شريط الأقسام الأفقية المرئي والبارز */
+        .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding: 12px 15px; background: #151515; white-space: nowrap; border-bottom: 1px solid #222; }
+        .cat-btn { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: bold; }
+        .cat-btn.active { background: #ff9f00; color: #000; }
 
         .menu-section { padding: 15px; }
-        .section-title { color: #ff9f00; font-size: 16px; font-weight: 900; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 6px; }
+        .section-title { color: #ff9f00; font-size: 16px; font-weight: 900; margin: 15px 0 10px 0; border-bottom: 1px solid #222; padding-bottom: 6px; }
         
         .item-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; overflow: hidden; margin-bottom: 15px; display: flex; flex-direction: column; }
         .item-img { width: 100%; height: 150px; object-fit: cover; }
@@ -37,17 +38,17 @@
         .item-price { color: #ff9f00; font-size: 15px; font-weight: 900; }
         .add-btn { background: #ff9f00; color: #000; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* شريط التنقل السفلي مع زر السلة بالمنتصف كما طلبت */
+        /* شريط التنقل السفلي الاحترافي */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; }
         .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: none; font-family: 'Cairo'; }
         .nav-item i { font-size: 16px; }
         .nav-item.active { color: #ff9f00; }
         
-        /* زر السلة المركزي الجديد */
+        /* زر السلة المركزي بالأسفل */
         .nav-item.center-cart-btn { background: #ff9f00; color: #000; width: 45px; height: 45px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; position: relative; display: flex; align-items: center; }
         .cart-badge { position: absolute; top: -2px; right: -2px; background: #e63946; color: #fff; font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-        /* النوافذ المنبثقة (السلة، الموقع، العروض، المزيد) */
+        /* النوافذ المنبثقة */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
         .modal-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; text-align: right; }
         .cart-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
@@ -64,7 +65,7 @@
             <h1>MIM89 FAST FOOD</h1>
             <span>FAST FOOD</span>
         </div>
-        <div style="color:#ff9f00; font-size:13px; font-weight:bold;"><i class="fas fa-store"></i> خدمة التوصيل السريع</div>
+        <div style="color:#ff9f00; font-size:12px; font-weight:bold;"><i class="fas fa-store"></i> التوصيل السريع</div>
     </header>
 
     <div class="search-container">
@@ -75,13 +76,12 @@
         <button class="reset-btn" onclick="resetMenuCache()" title="إعادة ضبط القائمة">🔄</button>
     </div>
 
-    <div class="categories-bar" id="categoriesBar">
-        <button class="cat-btn active" onclick="filterCat('الكل', this)">الكل 🔥</button>
-    </div>
+    <!-- شريط الأقسام الأفقية (يظهر بوضوح الآن) -->
+    <div class="categories-bar" id="categoriesBar"></div>
 
     <div class="menu-section" id="menuContainer"></div>
 
-    <!-- الشريط السفلي المحدث (السلة بالمنتصف بدل الشوكة والسكينة) -->
+    <!-- الشريط السفلي -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i class="fas fa-home"></i>الرئيسية</button>
         <button class="nav-item" onclick="showOffersModal()"><i class="fas fa-fire"></i>العروض</button>
@@ -116,7 +116,7 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة عامة (للعروض، الموقع، والمزيد) -->
+    <!-- نافذة منبثقة عامة (للعروض، الموقع، والمزيد/التواصل) -->
     <div id="infoModal" class="modal center-modal" onclick="closeInfoModal()">
         <div class="modal-content center-box" onclick="event.stopPropagation()">
             <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
@@ -257,10 +257,9 @@
     function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; }
     function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
 
-    // دوال الأزرار السفلية (العروض، الموقع، والمزيد)
     function showOffersModal() {
-        document.getElementById('infoTitle').innerText = "🔥 عروض MIM89";
-        document.getElementById('infoText').innerText = "تابع أقوى عروض الوجبات السريعة والشاورما اليومية المحدثة خصيصاً لك!";
+        document.getElementById('infoTitle').innerText = "🔥 عروض MIM89 اليومية";
+        document.getElementById('infoText').innerText = "تابع أقوى عروض الوجبات السريعة والشاورما اليومية المحدثة حصرياً لك!";
         document.getElementById('infoModal').style.display = 'flex';
     }
 
@@ -271,8 +270,8 @@
     }
 
     function showMoreModal() {
-        document.getElementById('infoTitle').innerText = "ℹ️ المزيد عنا";
-        document.getElementById('infoText').innerText = "مطعم MIM89 للفاست فود. نسعى دائماً لتقديم أفضل طعم جودة ونظافة. تواصل معنا عبر سلة الطلبات.";
+        document.getElementById('infoTitle').innerText = "ℹ️ المزيد والتواصل";
+        document.getElementById('infoText').innerText = "مطعم MIM89 للفاست فود. نسعى دائماً لتقديم أشهى الوجبات. للتواصل المباشر والطلب يرجى إتمام الطلب عبر سلة الطلبات وسيعمل الكاشير على خدمتك فوراً.";
         document.getElementById('infoModal').style.display = 'flex';
     }
 
