@@ -16,7 +16,6 @@
 
         .cashier-container { display: flex; flex: 1; overflow: hidden; }
         
-        /* قسم الأصناف */
         .items-section { flex: 2; padding: 15px; overflow-y: auto; background: #151515; }
         .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
         .cat-tab { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; }
@@ -29,7 +28,6 @@
         .pos-card h4 { font-size: 13px; margin-bottom: 4px; color: #fff; }
         .pos-card span { color: #ff9f00; font-size: 12px; font-weight: bold; }
 
-        /* قسم الفاتورة */
         .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 330px; overflow-y: auto; }
         .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
@@ -55,14 +53,17 @@
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* إخفاء معلومات المتصفح (الرابط والتاريخ ورقم الصفحة) تماماً عند الطباعة */
+        /* إعدادات مخصصة للطابعة الحرارية وإلغاء أي فراغات أو ألوان خلفية */
         @media print {
             @page {
-                margin: 0mm;
-            }
-            body {
-                background: #fff;
                 margin: 0;
+                size: auto;
+            }
+            body, html {
+                background: #fff !important;
+                color: #000 !important;
+                height: auto !important;
+                overflow: visible !important;
             }
             body * {
                 visibility: hidden;
@@ -75,10 +76,10 @@
                 left: 0;
                 top: 0;
                 width: 100%;
-                background: #fff;
-                color: #000;
-                padding: 10px;
-                font-family: 'Cairo';
+                background: #fff !important;
+                color: #000 !important;
+                padding: 5px;
+                margin: 0;
             }
         }
     </style>
@@ -94,7 +95,6 @@
     </header>
 
     <div class="cashier-container">
-        <!-- قسم الأصناف والوجبات -->
         <div class="items-section">
             <div id="incomingAlert" class="incoming-alert" onclick="loadOnlineOrder()">🔔 يوجد طلب جديد وارد من المينيو! اضغط لعرضه وتحميله للفاتورة</div>
             <div class="categories-bar" id="categoriesBar">
@@ -103,14 +103,13 @@
             <div class="grid-menu" id="posGrid"></div>
         </div>
 
-        <!-- قسم الفاتورة وإدارة الطلب -->
         <div class="invoice-section">
             <div class="invoice-title">
                 <span><i class="fas fa-receipt"></i> الفاتورة الحالية</span>
                 <span id="orderNumDisplay" style="color:#25d366; font-size:14px;">طلب #1</span>
             </div>
             
-            <div class="section-label">📌 نوع الطلب (يحدد شكل الوصل):</div>
+            <div class="section-label">📌 نوع الطلب:</div>
             <div class="order-type-selector">
                 <button class="type-btn active" id="typeDinein" onclick="setOrderType('صالة', this)">🍽️ صالة</button>
                 <button class="type-btn" id="typeTakeaway" onclick="setOrderType('سفري', this)">🛍️ سفري</button>
@@ -146,29 +145,29 @@
         </div>
     </div>
 
-    <!-- 1. قالب وصل الزبون للطباعة -->
+    <!-- 1. وصل الزبون (بدون تكرار وبشكل نظيف) -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
-        <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0; background:#eee; padding:2px;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
+        <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
         <p style="text-align:center; font-size:11px; margin:2px 0;">طريقة الدفع: <span id="c_payMethod" style="font-weight:bold;">كاش</span></p>
-        <p id="c_custDetails" style="font-size:11px; margin:3px 0; border-bottom:1px dashed #000; padding-bottom:3px;"></p>
         <p style="text-align:center; font-size:10px; margin:2px 0;">التاريخ: <span id="c_date"></span></p>
-        <hr style="border: 1px dashed #000; margin:6px 0;">
+        <p id="c_custDetails" style="font-size:11px; margin:3px 0; border-top:1px dashed #000; border-bottom:1px dashed #000; padding:3px 0;"></p>
+        <hr style="border: 1px dashed #000; margin:4px 0;">
         <div id="c_itemsBody"></div>
-        <hr style="border: 1px dashed #000; margin:6px 0;">
+        <hr style="border: 1px dashed #000; margin:4px 0;">
         <h3 id="c_total" style="text-align:center; font-size:15px;"></h3>
-        <p style="text-align:center; font-size:10px; margin-top:8px;">شكراً لزيارتكم مطعمنا ❤️</p>
+        <p style="text-align:center; font-size:10px; margin-top:6px;">شكراً لزيارتكم مطعمنا ❤️</p>
     </div>
 
-    <!-- 2. قالب وصل المطبخ للطباعة -->
+    <!-- 2. وصل المطبخ -->
     <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
         <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
-        <p id="k_custDetails" style="font-size:12px; margin:3px 0; font-weight:bold;"></p>
         <p style="text-align:center; font-size:11px; margin:2px 0;">الوقت: <span id="k_time"></span></p>
-        <hr style="border: 2px solid #000; margin:6px 0;">
+        <p id="k_custDetails" style="font-size:12px; margin:3px 0; font-weight:bold; border-top:1px solid #000; border-bottom:1px solid #000; padding:3px 0;"></p>
+        <hr style="border: 2px solid #000; margin:4px 0;">
         <div id="k_itemsBody" style="font-size:16px; font-weight:bold;"></div>
-        <hr style="border: 2px solid #000; margin:6px 0;">
+        <hr style="border: 2px solid #000; margin:4px 0;">
         <p style="text-align:center; font-size:12px;">يرجى التجهيز السريع ⚡</p>
     </div>
 
@@ -429,13 +428,16 @@
         const now = new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'});
         const fullDate = new Date().toLocaleString('ar-IQ');
 
-        let custDetailsText = `نوع الخدمة: <strong>${orderType}</strong> | الدفع: <strong>${paymentMethod}</strong>`;
-        let kitchDetailsText = `نوع الخدمة: <strong>${orderType}</strong>`;
+        let custDetailsText = "";
+        let kitchDetailsText = "";
 
         if (activeCustomerData) {
-            custDetailsText += `<br>الزبون: ${activeCustomerData.customerName} | هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
+            custDetailsText = `الزبون: ${activeCustomerData.customerName} | هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
             if(activeCustomerData.notes) custDetailsText += `<br>ملاحظات: ${activeCustomerData.notes}`;
-            kitchDetailsText += `<br>الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
+            kitchDetailsText = `الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
+        } else {
+            custDetailsText = `خدمة: ${orderType}`;
+            kitchDetailsText = `خدمة: ${orderType}`;
         }
 
         document.getElementById('c_ordNum').innerText = orderCounter;
