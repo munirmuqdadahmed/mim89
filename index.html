@@ -46,7 +46,7 @@
         .nav-item.active { color: #ff9f00; }
         .nav-item.center-btn { background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; }
 
-        .cart-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
+        .cart-modal, .info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
         .cart-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; }
         .cart-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .checkout-input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 9px; border-radius: 8px; margin-bottom: 8px; font-family: 'Cairo'; font-size: 13px; }
@@ -79,14 +79,16 @@
 
     <div class="menu-section" id="menuContainer"></div>
 
+    <!-- شريط التنقل السفلي المنظم والمضبوط بالكامل -->
     <div class="bottom-nav">
         <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
-        <a class="nav-item"><i class="fas fa-fire"></i>العروض</a>
+        <a class="nav-item" href="javascript:void(0);" onclick="showOffers()"><i class="fas fa-fire"></i>العروض</a>
         <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
-        <a class="nav-item"><i class="fas fa-map-marker-alt"></i>الموقع</a>
+        <a class="nav-item" href="javascript:void(0);" onclick="showLocation()"><i class="fas fa-map-marker-alt"></i>الموقع</a>
         <a class="nav-item" href="admin.html"><i class="fas fa-bars"></i>المزيد</a>
     </div>
 
+    <!-- نافذة السلة -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
@@ -103,6 +105,15 @@
                 <button style="width:100%; background:#25d366; color:#fff; border:none; padding:11px; border-radius:10px; font-weight:bold; font-size:14px; cursor:pointer;" onclick="sendOrderToWhatsApp()">إرسال الطلب عبر الواتساب 📱</button>
                 <button style="width:100%; background:#444; color:#fff; border:none; padding:9px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer; margin-top:6px;" onclick="closeCartModal()">إغلاق</button>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة للموقع والعروض -->
+    <div id="infoModal" class="info-modal" onclick="closeInfoModal()" style="display:none; justify-content:center; align-items:center;">
+        <div class="cart-content" style="border-radius:12px; text-align:center; width:90%; max-width:400px;" onclick="event.stopPropagation()">
+            <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
+            <p id="infoText" style="font-size:13px; color:#ddd; line-height:1.6; margin-bottom:15px;"></p>
+            <button style="background:#ff9f00; color:#000; border:none; padding:8px 20px; border-radius:8px; font-weight:bold;" onclick="closeInfoModal()">حسناً</button>
         </div>
     </div>
 
@@ -210,6 +221,20 @@
 
     function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; }
     function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+
+    function showOffers() {
+        document.getElementById('infoTitle').innerText = "🔥 عروض MIM89 اليومية";
+        document.getElementById('infoText').innerText = "تابع أقوى العروض والوجبات العائلية المحدثة يومياً داخل القائمة الرئيسية!";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function showLocation() {
+        document.getElementById('infoTitle').innerText = "📍 موقع المطعم";
+        document.getElementById('infoText').innerText = "مطعم MIM89 FAST FOOD - خدمة التوصيل السريع لجميع الأقسام والمناطق.";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
     function sendOrderToWhatsApp() {
         if(cart.length === 0) return alert("السلة فارغة!");
