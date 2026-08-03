@@ -55,10 +55,31 @@
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
+        /* إخفاء معلومات المتصفح (الرابط والتاريخ ورقم الصفحة) تماماً عند الطباعة */
         @media print {
-            body * { visibility: hidden; }
-            .print-area, .print-area * { visibility: visible; }
-            .print-area { position: absolute; left: 0; top: 0; width: 100%; background: #fff; color: #000; padding: 10px; font-family: 'Cairo'; }
+            @page {
+                margin: 0mm;
+            }
+            body {
+                background: #fff;
+                margin: 0;
+            }
+            body * {
+                visibility: hidden;
+            }
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #fff;
+                color: #000;
+                padding: 10px;
+                font-family: 'Cairo';
+            }
         }
     </style>
 </head>
@@ -102,7 +123,6 @@
                 <button class="pay-btn" id="payVisa" onclick="setPayment('فيزا (إلكتروني)', this)">💳 فيزا</button>
             </div>
 
-            <!-- معلومات الزبون الواردة من المينيو -->
             <div id="customerInfoBox" class="customer-info-box">
                 <p><strong>👤 الزبون:</strong> <span id="lblCustName">-</span></p>
                 <p><strong>📞 الهاتف:</strong> <span id="lblCustPhone">-</span></p>
@@ -126,7 +146,7 @@
         </div>
     </div>
 
-    <!-- 1. قالب وصل الزبون للطباعة (يحتوي التفاصيل، الأسعار، وطريقة الدفع) -->
+    <!-- 1. قالب وصل الزبون للطباعة -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
         <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0; background:#eee; padding:2px;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
@@ -140,7 +160,7 @@
         <p style="text-align:center; font-size:10px; margin-top:8px;">شكراً لزيارتكم مطعمنا ❤️</p>
     </div>
 
-    <!-- 2. قالب وصل المطبخ للطباعة (خاص بالشيف: أصناف وكميات بدون أسعار) -->
+    <!-- 2. قالب وصل المطبخ للطباعة -->
     <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
         <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
@@ -418,7 +438,6 @@
             kitchDetailsText += `<br>الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
         }
 
-        // تعبئة وصل الزبون
         document.getElementById('c_ordNum').innerText = orderCounter;
         document.getElementById('c_ordType').innerText = orderType;
         document.getElementById('c_payMethod').innerText = paymentMethod;
@@ -427,19 +446,16 @@
         document.getElementById('c_itemsBody').innerHTML = custHtml;
         document.getElementById('c_total').innerText = 'الإجمالي الكلي: ' + total.toLocaleString() + ' د.ع';
 
-        // تعبئة وصل المطبخ
         document.getElementById('k_ordNum').innerText = orderCounter;
         document.getElementById('k_ordType').innerText = orderType;
         document.getElementById('k_custDetails').innerHTML = kitchDetailsText;
         document.getElementById('k_time').innerText = now;
         document.getElementById('k_itemsBody').innerHTML = kitchHtml;
 
-        // الطباعة الأولى (وصل الزبون)
         document.getElementById('customerReceipt').style.display = 'block';
         document.getElementById('kitchenReceipt').style.display = 'none';
         window.print();
 
-        // الطباعة الثانية (وصل المطبخ)
         setTimeout(() => {
             document.getElementById('customerReceipt').style.display = 'none';
             document.getElementById('kitchenReceipt').style.display = 'block';
