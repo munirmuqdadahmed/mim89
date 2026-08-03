@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير المتكامل</title>
+    <title>MIM89 - نظام الكاشير الآمن</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -35,11 +35,12 @@
         .order-type-selector, .payment-selector { display: flex; gap: 5px; margin-bottom: 10px; }
         .type-btn, .pay-btn { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
         .type-btn.active, .pay-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
+        .pay-btn#payFree.active { background: #e63946; color: #fff; }
 
         .customer-info-box { background: #222; border: 1px dashed #ff9f00; padding: 8px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none; }
         .customer-info-box p { margin-bottom: 3px; color: #ddd; }
 
-        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 180px; }
+        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 160px; }
         .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
         .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
 
@@ -47,47 +48,26 @@
         .total-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 6px; font-weight: bold; }
         .total-row.grand { color: #ff9f00; font-size: 18px; }
 
-        .pos-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 8px; text-align: center; }
+        .pos-btn { width: 100%; padding: 11px; background: #25d366; color: #fff; border: none; border-radius: 10px; font-weight: 900; font-size: 14px; cursor: pointer; margin-top: 6px; text-align: center; }
         .pos-btn.print { background: #ff9f00; color: #000; }
+        .pos-btn.void-btn { background: #d90429; color: #fff; font-size: 12px; padding: 8px; }
 
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* إعدادات مخصصة للطابعة الحرارية وإلغاء أي فراغات أو ألوان خلفية */
         @media print {
-            @page {
-                margin: 0;
-                size: auto;
-            }
-            body, html {
-                background: #fff !important;
-                color: #000 !important;
-                height: auto !important;
-                overflow: visible !important;
-            }
-            body * {
-                visibility: hidden;
-            }
-            .print-area, .print-area * {
-                visibility: visible;
-            }
-            .print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: #fff !important;
-                color: #000 !important;
-                padding: 5px;
-                margin: 0;
-            }
+            @page { margin: 0; size: auto; }
+            body, html { background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important; }
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; background: #fff !important; color: #000 !important; padding: 5px; margin: 0; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>MIM89 | نظام الكاشير المتكامل 🍔</h1>
+        <h1>MIM89 | نظام الكاشير الآمن 🍔</h1>
         <div class="nav-links">
             <a href="admin.html">⚙️ الإدارة</a>
             <a href="index.html">🏠 المينيو</a>
@@ -120,6 +100,7 @@
             <div class="payment-selector">
                 <button class="pay-btn active" id="payCash" onclick="setPayment('كاش (نقداً)', this)">💵 كاش</button>
                 <button class="pay-btn" id="payVisa" onclick="setPayment('فيزا (إلكتروني)', this)">💳 فيزا</button>
+                <button class="pay-btn" id="payFree" onclick="setPayment('مجاني (ضيافة)', this)">🎁 مجاني</button>
             </div>
 
             <div id="customerInfoBox" class="customer-info-box">
@@ -139,13 +120,14 @@
                     <span id="grandTotal">0 د.ع</span>
                 </div>
 
-                <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة (زبون + مطبخ)</button>
-                <button class="pos-btn" style="background:#e63946; font-size:13px; padding:8px;" onclick="clearInvoice()"><i class="fas fa-trash"></i> إفراغ الفاتورة</button>
+                <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة وتثبيت الطلب</button>
+                <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ (يحتاج مراجعة المدير)</button>
+                <button class="pos-btn" style="background:#333; font-size:12px; padding:6px; margin-top:4px;" onclick="openShiftReport()"><i class="fas fa-chart-bar"></i> تقرير الجرد والوارد النهائي</button>
             </div>
         </div>
     </div>
 
-    <!-- 1. وصل الزبون (بدون تكرار وبشكل نظيف) -->
+    <!-- 1. وصل الزبون -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
         <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
@@ -405,6 +387,37 @@
         }
     }
 
+    // حفظ المبيعات لتسهيل جرد نهاية الدوام
+    function saveOrderToDailyLog(orderData) {
+        let logs = JSON.parse(localStorage.getItem('mim89_daily_sales_log')) || [];
+        logs.push(orderData);
+        localStorage.setItem('mim89_daily_sales_log', JSON.stringify(logs));
+    }
+
+    // زر تسجيل طلب خاطئ (يحتاج مراجعة المدير لاحقاً لمنع التلاعب)
+    function markAsVoidOrder() {
+        if (currentInvoice.length === 0) {
+            alert("⚠️ لا توجد فاتورة لتسجيلها كخطأ!");
+            return;
+        }
+        let total = currentInvoice.reduce((sum, i) => sum + (parseInt(i.price)||0) * i.qty, 0);
+        const voidOrder = {
+            num: orderCounter,
+            type: orderType,
+            payment: "خطأ / ملغي (يحتاج مراجعة المدير)",
+            total: total,
+            items: currentInvoice,
+            time: new Date().toLocaleString('ar-IQ'),
+            status: "VOID_PENDING" // علامة تحتاج مراجعة المدير
+        };
+        saveOrderToDailyLog(voidOrder);
+        alert("⚠️ تم تسجيل الفاتورة كـ [طلب خاطئ/ملغي] وإشعار المدير للمراجعة لاحقاً.");
+        orderCounter++;
+        localStorage.setItem('mim89_order_counter', orderCounter);
+        document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
+        clearInvoice();
+    }
+
     function completeAndPrint() {
         if (currentInvoice.length === 0) {
             alert("⚠️ الفاتورة فارغة!");
@@ -440,6 +453,18 @@
             kitchDetailsText = `خدمة: ${orderType}`;
         }
 
+        // حفظ الطلب في السجل المالي لتقرير الجرد
+        const orderRecord = {
+            num: orderCounter,
+            type: orderType,
+            payment: paymentMethod,
+            total: total,
+            items: currentInvoice,
+            time: fullDate,
+            status: "NORMAL"
+        };
+        saveOrderToDailyLog(orderRecord);
+
         document.getElementById('c_ordNum').innerText = orderCounter;
         document.getElementById('c_ordType').innerText = orderType;
         document.getElementById('c_payMethod').innerText = paymentMethod;
@@ -469,6 +494,40 @@
             document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
             clearInvoice();
         }, 1200);
+    }
+
+    // تقرير الجرد ونهاية الدوام (الصندوق والوارد النهائي)
+    function openShiftReport() {
+        let logs = JSON.parse(localStorage.getItem('mim89_daily_sales_log')) || [];
+        let cashTotal = 0;
+        let visaTotal = 0;
+        let freeCount = 0;
+        let voidCount = 0;
+        let totalOrders = logs.length;
+
+        logs.forEach(o => {
+            if (o.status === "VOID_PENDING") {
+                voidCount++;
+            } else if (o.payment.includes("مجاني")) {
+                freeCount++;
+            } else if (o.payment.includes("كاش")) {
+                cashTotal += o.total;
+            } else if (o.payment.includes("فيزا")) {
+                visaTotal += o.total;
+            }
+        });
+
+        let grandRevenue = cashTotal + visaTotal;
+
+        let reportMsg = `📊 تقرير الجرد الصندوق والوارد النهائي:\n\n` +
+                        `📦 إجمالي عدد الطلبات: ${totalOrders}\n` +
+                        `💵 وارد الكاش (نقداً): ${cashTotal.toLocaleString()} د.ع\n` +
+                        `💳 وارد الفيزا (إلكتروني): ${visaTotal.toLocaleString()} د.ع\n` +
+                        `💰 إجمالي المبيعات المدفوعة: ${grandRevenue.toLocaleString()} د.ع\n` +
+                        `🎁 الطلبات المجانية (ضيافة): ${freeCount} طلب\n` +
+                        `⚠️ طلبات خاطئة/ملغية (تحتاج مراجعة المدير): ${voidCount}\n`;
+        
+        alert(reportMsg);
     }
 
     window.onload = loadPosMenu;
