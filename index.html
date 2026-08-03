@@ -14,9 +14,6 @@
         .brand-box { text-align: right; }
         .brand-box h1 { color: #ff9f00; font-size: 22px; font-weight: 900; letter-spacing: 1px; line-height: 1.1; }
         .brand-box span { color: #aaa; font-size: 11px; font-weight: bold; display: block; }
-        
-        .cart-icon-btn { position: relative; background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
-        .cart-badge { position: absolute; top: -3px; right: -3px; background: #e63946; color: #fff; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
         .search-container { padding: 12px 15px; background: #151515; display: flex; gap: 8px; }
         .search-box { background: #222; border: 1px solid #333; border-radius: 10px; display: flex; align-items: center; padding: 8px 12px; flex: 1; }
@@ -40,29 +37,34 @@
         .item-price { color: #ff9f00; font-size: 15px; font-weight: 900; }
         .add-btn { background: #ff9f00; color: #000; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
+        /* شريط التنقل السفلي مع زر السلة بالمنتصف كما طلبت */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; }
-        .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+        .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: none; font-family: 'Cairo'; }
         .nav-item i { font-size: 16px; }
         .nav-item.active { color: #ff9f00; }
-        .nav-item.center-btn { background: #ff9f00; color: #000; width: 42px; height: 42px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; }
+        
+        /* زر السلة المركزي الجديد */
+        .nav-item.center-cart-btn { background: #ff9f00; color: #000; width: 45px; height: 45px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; position: relative; display: flex; align-items: center; }
+        .cart-badge { position: absolute; top: -2px; right: -2px; background: #e63946; color: #fff; font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-        .cart-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
-        .cart-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; }
+        /* النوافذ المنبثقة (السلة، الموقع، العروض، المزيد) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
+        .modal-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; text-align: right; }
         .cart-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .checkout-input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 9px; border-radius: 8px; margin-bottom: 8px; font-family: 'Cairo'; font-size: 13px; }
+        
+        .center-modal { justify-content: center; align-items: center; }
+        .center-box { border-radius: 15px; width: 90%; max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="cart-icon-btn" onclick="openCartModal()">
-            <i class="fas fa-shopping-cart"></i>
-            <div class="cart-badge" id="cartCount">0</div>
-        </div>
         <div class="brand-box">
             <h1>MIM89 FAST FOOD</h1>
             <span>FAST FOOD</span>
         </div>
+        <div style="color:#ff9f00; font-size:13px; font-weight:bold;"><i class="fas fa-store"></i> خدمة التوصيل السريع</div>
     </header>
 
     <div class="search-container">
@@ -70,7 +72,7 @@
             <i class="fas fa-search"></i>
             <input type="text" id="searchInput" placeholder="ابحث عن أي صنف..." oninput="filterMenu()">
         </div>
-        <button class="reset-btn" onclick="resetMenuCache()" title="إعادة ضبط القائمة">🔄 تحديث</button>
+        <button class="reset-btn" onclick="resetMenuCache()" title="إعادة ضبط القائمة">🔄</button>
     </div>
 
     <div class="categories-bar" id="categoriesBar">
@@ -79,16 +81,24 @@
 
     <div class="menu-section" id="menuContainer"></div>
 
+    <!-- الشريط السفلي المحدث (السلة بالمنتصف بدل الشوكة والسكينة) -->
     <div class="bottom-nav">
-        <a class="nav-item active"><i class="fas fa-home"></i>الرئيسية</a>
-        <a class="nav-item"><i class="fas fa-fire"></i>العروض</a>
-        <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
-        <a class="nav-item"><i class="fas fa-map-marker-alt"></i>الموقع</a>
-        <a class="nav-item" href="admin.html"><i class="fas fa-bars"></i>المزيد</a>
+        <button class="nav-item active" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i class="fas fa-home"></i>الرئيسية</button>
+        <button class="nav-item" onclick="showOffersModal()"><i class="fas fa-fire"></i>العروض</button>
+        
+        <!-- زر السلة المركزي -->
+        <button class="nav-item center-cart-btn" onclick="openCartModal()">
+            <i class="fas fa-shopping-cart"></i>
+            <div class="cart-badge" id="cartCount">0</div>
+        </button>
+
+        <button class="nav-item" onclick="showLocationModal()"><i class="fas fa-map-marker-alt"></i>الموقع</button>
+        <button class="nav-item" onclick="showMoreModal()"><i class="fas fa-bars"></i>المزيد</button>
     </div>
 
-    <div id="cartModal" class="cart-modal">
-        <div class="cart-content">
+    <!-- نافذة السلة -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
             <div id="cartItemsList"></div>
             <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;">
@@ -106,8 +116,16 @@
         </div>
     </div>
 
+    <!-- نافذة منبثقة عامة (للعروض، الموقع، والمزيد) -->
+    <div id="infoModal" class="modal center-modal" onclick="closeInfoModal()">
+        <div class="modal-content center-box" onclick="event.stopPropagation()">
+            <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
+            <p id="infoText" style="font-size:13px; color:#ddd; line-height:1.6; margin-bottom:15px;"></p>
+            <button style="background:#ff9f00; color:#000; border:none; padding:8px 20px; border-radius:8px; font-weight:bold; width:100%;" onclick="closeInfoModal()">حسناً</button>
+        </div>
+    </div>
+
 <script>
-    // القائمة الأساسية الثابتة التي تضمن عدم ظهور المينيو فارغاً أبداً
     const baseMenuItems = [
         { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "1,500 د.ع", img: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500&auto=format&fit=crop&q=60" },
         { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", desc: "كمية مضاعفة من الشاورما مع الثومية والصوص", price: "3,000 د.ع", img: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=500&auto=format&fit=crop&q=60" },
@@ -135,7 +153,6 @@
         }
     }
 
-    // زر إضافي لتحديث القائمة ومسح أي تخزين تالف يدوياً
     function resetMenuCache() {
         localStorage.removeItem('mim89_custom_menu');
         menuItems = baseMenuItems;
@@ -239,6 +256,27 @@
 
     function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; }
     function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+
+    // دوال الأزرار السفلية (العروض، الموقع، والمزيد)
+    function showOffersModal() {
+        document.getElementById('infoTitle').innerText = "🔥 عروض MIM89";
+        document.getElementById('infoText').innerText = "تابع أقوى عروض الوجبات السريعة والشاورما اليومية المحدثة خصيصاً لك!";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function showLocationModal() {
+        document.getElementById('infoTitle').innerText = "📍 موقع المطعم";
+        document.getElementById('infoText').innerText = "مطعم MIM89 FAST FOOD - متواجدون لخدمتكم وتقديم أسرع خدمة توصيل.";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function showMoreModal() {
+        document.getElementById('infoTitle').innerText = "ℹ️ المزيد عنا";
+        document.getElementById('infoText').innerText = "مطعم MIM89 للفاست فود. نسعى دائماً لتقديم أفضل طعم جودة ونظافة. تواصل معنا عبر سلة الطلبات.";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
+    function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
     function sendOrderToWhatsApp() {
         if (cart.length === 0) return alert("السلة فارغة!");
