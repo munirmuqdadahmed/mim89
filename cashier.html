@@ -2,355 +2,144 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نقطة البيع (الكاشير)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIM89 - شاشة الكاشير والمطبخ</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-        body { background: #111; color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { background: #111; color: #fff; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 15px 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        h2 { color: #ff9f00; font-size: 20px; }
         
-        header { background: #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .logo-area { color: #ff9f00; font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 8px; }
+        .orders-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+        .order-card { background: #1a1a1a; border: 2px solid #ff9f00; border-radius: 12px; padding: 15px; position: relative; animation: pulseBorder 1.5s infinite; }
+        @keyframes pulseBorder { 0% { border-color: #ff9f00; } 50% { border-color: #25d366; } 100% { border-color: #ff9f00; } }
         
-        .cashier-container { display: flex; flex: 1; overflow: hidden; }
+        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; font-size: 14px; }
+        .order-body { font-size: 13px; color: #ddd; margin-bottom: 15px; }
+        .order-items-list { background: #222; padding: 8px; border-radius: 6px; margin-top: 8px; }
+        .order-items-list div { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #2a2a2a; padding-bottom: 3px; }
         
-        .items-section { flex: 2; padding: 15px; overflow-y: auto; background: #151515; }
-        .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
-        .cat-tab { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; }
-        .cat-tab.active { background: #ff9f00; color: #000; font-weight: bold; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn-print { background: #ff9f00; color: #000; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-done { background: #e63946; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
         
-        .grid-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-        .pos-card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .pos-card:active { transform: scale(0.95); background: #252525; }
-        .pos-card img { width: 100%; height: 80px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
-        .pos-card h4 { font-size: 13px; margin-bottom: 4px; color: #fff; }
-        .pos-card span { color: #ff9f00; font-size: 12px; font-weight: bold; }
-
-        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 330px; overflow-y: auto; }
-        .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .section-label { font-size: 12px; color: #aaa; margin-bottom: 4px; font-weight: bold; }
-        .order-type-selector, .payment-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .type-btn, .pay-btn { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
-        .type-btn.active, .pay-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
-        .pay-btn#payFree.active { background: #e63946; color: #fff; }
-
-        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 180px; }
-        .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
-        .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
-
-        .invoice-totals { border-top: 1px solid #333; padding-top: 10px; }
-        .total-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 6px; font-weight: bold; }
-        .total-row.grand { color: #ff9f00; font-size: 18px; }
-
-        .pos-btn { width: 100%; padding: 11px; background: #25d366; color: #fff; border: none; border-radius: 10px; font-weight: 900; font-size: 14px; cursor: pointer; margin-top: 6px; text-align: center; }
-        .pos-btn.print { background: #ff9f00; color: #000; }
-        .pos-btn.void-btn { background: #d90429; color: #fff; font-size: 12px; padding: 8px; }
-
-        /* نافذة الرمز السري الإجبارية عند الدخول */
-        .custom-modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 380px; padding: 20px; color: #fff; text-align: center; font-family: 'Cairo'; }
-        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 18px; text-align: center; font-family: 'Cairo'; }
-
-        @media print {
-            body, html { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
-            body * { visibility: hidden !important; }
-            .print-area, .print-area * { visibility: visible !important; }
-            .print-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 80mm !important; background: #fff !important; color: #000 !important; padding: 2px !important; margin: 0 !important; }
-        }
+        .no-orders { text-align: center; color: #777; grid-column: 1 / -1; margin-top: 50px; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo-area">
-            <span>MIM89 FAST FOOD 🍔 (<span id="activeCashierName">جاري التحقق...</span>)</span>
-        </div>
-        <a href="admin.html" style="color:#aaa; font-size:12px; text-decoration:none;"><i class="fas fa-cog"></i> الإدارة</a>
+        <h2>💻 شاشة الطلبات الواردة - الكاشير والمطبخ</h2>
+        <div id="statusIndicator" style="color: #25d366; font-size: 13px; font-weight: bold;"><i class="fas fa-circle" style="font-size:10px;"></i> المتجر متصل ويستقبل الطلبات</div>
     </header>
 
-    <div class="cashier-container">
-        <div class="items-section">
-            <div class="categories-bar" id="categoriesBar">
-                <button class="cat-tab active" onclick="filterCat('الكل', this)">الكل 🔥</button>
-            </div>
-            <div class="grid-menu" id="posGrid"></div>
-        </div>
-
-        <div class="invoice-section">
-            <div class="invoice-title">
-                <span><i class="fas fa-receipt"></i> الفاتورة الحالية</span>
-                <span id="orderNumDisplay" style="color:#25d366; font-size:14px;">طلب #1</span>
-            </div>
-            
-            <div class="section-label">📌 نوع الطلب:</div>
-            <div class="order-type-selector">
-                <button class="type-btn active" id="typeDinein" onclick="setOrderType('صالة', this)">🍽️ صالة</button>
-                <button class="type-btn" id="typeTakeaway" onclick="setOrderType('سفري', this)">🛍️ سفري</button>
-                <button class="type-btn" id="typeDelivery" onclick="setOrderType('توصيل', this)">🛵 توصيل</button>
-            </div>
-
-            <div class="section-label">💳 طريقة الدفع:</div>
-            <div class="payment-selector">
-                <button class="pay-btn active" id="payCash" onclick="setPayment('كاش (نقداً)', this)">💵 كاش</button>
-                <button class="pay-btn" id="payVisa" onclick="setPayment('فيزا (إلكتروني)', this)">💳 فيزا</button>
-                <button class="pay-btn" id="payFree" onclick="setPayment('مجاني (ضيافة)', this)">🎁 مجاني</button>
-            </div>
-
-            <div class="invoice-items" id="invoiceList">
-                <p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>
-            </div>
-
-            <div class="invoice-totals">
-                <div class="total-row grand">
-                    <span>الإجمالي الكلي:</span>
-                    <span id="grandTotal">0 د.ع</span>
-                </div>
-                <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة وتثبيت الطلب</button>
-                <button class="pos-btn void-btn" onclick="markAsVoidOrder()"><i class="fas fa-exclamation-triangle"></i> تسجيل طلب خاطئ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- نافذة طلب الرمز السري عند فتح الكاشير -->
-    <div id="pinModal" class="custom-modal">
-        <div class="modal-content">
-            <h3 style="color:#ff9f00; margin-bottom:5px;">🔐 تسجيل دخول الكاشير</h3>
-            <p style="font-size:12px; color:#aaa;">يرجى إدخال رمز الكاشير الأول أو الثاني للبدء</p>
-            <input type="password" id="cashierPinInput" placeholder="****" autofocus>
-            <button class="pos-btn print" onclick="verifyCashierPin()">دخول للنظام</button>
-        </div>
-    </div>
-
-    <!-- الطباعة -->
-    <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
-        <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
-        <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="c_cashierName"></span> | الدفع: <span id="c_payMethod">كاش</span></p>
-        <hr style="border: 1px dashed #000; margin:4px 0;">
-        <div id="c_itemsBody"></div>
-        <hr style="border: 1px dashed #000; margin:4px 0;">
-        <h3 id="c_total" style="text-align:center; font-size:15px;"></h3>
-    </div>
-
-    <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
-        <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
-        <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">الكاشير: <span id="k_cashierName"></span></p>
-        <hr style="border: 2px solid #000; margin:4px 0;">
-        <div id="k_itemsBody" style="font-size:16px; font-weight:bold;"></div>
+    <div id="incomingOrdersContainer" class="orders-container">
+        <div class="no-orders">لا توجد طلبات جديدة حالياً...</div>
     </div>
 
 <script>
-    let currentCashier = "";
+    // صوت تنبيه إلكتروني عند وصول طلب جديد
+    function playAlertSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // نوتة تنبيه
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.4);
+        } catch(e) {
+            console.log("Audio not supported");
+        }
+    }
 
-    function verifyCashierPin() {
-        const pin = document.getElementById('cashierPinInput').value.trim();
-        const settings = JSON.parse(localStorage.getItem('mim89_settings')) || { c1Name: "الكاشير الأول", c1Pin: "1111", c2Name: "الكاشير الثاني", c2Pin: "2222" };
+    let lastLoadedOrderId = localStorage.getItem('mim89_last_processed_order_id') || 0;
 
-        if (pin === settings.c1Pin) {
-            currentCashier = settings.c1Name;
-        } else if (pin === settings.c2Pin) {
-            currentCashier = settings.c2Name;
-        } else {
-            alert("❌ الرمز السري غير صحيح! يجيب إدخال رمز الكاشير الأول أو الثاني.");
-            return;
+    function checkNewOrders() {
+        const rawOrder = localStorage.getItem('mim89_online_order');
+        if (!rawOrder) return;
+
+        try {
+            const order = JSON.parse(rawOrder);
+            if (order && order.id && order.id != lastLoadedOrderId) {
+                lastLoadedOrderId = order.id;
+                localStorage.setItem('mim89_last_processed_order_id', order.id);
+                
+                playAlertSound();
+                renderIncomingOrder(order);
+            }
+        } catch(e) {
+            console.error("Error parsing order");
+        }
+    }
+
+    function renderIncomingOrder(order) {
+        const container = document.getElementById('incomingOrdersContainer');
+        // إزالة رسالة "لا توجد طلبات" إن وجدت
+        if (container.querySelector('.no-orders')) {
+            container.innerHTML = '';
         }
 
-        document.getElementById('activeCashierName').innerText = currentCashier;
-        document.getElementById('pinModal').style.display = 'none';
-    }
-
-    let db;
-    const request = indexedDB.open("MIM89_Secure_DB", 6);
-    request.onsuccess = function(e) { db = e.target.result; loadPosMenu(); };
-    request.onupgradeneeded = function(e) {
-        db = e.target.result;
-        if (!db.objectStoreNames.contains("orders")) db.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
-        if (!db.objectStoreNames.contains("inventory")) {
-            const inv = db.createObjectStore("inventory", { keyPath: "name" });
-            inv.add({ name: "شرائح دجاج (كغ)", stock: 50 });
-            inv.add({ name: "خبز صاج (عدد)", stock: 500 });
-            inv.add({ name: "بطاطا فنكر (كغ)", stock: 40 });
-            inv.add({ name: "جبن شيدر (شرائح)", stock: 200 });
+        let itemsHtml = '';
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(i => {
+                itemsHtml += `<div><span>${i.name} (×${i.qty || 1})</span> <span>${i.price}</span></div>`;
+            });
         }
-    };
 
-    let menuItems = [];
-    let currentInvoice = [];
-    let orderType = "صالة";
-    let paymentMethod = "كاش (نقداً)";
-    let orderCounter = parseInt(localStorage.getItem('mim89_order_counter')) || 1;
-    document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
-
-    const defaultItems = [
-        { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", price: "1,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
-        { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", price: "3,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
-        { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك لحم", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" }
-    ];
-
-    function loadPosMenu() {
-        const saved = localStorage.getItem('mim89_custom_menu');
-        menuItems = saved ? JSON.parse(saved) : defaultItems;
-        renderCategories();
-        renderPosGrid(menuItems);
-    }
-
-    function renderCategories() {
-        const bar = document.getElementById('categoriesBar');
-        const cats = ['الكل', ...new Set(menuItems.map(i => i.cat))];
-        bar.innerHTML = cats.map(c => `<button class="cat-tab ${c==='الكل'?'active':''}" onclick="filterCat('${c}', this)">${c}</button>`).join('');
-    }
-
-    function filterCat(cat, btn) {
-        document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderPosGrid(cat === 'الكل' ? menuItems : menuItems.filter(i => i.cat === cat));
-    }
-
-    function renderPosGrid(items) {
-        document.getElementById('posGrid').innerHTML = items.map(item => `
-            <div class="pos-card" onclick="addToInvoice('${item.name}', ${parseInt(item.price.replace(/[^0-9]/g,'')) || 0})">
-                <img src="${item.img}" onerror="this.src='https://via.placeholder.com/150x100/222/ff9f00?text=MIM89';">
-                <h4>${item.name}</h4>
-                <span>${item.price}</span>
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        card.id = `order-${order.id}`;
+        card.innerHTML = `
+            <div class="order-header">
+                <span style="color:#ff9f00; font-weight:bold;">👤 ${order.customerName}</span>
+                <span style="color:#aaa;">⏰ ${order.time}</span>
             </div>
-        `).join('');
+            <div class="order-body">
+                <div><b>📞 الهاتف:</b> ${order.phone}</div>
+                <div><b>📍 العنوان:</b> ${order.address}</div>
+                <div><b>🛵 النوع:</b> ${order.type}</div>
+                ${order.notes ? `<div><b>📝 ملاحظات:</b> ${order.notes}</div>` : ''}
+                <div class="order-items-list">
+                    ${itemsHtml}
+                </div>
+                <div style="margin-top:8px; font-weight:bold; color:#ff9f00; text-align:left;">الإجمالي: ${order.total || 'حسب الطلب'}</div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-print" onclick="printOrder(${order.id})"><i class="fas fa-print"></i> طباعة الفاتورة</button>
+                <button class="btn-done" onclick="completeOrder(${order.id})"><i class="fas fa-check"></i> تأكيد وإنجاز</button>
+            </div>
+        `;
+        
+        container.prepend(card);
     }
 
-    function setOrderType(type, btn) {
-        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        orderType = type;
-    }
-
-    function setPayment(method, btn) {
-        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        paymentMethod = method;
-    }
-
-    function addToInvoice(name, price) {
-        const existing = currentInvoice.find(i => i.name === name);
-        if (existing) existing.qty += 1;
-        else currentInvoice.push({ name, price, qty: 1 });
-        updateInvoiceUI();
-    }
-
-    function changeQty(index, delta) {
-        currentInvoice[index].qty += delta;
-        if (currentInvoice[index].qty <= 0) currentInvoice.splice(index, 1);
-        updateInvoiceUI();
-    }
-
-    function updateInvoiceUI() {
-        const list = document.getElementById('invoiceList');
-        if (currentInvoice.length === 0) {
-            list.innerHTML = `<p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>`;
-            document.getElementById('grandTotal').innerText = '0 د.ع';
-            return;
-        }
-        let total = 0;
-        list.innerHTML = currentInvoice.map((item, idx) => {
-            let sum = item.price * item.qty;
-            total += sum;
-            return `
-                <div class="invoice-row">
-                    <div><b>${item.name}</b><br><small>${item.price.toLocaleString()} × ${item.qty}</small></div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span>${sum.toLocaleString()}</span>
-                        <button onclick="changeQty(${idx}, 1)">+</button>
-                        <button onclick="changeQty(${idx}, -1)">-</button>
-                    </div>
-                </div>`;
-        }).join('');
-        document.getElementById('grandTotal').innerText = total.toLocaleString() + ' د.ع';
-    }
-
-    function clearInvoice() { currentInvoice = []; updateInvoiceUI(); }
-
-    function saveOrderToDB(orderData) {
-        if (!db) return;
-        const tx = db.transaction(["orders"], "readwrite");
-        tx.objectStore("orders").add(orderData);
-        deductInventory(orderData.items);
-    }
-
-    function deductInventory(items) {
-        if (!db) return;
-        const tx = db.transaction(["inventory"], "readwrite");
-        const store = tx.objectStore("inventory");
-        items.forEach(item => {
-            let name = "شرائح دجاج (كغ)";
-            let qty = item.qty * 0.2;
-            if(item.name.includes("شاورما")) { name = "خبز صاج (عدد)"; qty = item.qty * 1; }
-            else if(item.name.includes("بركر")) { name = "جبن شيدر (شرائح)"; qty = item.qty * 1; }
-            store.get(name).onsuccess = function(e) {
-                let d = e.target.result;
-                if(d) { d.stock = Math.max(0, d.stock - qty); store.put(d); }
-            };
-        });
-    }
-
-    function markAsVoidOrder() {
-        if (currentInvoice.length === 0) return;
-        let total = currentInvoice.reduce((sum, i) => sum + i.price * i.qty, 0);
-        saveOrderToDB({
-            num: orderCounter, type: orderType, payment: "خطأ / ملغي", total, items: currentInvoice,
-            cashier: currentCashier, dateString: new Date().toISOString().split('T')[0], status: "VOID_PENDING"
-        });
-        alert("⚠️ تم تسجيل الطلب كـ [خطأ / ملغي].");
-        orderCounter++; localStorage.setItem('mim89_order_counter', orderCounter);
-        document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
-        clearInvoice();
-    }
-
-    function completeAndPrint() {
-        if (currentInvoice.length === 0) return;
-        let total = 0;
-        let custHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
-        let kitchHtml = '<table style="width:100%; border-collapse:collapse; font-size:16px;">';
-
-        currentInvoice.forEach(i => {
-            let sum = i.price * i.qty;
-            total += sum;
-            custHtml += `<tr style="border-bottom:1px dashed #ccc;"><td style="padding:4px;">${i.name} (x${i.qty})</td><td style="text-align:left; padding:4px;">${sum.toLocaleString()}</td></tr>`;
-            kitchHtml += `<tr style="border-bottom:1px solid #000;"><td style="padding:6px; font-weight:bold;">${i.name}</td><td style="text-align:left; padding:6px;">الكمية: ${i.qty}</td></tr>`;
-        });
-        custHtml += '</table>'; kitchHtml += '</table>';
-
-        saveOrderToDB({
-            num: orderCounter, type: orderType, payment: paymentMethod, total, items: currentInvoice,
-            cashier: currentCashier, dateString: new Date().toISOString().split('T')[0], status: "NORMAL"
-        });
-
-        document.getElementById('c_ordNum').innerText = orderCounter;
-        document.getElementById('c_ordType').innerText = orderType;
-        document.getElementById('c_payMethod').innerText = paymentMethod;
-        document.getElementById('c_cashierName').innerText = currentCashier;
-        document.getElementById('c_itemsBody').innerHTML = custHtml;
-        document.getElementById('c_total').innerText = 'الإجمالي: ' + total.toLocaleString() + ' د.ع';
-
-        document.getElementById('k_ordNum').innerText = orderCounter;
-        document.getElementById('k_ordType').innerText = orderType;
-        document.getElementById('k_cashierName').innerText = currentCashier;
-        document.getElementById('k_itemsBody').innerHTML = kitchHtml;
-
-        document.getElementById('customerReceipt').style.display = 'block';
-        document.getElementById('kitchenReceipt').style.display = 'none';
+    function printOrder(orderId) {
         window.print();
-
-        setTimeout(() => {
-            document.getElementById('customerReceipt').style.display = 'none';
-            document.getElementById('kitchenReceipt').style.display = 'block';
-            window.print();
-            document.getElementById('kitchenReceipt').style.display = 'none';
-            orderCounter++; localStorage.setItem('mim89_order_counter', orderCounter);
-            document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
-            clearInvoice();
-        }, 1200);
     }
+
+    function completeOrder(orderId) {
+        const card = document.getElementById(`order-${orderId}`);
+        if (card) {
+            card.style.opacity = '0.3';
+            setTimeout(() => card.remove(), 500);
+        }
+        // تنظيف الطلب المعلق من الذاكرة لكي لا يتكرر عند التحديث
+        localStorage.removeItem('mim89_online_order');
+    }
+
+    // فحص الطلبات كل ثانية لتظهر فوراً عند إرسالها من صفحة الزبون
+    setInterval(checkNewOrders, 1000);
+
+    // فحص أولي عند فتح الصفحة
+    window.onload = () => {
+        checkNewOrders();
+    };
 </script>
 </body>
 </html>
