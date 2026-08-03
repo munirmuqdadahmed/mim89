@@ -21,7 +21,6 @@
         .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 13px; font-family: 'Cairo'; }
         .reset-btn { background: #333; color: #ff9f00; border: 1px solid #ff9f00; border-radius: 10px; padding: 0 12px; cursor: pointer; font-size: 12px; }
 
-        /* شريط الأقسام الأفقية المرئي والبارز */
         .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding: 12px 15px; background: #151515; white-space: nowrap; border-bottom: 1px solid #222; }
         .cat-btn { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: bold; }
         .cat-btn.active { background: #ff9f00; color: #000; }
@@ -38,17 +37,15 @@
         .item-price { color: #ff9f00; font-size: 15px; font-weight: 900; }
         .add-btn { background: #ff9f00; color: #000; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* شريط التنقل السفلي الاحترافي */
+        /* شريط التنقل السفلي */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; }
         .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: none; font-family: 'Cairo'; }
         .nav-item i { font-size: 16px; }
         .nav-item.active { color: #ff9f00; }
         
-        /* زر السلة المركزي بالأسفل */
         .nav-item.center-cart-btn { background: #ff9f00; color: #000; width: 45px; height: 45px; border-radius: 50%; justify-content: center; margin-top: -18px; border: 3px solid #111; font-size: 18px; position: relative; display: flex; align-items: center; }
         .cart-badge { position: absolute; top: -2px; right: -2px; background: #e63946; color: #fff; font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-        /* النوافذ المنبثقة */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: flex-end; flex-direction: column; }
         .modal-content { background: #1a1a1a; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 85vh; overflow-y: auto; text-align: right; }
         .cart-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
@@ -76,17 +73,14 @@
         <button class="reset-btn" onclick="resetMenuCache()" title="إعادة ضبط القائمة">🔄</button>
     </div>
 
-    <!-- شريط الأقسام الأفقية (يظهر بوضوح الآن) -->
     <div class="categories-bar" id="categoriesBar"></div>
 
     <div class="menu-section" id="menuContainer"></div>
 
-    <!-- الشريط السفلي -->
     <div class="bottom-nav">
         <button class="nav-item active" onclick="window.scrollTo({top:0, behavior:'smooth'})"><i class="fas fa-home"></i>الرئيسية</button>
         <button class="nav-item" onclick="showOffersModal()"><i class="fas fa-fire"></i>العروض</button>
         
-        <!-- زر السلة المركزي -->
         <button class="nav-item center-cart-btn" onclick="openCartModal()">
             <i class="fas fa-shopping-cart"></i>
             <div class="cart-badge" id="cartCount">0</div>
@@ -96,7 +90,6 @@
         <button class="nav-item" onclick="showMoreModal()"><i class="fas fa-bars"></i>المزيد</button>
     </div>
 
-    <!-- نافذة السلة -->
     <div id="cartModal" class="modal">
         <div class="modal-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
@@ -116,7 +109,6 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة عامة (للعروض، الموقع، والمزيد/التواصل) -->
     <div id="infoModal" class="modal center-modal" onclick="closeInfoModal()">
         <div class="modal-content center-box" onclick="event.stopPropagation()">
             <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
@@ -200,8 +192,11 @@
     function filterCat(cat, btn) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        if (cat === 'الكل') renderMenu(menuItems);
-        else renderMenu(menuItems.filter(i => i.cat === cat));
+        if (cat === 'الكل') {
+            renderMenu(menuItems);
+        } else {
+            renderMenu(menuItems.filter(i => i.cat === cat));
+        }
     }
 
     function filterMenu() {
@@ -210,13 +205,16 @@
         renderMenu(filtered);
     }
 
+    // تمت إزالة الرسالة المنبثقة تماماً لتتم الإضافة بصمت وسلاسة
     function addToCart(name, priceStr) {
         const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 0;
         const found = cart.find(i => i.name === name);
-        if (found) found.qty += 1;
-        else cart.push({ name, price, qty: 1 });
+        if (found) {
+            found.qty += 1;
+        } else {
+            cart.push({ name, price, qty: 1 });
+        }
         updateCartUI();
-        alert(`✅ تم إضافة (${name}) إلى السلة`);
     }
 
     function updateCartUI() {
