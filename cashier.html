@@ -3,44 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 - شاشة الكاشير والمطبخ (الطلبات المتعددة)</title>
+    <title>MIM89 - شاشة الكاشير والمطبخ</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
         body { background: #111; color: #fff; padding: 20px; }
+        
+        /* شاشة تسجيل الدخول */
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: #1a1a1a; border: 2px solid #ff9f00; padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 350px; }
+        .login-box h3 { color: #ff9f00; margin-bottom: 15px; }
+        .login-box input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 16px; outline: none; }
+        .login-box button { background: #ff9f00; color: #000; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+
         header { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 15px 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
         h2 { color: #ff9f00; font-size: 20px; }
         
-        .orders-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-        .order-card { background: #1a1a1a; border: 2px solid #ff9f00; border-radius: 12px; padding: 15px; position: relative; animation: pulseBorder 1.5s infinite; }
+        /* قسم الطلبات الإلكترونية المتعددة أسفل الشاشة */
+        .online-section { background: #181818; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-top: 20px; }
+        .online-section h3 { color: #ff9f00; font-size: 16px; margin-bottom: 12px; border-bottom: 1px solid #252525; padding-bottom: 6px; }
+        
+        .orders-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .order-card { background: #1f1f1f; border: 2px solid #ff9f00; border-radius: 10px; padding: 12px; position: relative; animation: pulseBorder 1.5s infinite; }
         @keyframes pulseBorder { 0% { border-color: #ff9f00; } 50% { border-color: #25d366; } 100% { border-color: #ff9f00; } }
         
-        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; font-size: 14px; }
-        .order-body { font-size: 13px; color: #ddd; margin-bottom: 15px; }
-        .order-items-list { background: #222; padding: 8px; border-radius: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
-        .order-items-list div { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #2a2a2a; padding-bottom: 3px; }
+        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 6px; margin-bottom: 8px; font-size: 13px; }
+        .order-body { font-size: 12px; color: #ddd; margin-bottom: 10px; }
+        .order-items-list { background: #151515; padding: 6px; border-radius: 6px; margin-top: 6px; max-height: 100px; overflow-y: auto; }
+        .order-items-list div { display: flex; justify-content: space-between; margin-bottom: 3px; border-bottom: 1px solid #222; padding-bottom: 2px; }
         
-        .btn-group { display: flex; gap: 8px; }
-        .btn-print { background: #ff9f00; color: #000; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
-        .btn-done { background: #e63946; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-print { background: #ff9f00; color: #000; border: none; padding: 6px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 12px; }
+        .btn-done { background: #e63946; color: #fff; border: none; padding: 6px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; font-size: 12px; }
         
-        .no-orders { text-align: center; color: #777; grid-column: 1 / -1; margin-top: 50px; font-size: 16px; }
+        .no-orders { text-align: center; color: #777; padding: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 
+    <!-- نافذة رمز الدخول للكاشير -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h3>🔐 دخول شاشة الكاشير</h3>
+            <input type="password" id="pinCode" placeholder="أدخل رمز المرور" autocomplete="current-password">
+            <button onclick="checkPin()">دخول</button>
+        </div>
+    </div>
+
     <header>
-        <h2>💻 شاشة الطلبات الواردة (تستوعب عدة حجوزات بالتزامن)</h2>
-        <div id="statusIndicator" style="color: #25d366; font-size: 13px; font-weight: bold;"><i class="fas fa-circle" style="font-size:10px;"></i> المتجر متصل ويستقبل الطلبات</div>
+        <h2>💻 شاشة الكاشير الأساسية</h2>
+        <div id="statusIndicator" style="color: #25d366; font-size: 13px; font-weight: bold;"><i class="fas fa-circle" style="font-size:10px;"></i> المتجر متصل</div>
     </header>
 
-    <div id="incomingOrdersContainer" class="orders-container">
-        <div class="no-orders">لا توجد طلبات جديدة حالياً...</div>
+    <!-- هنا مكان عمل الكاشير الأساسي (الفواتير والحسابات) -->
+    <div class="main-cashier-panel" style="background:#1a1a1a; padding:20px; border-radius:12px; border:1px solid #333; min-height: 200px;">
+        <h3 style="color:#aaa; font-size:14px; margin-bottom:10px;">لوحة الحسابات وإصدار الفواتير التقليدية</h3>
+        <p style="color:#666; font-size:12px;">(هنا تظهر أدوات الكاشير المعتادة الخاصة بك لحساب الطلبات المباشرة داخل المطعم وطباعتها).</p>
+    </div>
+
+    <!-- صندوق الحجوزات والطلبات الإلكترونية الواردة (متعددة وتستوعب حتى 10 طلبات أو أكثر معاً) -->
+    <div class="online-section">
+        <h3>🛎️ الطلبات والحجوزات الإلكترونية الواردة (متعددة)</h3>
+        <div id="incomingOrdersContainer" class="orders-container">
+            <div class="no-orders">لا توجد طلبات إلكترونية جديدة حالياً...</div>
+        </div>
     </div>
 
 <script>
-    // صوت تنبيه إلكتروني عند وصول طلب جديد
+    // رمز الدخول الخاص بالكاشير (يمكنك تغليقه بالررمز الذي تريده، مثلاً: 8989)
+    const CORRECT_PIN = "8989";
+
+    function checkPin() {
+        const enteredPin = document.getElementById('pinCode').value;
+        if (enteredPin === CORRECT_PIN) {
+            document.getElementById('loginOverlay').style.display = 'none';
+        } else {
+            alert("رمز المرور غير صحيح! حاول مرة أخرى.");
+        }
+    }
+
+    // صوت تنبيه عند وصول طلب جديد
     function playAlertSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -58,7 +101,6 @@
         }
     }
 
-    // تتبع الطلبات النشطة المعروضة منعاً للتكرار
     let activeOrdersMap = new Map();
 
     function checkNewOrders() {
@@ -114,7 +156,7 @@
                 <div class="order-items-list">
                     ${itemsHtml}
                 </div>
-                <div style="margin-top:8px; font-weight:bold; color:#ff9f00; text-align:left;">الإجمالي: ${order.total || 'حسب الطلب'}</div>
+                <div style="margin-top:6px; font-weight:bold; color:#ff9f00; text-align:left;">الإجمالي: ${order.total || 'حسب الطلب'}</div>
             </div>
             <div class="btn-group">
                 <button class="btn-print" onclick="printOrder(${order.id})"><i class="fas fa-print"></i> طباعة</button>
@@ -136,7 +178,6 @@
             setTimeout(() => card.remove(), 400);
         }
         
-        // إزالة الطلب المنجز من قائمة الانتظار في الذاكرة المشتركة
         activeOrdersMap.delete(orderId);
         try {
             const rawOrders = localStorage.getItem('mim89_pending_orders');
@@ -149,16 +190,15 @@
             console.error("Error updating storage");
         }
 
-        // إرجاع رسالة "لا توجد طلبات" إذا فرغت القائمة
         setTimeout(() => {
             const container = document.getElementById('incomingOrdersContainer');
             if (container && container.children.length === 0) {
-                container.innerHTML = '<div class="no-orders">لا توجد طلبات جديدة حالياً...</div>';
+                container.innerHTML = '<div class="no-orders">لا توجد طلبات إلكترونية جديدة حالياً...</div>';
             }
         }, 500);
     }
 
-    // الفحص المستمر كل ثانية لاستقبال الطلبات المتعددة بالتزامن
+    // فحص الطلبات كل ثانية لاستقبال أكثر من طلب بالتزامن
     setInterval(checkNewOrders, 1000);
 
     window.onload = () => {
