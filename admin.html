@@ -52,7 +52,6 @@
     </div>
 
 <script>
-    // جلب كلمة المرور المخزنة أو استخدام الافتراضية
     let currentPass = localStorage.getItem('mim89_admin_pass') || "MIM123";
 
     const defaultItems = [
@@ -69,14 +68,13 @@
         if (enteredPass === currentPass) {
             document.getElementById('login-section').style.display = 'none';
             document.getElementById('editor-section').style.display = 'block';
-            document.getElementById('new-pass-input').value = currentPass; // عرض الرمز الحالي في خانة التعديل
+            document.getElementById('new-pass-input').value = currentPass;
             loadAdminData();
         } else {
             alert("كلمة المرور غير صحيحة!");
         }
     }
 
-    // دالة تحديث كلمة المرور وحفظها في الذاكرة
     function updatePassword() {
         const newPass = document.getElementById('new-pass-input').value.trim();
         if (newPass.length < 3) {
@@ -119,8 +117,8 @@
                 <label>السعر:</label>
                 <input type="text" value="${item.price}" id="price-${index}">
 
-                <label>صورة الوجبة (اختر صورة جديدة من الاستوديو/الكاميرا):</label>
-                <input type="file" accept="image/*" id="file-${index}" onchange="handleImage(this, ${index})">
+                <label>صورة الوجبة (اختر صورة جديدة من الاستوديو):</label>
+                <input type="file" accept="image/*" id="file-${index}" onchange="handleImage(event, ${index})">
                 <img src="${item.img}" id="preview-${index}" class="preview-img">
             `;
             container.appendChild(card);
@@ -147,12 +145,10 @@
         }
     }
 
-    // دالة ذكية لمعالجة وتحويل الصورة المرفوعة من الموبايل فوراً دون أخطاء
-    function handleImage(input, index) {
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
+    function handleImage(event, index) {
+        const file = event.target.files[0];
+        if (file) {
             const reader = new FileReader();
-
             reader.onload = function (e) {
                 const img = new Image();
                 img.src = e.target.result;
@@ -180,27 +176,29 @@
 
                     canvas.width = width;
                     canvas.height = height;
-
                     ctx.drawImage(img, 0, 0, width, height);
+                    
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
 
-                    // تحديث مصفوفة البيانات والصورة المعروضة فوراً
                     currentItems[index].img = compressedBase64;
                     document.getElementById(`preview-${index}`).src = compressedBase64;
                 };
             };
-
             reader.readAsDataURL(file);
         }
     }
 
     function saveAllChanges() {
-        // تحديث البيانات من الحقول قبل الحفظ
         currentItems.forEach((item, index) => {
-            item.cat = document.getElementById(`cat-${index}`).value;
-            item.name = document.getElementById(`name-${index}`,).value;
-            item.desc = document.getElementById(`desc-${index}`).value;
-            item.price = document.getElementById(`price-${index}`).value;
+            const catEl = document.getElementById(`cat-${index}`);
+            const nameEl = document.getElementById(`name-${index}`);
+            const descEl = document.getElementById(`desc-${index}`);
+            const priceEl = document.getElementById(`price-${index}`);
+
+            if (catEl) item.cat = catEl.value;
+            if (nameEl) item.name = nameEl.value;
+            if (descEl) item.desc = descEl.value;
+            if (priceEl) item.price = priceEl.value;
         });
 
         localStorage.setItem('mim89_full_menu_data', JSON.stringify(currentItems));
