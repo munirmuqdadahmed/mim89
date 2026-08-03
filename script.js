@@ -8,34 +8,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 300);
     }
 
-    // 2. القائمة الجانبية (Side Menu) مع تثبيت المينيو الخلفي التام
-    const menuBtn = document.getElementById("menuBtn");
-    const sideMenu = document.getElementById("sideMenu");
-    const menuOverlay = document.getElementById("menuOverlay");
+    // 2. القائمة الجانبية (Side Menu) بدون أي قفل للتمرير
+const menuBtn = document.getElementById("menuBtn");
+const sideMenu = document.getElementById("sideMenu");
+const menuOverlay = document.getElementById("menuOverlay");
 
-    function preventScroll(e) {
-        if (!sideMenu.contains(e.target)) {
-            e.preventDefault();
-        }
-    }
+if (menuBtn && sideMenu && menuOverlay) {
+    menuBtn.addEventListener("click", () => {
+        sideMenu.classList.add("active");
+        menuOverlay.classList.add("active");
+    });
 
-    if (menuBtn && sideMenu && menuOverlay) {
-        menuBtn.addEventListener("click", () => {
-            sideMenu.classList.add("active");
-            menuOverlay.classList.add("active");
-            document.documentElement.classList.add("menu-open");
-            document.body.classList.add("menu-open");
-            document.addEventListener("touchmove", preventScroll, { passive: false });
-        });
+    menuOverlay.addEventListener("click", () => {
+        sideMenu.classList.remove("active");
+        menuOverlay.classList.remove("active");
+    });
+}
 
-        menuOverlay.addEventListener("click", () => {
-            sideMenu.classList.remove("active");
-            menuOverlay.classList.remove("active");
-            document.documentElement.classList.remove("menu-open");
-            document.body.classList.remove("menu-open");
-            document.removeEventListener("touchmove", preventScroll);
-        });
-    }
 
     // 3. البحث الأحيائي عن أصناف المينيو
     const searchInput = document.getElementById("search");
