@@ -78,7 +78,6 @@
             justify-content: center;
             font-weight: bold;
         }
-        /* تنسيق تنبيه نجاح الطلب */
         #orderAlertModal {
             display: none;
             position: fixed;
@@ -181,7 +180,7 @@
 
         <div class="hero-content"></div>
 
-        <!-- الشريط السفلي مع زر السلة المركزي -->
+        <!-- الشريط السفلي (تم تعديل الموقع إلى "اتصل بنا" مع أيقونة مناسبة للتواصل) -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -196,8 +195,8 @@
                 <span id="cartCount">0</span>
             </a>
             <a href="#contact">
-                <i class="fas fa-location-dot"></i>
-                <span>الموقع</span>
+                <i class="fas fa-phone-volume"></i>
+                <span>اتصل بنا</span>
             </a>
             <a href="javascript:void(0);" id="menuBtn">
                 <i class="fas fa-bars"></i>
@@ -390,7 +389,6 @@
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
-                    <!-- تم إلغاء الواتساب وجعل الزر يرسل الطلب مباشرة إلى الكاشير مع تنبيه -->
                     <button id="sendOrderDirectBtn" class="send-order-btn" style="background: #25d366;">
                         <i class="fas fa-paper-plane"></i> إرسال الطلب إلى الكاشير والمطبخ
                     </button>
@@ -412,14 +410,14 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
+    <script src="style.js?v=400.0"></script>
     <script src="script.js?v=400.0"></script>
 
     <script>
-        // تعديل زر إرسال الطلب ليعمل بنظام الكاشير المباشر بدلاً من الواتساب
+        // دمج قراءة السلة الأصلية لملف script.js وإرسال الطلب للكاشير بدقة
         document.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
-                // إلغاء أي حدث قديم وإضافة حدث الإرسال الجديد
                 sendBtn.replaceWith(sendBtn.cloneNode(true));
                 const newSendBtn = document.getElementById('sendOrderDirectBtn');
                 
@@ -433,10 +431,20 @@
                         return;
                     }
 
-                    // قراءة السلة
-                    const cartData = window.cart || []; 
-                    if (cartData.length === 0) {
-                        alert("السلة فارغة!");
+                    // قراءة السلة من المصفوفة العامة أو استخراجها من الـ DOM في حال كانت المعالجة في script.js
+                    let activeCart = window.cart || [];
+                    
+                    // احتياطي: إذا كانت المصفوفة فارغة في الذاكرة لكن عناصر السلة موجودة في واجهة الـ DOM
+                    if (activeCart.length === 0) {
+                        const cartItemsElements = document.querySelectorAll('#cartItems .cart-item, #cartItems .item-row');
+                        // محاولة جلبها بالطريقة البديلة أو من كائن السلة بملف script.js إن وجد
+                        if (window.cartItems && Array.isArray(window.cartItems)) {
+                            activeCart = window.cartItems;
+                        }
+                    }
+
+                    if (activeCart.length === 0) {
+                        alert("سلة الطلبات فارغة حالياً! يرجى إضافة وجبات أولاً.");
                         return;
                     }
 
@@ -446,19 +454,27 @@
                         phone: phone,
                         address: address,
                         notes: document.getElementById('custNotes').value,
-                        items: cartData,
+                        items: activeCart,
                         type: document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
                         time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
                     };
 
-                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير مع تنبيه صوتي/مرئي
+                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير
                     localStorage.setItem('mim89_online_order', JSON.stringify(orderObj));
 
-                    // تفريغ السلة وإغلاق نافذة السلة
+                    // تفريغ السلة وتحديث الواجهة
                     window.cart = [];
                     if (typeof window.updateCartUI === 'function') {
                         window.updateCartUI();
+                    } else {
+                        const cartContainer = document.getElementById('cartItems');
+                        if (cartContainer) cartContainer.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
+                        const cartCountEl = document.getElementById('cartCount');
+                        if (cartCountEl) cartCountEl.innerText = '0';
+                        const cartTotalEl = document.getElementById('cartTotal');
+                        if (cartTotalEl) cartTotalEl.innerText = '0 د.ع';
                     }
+
                     document.getElementById('cartModal').style.display = 'none';
                     document.body.classList.remove('cart-open');
 
