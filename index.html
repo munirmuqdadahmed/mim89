@@ -14,6 +14,65 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    
+    <style>
+        /* تنسيق الترويسة الجديدة (محاذاة لليمين وإزالة الإنجليزي فوق) */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .logo h1 {
+            font-size: 26px;
+            font-weight: 900;
+            color: #ff9f00;
+            line-height: 1;
+        }
+        .logo span {
+            font-size: 11px;
+            color: #ccc;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        /* تنسيق زر السلة المركزي الجديد في الشريط السفلي */
+        .bottom-nav .center-cart-btn {
+            background: #ff9f00 !important;
+            color: #000 !important;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: -15px;
+            border: 3px solid #111;
+            position: relative;
+        }
+        .bottom-nav .center-cart-btn i {
+            font-size: 18px;
+        }
+        .bottom-nav .center-cart-btn span {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #e63946;
+            color: #fff;
+            font-size: 9px;
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
@@ -22,12 +81,6 @@
     <div id="loader">
         <div class="spinner"></div>
         <h2>MIM89</h2>
-    </div>
-
-    <!-- Floating Cart Button -->
-    <div id="cartBtn" class="cart-btn">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cartCount">0</span>
     </div>
 
     <!-- Overlay -->
@@ -63,7 +116,7 @@
         <nav class="top-nav">
             <div class="logo">
                 <h1>MIM89</h1>
-                <span>FAST FOOD</span>
+                <span>كل الطعم... في مكان واحد</span>
             </div>
             <ul>
                 <li><a href="#">الرئيسية</a></li>
@@ -82,9 +135,10 @@
         <div class="hero-content">
             <h2>MIM89 FAST FOOD</h2>
             <p>كل الطعم... في مكان واحد</p>
-            <a href="#offers" class="btn">عرض المنيو</a>
+            <!-- تم إزالة زر عرض المنيو بناءً على طلبك -->
         </div>
 
+        <!-- الشريط السفلي مع زر السلة المركزي الجديد -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -94,8 +148,10 @@
                 <i class="fas fa-fire"></i>
                 <span>العروض</span>
             </a>
-            <a href="#offers" class="center-btn">
-                <i class="fas fa-utensils"></i>
+            <!-- زر السلة بدل الشوكة والسكينة -->
+            <a href="javascript:void(0);" id="cartBtn" class="center-cart-btn">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cartCount">0</span>
             </a>
             <a href="#contact">
                 <i class="fas fa-location-dot"></i>
@@ -306,10 +362,9 @@
 
     <script src="script.js?v=400.0"></script>
 
-    <!-- سكربت تحديث الصور والأسعار المباشر من اللوحة -->
+    <!-- سكربت تحديث الصور والأسعار المباشر من اللوحة والتنقل -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            // تحديث الصور والأسعار والوصف من اللوحة إن وجدت
             const savedData = localStorage.getItem('mim89_full_menu_data');
             if (savedData) {
                 try {
