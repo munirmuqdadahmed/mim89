@@ -3,22 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير والمبيعات</title>
+    <title>MIM89 - نظام الكاشير المتقدم</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
         body { background: #111; color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* شريط العلوي */
         header { background: #1a1a1a; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         header h1 { color: #ff9f00; font-size: 18px; font-weight: 900; }
         .nav-links a { color: #fff; text-decoration: none; background: #333; padding: 6px 12px; border-radius: 8px; font-size: 13px; margin-left: 8px; }
 
-        /* هيكل الكاشير (قسمين: الأصناف والفاتورة) */
         .cashier-container { display: flex; flex: 1; overflow: hidden; }
         
-        /* قسم الأصناف والوجبات */
+        /* قسم الأصناف */
         .items-section { flex: 2; padding: 15px; overflow-y: auto; background: #151515; }
         .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; }
         .cat-tab { background: #222; color: #ff9f00; border: 1px solid #ff9f00; padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; }
@@ -31,10 +29,14 @@
         .pos-card h4 { font-size: 13px; margin-bottom: 4px; color: #fff; }
         .pos-card span { color: #ff9f00; font-size: 12px; font-weight: bold; }
 
-        /* قسم الفاتورة الحالية والحساب */
-        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 300px; }
-        .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        /* قسم الفاتورة */
+        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 320px; }
+        .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
+        .order-type-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .type-btn { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
+        .type-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
+
         .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; }
         .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
         .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
@@ -46,11 +48,11 @@
         .pos-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 8px; text-align: center; }
         .pos-btn.print { background: #ff9f00; color: #000; }
 
-        /* تنسيق طباعة الوصل (فقط عند الطباعة) */
+        /* قوالب الطباعة المخفية (تظهر فقط عند أمر الطباعة) */
         @media print {
             body * { visibility: hidden; }
-            #printableReceipt, #printableReceipt * { visibility: visible; }
-            #printableReceipt { position: absolute; left: 0; top: 0; width: 100%; background: #fff; color: #000; padding: 10px; font-size: 12px; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; background: #fff; color: #000; padding: 10px; font-family: 'Cairo'; }
         }
     </style>
 </head>
@@ -66,7 +68,7 @@
 
     <div class="cashier-container">
         
-        <!-- قسم الوجبات والأصناف -->
+        <!-- قسم الأصناف والوجبات -->
         <div class="items-section">
             <div class="categories-bar" id="categoriesBar">
                 <button class="cat-tab active" onclick="filterCat('الكل')">الكل 🔥</button>
@@ -74,46 +76,66 @@
             <div class="grid-menu" id="posGrid"></div>
         </div>
 
-        <!-- قسم الفاتورة -->
+        <!-- قسم الفاتورة وإدارة الطلب -->
         <div class="invoice-section">
-            <div class="invoice-title"><i class="fas fa-receipt"></i> الفاتورة الحالية</div>
+            <div class="invoice-title">
+                <span><i class="fas fa-receipt"></i> الفاتورة الحالية</span>
+                <span id="orderNumDisplay" style="color:#25d366; font-size:14px;">طلب #1</span>
+            </div>
             
+            <div class="order-type-selector">
+                <button class="type-btn active" onclick="setOrderType('سفري', this)">🛍️ سفري</button>
+                <button class="type-btn" onclick="setOrderType('توصيل', this)">🛵 توصيل</button>
+                <button class="type-btn" onclick="setOrderType('محلي', this)">🍽️ محلي</button>
+            </div>
+
             <div class="invoice-items" id="invoiceList">
                 <p style="color:#777; text-align:center; margin-top:30px;">اختر الأصناف من القائمة</p>
             </div>
 
             <div class="invoice-totals">
-                <div class="total-row">
-                    <span>المجموع:</span>
-                    <span id="subTotal">0 د.ع</span>
-                </div>
                 <div class="total-row grand">
                     <span>الإجمالي الكلي:</span>
                     <span id="grandTotal">0 د.ع</span>
                 </div>
 
-                <button class="pos-btn print" onclick="printReceipt()"><i class="fas fa-print"></i> طباعة الوصل</button>
-                <button class="pos-btn" onclick="clearInvoice()"><i class="fas fa-trash"></i> إفراغ الفاتورة</button>
+                <button class="pos-btn print" onclick="completeAndPrint()"><i class="fas fa-print"></i> إتمام الطباعة (زبون + مطبخ)</button>
+                <button class="pos-btn" style="background:#e63946; font-size:13px; padding:8px;" onclick="clearInvoice()"><i class="fas fa-trash"></i> إفراغ الفاتورة</button>
             </div>
         </div>
     </div>
 
-    <!-- قالب الوصل المخفي للطباعة -->
-    <div id="printableReceipt" style="display:none; text-align:right; font-family:'Cairo';">
-        <h2 style="text-align:center; margin:0;">MIM89 FAST FOOD</h2>
-        <p style="text-align:center; font-size:10px; margin:2px 0;">أهلاً وسهلاً بكم | توصيل ومباشر</p>
-        <hr style="border: 1px dashed #000;">
-        <div id="receiptBody"></div>
-        <hr style="border: 1px dashed #000;">
-        <h3 id="receiptTotal" style="text-align:center;"></h3>
-        <p style="text-align:center; font-size:10px; margin-top:5px;">شكراً لزيارتكم مطعمنا ❤️</p>
+    <!-- 1. قالب وصل الزبون للطباعة -->
+    <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
+        <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">رقم الطلب: <span id="c_ordNum">1</span> | النوع: <span id="c_ordType">سفري</span></p>
+        <p style="text-align:center; font-size:10px; margin:2px 0;">التاريخ: <span id="c_date"></span></p>
+        <hr style="border: 1px dashed #000; margin:6px 0;">
+        <div id="c_itemsBody"></div>
+        <hr style="border: 1px dashed #000; margin:6px 0;">
+        <h3 id="c_total" style="text-align:center; font-size:15px;"></h3>
+        <p style="text-align:center; font-size:10px; margin-top:8px;">شكراً لزيارتكم مطعمنا ❤️</p>
+    </div>
+
+    <!-- 2. قالب وصل المطبخ للطباعة -->
+    <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
+        <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب للمطبخ 🔥</h2>
+        <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">رقم الطلب: <span id="k_ordNum">1</span> (<span id="k_ordType">سفري</span>)</p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">الوقت: <span id="k_time"></span></p>
+        <hr style="border: 2px solid #000; margin:6px 0;">
+        <div id="k_itemsBody" style="font-size:15px; font-weight:bold;"></div>
+        <hr style="border: 2px solid #000; margin:6px 0;">
+        <p style="text-align:center; font-size:12px;">يرجى التجهيز السريع ⚡</p>
     </div>
 
 <script>
     let menuItems = [];
     let currentInvoice = [];
+    let orderType = "سفري";
+    let orderCounter = parseInt(localStorage.getItem('mim89_order_counter')) || 1;
 
-    // تحميل الأصناف من الذاكرة (التي تعدلها من لوحة الإدارة)
+    document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
+
     function loadPosMenu() {
         const saved = localStorage.getItem('mim89_full_menu_data');
         if (saved) {
@@ -154,6 +176,12 @@
         }).join('');
     }
 
+    function setOrderType(type, btn) {
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        orderType = type;
+    }
+
     function addToInvoice(name, price) {
         const existing = currentInvoice.find(i => i.name === name);
         if (existing) {
@@ -176,7 +204,6 @@
         const list = document.getElementById('invoiceList');
         if (currentInvoice.length === 0) {
             list.innerHTML = `<p style="color:#777; text-align:center; margin-top:30px;">اختر الأصناف من القائمة</p>`;
-            document.getElementById('subTotal').innerText = '0 د.ع';
             document.getElementById('grandTotal').innerText = '0 د.ع';
             return;
         }
@@ -200,7 +227,6 @@
             `;
         }).join('');
 
-        document.getElementById('subTotal').innerText = total.toLocaleString() + ' د.ع';
         document.getElementById('grandTotal').innerText = total.toLocaleString() + ' د.ع';
     }
 
@@ -209,25 +235,60 @@
         updateInvoiceUI();
     }
 
-    function printReceipt() {
+    // دالة إتمام الطلب والطباعة المزدوجة (زبون + مطبخ)
+    function completeAndPrint() {
         if (currentInvoice.length === 0) {
             alert("⚠️ الفاتورة فارغة!");
             return;
         }
 
         let total = 0;
-        let html = '<table style="width:100%; border-collapse:collapse;">';
+        let custHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+        let kitchHtml = '<table style="width:100%; border-collapse:collapse; font-size:16px;">';
+
         currentInvoice.forEach(i => {
             let sum = i.price * i.qty;
             total += sum;
-            html += `<tr style="border-bottom:1px solid #ddd;"><td style="padding:4px;">${i.name} (${i.qty})</td><td style="text-align:left; padding:4px;">${sum.toLocaleString()}</td></tr>`;
+            custHtml += `<tr style="border-bottom:1px dashed #ccc;"><td style="padding:4px;">${i.name} (x${i.qty})</td><td style="text-align:left; padding:4px;">${sum.toLocaleString()}</td></tr>`;
+            kitchHtml += `<tr style="border-bottom:1px solid #000;"><td style="padding:6px; font-weight:bold;">${i.name}</td><td style="text-align:left; padding:6px; font-size:18px;">الكمية: ${i.qty}</td></tr>`;
         });
-        html += '</table>';
+        custHtml += '</table>';
+        kitchHtml += '</table>';
 
-        document.getElementById('receiptBody').innerHTML = html;
-        document.getElementById('receiptTotal').innerText = 'المجموع الكلي: ' + total.toLocaleString() + ' د.ع';
+        const now = new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'});
+        const fullDate = new Date().toLocaleString('ar-IQ');
 
+        // تعبئة بيانات وصل الزبون
+        document.getElementById('c_ordNum').innerText = orderCounter;
+        document.getElementById('c_ordType').innerText = orderType;
+        document.getElementById('c_date').innerText = fullDate;
+        document.getElementById('c_itemsBody').innerHTML = custHtml;
+        document.getElementById('c_total').innerText = 'الإجمالي الكلي: ' + total.toLocaleString() + ' د.ع';
+
+        // تعبئة بيانات وصل المطبخ
+        document.getElementById('k_ordNum').innerText = orderCounter;
+        document.getElementById('k_ordType').innerText = orderType;
+        document.getElementById('k_time').innerText = now;
+        document.getElementById('k_itemsBody').innerHTML = kitchHtml;
+
+        // الطباعة الأولى (وصل الزبون)
+        document.getElementById('customerReceipt').style.display = 'block';
+        document.getElementById('kitchenReceipt').style.display = 'none';
         window.print();
+
+        // الطباعة الثانية (وصل المطبخ) بعد ثانية لضمان فصل الطباعتين
+        setTimeout(() => {
+            document.getElementById('customerReceipt').style.display = 'none';
+            document.getElementById('kitchenReceipt').style.display = 'block';
+            window.print();
+            
+            // إعادة ضبط العرض وإصدار رقم طلب جديد
+            document.getElementById('kitchenReceipt').style.display = 'none';
+            orderCounter++;
+            localStorage.setItem('mim89_order_counter', orderCounter);
+            document.getElementById('orderNumDisplay').innerText = `طلب #${orderCounter}`;
+            clearInvoice();
+        }, 1200);
     }
 
     window.onload = loadPosMenu;
