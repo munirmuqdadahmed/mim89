@@ -79,7 +79,6 @@
 
     <div class="menu-section" id="menuContainer"></div>
 
-    <!-- شريط التنقل السفلي المنظم والمضبوط بالكامل -->
     <div class="bottom-nav">
         <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
         <a class="nav-item" href="javascript:void(0);" onclick="showOffers()"><i class="fas fa-fire"></i>العروض</a>
@@ -88,7 +87,6 @@
         <a class="nav-item" href="admin.html"><i class="fas fa-bars"></i>المزيد</a>
     </div>
 
-    <!-- نافذة السلة -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
@@ -108,7 +106,6 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة للموقع والعروض -->
     <div id="infoModal" class="info-modal" onclick="closeInfoModal()" style="display:none; justify-content:center; align-items:center;">
         <div class="cart-content" style="border-radius:12px; text-align:center; width:90%; max-width:400px;" onclick="event.stopPropagation()">
             <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
@@ -118,18 +115,19 @@
     </div>
 
 <script>
-    let menuItems = [
+    let defaultMenuItems = [
         { id: 401, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (عادي)", desc: "ثومية، مخلل، خبز صاج، بطاطا", price: "1,500 د.ع", img: "https://foodish-api.com/images/samosa/samosa2.jpg" },
         { id: 402, cat: "🌯 قسم الشاورما", name: "شاورما صاج دجاج (دبل)", desc: "كمية مضاعفة من الشاورما مع الثومية والصوص", price: "3,000 د.ع", img: "https://foodish-api.com/images/samosa/samosa3.jpg" },
         { id: 201, cat: "🍔 قسم البركر", name: "بركر كلاسيك لحم", desc: "لحم طازج مع الصوص الخاص والخضار مع فنكر", price: "4,000 د.ع", img: "https://foodish-api.com/images/burger/burger1.jpg" }
     ];
 
+    let menuItems = defaultMenuItems;
     let cart = [];
 
     function renderMenu(items) {
         const container = document.getElementById('menuContainer');
-        if(items.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#777; margin-top:20px;">عذراً، لا توجد أصناف مطابقة.</p>';
+        if(!items || items.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#777; margin-top:20px;">عذراً، لا توجد أصناف.</p>';
             return;
         }
 
@@ -143,7 +141,7 @@
                         <img src="${item.img}" class="item-img" onerror="this.src='https://via.placeholder.com/300x150/222/ff9f00?text=MIM89';">
                         <div class="item-details">
                             <div class="item-title">${item.name}</div>
-                            <div class="item-desc">${item.desc}</div>
+                            <div class="item-desc">${item.desc || 'وجبة طازجة ومميزة من مطعمنا'}</div>
                             <div class="item-footer">
                                 <span class="item-price">${item.price}</span>
                                 <button class="add-btn" onclick="addToCart('${item.name.replace(/'/g, "")}', '${item.price}')"><i class="fas fa-cart-plus"></i> إضافة</button>
@@ -258,7 +256,13 @@
 
     window.onload = () => {
         const saved = localStorage.getItem('mim89_custom_menu');
-        if(saved) menuItems = JSON.parse(saved);
+        if(saved) {
+            try {
+                menuItems = JSON.parse(saved);
+            } catch(e) {
+                menuItems = defaultMenuItems;
+            }
+        }
         renderCategories();
         renderMenu(menuItems);
     };
