@@ -30,18 +30,18 @@
         .pos-card span { color: #ff9f00; font-size: 12px; font-weight: bold; }
 
         /* قسم الفاتورة */
-        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 330px; }
+        .invoice-section { flex: 1; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 15px; min-width: 330px; overflow-y: auto; }
         .invoice-title { font-size: 15px; color: #ff9f00; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
-        .order-type-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .type-btn { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
-        .type-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
+        .section-label { font-size: 12px; color: #aaa; margin-bottom: 4px; font-weight: bold; }
+        .order-type-selector, .payment-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .type-btn, .pay-btn { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 6px; border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center; }
+        .type-btn.active, .pay-btn.active { background: #ff9f00; color: #000; font-weight: bold; border-color: #ff9f00; }
 
-        /* صندوق معلومات الزبون الوارد */
         .customer-info-box { background: #222; border: 1px dashed #ff9f00; padding: 8px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none; }
         .customer-info-box p { margin-bottom: 3px; color: #ddd; }
 
-        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+        .invoice-items { flex: 1; overflow-y: auto; margin-bottom: 10px; max-height: 180px; }
         .invoice-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
         .invoice-row button { background: #e63946; color: #fff; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
 
@@ -52,7 +52,6 @@
         .pos-btn { width: 100%; padding: 12px; background: #25d366; color: #fff; border: none; border-radius: 10px; font-weight: 900; font-size: 15px; cursor: pointer; margin-top: 8px; text-align: center; }
         .pos-btn.print { background: #ff9f00; color: #000; }
 
-        /* تنبيه الطلبات الواردة من المينيو */
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
@@ -90,13 +89,20 @@
                 <span id="orderNumDisplay" style="color:#25d366; font-size:14px;">طلب #1</span>
             </div>
             
+            <div class="section-label">📌 نوع الطلب (يحدد شكل الوصل):</div>
             <div class="order-type-selector">
-                <button class="type-btn active" id="typeDelivery" onclick="setOrderType('توصيل', this)">🛵 توصيل</button>
+                <button class="type-btn active" id="typeDinein" onclick="setOrderType('صالة', this)">🍽️ صالة</button>
                 <button class="type-btn" id="typeTakeaway" onclick="setOrderType('سفري', this)">🛍️ سفري</button>
-                <button class="type-btn" id="typeDinein" onclick="setOrderType('محلي', this)">🍽️ محلي</button>
+                <button class="type-btn" id="typeDelivery" onclick="setOrderType('توصيل', this)">🛵 توصيل</button>
             </div>
 
-            <!-- عرض معلومات الزبون إذا كان الطلب وارداً من المينيو -->
+            <div class="section-label">💳 طريقة الدفع:</div>
+            <div class="payment-selector">
+                <button class="pay-btn active" id="payCash" onclick="setPayment('كاش (نقداً)', this)">💵 كاش</button>
+                <button class="pay-btn" id="payVisa" onclick="setPayment('فيزا (إلكتروني)', this)">💳 فيزا</button>
+            </div>
+
+            <!-- معلومات الزبون الواردة من المينيو -->
             <div id="customerInfoBox" class="customer-info-box">
                 <p><strong>👤 الزبون:</strong> <span id="lblCustName">-</span></p>
                 <p><strong>📞 الهاتف:</strong> <span id="lblCustPhone">-</span></p>
@@ -105,7 +111,7 @@
             </div>
 
             <div class="invoice-items" id="invoiceList">
-                <p style="color:#777; text-align:center; margin-top:30px;">اختر الأصناف من القائمة</p>
+                <p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>
             </div>
 
             <div class="invoice-totals">
@@ -120,10 +126,11 @@
         </div>
     </div>
 
-    <!-- 1. قالب وصل الزبون للطباعة -->
+    <!-- 1. قالب وصل الزبون للطباعة (يحتوي التفاصيل، الأسعار، وطريقة الدفع) -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
-        <p style="text-align:center; font-size:11px; margin:2px 0;">رقم الطلب: <span id="c_ordNum">1</span> | النوع: <span id="c_ordType">سفري</span></p>
+        <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0; background:#eee; padding:2px;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
+        <p style="text-align:center; font-size:11px; margin:2px 0;">طريقة الدفع: <span id="c_payMethod" style="font-weight:bold;">كاش</span></p>
         <p id="c_custDetails" style="font-size:11px; margin:3px 0; border-bottom:1px dashed #000; padding-bottom:3px;"></p>
         <p style="text-align:center; font-size:10px; margin:2px 0;">التاريخ: <span id="c_date"></span></p>
         <hr style="border: 1px dashed #000; margin:6px 0;">
@@ -133,14 +140,14 @@
         <p style="text-align:center; font-size:10px; margin-top:8px;">شكراً لزيارتكم مطعمنا ❤️</p>
     </div>
 
-    <!-- 2. قالب وصل المطبخ للطباعة -->
+    <!-- 2. قالب وصل المطبخ للطباعة (خاص بالشيف: أصناف وكميات بدون أسعار) -->
     <div id="kitchenReceipt" class="print-area" style="display:none; text-align:right;">
-        <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب للمطبخ 🔥</h2>
-        <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">رقم الطلب: <span id="k_ordNum">1</span> (<span id="k_ordType">سفري</span>)</p>
+        <h2 style="text-align:center; margin:0; font-size:18px;">🔥 طلب مطبخ 🔥</h2>
+        <p style="text-align:center; font-size:14px; font-weight:bold; margin:4px 0;">النوع: [<span id="k_ordType">صالة</span>] - رقم: <span id="k_ordNum">1</span></p>
         <p id="k_custDetails" style="font-size:12px; margin:3px 0; font-weight:bold;"></p>
         <p style="text-align:center; font-size:11px; margin:2px 0;">الوقت: <span id="k_time"></span></p>
         <hr style="border: 2px solid #000; margin:6px 0;">
-        <div id="k_itemsBody" style="font-size:15px; font-weight:bold;"></div>
+        <div id="k_itemsBody" style="font-size:16px; font-weight:bold;"></div>
         <hr style="border: 2px solid #000; margin:6px 0;">
         <p style="text-align:center; font-size:12px;">يرجى التجهيز السريع ⚡</p>
     </div>
@@ -148,7 +155,8 @@
 <script>
     let menuItems = [];
     let currentInvoice = [];
-    let orderType = "توصيل";
+    let orderType = "صالة";
+    let paymentMethod = "كاش (نقداً)";
     let activeCustomerData = null;
     let orderCounter = parseInt(localStorage.getItem('mim89_order_counter')) || 1;
 
@@ -272,6 +280,12 @@
         orderType = type;
     }
 
+    function setPayment(method, btn) {
+        document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        paymentMethod = method;
+    }
+
     function addToInvoice(name, price) {
         const existing = currentInvoice.find(i => i.name === name);
         if (existing) {
@@ -293,20 +307,21 @@
     function updateInvoiceUI() {
         const list = document.getElementById('invoiceList');
         if (currentInvoice.length === 0) {
-            list.innerHTML = `<p style="color:#777; text-align:center; margin-top:30px;">اختر الأصناف من القائمة</p>`;
+            list.innerHTML = `<p style="color:#777; text-align:center; margin-top:20px;">اختر الأصناف من القائمة</p>`;
             document.getElementById('grandTotal').innerText = '0 د.ع';
             return;
         }
 
         let total = 0;
         list.innerHTML = currentInvoice.map((item, idx) => {
-            const itemTotal = (parseInt(item.price) || 0) * item.qty;
+            let p = parseInt(item.price) || 0;
+            let itemTotal = p * item.qty;
             total += itemTotal;
             return `
                 <div class="invoice-row">
                     <div>
                         <strong>${item.name}</strong><br>
-                        <small>${(parseInt(item.price)||0).toLocaleString()} × ${item.qty}</small>
+                        <small>${p.toLocaleString()} × ${item.qty}</small>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span>${itemTotal.toLocaleString()}</span>
@@ -327,7 +342,6 @@
         updateInvoiceUI();
     }
 
-    // فحص الطلبات الواردة من المينيو كل ثانيتين
     function checkIncomingOrders() {
         setInterval(() => {
             const pending = localStorage.getItem('mim89_online_order');
@@ -337,7 +351,6 @@
         }, 2000);
     }
 
-    // عند الضغط على تنبيه الطلب الوارد، يتم تحميله مباشرة للفاتورة ومعلومات الزبون
     function loadOnlineOrder() {
         const pending = localStorage.getItem('mim89_online_order');
         if (pending) {
@@ -347,13 +360,11 @@
                 currentInvoice = orderData.items || [];
                 orderType = orderData.type || "توصيل";
 
-                // تحديد زر نوع الطلب المناسب
                 document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
                 if (orderType === 'توصيل') document.getElementById('typeDelivery').classList.add('active');
                 else if (orderType === 'سفري') document.getElementById('typeTakeaway').classList.add('active');
                 else document.getElementById('typeDinein').classList.add('active');
 
-                // عرض معلومات الزبون على الشاشة
                 document.getElementById('lblCustName').innerText = orderData.customerName || 'غير متوفر';
                 document.getElementById('lblCustPhone').innerText = orderData.phone || 'غير متوفر';
                 document.getElementById('lblCustAddress').innerText = orderData.address || 'بدون عنوان';
@@ -398,18 +409,19 @@
         const now = new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'});
         const fullDate = new Date().toLocaleString('ar-IQ');
 
-        // تفاصيل الزبون المطبوعة على الوصل
-        let custDetailsText = "";
-        let kitchDetailsText = "";
+        let custDetailsText = `نوع الخدمة: <strong>${orderType}</strong> | الدفع: <strong>${paymentMethod}</strong>`;
+        let kitchDetailsText = `نوع الخدمة: <strong>${orderType}</strong>`;
+
         if (activeCustomerData) {
-            custDetailsText = `الزبون: ${activeCustomerData.customerName} | الهاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
+            custDetailsText += `<br>الزبون: ${activeCustomerData.customerName} | هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
             if(activeCustomerData.notes) custDetailsText += `<br>ملاحظات: ${activeCustomerData.notes}`;
-            kitchDetailsText = `الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
+            kitchDetailsText += `<br>الزبون: ${activeCustomerData.customerName} - هاتف: ${activeCustomerData.phone}<br>العنوان: ${activeCustomerData.address}`;
         }
 
         // تعبئة وصل الزبون
         document.getElementById('c_ordNum').innerText = orderCounter;
         document.getElementById('c_ordType').innerText = orderType;
+        document.getElementById('c_payMethod').innerText = paymentMethod;
         document.getElementById('c_custDetails').innerHTML = custDetailsText;
         document.getElementById('c_date').innerText = fullDate;
         document.getElementById('c_itemsBody').innerHTML = custHtml;
