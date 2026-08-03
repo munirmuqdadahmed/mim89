@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 | Fast Food</title>
+    <title>MIM89 FAST FOOD</title>
     <meta name="description" content="MIM89 Fast Food">
 
     <link rel="stylesheet" href="style.css?v=400.0">
@@ -16,7 +16,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
-        /* تنسيق الترويسة العلوية لتكون في المنتصف وبدون تكرار */
         .top-nav {
             display: flex;
             justify-content: center;
@@ -30,7 +29,7 @@
             width: 100%;
         }
         .logo h1 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 900;
             color: #ff9f00;
             line-height: 1;
@@ -41,15 +40,13 @@
             font-weight: bold;
             margin-top: 5px;
         }
-        /* إخفاء التكرار غير المطلوب في محتوى الهيرو الداخلي الباقي إن وجد */
         .hero-content h2, .hero-content p {
             display: none;
         }
         .hero-content {
-            padding: 10px 0;
+            padding: 5px 0;
             text-align: center;
         }
-        /* تنسيق زر السلة المركزي الجديد في الشريط السفلي */
         .bottom-nav .center-cart-btn {
             background: #ff9f00 !important;
             color: #000 !important;
@@ -80,6 +77,47 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
+        }
+        /* تنسيق تنبيه نجاح الطلب */
+        #orderAlertModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .alert-box {
+            background: #1a1a1a;
+            border: 2px solid #ff9f00;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            width: 85%;
+            max-width: 350px;
+            color: #fff;
+        }
+        .alert-box h3 {
+            color: #ff9f00;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        .alert-box p {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .alert-box button {
+            background: #ff9f00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
         }
     </style>
 </head>
@@ -124,7 +162,7 @@
 
         <nav class="top-nav">
             <div class="logo">
-                <h1>MIM89</h1>
+                <h1>MIM89 FAST FOOD</h1>
                 <span>كل الطعم... في مكان واحد</span>
             </div>
             <ul style="display:none;">
@@ -141,11 +179,9 @@
             </ul>
         </nav>
 
-        <div class="hero-content">
-            <!-- تم إزالة التكرار ليبقى الاسم والوصف في الأعلى بوسط الصفحة بشكل نظيف -->
-        </div>
+        <div class="hero-content"></div>
 
-        <!-- الشريط السفلي مع زر السلة المركزي الجديد -->
+        <!-- الشريط السفلي مع زر السلة المركزي -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -155,7 +191,6 @@
                 <i class="fas fa-fire"></i>
                 <span>العروض</span>
             </a>
-            <!-- زر السلة بدل الشوكة والسكينة -->
             <a href="javascript:void(0);" id="cartBtn" class="center-cart-btn">
                 <i class="fas fa-shopping-cart"></i>
                 <span id="cartCount">0</span>
@@ -175,7 +210,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل الأساسي بجميع الوجبات والأقسام -->
+    <!-- المينيو الكامل بجميع الوجبات والأقسام -->
     <div id="main-menu-container">
         <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
@@ -355,11 +390,21 @@
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
-                    <button id="sendOrderBtn" class="send-order-btn">
-                        <i class="fab fa-whatsapp"></i> تأكيد الطلب عبر الواتساب
+                    <!-- تم إلغاء الواتساب وجعل الزر يرسل الطلب مباشرة إلى الكاشير مع تنبيه -->
+                    <button id="sendOrderDirectBtn" class="send-order-btn" style="background: #25d366;">
+                        <i class="fas fa-paper-plane"></i> إرسال الطلب إلى الكاشير والمطبخ
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة لتنبيه الزبون بنجاح الإرسال للكاشير -->
+    <div id="orderAlertModal">
+        <div class="alert-box">
+            <h3>🚀 تم إرسال طلبك بنجاح!</h3>
+            <p>تم إرسال تفاصيل طلبك مباشرة إلى شاشة الكاشير والمطعم، وجاري تجهيزه الآن.</p>
+            <button onclick="closeOrderAlert()">حسناً</button>
         </div>
     </div>
 
@@ -369,9 +414,60 @@
 
     <script src="script.js?v=400.0"></script>
 
-    <!-- سكربت تحديث الصور والأسعار المباشر من اللوحة والتنقل -->
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
+        // تعديل زر إرسال الطلب ليعمل بنظام الكاشير المباشر بدلاً من الواتساب
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendBtn = document.getElementById('sendOrderDirectBtn');
+            if (sendBtn) {
+                // إلغاء أي حدث قديم وإضافة حدث الإرسال الجديد
+                sendBtn.replaceWith(sendBtn.cloneNode(true));
+                const newSendBtn = document.getElementById('sendOrderDirectBtn');
+                
+                newSendBtn.addEventListener('click', () => {
+                    const name = document.getElementById('custName').value.trim();
+                    const phone = document.getElementById('custPhone').value.trim();
+                    const address = document.getElementById('custAddress').value.trim();
+
+                    if (!name || !phone || !address) {
+                        alert("يرجى إكمال (الاسم، رقم الهاتف، والعنوان) قبل إرسال الطلب.");
+                        return;
+                    }
+
+                    // قراءة السلة
+                    const cartData = window.cart || []; 
+                    if (cartData.length === 0) {
+                        alert("السلة فارغة!");
+                        return;
+                    }
+
+                    const orderObj = {
+                        id: Date.now(),
+                        customerName: name,
+                        phone: phone,
+                        address: address,
+                        notes: document.getElementById('custNotes').value,
+                        items: cartData,
+                        type: document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
+                        time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
+                    };
+
+                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير مع تنبيه صوتي/مرئي
+                    localStorage.setItem('mim89_online_order', JSON.stringify(orderObj));
+
+                    // تفريغ السلة وإغلاق نافذة السلة
+                    window.cart = [];
+                    if (typeof window.updateCartUI === 'function') {
+                        window.updateCartUI();
+                    }
+                    document.getElementById('cartModal').style.display = 'none';
+                    document.body.classList.remove('cart-open');
+
+                    // إظهار نافذة التنبيه للزبون
+                    document.getElementById('orderAlertModal').style.display = 'flex';
+                });
+            }
+
+            // تحديث الصور والأسعار من اللوحة
             const savedData = localStorage.getItem('mim89_full_menu_data');
             if (savedData) {
                 try {
@@ -419,6 +515,10 @@
                 });
             });
         });
+
+        function closeOrderAlert() {
+            document.getElementById('orderAlertModal').style.display = 'none';
+        }
     </script>
 </body>
 
