@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - القائمة الرئيسية</title>
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -40,6 +40,7 @@
         .item-price { color: #ff9f00; font-size: 15px; font-weight: 900; }
         .add-btn { background: #ff9f00; color: #000; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
+        /* شريط التنقل السفلي الخاص بالزبون فقط */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #181818; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000; }
         .nav-item { color: #aaa; text-decoration: none; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
         .nav-item i { font-size: 16px; }
@@ -79,14 +80,16 @@
 
     <div class="menu-section" id="menuContainer"></div>
 
+    <!-- شريط التنقل السفلي للزبون (بدون أي روابط إدارة) -->
     <div class="bottom-nav">
         <a class="nav-item active" href="index.html"><i class="fas fa-home"></i>الرئيسية</a>
         <a class="nav-item" href="javascript:void(0);" onclick="showOffers()"><i class="fas fa-fire"></i>العروض</a>
         <div class="nav-item center-btn" onclick="openCartModal()"><i class="fas fa-utensils"></i></div>
         <a class="nav-item" href="javascript:void(0);" onclick="showLocation()"><i class="fas fa-map-marker-alt"></i>الموقع</a>
-        <a class="nav-item" href="admin.html"><i class="fas fa-bars"></i>المزيد</a>
+        <a class="nav-item" href="javascript:void(0);" onclick="showMoreMenu()"><i class="fas fa-bars"></i>المزيد</a>
     </div>
 
+    <!-- نافذة السلة وإتمام الطلب -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <h3 style="color:#ff9f00; margin-bottom:12px; text-align:center;">🛒 سلة الطلبات</h3>
@@ -100,12 +103,13 @@
                     <span>الإجمالي الكلي:</span>
                     <span id="cartTotal" style="color:#ff9f00;">0 د.ع</span>
                 </div>
-                <button style="width:100%; background:#25d366; color:#fff; border:none; padding:11px; border-radius:10px; font-weight:bold; font-size:14px; cursor:pointer;" onclick="sendOrderToWhatsApp()">إرسال الطلب عبر الواتساب 📱</button>
+                <button style="width:100%; background:#25d366; color:#fff; border:none; padding:11px; border-radius:10px; font-weight:bold; font-size:14px; cursor:pointer;" onclick="submitOrderToCashier()">إرسال الطلب للكشير والمطبخ 🚀</button>
                 <button style="width:100%; background:#444; color:#fff; border:none; padding:9px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer; margin-top:6px;" onclick="closeCartModal()">إغلاق</button>
             </div>
         </div>
     </div>
 
+    <!-- نافذة معلومات عامة للزبون -->
     <div id="infoModal" class="info-modal" onclick="closeInfoModal()" style="display:none; justify-content:center; align-items:center;">
         <div class="cart-content" style="border-radius:12px; text-align:center; width:90%; max-width:400px;" onclick="event.stopPropagation()">
             <h3 id="infoTitle" style="color:#ff9f00; margin-bottom:10px;"></h3>
@@ -127,7 +131,7 @@
     function renderMenu(items) {
         const container = document.getElementById('menuContainer');
         if(!items || items.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#777; margin-top:20px;">عذراً، لا توجد أصناف.</p>';
+            container.innerHTML = '<p style="text-align:center; color:#777; margin-top:20px;">عذراً، لا توجد أصناف مطابقة.</p>';
             return;
         }
 
@@ -232,26 +236,40 @@
         document.getElementById('infoModal').style.display = 'flex';
     }
 
+    function showMoreMenu() {
+        document.getElementById('infoTitle').innerText = "ℹ️ عن مطعم MIM89";
+        document.getElementById('infoText').innerText = "مطعم متخصص بتقديم أشهى وجبات الفاست فود والشاورما الطازجة. للطلب والاستفسار تواصل معنا مباشرة عبر سلة الطلبات.";
+        document.getElementById('infoModal').style.display = 'flex';
+    }
+
     function closeInfoModal() { document.getElementById('infoModal').style.display = 'none'; }
 
-    function sendOrderToWhatsApp() {
+    // إرسال الطلب بشكل مباشر للكاشير (ليظهر له تنبيه فوري)
+    function submitOrderToCashier() {
         if(cart.length === 0) return alert("السلة فارغة!");
         const name = document.getElementById('custName').value.trim();
         const phone = document.getElementById('custPhone').value.trim();
         const address = document.getElementById('custAddress').value.trim();
         if(!name || !phone || !address) return alert("يرجى إكمال اسم الزبون، الهاتف، والعنوان!");
 
-        let text = `🔥 *طلب جديد من تطبيق MIM89* 🔥\n\n👤 الزبون: ${name}\n📞 الهاتف: ${phone}\n📍 العنوان: ${address}\n\n🛒 *الطلبات:*`;
-        let total = 0;
-        cart.forEach(i => {
-            text += `\n- ${i.name} (×${i.qty}) : ${(i.price * i.qty).toLocaleString()} د.ع`;
-            total += i.price * i.qty;
-        });
-        text += `\n\n💰 *الإجمالي الكلي:* ${total.toLocaleString()} د.ع`;
+        const orderData = {
+            id: Date.now(),
+            customerName: name,
+            phone: phone,
+            address: address,
+            notes: document.getElementById('custNotes').value,
+            items: cart,
+            type: 'توصيل',
+            time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
+        };
 
-        localStorage.setItem('mim89_online_order', JSON.stringify({ customerName: name, phone, address, notes: document.getElementById('custNotes').value, items: cart, type: 'توصيل' }));
-        window.open(`https://wa.me/9647800000000?text=${encodeURIComponent(text)}`, '_blank');
-        cart = []; updateCartUI(); closeCartModal();
+        // حفظ الطلب في الذاكرة المشتركة ليصل مباشرة لشاشة الكاشير
+        localStorage.setItem('mim89_online_order', JSON.stringify(orderData));
+        
+        alert("✅ تم إرسال طلبك بنجاح إلى الكاشير والمطعم وجاري تجهيزه!");
+        cart = [];
+        updateCartUI();
+        closeCartModal();
     }
 
     window.onload = () => {
