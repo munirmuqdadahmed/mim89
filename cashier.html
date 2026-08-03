@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 - نظام الكاشير الآمن والمحمي</title>
+    <title>MIM89 - نظام الكاشير والإدارة الشاملة</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -13,7 +13,7 @@
         header { background: #1a1a1a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; position: relative; }
         .logo-area { color: #ff9f00; font-size: 18px; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         
-        .dropdown-menu { display: none; position: absolute; top: 50px; right: 20px; background: #222; border: 1px solid #444; border-radius: 10px; width: 220px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .dropdown-menu { display: none; position: absolute; top: 50px; right: 20px; background: #222; border: 1px solid #444; border-radius: 10px; width: 230px; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .dropdown-menu a { display: block; padding: 12px 15px; color: #fff; text-decoration: none; border-bottom: 1px solid #333; font-size: 13px; transition: 0.2s; }
         .dropdown-menu a:hover { background: #ff9f00; color: #000; font-weight: bold; }
         .dropdown-menu a:last-child { border-bottom: none; }
@@ -59,11 +59,11 @@
         .incoming-alert { background: #25d366; color: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; text-align: center; font-size: 13px; cursor: pointer; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* نافذة إدخال الرمز السري والنوافذ المنبثقة */
+        /* النوافذ واللوحات */
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 450px; padding: 20px; color: #fff; font-family: 'Cairo'; }
+        .modal-content { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; width: 90%; max-width: 500px; padding: 20px; color: #fff; font-family: 'Cairo'; max-height: 90vh; overflow-y: auto; }
         .modal-content h3 { color: #ff9f00; margin-bottom: 15px; text-align: center; }
-        .modal-content input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-family: 'Cairo'; text-align: center; font-size: 16px; }
+        .modal-content input, .modal-content select { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-family: 'Cairo'; font-size: 14px; }
         .modal-content label { font-size: 12px; color: #aaa; display: block; margin-bottom: 4px; }
 
         .inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
@@ -89,11 +89,11 @@
         </div>
 
         <div id="navDropdown" class="dropdown-menu">
-            <a href="javascript:void(0);" onclick="requestPin('cashier1')"><i class="fas fa-cash-register"></i> تبديل إلى: الكاشير الأول</a>
-            <a href="javascript:void(0);" onclick="requestPin('cashier2')"><i class="fas fa-cash-register"></i> تبديل إلى: الكاشير الثاني</a>
-            <a href="javascript:void(0);" onclick="requestPin('admin')"><i class="fas fa-cog"></i> لوحة الإدارة</a>
-            <a href="javascript:void(0);" onclick="requestPin('report')"><i class="fas fa-chart-pie"></i> تقارير وجرد الصندوق</a>
-            <a href="javascript:void(0);" onclick="requestPin('inventory')"><i class="fas fa-boxes"></i> إدارة وجرد المخزن</a>
+            <a href="javascript:void(0);" onclick="requestPin('cashier1')"><i class="fas fa-cash-register"></i> تبديل إلى: <span id="menuC1Label">الكاشير الأول</span></a>
+            <a href="javascript:void(0);" onclick="requestPin('cashier2')"><i class="fas fa-cash-register"></i> تبديل إلى: <span id="menuC2Label">الكاشير الثاني</span></a>
+            <a href="javascript:void(0);" onclick="requestPin('inventory')"><i class="fas fa-boxes"></i> إدارة المخزن (مسؤول المخزن)</a>
+            <a href="javascript:void(0);" onclick="requestPin('report')"><i class="fas fa-chart-pie"></i> جرد وتقارير الصندوق</a>
+            <a href="javascript:void(0);" onclick="requestPin('admin')"><i class="fas fa-cogs"></i> لوحة الإدارة الشاملة</a>
         </div>
     </header>
 
@@ -153,7 +153,7 @@
     <div id="pinModal" class="custom-modal">
         <div class="modal-content">
             <h3 id="pinModalTitle">🔐 مطلوب الرمز السري</h3>
-            <label id="pinLabel">أدخل الرمز السري للوصول:</label>
+            <label id="pinLabel">أدخل الرمز السري:</label>
             <input type="password" id="pinInput" placeholder="****" autofocus>
             <button class="pos-btn print" onclick="verifyPin()">تحقق ودخول</button>
             <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('pinModal')">إلغاء</button>
@@ -163,10 +163,10 @@
     <!-- نافذة تقارير الصندوق -->
     <div id="reportModal" class="custom-modal">
         <div class="modal-content" style="max-width:550px;">
-            <h3>📊 تقارير وجرد الصندوق</h3>
-            <div class="date-filter-box" style="display:flex; gap:10px; margin-bottom:15px;">
-                <div style="flex:1;"><label>من تاريخ:</label><input type="date" id="startDate" style="width:100%; background:#222; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
-                <div style="flex:1;"><label>إلى تاريخ:</label><input type="date" id="endDate" style="width:100%; background:#222; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
+            <h3>📊 جرد وتقارير الصندوق</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;"><label>من تاريخ:</label><input type="date" id="startDate"></div>
+                <div style="flex:1;"><label>إلى تاريخ:</label><input type="date" id="endDate"></div>
             </div>
             <button class="pos-btn print" style="margin-bottom:12px;" onclick="calculateReport()">عرض التقرير</button>
             <div class="report-results" id="reportResultsBox" style="background:#222; padding:10px; border-radius:8px; font-size:13px; margin-bottom:15px;">اختر التواريخ...</div>
@@ -174,18 +174,18 @@
         </div>
     </div>
 
-    <!-- نافذة إدارة وجرد المخزن -->
+    <!-- نافذة إدارة المخزن (خاصة بمسؤول المخزن) -->
     <div id="inventoryModal" class="custom-modal">
         <div class="modal-content" style="max-width:650px;">
             <h3>📦 إدارة وجرد المخزن</h3>
             <div style="background:#222; padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:8px; align-items:flex-end;">
-                <div style="flex:1;"><label style="font-size:11px; color:#aaa;">اسم المادة:</label><input type="text" id="newItemName" placeholder="مثال: صدور دجاج (كغ)" style="width:100%; background:#111; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
-                <div style="flex:0.5;"><label style="font-size:11px; color:#aaa;">الرصيد:</label><input type="number" id="newItemStock" placeholder="0" style="width:100%; background:#111; color:#fff; padding:6px; border:1px solid #444; border-radius:6px;"></div>
-                <div><button class="action-btn" style="padding:7px; background:#ff9f00; color:#000; font-weight:bold;" onclick="addNewInventoryItem()">+ إضافة</button></div>
+                <div style="flex:1;"><label style="font-size:11px; color:#aaa;">اسم المادة:</label><input type="text" id="newItemName" placeholder="مثال: صدور دجاج (كغ)"></div>
+                <div style="flex:0.5;"><label style="font-size:11px; color:#aaa;">الرصيد:</label><input type="number" id="newItemStock" placeholder="0"></div>
+                <div><button class="action-btn" style="padding:10px; background:#ff9f00; color:#000; font-weight:bold;" onclick="addNewInventoryItem()">+ إضافة مادة</button></div>
             </div>
             <div style="max-height: 250px; overflow-y: auto;">
                 <table class="inv-table" id="inventoryTable">
-                    <thead><tr><th>المادة</th><th>الرصيد</th><th>تحديث</th><th>حذف</th></tr></thead>
+                    <thead><tr><th>المادة الأولية</th><th>الرصيد الحالي</th><th>تحديث الرصيد</th><th>حذف</th></tr></thead>
                     <tbody id="inventoryTableBody"></tbody>
                 </table>
             </div>
@@ -193,24 +193,37 @@
         </div>
     </div>
 
-    <!-- لوحة الإدارة وتغيير الرموز السرية -->
+    <!-- لوحة الإدارة الشاملة (تعديل أسماء الكاشير، الرموز، وكل شيء) -->
     <div id="adminModal" class="custom-modal">
-        <div class="modal-content" style="max-width:450px;">
-            <h3>⚙️ لوحة الإدارة وتغيير الرموز السرية</h3>
-            <label>رمز الكاشير الأول:</label>
-            <input type="text" id="adminPinC1">
-            <label>رمز الكاشير الثاني:</label>
-            <input type="text" id="adminPinC2">
-            <label>رمز المخزن:</label>
-            <input type="text" id="adminPinInv">
-            <label>رمز الإدارة:</label>
-            <input type="text" id="adminPinAdm">
-            <button class="pos-btn print" style="margin-top:10px;" onclick="saveNewPins()">حفظ التغييرات</button>
+        <div class="modal-content" style="max-width:480px;">
+            <h3>⚙️ لوحة الإدارة الشاملة للنظام</h3>
+            
+            <fieldset style="border:1px solid #444; padding:10px; border-radius:8px; margin-bottom:12px;">
+                <legend style="color:#ff9f00; font-size:12px; padding:0 5px;">👤 بيانات ورموز الكاشير</legend>
+                <label>اسم الكاشير الأول:</label>
+                <input type="text" id="adminNameC1">
+                <label>رمز الكاشير الأول:</label>
+                <input type="text" id="adminPinC1">
+                <label>اسم الكاشير الثاني:</label>
+                <input type="text" id="adminNameC2">
+                <label>رمز الكاشير الثاني:</label>
+                <input type="text" id="adminPinC2">
+            </fieldset>
+
+            <fieldset style="border:1px solid #444; padding:10px; border-radius:8px; margin-bottom:12px;">
+                <legend style="color:#ff9f00; font-size:12px; padding:0 5px;">📦 أمان المخزن والأعضاء</legend>
+                <label>رمز دخول المخزن (مسؤول المخزن):</label>
+                <input type="text" id="adminPinInv">
+                <label>رمز لوحة الإدارة (المدير العام):</label>
+                <input type="text" id="adminPinAdm">
+            </fieldset>
+
+            <button class="pos-btn print" onclick="saveAdminSettings()">حفظ التعديلات والتحديثات</button>
             <button class="pos-btn" style="background:#444; margin-top:8px;" onclick="closeModal('adminModal')">إغلاق</button>
         </div>
     </div>
 
-    <!-- طباعة الزبون والمطبخ -->
+    <!-- الطباعة -->
     <div id="customerReceipt" class="print-area" style="display:none; text-align:right;">
         <h2 style="text-align:center; margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
         <p style="text-align:center; font-size:12px; font-weight:bold; margin:3px 0;">[ <span id="c_ordType">صالة</span> ] - طلب رقم: <span id="c_ordNum">1</span></p>
@@ -235,18 +248,30 @@
     </div>
 
 <script>
-    // تهيئة الرموز السرية الافتراضية في النظام (يمكن تغييرها لاحقاً)
-    if (!localStorage.getItem('mim89_pins')) {
-        localStorage.setItem('mim89_pins', JSON.stringify({
-            cashier1: "1111",
-            cashier2: "2222",
-            inventory: "3333",
-            admin: "9999"
+    // الإعدادات الافتراضية للنظام والرموز والأسماء
+    if (!localStorage.getItem('mim89_settings')) {
+        localStorage.setItem('mim89_settings', JSON.stringify({
+            c1Name: "الكاشير الأول",
+            c1Pin: "1111",
+            c2Name: "الكاشير الثاني",
+            c2Pin: "2222",
+            invPin: "3333",
+            admPin: "9999"
         }));
     }
 
-    let currentCashier = "الكاشير الأول";
+    let settings = JSON.parse(localStorage.getItem('mim89_settings'));
+    let currentCashier = settings.c1Name;
     let targetAction = "";
+
+    updateHeaderUI();
+
+    function updateHeaderUI() {
+        settings = JSON.parse(localStorage.getItem('mim89_settings'));
+        document.getElementById('activeCashierName').innerText = currentCashier;
+        document.getElementById('menuC1Label').innerText = settings.c1Name;
+        document.getElementById('menuC2Label').innerText = settings.c2Name;
+    }
 
     function requestPin(action) {
         targetAction = action;
@@ -258,43 +283,34 @@
 
     function verifyPin() {
         const pin = document.getElementById('pinInput').value;
-        const pins = JSON.parse(localStorage.getItem('mim89_pins'));
+        settings = JSON.parse(localStorage.getItem('mim89_settings'));
 
-        let authorized = false;
-        if (targetAction === 'cashier1' && pin === pins.cashier1) {
-            currentCashier = "الكاشير الأول";
-            authorized = true;
-        } else if (targetAction === 'cashier2' && pin === pins.cashier2) {
-            currentCashier = "الكاشير الثاني";
-            authorized = true;
-        } else if (targetAction === 'inventory' && pin === pins.inventory) {
-            authorized = true;
+        if (targetAction === 'cashier1' && pin === settings.c1Pin) {
+            currentCashier = settings.c1Name;
+            updateHeaderUI();
+            closeModal('pinModal');
+            alert(`✅ تم التبديل إلى: ${currentCashier}`);
+        } else if (targetAction === 'cashier2' && pin === settings.c2Pin) {
+            currentCashier = settings.c2Name;
+            updateHeaderUI();
+            closeModal('pinModal');
+            alert(`✅ تم التبديل إلى: ${currentCashier}`);
+        } else if (targetAction === 'inventory' && pin === settings.invPin) {
             closeModal('pinModal');
             openInventoryModal();
-            return;
-        } else if (targetAction === 'report' && pin === pins.admin) {
-            authorized = true;
+        } else if (targetAction === 'report' && pin === settings.admPin) {
             closeModal('pinModal');
             openReportModal();
-            return;
-        } else if (targetAction === 'admin' && pin === pins.admin) {
-            authorized = true;
+        } else if (targetAction === 'admin' && pin === settings.admPin) {
             closeModal('pinModal');
             openAdminModal();
-            return;
-        }
-
-        if (authorized) {
-            document.getElementById('activeCashierName').innerText = currentCashier;
-            closeModal('pinModal');
-            alert(`✅ تم التحويل بنجاح إلى: ${currentCashier}`);
         } else {
             alert("❌ الرمز السري غير صحيح!");
         }
     }
 
     let db;
-    const request = indexedDB.open("MIM89_Secure_DB", 4);
+    const request = indexedDB.open("MIM89_Secure_DB", 5);
     request.onsuccess = function(event) {
         db = event.target.result;
         loadPosMenu();
@@ -570,22 +586,28 @@
     }
 
     function openAdminModal() {
-        const pins = JSON.parse(localStorage.getItem('mim89_pins'));
-        document.getElementById('adminPinC1').value = pins.cashier1;
-        document.getElementById('adminPinC2').value = pins.cashier2;
-        document.getElementById('adminPinInv').value = pins.inventory;
-        document.getElementById('adminPinAdm').value = pins.admin;
+        settings = JSON.parse(localStorage.getItem('mim89_settings'));
+        document.getElementById('adminNameC1').value = settings.c1Name;
+        document.getElementById('adminPinC1').value = settings.c1Pin;
+        document.getElementById('adminNameC2').value = settings.c2Name;
+        document.getElementById('adminPinC2').value = settings.c2Pin;
+        document.getElementById('adminPinInv').value = settings.invPin;
+        document.getElementById('adminPinAdm').value = settings.admPin;
         document.getElementById('adminModal').style.display = 'flex';
     }
 
-    function saveNewPins() {
-        localStorage.setItem('mim89_pins', JSON.stringify({
-            cashier1: document.getElementById('adminPinC1').value,
-            cashier2: document.getElementById('adminPinC2').value,
-            inventory: document.getElementById('adminPinInv').value,
-            admin: document.getElementById('adminPinAdm').value
-        }));
-        alert("✅ تم حفظ الرموز السرية بنجاح");
+    function saveAdminSettings() {
+        const newSettings = {
+            c1Name: document.getElementById('adminNameC1').value.trim() || "الكاشير الأول",
+            c1Pin: document.getElementById('adminPinC1').value.trim() || "1111",
+            c2Name: document.getElementById('adminNameC2').value.trim() || "الكاشير الثاني",
+            c2Pin: document.getElementById('adminPinC2').value.trim() || "2222",
+            invPin: document.getElementById('adminPinInv').value.trim() || "3333",
+            admPin: document.getElementById('adminPinAdm').value.trim() || "9999"
+        };
+        localStorage.setItem('mim89_settings', JSON.stringify(newSettings));
+        updateHeaderUI();
+        alert("✅ تم حفظ الإعدادات وتحديث الأسماء والرموز بنجاح!");
         closeModal('adminModal');
     }
 
