@@ -16,123 +16,49 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
-        .top-nav {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .logo {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .logo h1 {
-            font-size: 26px;
-            font-weight: 900;
-            color: #ff9f00;
-            line-height: 1;
-        }
-        .logo span {
-            font-size: 11px;
-            color: #ccc;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        .hero-content h2, .hero-content p {
-            display: none;
-        }
-        .hero-content {
-            padding: 5px 0;
-            text-align: center;
-        }
+        .top-nav { display: flex; justify-content: center; align-items: center; }
+        .logo { text-align: center; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .logo h1 { font-size: 26px; font-weight: 900; color: #ff9f00; line-height: 1; }
+        .logo span { font-size: 11px; color: #ccc; font-weight: bold; margin-top: 5px; }
+        .hero-content h2, .hero-content p { display: none; }
+        .hero-content { padding: 5px 0; text-align: center; }
         .bottom-nav .center-cart-btn {
-            background: #ff9f00 !important;
-            color: #000 !important;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: -15px;
-            border: 3px solid #111;
-            position: relative;
+            background: #ff9f00 !important; color: #000 !important; width: 45px; height: 45px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-top: -15px; border: 3px solid #111; position: relative;
         }
-        .bottom-nav .center-cart-btn i {
-            font-size: 18px;
-        }
+        .bottom-nav .center-cart-btn i { font-size: 18px; }
         .bottom-nav .center-cart-btn span {
-            position: absolute;
-            top: -3px;
-            right: -3px;
-            background: #e63946;
-            color: #fff;
-            font-size: 9px;
-            width: 17px;
-            height: 17px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
+            position: absolute; top: -3px; right: -3px; background: #e63946; color: #fff;
+            font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-weight: bold;
         }
         #orderAlertModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;
         }
         .alert-box {
-            background: #1a1a1a;
-            border: 2px solid #ff9f00;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            width: 85%;
-            max-width: 350px;
-            color: #fff;
+            background: #1a1a1a; border: 2px solid #ff9f00; padding: 25px; border-radius: 15px;
+            text-align: center; width: 85%; max-width: 350px; color: #fff;
         }
-        .alert-box h3 {
-            color: #ff9f00;
-            margin-bottom: 10px;
-            font-size: 20px;
-        }
-        .alert-box p {
-            font-size: 13px;
-            color: #ccc;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
+        .alert-box h3 { color: #ff9f00; margin-bottom: 10px; font-size: 20px; }
+        .alert-box p { font-size: 13px; color: #ccc; margin-bottom: 20px; line-height: 1.5; }
         .alert-box button {
-            background: #ff9f00;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
+            background: #ff9f00; color: #000; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Loader -->
     <div id="loader">
         <div class="spinner"></div>
         <h2>MIM89</h2>
     </div>
 
-    <!-- Overlay -->
     <div id="menuOverlay" class="menu-overlay"></div>
 
-    <!-- Side Menu -->
     <div class="side-menu" id="sideMenu">
         <a href="tel:07750008630">📞 07750008630</a>
         <a href="tel:07850008630">📞 07850008630</a>
@@ -155,53 +81,25 @@
         </div>
     </div>
 
-    <!-- Header & Main Nav -->
     <header class="hero">
         <div class="overlay"></div>
-
         <nav class="top-nav">
             <div class="logo">
                 <h1>MIM89 FAST FOOD</h1>
                 <span>كل الطعم... في مكان واحد</span>
             </div>
-            <ul style="display:none;">
-                <li><a href="#">الرئيسية</a></li>
-                <li><a href="#offers">العروض 🔥</a></li>
-                <li><a href="#burger">البركر</a></li>
-                <li><a href="#fajita">الفاهيتا</a></li>
-                <li><a href="#shawarma">الشاورما</a></li>
-                <li><a href="#rizo">الريزو</a></li>
-                <li><a href="#kentucky">الكنتاكي</a></li>
-                <li><a href="#appetizers">المقبلات والفنكر</a></li>
-                <li><a href="#drinks">المشروبات</a></li>
-                <li><a href="#contact">تواصل معنا</a></li>
-            </ul>
         </nav>
-
         <div class="hero-content"></div>
 
-        <!-- الشريط السفلي -->
         <nav class="bottom-nav">
-            <a href="#">
-                <i class="fas fa-house"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="#offers">
-                <i class="fas fa-fire"></i>
-                <span>العروض</span>
-            </a>
+            <a href="#"><i class="fas fa-house"></i><span>الرئيسية</span></a>
+            <a href="#offers"><i class="fas fa-fire"></i><span>العروض</span></a>
             <a href="javascript:void(0);" id="cartBtn" class="center-cart-btn">
                 <i class="fas fa-shopping-cart"></i>
                 <span id="cartCount">0</span>
             </a>
-            <a href="#contact">
-                <i class="fas fa-phone-volume"></i>
-                <span>اتصل بنا</span>
-            </a>
-            <a href="javascript:void(0);" id="menuBtn">
-                <i class="fas fa-bars"></i>
-                <span>المزيد</span>
-            </a>
+            <a href="#contact"><i class="fas fa-phone-volume"></i><span>اتصل بنا</span></a>
+            <a href="javascript:void(0);" id="menuBtn"><i class="fas fa-bars"></i><span>المزيد</span></a>
         </nav>
     </header>
 
@@ -209,9 +107,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل بجميع الوجبات والأقسام -->
     <div id="main-menu-container">
-        <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
             <h2>🔥 العروض الخاصة واليومية</h2>
             <div class="card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="5500">
@@ -224,19 +120,8 @@
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
                 </div>
             </div>
-            <div class="card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="8500">
-                <span class="badge">الأكثر طلباً</span>
-                <img src="https://foodish-api.com/images/samosa/samosa1.jpg" alt="عرض الشاورما">
-                <h3>🌯 عرض ميكس الشاورما</h3>
-                <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
-                <div class="card-price-row">
-                    <span>8,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
         </section>
 
-        <!-- 1. قسم البركر -->
         <section id="burger" class="menu-section">
             <h2>🍔 قسم البركر</h2>
             <div class="card" data-name="بركر كلاسيك (لحم)" data-price="4000">
@@ -248,32 +133,8 @@
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
                 </div>
             </div>
-            <div class="card" data-name="بركر الجبن (لحم)" data-price="5000">
-                <img src="https://foodish-api.com/images/burger/burger3.jpg" alt="بركر الجبن">
-                <h3>بركر الجبن (لحم)</h3>
-                <p>شريحة لحم غنية بجبنة الشيدر الذائبة مع فنكر</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
         </section>
 
-        <!-- 2. قسم الفاهيتا -->
-        <section id="fajita" class="menu-section">
-            <h2>🌮 قسم الفاهيتا</h2>
-            <div class="card" data-name="سندويش فاهيتا دجاج" data-price="5000">
-                <img src="https://foodish-api.com/images/pasta/pasta1.jpg" alt="فاهيتا دجاج">
-                <h3>سندويش فاهيتا دجاج</h3>
-                <p>شرائح دجاج متبلة ومقلية مع الفلفل الألوان والبصل والجبن</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. قسم الشاورما -->
         <section id="shawarma" class="menu-section">
             <h2>🌯 قسم الشاورما</h2>
             <div class="card" data-name="شاورما صاج دجاج (عادي)" data-price="2500">
@@ -286,79 +147,16 @@
                 </div>
             </div>
         </section>
-
-        <!-- 4. قسم الريزو -->
-        <section id="rizo" class="menu-section">
-            <h2>🍚 قسم الريزو</h2>
-            <div class="card" data-name="ريزو كلاسيك" data-price="5000">
-                <img src="https://foodish-api.com/images/rice/rice1.jpg" alt="ريزو كلاسيك">
-                <h3>ريزو كلاسيك</h3>
-                <p>أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5. قسم الكنتاكي -->
-        <section id="kentucky" class="menu-section">
-            <h2>🍗 قسم الكنتاكي</h2>
-            <div class="card" data-name="كنتاكي قطعتين" data-price="5000">
-                <img src="https://foodish-api.com/images/butter-chicken/butter-chicken1.jpg" alt="كنتاكي قطعتين">
-                <h3>كنتاكي قطعتين</h3>
-                <p>قطعتين دجاج مقرمش + بطاطا وثومية</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. المقبلات -->
-        <section id="appetizers" class="menu-section">
-            <h2>🍟 قسم الفنكر والمقبلات والإضافات</h2>
-            <div class="card" data-name="قدح فنكر كلاسيك" data-price="2500">
-                <img src="https://foodish-api.com/images/pasta/pasta3.jpg" alt="فنكر كلاسيك">
-                <h3>قدح فنكر كلاسيك</h3>
-                <p>بطاطا مقرمشة ذهبية مع جبن وبيبسي</p>
-                <div class="card-price-row">
-                    <span>2,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7. المشروبات -->
-        <section id="drinks" class="menu-section">
-            <h2>🥤 قسم المشروبات</h2>
-            <div class="card" data-name="بيبسي" data-price="500">
-                <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" alt="بيبسي">
-                <h3>بيبسي</h3>
-                <p>مشروب غازي بارد</p>
-                <div class="card-price-row">
-                    <span>500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
     </div>
 
-    <!-- Contact Section -->
     <section id="contact">
         <h2>📍 تواصل معنا وخدمة التوصيل</h2>
         <div class="contact-box">
             <a href="tel:07750008630">📞 07750008630</a>
-            <a href="tel:07850008630">📞 07850008630</a>
-            <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
-            <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
             <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
-            <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 Instagram</a>
-            <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 Facebook</a>
         </div>
     </section>
 
-    <!-- Cart Modal Box -->
     <div id="cartModal" class="cart-modal">
         <div class="cart-content">
             <div class="cart-header">
@@ -384,8 +182,8 @@
                         </div>
 
                         <input type="text" id="custName" placeholder="الاسم الكامل" required>
-                        <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required>
-                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة (مثال: القاهرة...)" required>
+                        <input type="tel" id="custPhone" placeholder="رقم الهاتف" required>
+                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة" required>
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
@@ -397,11 +195,10 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة لتنبيه الزبون بنجاح الإرسال للكاشير -->
     <div id="orderAlertModal">
         <div class="alert-box">
             <h3>🚀 تم إرسال طلبك بنجاح!</h3>
-            <p>تم إرسال تفاصيل طلبك مباشرة إلى شاشة الكاشير والمطعم، وجاري تجهيزه الآن.</p>
+            <p>تم إرسال تفاصيل طلبك مباشرة إلى شاشة الكاشير والمطعم عبر الإنترنت.</p>
             <button onclick="closeOrderAlert()">حسناً</button>
         </div>
     </div>
@@ -410,11 +207,27 @@
         <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
     </footer>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
     <script src="style.js?v=400.0"></script>
     <script src="script.js?v=400.0"></script>
 
     <script>
-        // ربط زر الإرسال المباشر للكاشير مع السلة الأصلية
+        // تهيئة Firebase بقاعدتك السحابية
+        const firebaseConfig = {
+          apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
+          authDomain: "mim89-ff938.firebaseapp.com",
+          projectId: "mim89-ff938",
+          storageBucket: "mim89-ff938.firebasestorage.app",
+          messagingSenderId: "8207632733",
+          appId: "1:8207632733:web:49cd53fe5dbf26216b80b4",
+          measurementId: "G-D9GK0G77ZD"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         document.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
@@ -449,76 +262,29 @@
                         items: cartItems,
                         total: totalAmount.toLocaleString() + ' د.ع',
                         type: document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
-                        time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
+                        time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     };
 
-                    let existingOrders = JSON.parse(localStorage.getItem('mim89_pending_orders')) || [];
-                    existingOrders.push(orderObj);
-                    localStorage.setItem('mim89_pending_orders', JSON.stringify(existingOrders));
+                    // إرسال الطلب مباشرة إلى قاعدة بيانات السحاب (Firestore)
+                    db.collection("mim89_orders").add(orderObj)
+                    .then(() => {
+                        window.cart = [];
+                        if (typeof window.updateCartUI === 'function') window.updateCartUI();
 
-                    window.cart = [];
-                    if (typeof window.updateCartUI === 'function') {
-                        window.updateCartUI();
-                    }
+                        const cartModal = document.getElementById('cartModal');
+                        if (cartModal) {
+                            cartModal.style.display = 'none';
+                            document.body.classList.remove('cart-open');
+                        }
 
-                    const cartModal = document.getElementById('cartModal');
-                    if (cartModal) {
-                        cartModal.style.display = 'none';
-                        document.body.classList.remove('cart-open');
-                    }
-
-                    const alertModal = document.getElementById('orderAlertModal');
-                    if (alertModal) alertModal.style.display = 'flex';
+                        document.getElementById('orderAlertModal').style.display = 'flex';
+                    })
+                    .catch((error) => {
+                        alert("حدث خطأ أثناء إرسال الطلب، تأكد من اتصال الإنترنت.");
+                    });
                 });
             }
-
-            // تحديث الصور والأسعار من اللوحة
-            const savedData = localStorage.getItem('mim89_full_menu_data');
-            if (savedData) {
-                try {
-                    const menuData = JSON.parse(savedData);
-                    if (menuData && menuData.length > 0) {
-                        menuData.forEach(item => {
-                            const cleanPrice = parseInt(item.price.toString().replace(/[^0-9]/g, '')) || 0;
-                            const cards = document.querySelectorAll('.card');
-                            cards.forEach(card => {
-                                const nameEl = card.querySelector('h3');
-                                if (nameEl && nameEl.innerText.trim() === item.name.trim()) {
-                                    const imgEl = card.querySelector('img');
-                                    const priceEl = card.querySelector('.card-price-row span');
-                                    const descEl = card.querySelector('p');
-
-                                    if (imgEl && item.img) imgEl.src = item.img;
-                                    if (priceEl) priceEl.innerText = cleanPrice.toLocaleString() + ' د.ع';
-                                    if (descEl && item.desc) descEl.innerText = item.desc;
-                                    card.setAttribute('data-price', cleanPrice);
-                                }
-                            });
-                        });
-                    }
-                } catch(e) {
-                    console.error("Error loading menu data");
-                }
-            }
-
-            // التنقل السلس للقائمة الجانبية
-            document.querySelectorAll('.close-menu-link').forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const targetId = this.getAttribute('data-target');
-                    
-                    document.getElementById('sideMenu').classList.remove('active');
-                    document.getElementById('menuOverlay').classList.remove('active');
-                    document.body.classList.remove('menu-open');
-
-                    const targetEl = document.getElementById(targetId);
-                    if (targetEl) {
-                        setTimeout(() => {
-                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100);
-                    }
-                });
-            });
         });
 
         function closeOrderAlert() {
@@ -526,5 +292,4 @@
         }
     </script>
 </body>
-
 </html>
