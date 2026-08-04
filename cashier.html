@@ -13,20 +13,18 @@
 </head>
 <body onload="initCashierPage()">
 
-    <!-- نافذة تسجيل دخول الكاشير -->
+    <!-- نافذة تسجيل دخول الكاشير (برمز السر فقط) -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <div class="brand-badge">MIM89</div>
-            <h2 style="color:var(--gold-primary); margin:10px 0;"><i class="fa-solid fa-cash-register"></i> تسجيل دخول الكاشير</h2>
-            <div class="form-group">
-                <label>اختر الكاشير المسجل:</label>
-                <select id="cashierSelect" class="gold-input"></select>
+            <h2 style="color:var(--gold-primary); margin:15px 0;"><i class="fa-solid fa-cash-register"></i> تسجيل دخول الكاشير</h2>
+            
+            <div class="form-group" style="margin-bottom:15px;">
+                <label style="color:var(--gold-bright); font-size:0.9rem;">أدخل الرمز السري الخاص بك:</label>
+                <input type="password" id="cashierPassInput" class="gold-input" placeholder="••••" style="text-align:center; font-size:1.2rem; letter-spacing:4px;" onkeypress="if(event.key==='Enter') loginCashier()">
             </div>
-            <div class="form-group">
-                <label>كلمة المرور:</label>
-                <input type="password" id="cashierPassInput" class="gold-input" placeholder="أدخل كلمة السر">
-            </div>
-            <button onclick="loginCashier()" class="gold-btn btn-block">دخول الشاشة</button>
+            
+            <button onclick="loginCashier()" class="gold-btn btn-block" style="padding:12px;">دخول الشاشة</button>
             <p id="authError" class="error-msg"></p>
         </div>
     </div>
@@ -38,7 +36,7 @@
         <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px;">
             <div>
                 <h1 style="color:var(--gold-primary); font-size:1.5rem;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
-                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.85rem;"></span>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.95rem;"></span>
             </div>
             <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 12px; font-size:0.85rem;">خروج</button>
         </header>
@@ -57,27 +55,24 @@
         <div id="posDirectTab" class="tab-content active">
             <div class="pos-responsive-grid">
                 
-                <!-- الجانب الأيمن: تصفح أصناف المينيو بالأحجام المتناسقة -->
+                <!-- الجانب الأيمن: تصفح أصناف المينيو -->
                 <div class="card" style="padding:12px;">
-                    <!-- أشرطة البحث والأقسام -->
                     <div style="margin-bottom:10px;">
                         <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 بحث سريع عن وجبة...">
                     </div>
                     
                     <div id="posCategoriesBar" class="categories-container" style="margin-bottom:12px; padding:0;"></div>
-
-                    <!-- شبكة أزرار الوجبات المتناسقة -->
                     <div id="posProductsGrid" class="pos-items-grid"></div>
                 </div>
 
-                <!-- الجانب الأيسر: فاتورة الطلب المباشر بأزرار اختيار فورية -->
+                <!-- الجانب الأيسر: فاتورة الطلب المباشر -->
                 <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
                     <div>
                         <h3 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
                             <i class="fa-solid fa-receipt"></i> الفاتورة الحالية
                         </h3>
 
-                        <!-- 1. أزرار نوع الخدمة المباشرة (صالة / سفري / توصيل) -->
+                        <!-- نوع الخدمة -->
                         <div class="form-group" style="margin-bottom:10px;">
                             <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">نوع الخدمة:</label>
                             <div class="toggle-btn-group" id="posOrderTypeGroup">
@@ -87,7 +82,7 @@
                             </div>
                         </div>
 
-                        <!-- 2. أزرار طريقة الدفع المباشرة (كاش / فيزا) -->
+                        <!-- طريقة الدفع -->
                         <div class="form-group" style="margin-bottom:10px;">
                             <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">طريقة الدفع:</label>
                             <div class="toggle-btn-group" id="posPaymentGroup">
@@ -101,13 +96,13 @@
                             <input type="text" id="posCustName" class="gold-input" style="padding:6px;" placeholder="اسم الزبون / رقم الطاولة (اختياري)">
                         </div>
 
-                        <!-- قائمة وجبات الفاتورة -->
+                        <!-- قائمة الوجبات -->
                         <div id="posCartList" style="min-height:120px; max-height:200px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>
                         </div>
                     </div>
 
-                    <!-- الحساب والإنهاء -->
+                    <!-- الحساب والطباعة -->
                     <div>
                         <div class="checkout-summary" style="margin:8px 0; padding:8px;">
                             <div class="summary-line total-line">
@@ -136,7 +131,7 @@
 
     </div>
 
-    <!-- نافذة طباعة الفاتورة -->
+    <!-- نافذة طباعة الفاتورة الرسمية -->
     <div id="receiptModal" class="modal">
         <div class="modal-content print-area" style="color:#000; background:#fff;">
             <div style="text-align:center;">
