@@ -109,8 +109,9 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل بجميع الوجبات والأقسام الأصلية -->
+    <!-- المينيو الكامل الأصلي بجميع الأقسام والوجبات -->
     <div id="main-menu-container">
+        <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
             <h2>🔥 العروض الخاصة واليومية</h2>
             <div class="card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="5500">
@@ -135,6 +136,7 @@
             </div>
         </section>
 
+        <!-- 1. قسم البركر -->
         <section id="burger" class="menu-section">
             <h2>🍔 قسم البركر</h2>
             <div class="card" data-name="بركر كلاسيك (لحم)" data-price="4000">
@@ -157,6 +159,7 @@
             </div>
         </section>
 
+        <!-- 2. قسم الفاهيتا -->
         <section id="fajita" class="menu-section">
             <h2>🌮 قسم الفاهيتا</h2>
             <div class="card" data-name="سندويش فاهيتا دجاج" data-price="5000">
@@ -170,6 +173,7 @@
             </div>
         </section>
 
+        <!-- 3. قسم الشاورما -->
         <section id="shawarma" class="menu-section">
             <h2>🌯 قسم الشاورما</h2>
             <div class="card" data-name="شاورما صاج دجاج (عادي)" data-price="2500">
@@ -183,6 +187,7 @@
             </div>
         </section>
 
+        <!-- 4. قسم الريزو -->
         <section id="rizo" class="menu-section">
             <h2>🍚 قسم الريزو</h2>
             <div class="card" data-name="ريزو كلاسيك" data-price="5000">
@@ -196,6 +201,7 @@
             </div>
         </section>
 
+        <!-- 5. قسم الكنتاكي -->
         <section id="kentucky" class="menu-section">
             <h2>🍗 قسم الكنتاكي</h2>
             <div class="card" data-name="كنتاكي قطعتين" data-price="5000">
@@ -209,6 +215,7 @@
             </div>
         </section>
 
+        <!-- 6. المقبلات -->
         <section id="appetizers" class="menu-section">
             <h2>🍟 قسم الفنكر والمقبلات والإضافات</h2>
             <div class="card" data-name="قدح فنكر كلاسيك" data-price="2500">
@@ -222,6 +229,7 @@
             </div>
         </section>
 
+        <!-- 7. المشروبات -->
         <section id="drinks" class="menu-section">
             <h2>🥤 قسم المشروبات</h2>
             <div class="card" data-name="بيبسي" data-price="500">
@@ -236,6 +244,7 @@
         </section>
     </div>
 
+    <!-- Contact Section -->
     <section id="contact">
         <h2>📍 تواصل معنا وخدمة التوصيل</h2>
         <div class="contact-box">
@@ -367,8 +376,10 @@
             });
         });
 
+        // تفعيل الزر بشكل قاطع لضمان الإرسال السحابي الفوري دون تداخل
         document.addEventListener('click', function(e) {
-            if (e.target && (e.target.id === 'sendOrderDirectBtn' || e.target.closest('#sendOrderDirectBtn'))) {
+            const btn = e.target.closest('#sendOrderDirectBtn');
+            if (btn) {
                 const name = document.getElementById('custName').value.trim();
                 const phone = document.getElementById('custPhone').value.trim();
                 const address = document.getElementById('custAddress').value.trim();
