@@ -33,7 +33,6 @@
             font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-weight: bold;
         }
-        
         #orderAlertModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;
@@ -110,7 +109,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل بجميع الأقسام والوجبات -->
+    <!-- المينيو الكامل بجميع الأقسام والأصناف الأصلية -->
     <div id="main-menu-container">
         <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
@@ -158,6 +157,15 @@
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
                 </div>
             </div>
+            <div class="card" data-name="بركر دجاج مقرمش" data-price="4500">
+                <img src="https://foodish-api.com/images/burger/burger4.jpg" alt="بركر دجاج">
+                <h3>بركر دجاج مقرمش</h3>
+                <p>صدر دجاج مقرمش مع صوص المايونيز الخاص والخس</p>
+                <div class="card-price-row">
+                    <span>4,500 د.ع</span>
+                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+                </div>
+            </div>
         </section>
 
         <!-- 2. قسم الفاهيتا -->
@@ -183,6 +191,15 @@
                 <p>خبز صاج، شاورما دجاج، ثوم، وبطاطا</p>
                 <div class="card-price-row">
                     <span>2,500 د.ع</span>
+                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+                </div>
+            </div>
+            <div class="card" data-name="وجبة شاورما عربي دبل" data-price="6000">
+                <img src="https://foodish-api.com/images/samosa/samosa1.jpg" alt="شاورما عربي دبل">
+                <h3>وجبة شاورما عربي دبل</h3>
+                <p>قطع شاورما مقطعة مع الثومية والمخلل والبطاطا</p>
+                <div class="card-price-row">
+                    <span>6,000 د.ع</span>
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
                 </div>
             </div>
@@ -214,6 +231,15 @@
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
                 </div>
             </div>
+            <div class="card" data-name="كنتاكي 4 قطع" data-price="9000">
+                <img src="https://foodish-api.com/images/butter-chicken/butter-chicken2.jpg" alt="كنتاكي 4 قطع">
+                <h3>كنتاكي 4 قطع</h3>
+                <p>4 قطع دجاج مقرمش مع بطاطا، ثومية، ومخلل</p>
+                <div class="card-price-row">
+                    <span>9,000 د.ع</span>
+                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
+                </div>
+            </div>
         </section>
 
         <!-- 6. المقبلات -->
@@ -222,7 +248,7 @@
             <div class="card" data-name="قدح فنكر كلاسيك" data-price="2500">
                 <img src="https://foodish-api.com/images/pasta/pasta3.jpg" alt="فنكر كلاسيك">
                 <h3>قدح فنكر كلاسيك</h3>
-                <p>بطاطا مقرمشة ذهبية مع جبن وبيبسي</p>
+                <p>بطاطا مقرمشة ذهبية مع صوص خاص</p>
                 <div class="card-price-row">
                     <span>2,500 د.ع</span>
                     <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
@@ -290,7 +316,7 @@
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
-                    <!-- زر إرسال الطلب السحابي المباشر -->
+                    <!-- زر إرسال الطلب السحابي (يعمل بالمعرفين معا لضمان الاستجابة) -->
                     <button id="sendOrderDirectBtn" class="send-order-btn" style="background: linear-gradient(135deg, #25d366, #128c7e); width: 100%; border: none; padding: 12px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px;">
                         <i class="fas fa-paper-plane"></i> إرسال الطلب والاستمتاع بأطيب طعم 🍔✨
                     </button>
@@ -316,12 +342,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- ملف التنسيقات الإضافي -->
+    <!-- ملف التنسيقات الخارجي -->
     <script src="style.js?v=400.0"></script>
 
-    <!-- كود المنطق والربط السحابي (مدمج بالكامل لضمان عمل السلة وزر الإرسال 100%) -->
+    <!-- الكود البرمجي الكامل والمصحح للسلة والربط السحابي -->
     <script>
-        // إعدادات فايربيس السحابية
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
           authDomain: "mim89-ff938.firebaseapp.com",
@@ -335,7 +360,7 @@
         const db = firebase.firestore();
 
         document.addEventListener("DOMContentLoaded", function () {
-            // 1. إخفاء الشاشة التمهيدية (Loader)
+            // 1. إخفاء الـ Loader
             const loader = document.getElementById("loader");
             if (loader) {
                 setTimeout(() => {
@@ -344,7 +369,7 @@
                 }, 300);
             }
 
-            // 2. القائمة الجانبية (Side Menu)
+            // 2. القائمة الجانبية
             const menuBtn = document.getElementById("menuBtn");
             const sideMenu = document.getElementById("sideMenu");
             const menuOverlay = document.getElementById("menuOverlay");
@@ -354,14 +379,29 @@
                     sideMenu.classList.add("active");
                     menuOverlay.classList.add("active");
                 });
-
                 menuOverlay.addEventListener("click", () => {
                     sideMenu.classList.remove("active");
                     menuOverlay.classList.remove("active");
                 });
             }
 
-            // 3. البحث السريع عن الأصناف
+            // التنقل السلس للأقسام من القائمة الجانبية
+            document.querySelectorAll('.close-menu-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('data-target');
+                    sideMenu.classList.remove('active');
+                    menuOverlay.classList.remove('active');
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        setTimeout(() => {
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                    }
+                });
+            });
+
+            // 3. البحث
             const searchInput = document.getElementById("search");
             if (searchInput) {
                 searchInput.addEventListener("keyup", function () {
@@ -374,7 +414,7 @@
                 });
             }
 
-            // 4. إدارة السلة وتفاصيل الوجبات
+            // 4. السلة وإدارة المنتجات
             let cart = [];
             window.cart = cart;
 
@@ -412,7 +452,6 @@
                 });
             }
 
-            // إضافة الوجبات للسلة
             document.addEventListener("click", function (e) {
                 if (e.target && (e.target.classList.contains("add-to-cart-btn") || e.target.closest(".add-to-cart-btn"))) {
                     const btn = e.target.classList.contains("add-to-cart-btn") ? e.target : e.target.closest(".add-to-cart-btn");
@@ -517,8 +556,8 @@
                 updateCartUI();
             };
 
-            // 5. زر إرسال الطلب السحابي المباشر إلى Firebase (الكاشير والمطبخ)
-            const sendBtn = document.getElementById("sendOrderDirectBtn");
+            // 5. زر إرسال الطلب المباشر والمضمون إلى Firebase
+            const sendBtn = document.getElementById("sendOrderDirectBtn") || document.getElementById("sendOrderBtn");
             if (sendBtn) {
                 sendBtn.addEventListener("click", function (e) {
                     e.preventDefault();
