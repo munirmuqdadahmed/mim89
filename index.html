@@ -331,7 +331,7 @@
     <script src="style.js?v=400.0"></script>
     <script src="script.js?v=400.0"></script>
 
-    <!-- كود الإرسال السحابي (بدون قيود، يرسل مباشرة ما يراه الزبون في شاشته) -->
+    <!-- كود الإرسال السحابي (مرحلة الالتقاط لتجاوز أي تعارض من script.js) -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -345,63 +345,57 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const sendBtn = document.getElementById('sendOrderDirectBtn');
+        // استخدام Capture Phase (true) لاعتراض الضغطة قبل وصولها إلى script.js وإيقاف تعارضاته
+        document.addEventListener('click', function(e) {
+            const sendBtn = e.target.closest('#sendOrderDirectBtn');
             if (!sendBtn) return;
 
-            // استبدال الزر لقص أي تداخل قديم من script.js
-            const cleanBtn = sendBtn.cloneNode(true);
-            sendBtn.parentNode.replaceChild(cleanBtn, sendBtn);
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
 
-            cleanBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const address = document.getElementById('custAddress').value.trim();
 
-                const name = document.getElementById('custName').value.trim();
-                const phone = document.getElementById('custPhone').value.trim();
-                const address = document.getElementById('custAddress').value.trim();
+            if (!name || !phone || !address) {
+                alert("عذراً، يرجى إكمال الاسم، رقم الهاتف، والعنوان بدقة.");
+                return;
+            }
 
-                if (!name || !phone || !address) {
-                    alert("عذراً، يرجى إكمال الاسم، رقم الهاتف، والعنوان بدقة.");
-                    return;
+            const cartContainer = document.getElementById('cartItems');
+            const itemsText = cartContainer ? cartContainer.innerText : "طلب مباشر";
+            const totalText = document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "0 د.ع";
+            const orderType = document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم';
+
+            const orderObj = {
+                id: Date.now(),
+                customerName: name,
+                phone: phone,
+                address: address,
+                notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
+                itemsSummary: itemsText,
+                total: totalText,
+                type: orderType,
+                time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("mim89_orders").add(orderObj)
+            .then(() => {
+                const cartModal = document.getElementById('cartModal');
+                if (cartModal) {
+                    cartModal.style.display = 'none';
+                    document.body.classList.remove('cart-open');
                 }
 
-                // قراءة محتويات السلة من الشاشة مباشرة دون شروط معقدة
-                const cartContainer = document.getElementById('cartItems');
-                const itemsText = cartContainer ? cartContainer.innerText : "طلب مباشر";
-                const totalText = document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "0 د.ع";
-                const orderType = document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم';
-
-                const orderObj = {
-                    id: Date.now(),
-                    customerName: name,
-                    phone: phone,
-                    address: address,
-                    notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
-                    itemsSummary: itemsText,
-                    total: totalText,
-                    type: orderType,
-                    time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                // إرسال الطلب فوراً إلى فايربيس
-                db.collection("mim89_orders").add(orderObj)
-                .then(() => {
-                    const cartModal = document.getElementById('cartModal');
-                    if (cartModal) {
-                        cartModal.style.display = 'none';
-                        document.body.classList.remove('cart-open');
-                    }
-
-                    const alertModal = document.getElementById('orderAlertModal');
-                    if (alertModal) alertModal.style.display = 'flex';
-                })
-                .catch((error) => {
-                    alert("تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
-                });
+                const alertModal = document.getElementById('orderAlertModal');
+                if (alertModal) alertModal.style.display = 'flex';
+            })
+            .catch((error) => {
+                alert("تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
             });
-        });
+        }, true);
 
         function closeOrderAlert() {
             document.getElementById('orderAlertModal').style.display = 'none';
