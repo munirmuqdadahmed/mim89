@@ -7,7 +7,7 @@
     <title>MIM89 FAST FOOD</title>
     <meta name="description" content="MIM89 Fast Food">
 
-    <link rel="stylesheet" href="style.css?v=500.0">
+    <link rel="stylesheet" href="style.css?v=600.0">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
-        /* تأمين القائمة الجانبية لضمان عدم ظهورها أبداً في أعلى الصفحة */
+        /* تأمين القائمة الجانبية ومنع خروجها للشاشة الرئيسية مطلقاً */
         .side-menu {
             position: fixed !important;
             top: 0 !important;
@@ -33,18 +33,23 @@
             overflow-y: auto !important;
         }
         .side-menu.active { right: 0 !important; }
+        
         .menu-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); z-index: 99998; display: none;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            z-index: 99998 !important;
+            display: none !important;
         }
-        .menu-overlay.active { display: block; }
+        .menu-overlay.active { display: block !important; }
 
         .top-nav { display: flex; justify-content: center; align-items: center; }
         .logo { text-align: center; display: flex; flex-direction: column; align-items: center; width: 100%; }
         .logo h1 { font-size: 26px; font-weight: 900; color: #ff9f00; line-height: 1; }
         .logo span { font-size: 11px; color: #ccc; font-weight: bold; margin-top: 5px; }
-        .hero-content h2, .hero-content p { display: none; }
-        .hero-content { padding: 5px 0; text-align: center; }
         
         .bottom-nav .center-btn {
             background: #ff9f00 !important; color: #000 !important; width: 45px; height: 45px;
@@ -57,6 +62,7 @@
             font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-weight: bold;
         }
+
         #orderAlertModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center;
@@ -81,9 +87,9 @@
         <h2>MIM89</h2>
     </div>
 
+    <!-- طبقة التعتيم والقائمة الجانبية المخفية -->
     <div class="menu-overlay" id="menuOverlay"></div>
 
-    <!-- القائمة الجانبية المخفية تماماً بالطريقة الصحيحة -->
     <div class="side-menu" id="sideMenu">
         <a href="tel:07750008630" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fas fa-phone"></i> 07750008630</a>
         <a href="tel:07850008630" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fas fa-phone"></i> 07850008630</a>
@@ -106,6 +112,7 @@
         </div>
     </div>
 
+    <!-- الهيدر العلوي وأزرار التصفح السفلي -->
     <header class="hero">
         <div class="top-nav">
             <div class="logo">
@@ -131,7 +138,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل بجميع الأقسام والأصناف -->
+    <!-- المينيو الكامل والشامل بجميع الأصناف والوجبات -->
     <div id="main-menu-container">
         <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
@@ -364,7 +371,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- الكود البرمجي الكامل والمضبوط تماماً -->
+    <!-- الكود البرمجي الموحد والآمن -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -549,7 +556,7 @@
             };
         });
 
-        // تفويض عام للأحداث لضمان عمل الأزرار والإرسال الفوري لـ Firebase
+        // تفويض عام للأحداث لإدارة السلة وزر الإرسال
         document.addEventListener("click", function (e) {
             const addBtn = e.target.closest(".add-to-cart-btn");
             if (addBtn) {
