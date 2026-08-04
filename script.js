@@ -8,25 +8,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 300);
     }
 
-    // 2. القائمة الجانبية (Side Menu) بدون أي قفل للتمرير
-const menuBtn = document.getElementById("menuBtn");
-const sideMenu = document.getElementById("sideMenu");
-const menuOverlay = document.getElementById("menuOverlay");
+    // 2. القائمة الجانبية (Side Menu)
+    const menuBtn = document.getElementById("menuBtn");
+    const sideMenu = document.getElementById("sideMenu");
+    const menuOverlay = document.getElementById("menuOverlay");
 
-if (menuBtn && sideMenu && menuOverlay) {
-    menuBtn.addEventListener("click", () => {
-        sideMenu.classList.add("active");
-        menuOverlay.classList.add("active");
-    });
+    if (menuBtn && sideMenu && menuOverlay) {
+        menuBtn.addEventListener("click", () => {
+            sideMenu.classList.add("active");
+            menuOverlay.classList.add("active");
+        });
 
-    menuOverlay.addEventListener("click", () => {
-        sideMenu.classList.remove("active");
-        menuOverlay.classList.remove("active");
-    });
-}
+        menuOverlay.addEventListener("click", () => {
+            sideMenu.classList.remove("active");
+            menuOverlay.classList.remove("active");
+        });
+    }
 
-
-    // 3. البحث الأحيائي عن أصناف المينيو
+    // 3. البحث السريع عن أصناف المينيو
     const searchInput = document.getElementById("search");
     if (searchInput) {
         searchInput.addEventListener("keyup", function () {
@@ -42,13 +41,17 @@ if (menuBtn && sideMenu && menuOverlay) {
 
     // 4. إدارة سلة الطلبات (Cart System)
     let cart = [];
+    window.cart = cart; // ربط السلة لتكون متاحة عامة
+
     const cartBtn = document.getElementById("cartBtn");
     const cartModal = document.getElementById("cartModal");
     const closeCart = document.getElementById("closeCart");
     const cartCount = document.getElementById("cartCount");
     const cartItems = document.getElementById("cartItems");
     const cartTotal = document.getElementById("cartTotal");
-    const sendOrderBtn = document.getElementById("sendOrderBtn");
+    
+    // دعم كلا المعرفين (ID) لزر الإرسال لضمان عدم حدوث أي خطأ
+    const sendOrderBtn = document.getElementById("sendOrderBtn") || document.getElementById("sendOrderDirectBtn");
 
     if (cartBtn && cartModal) {
         cartBtn.addEventListener("click", () => cartModal.style.display = "flex");
@@ -82,8 +85,9 @@ if (menuBtn && sideMenu && menuOverlay) {
             const btn = e.target.classList.contains("add-to-cart-btn") ? e.target : e.target.closest(".add-to-cart-btn");
             const card = btn.closest(".card");
             if (card) {
-                const name = card.getAttribute("data-name");
-                const price = parseInt(card.getAttribute("data-price"));
+                const name = card.getAttribute("data-name") || card.querySelector("h3").innerText;
+                const priceAttr = card.getAttribute("data-price");
+                const price = priceAttr ? parseInt(priceAttr) : parseInt(card.querySelector(".card-price-row span").innerText.replace(/[^0-9]/g, '')) || 0;
 
                 const existingItem = cart.find(item => item.name === name);
                 if (existingItem) {
@@ -127,7 +131,7 @@ if (menuBtn && sideMenu && menuOverlay) {
         if (cartCount) cartCount.innerText = totalQty;
 
         if (cart.length === 0) {
-            cartItems.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
+            cartItems.innerHTML = '<p class="empty-msg" style="color:#777; text-align:center; font-size:12px;">السلة فارغة حالياً</p>';
             if (cartTotal) cartTotal.innerText = "0 د.ع";
             return;
         }
@@ -139,15 +143,15 @@ if (menuBtn && sideMenu && menuOverlay) {
             const itemTotal = item.price * item.qty;
             itemsSubtotal += itemTotal;
             itemsHTML += `
-                <div class="cart-item-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="cart-item-row" style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:13px;">
                     <div>
-                        <strong>${item.name}</strong><br>
-                        <small>${item.price.toLocaleString()} د.ع × ${item.qty}</small>
+                        <strong style="color:#fff;">${item.name}</strong><br>
+                        <small style="color:#ff9f00;">${item.price.toLocaleString()} د.ع × ${item.qty}</small>
                     </div>
-                    <div>
-                        <button onclick="changeQty(${index}, -1)" style="padding:2px 8px;">-</button>
-                        <span style="margin:0 5px;">${item.qty}</span>
-                        <button onclick="changeQty(${index}, 1)" style="padding:2px 8px;">+</button>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" onclick="changeQty(${index}, -1)" style="background:#e63946; color:#fff; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">-</button>
+                        <span style="margin:0 5px; font-weight:bold; color:#fff;">${item.qty}</span>
+                        <button type="button" onclick="changeQty(${index}, 1)" style="background:#25d366; color:#fff; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">+</button>
                     </div>
                 </div>
             `;
@@ -172,6 +176,8 @@ if (menuBtn && sideMenu && menuOverlay) {
         if (cartTotal) cartTotal.innerHTML = totalText;
     }
 
+    window.updateCartUI = updateCartUI;
+
     window.changeQty = function (index, change) {
         cart[index].qty += change;
         if (cart[index].qty <= 0) {
@@ -180,6 +186,7 @@ if (menuBtn && sideMenu && menuOverlay) {
         updateCartUI();
     };
 
+    // 5. إرسال الطلب المباشر والسحابي إلى Firebase (الكاشير والمطبخ)
     if (sendOrderBtn) {
         sendOrderBtn.addEventListener("click", function (e) {
             e.preventDefault();
@@ -218,34 +225,51 @@ if (menuBtn && sideMenu && menuOverlay) {
             }
 
             const deliveryFee = calculateDeliveryFee();
-            const isFreeDelivery = (deliveryFee === 0 && isDelivery);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const grandTotal = subtotal + (isDelivery ? deliveryFee : 0);
 
-            let msg = `*طلب جديد - MIM89 FAST FOOD* 🍔\n\n`;
-            msg += `👤 *الاسم:* ${name}\n`;
-            msg += `📞 *الهاتف:* ${phone}\n`;
-            msg += `🛵 *نوع الطلب:* ${isDelivery ? "توصيل للمنزل" : "استلام من المطعم"}\n`;
-            
-            if (isDelivery) {
-                msg += `🏠 *العنوان والمنطقة:* ${address}\n`;
-                msg += `🛵 *حالة التوصيل:* ${isFreeDelivery ? "مجاني (منطقة القاهرة)" : "3,000 د.ع (باقي المناطق)"}\n`;
+            // تجهيز كائن الطلب ليرتبط مباشرة بقاعدة بيانات الكاشير
+            const orderObj = {
+                id: Date.now(),
+                customerName: name,
+                phone: phone,
+                address: isDelivery ? address : "استلام من المطعم",
+                notes: notes,
+                items: cart,
+                total: grandTotal.toLocaleString() + " د.ع",
+                type: isDelivery ? "توصيل للمنزل" : "استلام من المطعم",
+                time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // الإرسال السحابي الفوري
+            if (typeof db !== 'undefined') {
+                db.collection("mim89_orders").add(orderObj)
+                .then(() => {
+                    cart = [];
+                    updateCartUI();
+                    if (cartModal) cartModal.style.display = "none";
+                    
+                    // إظهار نافذة نجاح الطلب
+                    const alertModal = document.getElementById("orderAlertModal");
+                    if (alertModal) {
+                        alertModal.style.display = "flex";
+                    } else {
+                        alert("🎉 تم إرسال طلبك بنجاح إلى المطعم وجاري تحضيره!");
+                    }
+
+                    // تفريغ الحقول بعد الإرسال الناجح
+                    if (nameInput) nameInput.value = "";
+                    if (phoneInput) phoneInput.value = "";
+                    if (addressInput) addressInput.value = "";
+                    if (notesInput) notesInput.value = "";
+                })
+                .catch((error) => {
+                    alert("⚠️ تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
+                });
+            } else {
+                alert("⚠️ قاعدة البيانات غير متصلة، تأكد من إعدادات الاتصال.");
             }
-            
-            if (notes !== "لا يوجد") msg += `📝 *ملاحظات:* ${notes}\n`;
-
-            msg += `\n--- *تفاصيل الوجبات* -- me\n`;
-            let subtotal = 0;
-            cart.forEach(item => {
-                const itemTotal = item.price * item.qty;
-                subtotal += itemTotal;
-                msg += `• ${item.name} (${item.qty}x) = ${itemTotal.toLocaleString()} د.ع\n`;
-            });
-
-            msg += `\n💵 *مجموع الوجبات:* ${subtotal.toLocaleString()} د.ع`;
-            if (isDelivery) msg += `\n🛵 *كلفة التوصيل:* ${isFreeDelivery ? "مجاناً" : "3,000 د.ع"}`;
-            msg += `\n💰 *الإجمالي الكلي:* ${(subtotal + (isDelivery ? deliveryFee : 0)).toLocaleString()} د.ع`;
-
-            const whatsappNumber = "9647750008630";
-            window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
         });
     }
 });
