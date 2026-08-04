@@ -25,7 +25,7 @@
         .bottom-nav .center-cart-btn {
             background: #ff9f00 !important; color: #000 !important; width: 45px; height: 45px;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin-top: -15px; border: 3px solid #111; position: relative;
+            margin-top: -15px; border: 3px solid #111; position: relative; cursor: pointer;
         }
         .bottom-nav .center-cart-btn i { font-size: 18px; }
         .bottom-nav .center-cart-btn span {
@@ -33,9 +33,10 @@
             font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-weight: bold;
         }
+        
         #orderAlertModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;
         }
         .alert-box {
             background: #1a1a1a; border: 2px solid #ff9f00; padding: 25px; border-radius: 15px;
@@ -89,18 +90,6 @@
                 <h1>MIM89 FAST FOOD</h1>
                 <span>كل الطعم... في مكان واحد</span>
             </div>
-            <ul style="display:none;">
-                <li><a href="#">الرئيسية</a></li>
-                <li><a href="#offers">العروض 🔥</a></li>
-                <li><a href="#burger">البركر</a></li>
-                <li><a href="#fajita">الفاهيتا</a></li>
-                <li><a href="#shawarma">الشاورما</a></li>
-                <li><a href="#rizo">الريزو</a></li>
-                <li><a href="#kentucky">الكنتاكي</a></li>
-                <li><a href="#appetizers">المقبلات والفنكر</a></li>
-                <li><a href="#drinks">المشروبات</a></li>
-                <li><a href="#contact">تواصل معنا</a></li>
-            </ul>
         </nav>
 
         <div class="hero-content"></div>
@@ -327,12 +316,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- الملفات الأصلية الخاصة بموقعك -->
+    <!-- ملف التنسيقات الإضافي -->
     <script src="style.js?v=400.0"></script>
-    <script src="script.js?v=400.0"></script>
 
-    <!-- كود الإرسال السحابي (مرحلة الالتقاط لتجاوز أي تعارض من script.js) -->
+    <!-- كود المنطق والربط السحابي (مدمج بالكامل لضمان عمل السلة وزر الإرسال 100%) -->
     <script>
+        // إعدادات فايربيس السحابية
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
           authDomain: "mim89-ff938.firebaseapp.com",
@@ -345,60 +334,274 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // استخدام Capture Phase (true) لاعتراض الضغطة قبل وصولها إلى script.js وإيقاف تعارضاته
-        document.addEventListener('click', function(e) {
-            const sendBtn = e.target.closest('#sendOrderDirectBtn');
-            if (!sendBtn) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-            const address = document.getElementById('custAddress').value.trim();
-
-            if (!name || !phone || !address) {
-                alert("عذراً، يرجى إكمال الاسم، رقم الهاتف، والعنوان بدقة.");
-                return;
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. إخفاء الشاشة التمهيدية (Loader)
+            const loader = document.getElementById("loader");
+            if (loader) {
+                setTimeout(() => {
+                    loader.style.opacity = "0";
+                    setTimeout(() => loader.style.display = "none", 500);
+                }, 300);
             }
 
-            const cartContainer = document.getElementById('cartItems');
-            const itemsText = cartContainer ? cartContainer.innerText : "طلب مباشر";
-            const totalText = document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "0 د.ع";
-            const orderType = document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم';
+            // 2. القائمة الجانبية (Side Menu)
+            const menuBtn = document.getElementById("menuBtn");
+            const sideMenu = document.getElementById("sideMenu");
+            const menuOverlay = document.getElementById("menuOverlay");
 
-            const orderObj = {
-                id: Date.now(),
-                customerName: name,
-                phone: phone,
-                address: address,
-                notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
-                itemsSummary: itemsText,
-                total: totalText,
-                type: orderType,
-                time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
+            if (menuBtn && sideMenu && menuOverlay) {
+                menuBtn.addEventListener("click", () => {
+                    sideMenu.classList.add("active");
+                    menuOverlay.classList.add("active");
+                });
 
-            db.collection("mim89_orders").add(orderObj)
-            .then(() => {
-                const cartModal = document.getElementById('cartModal');
-                if (cartModal) {
-                    cartModal.style.display = 'none';
-                    document.body.classList.remove('cart-open');
+                menuOverlay.addEventListener("click", () => {
+                    sideMenu.classList.remove("active");
+                    menuOverlay.classList.remove("active");
+                });
+            }
+
+            // 3. البحث السريع عن الأصناف
+            const searchInput = document.getElementById("search");
+            if (searchInput) {
+                searchInput.addEventListener("keyup", function () {
+                    const filter = this.value.toLowerCase();
+                    const cards = document.querySelectorAll(".card");
+                    cards.forEach(card => {
+                        const text = card.textContent.toLowerCase();
+                        card.style.display = text.includes(filter) ? "block" : "none";
+                    });
+                });
+            }
+
+            // 4. إدارة السلة وتفاصيل الوجبات
+            let cart = [];
+            window.cart = cart;
+
+            const cartBtn = document.getElementById("cartBtn");
+            const cartModal = document.getElementById("cartModal");
+            const closeCart = document.getElementById("closeCart");
+            const cartCount = document.getElementById("cartCount");
+            const cartItems = document.getElementById("cartItems");
+            const cartTotal = document.getElementById("cartTotal");
+
+            if (cartBtn && cartModal) {
+                cartBtn.addEventListener("click", () => cartModal.style.display = "flex");
+            }
+            if (closeCart && cartModal) {
+                closeCart.addEventListener("click", () => cartModal.style.display = "none");
+            }
+
+            const btnDelivery = document.getElementById("btnDelivery");
+            const btnTakeaway = document.getElementById("btnTakeaway");
+            let isDelivery = true;
+
+            if (btnDelivery && btnTakeaway) {
+                btnDelivery.addEventListener("click", () => {
+                    isDelivery = true;
+                    btnDelivery.classList.add("active");
+                    btnTakeaway.classList.remove("active");
+                    updateCartUI();
+                });
+
+                btnTakeaway.addEventListener("click", () => {
+                    isDelivery = false;
+                    btnTakeaway.classList.add("active");
+                    btnDelivery.classList.remove("active");
+                    updateCartUI();
+                });
+            }
+
+            // إضافة الوجبات للسلة
+            document.addEventListener("click", function (e) {
+                if (e.target && (e.target.classList.contains("add-to-cart-btn") || e.target.closest(".add-to-cart-btn"))) {
+                    const btn = e.target.classList.contains("add-to-cart-btn") ? e.target : e.target.closest(".add-to-cart-btn");
+                    const card = btn.closest(".card");
+                    if (card) {
+                        const name = card.getAttribute("data-name") || card.querySelector("h3").innerText;
+                        const priceAttr = card.getAttribute("data-price");
+                        const price = priceAttr ? parseInt(priceAttr) : parseInt(card.querySelector(".card-price-row span").innerText.replace(/[^0-9]/g, '')) || 0;
+
+                        const existingItem = cart.find(item => item.name === name);
+                        if (existingItem) {
+                            existingItem.qty += 1;
+                        } else {
+                            cart.push({ name, price, qty: 1 });
+                        }
+
+                        updateCartUI();
+                        
+                        btn.innerHTML = '<i class="fas fa-check"></i> تمت الإضافة';
+                        setTimeout(() => {
+                            btn.innerHTML = '<i class="fas fa-cart-plus"></i> إضافة';
+                        }, 1000);
+                    }
+                }
+            });
+
+            function calculateDeliveryFee() {
+                if (!isDelivery) return 0;
+                const addressInput = document.getElementById("custAddress");
+                const addressText = addressInput ? addressInput.value.trim().toLowerCase() : "";
+                if (addressText.includes("القاهرة") || addressText.includes("قاهرة") || addressText.includes("القاهره")) {
+                    return 0;
+                } else {
+                    return 3000;
+                }
+            }
+
+            const custAddressInput = document.getElementById("custAddress");
+            if (custAddressInput) {
+                custAddressInput.addEventListener("input", updateCartUI);
+            }
+
+            function updateCartUI() {
+                if (!cartItems) return;
+
+                const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+                if (cartCount) cartCount.innerText = totalQty;
+
+                if (cart.length === 0) {
+                    cartItems.innerHTML = '<p class="empty-msg" style="color:#777; text-align:center; font-size:12px;">السلة فارغة حالياً</p>';
+                    if (cartTotal) cartTotal.innerText = "0 د.ع";
+                    return;
                 }
 
-                const alertModal = document.getElementById('orderAlertModal');
-                if (alertModal) alertModal.style.display = 'flex';
-            })
-            .catch((error) => {
-                alert("تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
-            });
-        }, true);
+                let itemsHTML = "";
+                let itemsSubtotal = 0;
+
+                cart.forEach((item, index) => {
+                    const itemTotal = item.price * item.qty;
+                    itemsSubtotal += itemTotal;
+                    itemsHTML += `
+                        <div class="cart-item-row" style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:13px;">
+                            <div>
+                                <strong style="color:#fff;">${item.name}</strong><br>
+                                <small style="color:#ff9f00;">${item.price.toLocaleString()} د.ع × ${item.qty}</small>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <button type="button" onclick="changeQty(${index}, -1)" style="background:#e63946; color:#fff; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">-</button>
+                                <span style="margin:0 5px; font-weight:bold; color:#fff;">${item.qty}</span>
+                                <button type="button" onclick="changeQty(${index}, 1)" style="background:#25d366; color:#fff; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                cartItems.innerHTML = itemsHTML;
+
+                const deliveryFee = calculateDeliveryFee();
+                const grandTotal = itemsSubtotal + deliveryFee;
+
+                let totalText = grandTotal.toLocaleString() + " د.ع";
+                
+                if (isDelivery) {
+                    const currentAddress = custAddressInput ? custAddressInput.value.trim() : "";
+                    if (deliveryFee === 0 && currentAddress !== "") {
+                        totalText += ` <span style="color: #25d366; font-size: 13px; font-weight: bold;">(التوصيل مجاني 🛵)</span>`;
+                    } else if (deliveryFee > 0 && currentAddress !== "") {
+                        totalText += ` <span style="color: #ff9f00; font-size: 12px;">(+ 3,000 توصيل 🛵)</span>`;
+                    }
+                }
+
+                if (cartTotal) cartTotal.innerHTML = totalText;
+            }
+
+            window.updateCartUI = updateCartUI;
+
+            window.changeQty = function (index, change) {
+                cart[index].qty += change;
+                if (cart[index].qty <= 0) {
+                    cart.splice(index, 1);
+                }
+                updateCartUI();
+            };
+
+            // 5. زر إرسال الطلب السحابي المباشر إلى Firebase (الكاشير والمطبخ)
+            const sendBtn = document.getElementById("sendOrderDirectBtn");
+            if (sendBtn) {
+                sendBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (cart.length === 0) {
+                        alert("⚠️ السلة فارغة! يرجى إضافة وجبة أولاً.");
+                        return;
+                    }
+
+                    const nameInput = document.getElementById("custName");
+                    const phoneInput = document.getElementById("custPhone");
+                    const addressInput = document.getElementById("custAddress");
+                    const notesInput = document.getElementById("custNotes");
+
+                    const name = nameInput ? nameInput.value.trim() : "";
+                    const phone = phoneInput ? phoneInput.value.trim() : "";
+                    const address = addressInput ? addressInput.value.trim() : "";
+                    const notes = notesInput && notesInput.value.trim() !== "" ? notesInput.value.trim() : "لا يوجد";
+
+                    if (!name) {
+                        alert("⚠️ يرجى كتابة الاسم الكامل أولاً لتأكيد الطلب!");
+                        if (nameInput) nameInput.focus();
+                        return;
+                    }
+
+                    if (!phone) {
+                        alert("⚠️ يرجى كتابة رقم الهاتف للتواصل والدليفري!");
+                        if (phoneInput) phoneInput.focus();
+                        return;
+                    }
+
+                    if (isDelivery && !address) {
+                        alert("⚠️ يرجى كتابة العنوان التفصيلي / المنطقة لتوصيل الطلب!");
+                        if (addressInput) addressInput.focus();
+                        return;
+                    }
+
+                    const deliveryFee = calculateDeliveryFee();
+                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                    const grandTotal = subtotal + (isDelivery ? deliveryFee : 0);
+
+                    const orderObj = {
+                        id: Date.now(),
+                        customerName: name,
+                        phone: phone,
+                        address: isDelivery ? address : "استلام من المطعم",
+                        notes: notes,
+                        items: cart,
+                        total: grandTotal.toLocaleString() + " د.ع",
+                        type: isDelivery ? "توصيل للمنزل" : "استلام من المطعم",
+                        time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    db.collection("mim89_orders").add(orderObj)
+                    .then(() => {
+                        cart = [];
+                        updateCartUI();
+                        if (cartModal) {
+                            cartModal.style.display = "none";
+                            document.body.classList.remove('cart-open');
+                        }
+                        
+                        const alertModal = document.getElementById("orderAlertModal");
+                        if (alertModal) {
+                            alertModal.style.display = "flex";
+                        }
+
+                        if (nameInput) nameInput.value = "";
+                        if (phoneInput) phoneInput.value = "";
+                        if (addressInput) addressInput.value = "";
+                        if (notesInput) notesInput.value = "";
+                    })
+                    .catch((error) => {
+                        alert("⚠️ تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
+                    });
+                });
+            }
+        });
 
         function closeOrderAlert() {
-            document.getElementById('orderAlertModal').style.display = 'none';
+            document.getElementById("orderAlertModal").style.display = "none";
         }
     </script>
 </body>
