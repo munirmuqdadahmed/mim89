@@ -32,73 +32,84 @@
     </div>
 
     <!-- واجهة الكاشير الرئيسية -->
-    <div id="cashierMainApp" class="container" style="display:none; padding:15px;">
+    <div id="cashierMainApp" class="container" style="display:none; padding:12px;">
         
         <!-- الهيدر والتبويبات -->
-        <header class="admin-header" style="flex-wrap:wrap; gap:10px;">
+        <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px;">
             <div>
-                <h1 style="color:var(--gold-primary); font-size:1.6rem;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
-                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.9rem;"></span>
+                <h1 style="color:var(--gold-primary); font-size:1.5rem;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.85rem;"></span>
             </div>
-            <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 14px;">خروج</button>
+            <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 12px; font-size:0.85rem;">خروج</button>
         </header>
 
-        <!-- الأزرار الرئيسية للتنقل بين البيع المباشر وطلبات المينيو -->
-        <div class="admin-tabs" style="margin-bottom:15px;">
+        <!-- أزرار التنقل بين البيع المباشر وطلبات أونلاين -->
+        <div class="admin-tabs" style="margin-bottom:12px;">
             <button class="tab-btn active" onclick="switchCashierTab('posDirectTab', this)">
-                <i class="fa-solid fa-cash-register"></i> بيع مباشر (صالة / سفري)
+                <i class="fa-solid fa-cash-register"></i> بيع مباشر (المينيو)
             </button>
             <button class="tab-btn" onclick="switchCashierTab('liveOrdersTab', this)">
-                <i class="fa-solid fa-bell"></i> طلبات المينيو أونلاين <span id="liveOrdersBadge" class="btn-badge">0</span>
+                <i class="fa-solid fa-bell"></i> طلبات المينيو أونلاين
             </button>
         </div>
 
         <!-- 1️⃣ تبويب البيع المباشر داخل المطعم -->
         <div id="posDirectTab" class="tab-content active">
-            <div style="display:grid; grid-template-columns: 1fr 380px; gap:15px;" class="pos-responsive-grid">
+            <div class="pos-responsive-grid">
                 
-                <!-- الجانب الأيمن: تصفح أصناف المينيو -->
+                <!-- الجانب الأيمن: تصفح الوجبات واختيارها -->
                 <div class="card" style="padding:12px;">
-                    <!-- أشرطة تصفية الأقسام والبحث -->
-                    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="flex:1; margin-top:0;" placeholder="بحث سريع عن وجبة...">
+                    <!-- أشرطة البحث والأقسام -->
+                    <div style="margin-bottom:10px;">
+                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 ابحث عن وجبة بالتحديد...">
                     </div>
                     
-                    <div id="posCategoriesBar" class="categories-container" style="margin-bottom:15px; padding:0;"></div>
+                    <div id="posCategoriesBar" class="categories-container" style="margin-bottom:12px; padding:0;"></div>
 
                     <!-- شبكة أزرار الوجبات للضغط المباشر -->
-                    <div id="posProductsGrid" class="items-grid" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px;"></div>
+                    <div id="posProductsGrid" class="pos-items-grid"></div>
                 </div>
 
                 <!-- الجانب الأيسر: فاتورة الطلب المباشر -->
-                <div class="card" style="padding:15px; display:flex; flex-direction:column; justify-content:space-between;">
+                <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-style:space-between;">
                     <div>
-                        <h3 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:5px;">
+                        <h3 style="color:var(--gold-primary); margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
                             <i class="fa-solid fa-receipt"></i> الفاتورة الحالية
                         </h3>
 
+                        <!-- نوع الخدمة -->
                         <div class="form-group" style="margin-bottom:8px;">
-                            <label style="font-size:0.85rem;">نوع الخدمة:</label>
+                            <label style="font-size:0.8rem; color:var(--gold-bright);">نوع الخدمة:</label>
                             <select id="posOrderType" class="gold-input" style="padding:6px;">
-                                <option value="dine_in">تناول داخل المطعم (صالة)</option>
-                                <option value="takeaway">استلام مباشر (سفري)</option>
-                                <option value="delivery">توصيل مباشر (كاشير)</option>
+                                <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
+                                <option value="takeaway">🛍️ استلام مباشر (سفري)</option>
+                                <option value="delivery">🚗 توصيل مباشر</option>
                             </select>
                         </div>
 
+                        <!-- طريقة الدفع -->
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="font-size:0.8rem; color:var(--gold-bright);">طريقة الدفع:</label>
+                            <select id="posPaymentMethod" class="gold-input" style="padding:6px;">
+                                <option value="cash">💵 كاش (نقداً)</option>
+                                <option value="visa">💳 فيزا / ماستركارد</option>
+                            </select>
+                        </div>
+
+                        <!-- معلومات الزبون/الطاولة -->
                         <div class="form-group" style="margin-bottom:8px;">
                             <input type="text" id="posCustName" class="gold-input" style="padding:6px;" placeholder="اسم الزبون / رقم الطاولة (اختياري)">
                         </div>
 
-                        <!-- جدول وجبات الفاتورة -->
-                        <div id="posCartList" style="max-height: 250px; overflow-y:auto; margin:10px 0; border:1px solid var(--card-border); padding:8px; border-radius:8px; background:#121214;">
-                            <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">اختر الوجبات من القائمة لإضافتها للفاتورة</p>
+                        <!-- قائمة وجبات الفاتورة -->
+                        <div id="posCartList" style="min-height:120px; max-height:220px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
+                            <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>
                         </div>
                     </div>
 
-                    <!-- الحساب والزر الافتراضي -->
+                    <!-- الحساب والإنهاء -->
                     <div>
-                        <div class="checkout-summary" style="margin:10px 0 5px 0; padding:10px;">
+                        <div class="checkout-summary" style="margin:8px 0; padding:8px;">
                             <div class="summary-line total-line">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
@@ -115,7 +126,7 @@
             </div>
         </div>
 
-        <!-- 2️⃣ تبويب الطلبات القادمة من المينيو أونلاين -->
+        <!-- 2️⃣ تبويب الطلبات القادمة أونلاين -->
         <div id="liveOrdersTab" class="tab-content">
             <div class="card">
                 <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-bell"></i> الطلبات الواردة عبر المينيو الإلكتروني</h2>
@@ -134,6 +145,7 @@
                 <hr style="border-color:#000;">
                 <p id="receiptCashierName" style="font-weight:bold; margin:3px 0;"></p>
                 <p id="receiptCustInfo" style="margin:3px 0;"></p>
+                <p id="receiptPaymentInfo" style="font-weight:bold; margin:3px 0;"></p>
                 <p id="receiptTypeInfo" style="font-size:0.85rem; margin:3px 0;"></p>
             </div>
             <hr style="border-color:#000;">
