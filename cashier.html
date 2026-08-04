@@ -3,86 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نقطة البيع - الكاشير</title>
+    <title>MIM89 FAST FOOD - الكاشير واستقبال الطلبات</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body onload="initCashierPage()">
 
     <!-- نافذة تسجيل الدخول بكلمة المرور -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
-            <h2><i class="fa-solid fa-user-lock"></i> تسجيل دخول الكاشير</h2>
-            <p>يرجى اختيار الكاشير وإدخال كلمة المرور للوصول</p>
+            <div class="brand-badge">MIM89</div>
+            <h2 style="color:#d4af37; margin:10px 0;"><i class="fa-solid fa-cash-register"></i> تسجيل دخول الكاشير</h2>
             <div class="form-group">
-                <label>اختر الكاشير:</label>
-                <select id="cashierSelect" class="form-control"></select>
+                <label>اختر الكاشير المسجل:</label>
+                <select id="cashierSelect" class="gold-input"></select>
             </div>
             <div class="form-group">
                 <label>كلمة المرور:</label>
-                <input type="password" id="cashierPassInput" class="form-control" placeholder="أدخل كلمة المرور">
+                <input type="password" id="cashierPassInput" class="gold-input" placeholder="أدخل كلمة السر">
             </div>
-            <button onclick="loginCashier()" class="btn btn-primary">دخول</button>
+            <button onclick="loginCashier()" class="gold-btn btn-block">دخول الشاشة</button>
             <p id="authError" class="error-msg"></p>
         </div>
     </div>
 
     <!-- واجهة الكاشير الرئيسية -->
-    <div id="cashierMainApp" class="cashier-layout" style="display: none;">
-        <!-- الجانب الأيمن: قائمة الأصناف -->
-        <div class="cashier-products">
-            <header class="pos-header">
-                <div class="user-info">
-                    <span id="activeCashierName"></span>
-                    <button onclick="logoutCashier()" class="btn-sm btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
-                </div>
-                <div class="pos-search">
-                    <input type="text" id="cashierSearch" oninput="filterCashierItems()" placeholder="بحث عن صنف...">
-                </div>
-            </header>
-
-            <div class="categories-tab-bar" id="cashierCatNav"></div>
-            <div class="products-grid" id="cashierProductsGrid"></div>
-        </div>
-
-        <!-- الجانب الأيسر: سلة الفاتورة -->
-        <div class="cashier-cart">
-            <h3><i class="fa-solid fa-receipt"></i> الفاتورة الحالية</h3>
-            <div class="cart-items-list" id="cartItemsList">
-                <p class="empty-cart-msg">السلة فارغة حالياً</p>
+    <div id="cashierMainApp" class="container" style="display:none; padding:20px;">
+        <header class="admin-header">
+            <div>
+                <h1 style="color:#d4af37;"><i class="fa-solid fa-receipt"></i> MIM89 - شاشة نقطة البيع والطلبات المباشرة</h1>
+                <span id="activeCashierName" style="color:#aaa; font-weight:bold;"></span>
             </div>
-            
-            <div class="cart-summary">
-                <div class="summary-row">
-                    <span>المجموع الكلي:</span>
-                    <span id="cartTotal" class="total-price">0 د.ع</span>
-                </div>
-                <div class="cart-actions">
-                    <button onclick="clearCart()" class="btn btn-danger"><i class="fa-solid fa-trash"></i> إغلاق الفاتورة</button>
-                    <button onclick="processCheckout()" class="btn btn-success"><i class="fa-solid fa-print"></i> دفع وطباعة</button>
-                </div>
+            <button onclick="location.reload()" class="gold-btn" style="background:#e63946; color:#fff;">تسجيل خروج</button>
+        </header>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <!-- الطلبات الحية الواردة من المينيو -->
+            <div class="card">
+                <h2 style="color:#d4af37; margin-bottom:15px;"><i class="fa-solid fa-bell"></i> الطلبات الحية القادمة من المينيو</h2>
+                <div id="liveOrdersContainer"></div>
+            </div>
+
+            <!-- إدخال طلب مباشر من الكاشير -->
+            <div class="card">
+                <h2 style="color:#d4af37; margin-bottom:15px;"><i class="fa-solid fa-calculator"></i> إنشاء طلب محلي سريعة</h2>
+                <p style="color:#aaa;">يمكنك اختيار الوجبات وتحديد الحساب مباشرة للزبائن الحاضرين في المطعم.</p>
             </div>
         </div>
     </div>
 
-    <!-- نافذة الطباعة -->
+    <!-- نافذة طباعة الفاتورة الرسمية -->
     <div id="receiptModal" class="modal">
-        <div class="modal-content print-area">
-            <div class="receipt-header">
-                <h2>فاتورة مبيعات</h2>
-                <p id="receiptDate"></p>
-                <p id="receiptCashier"></p>
+        <div class="modal-content print-area" style="color:#000; background:#fff;">
+            <div style="text-align:center;">
+                <h2 style="margin:0;">MIM89 FAST FOOD</h2>
+                <p style="font-size:0.85rem; margin-bottom:5px;">بغداد - القاهرة | هاتف: 07800000000</p>
+                <hr>
+                <p id="receiptCashierName" style="font-weight:bold;"></p>
+                <p id="receiptCustInfo"></p>
+                <p id="receiptTypeInfo" style="font-size:0.85rem;"></p>
             </div>
             <hr>
-            <div id="receiptBody"></div>
+            <div id="receiptItemsBody"></div>
             <hr>
-            <div class="receipt-footer">
-                <p>إجمالي الفاتورة: <strong id="receiptTotal"></strong></p>
-                <p>شكراً لزيارتكم!</p>
+            <div>
+                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span><span id="receiptSubtotal"></span></div>
+                <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span><span id="receiptDeliveryFee"></span></div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; margin-top:5px;"><span>المجموع الكلي:</span><span id="receiptGrandTotal"></span></div>
             </div>
-            <div class="no-print" style="margin-top: 15px; text-align: center;">
-                <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> طباعة</button>
-                <button onclick="closeModal('receiptModal')" class="btn btn-secondary">إغلاق</button>
+            <hr>
+            <p style="text-align:center; font-size:0.85rem;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
+            
+            <div class="no-print" style="margin-top:15px; text-align:center;">
+                <button onclick="window.print()" class="gold-btn">طباعة الفاتورة</button>
+                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff;">إغلاق</button>
             </div>
         </div>
     </div>
