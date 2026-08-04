@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - كاشير البيع المباشر والطلبات</title>
+    <title>MIM89 FAST FOOD - كاشير البيع المباشر</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -57,52 +57,52 @@
         <div id="posDirectTab" class="tab-content active">
             <div class="pos-responsive-grid">
                 
-                <!-- الجانب الأيمن: تصفح الوجبات واختيارها -->
+                <!-- الجانب الأيمن: تصفح أصناف المينيو بالأحجام المتناسقة -->
                 <div class="card" style="padding:12px;">
                     <!-- أشرطة البحث والأقسام -->
                     <div style="margin-bottom:10px;">
-                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 ابحث عن وجبة بالتحديد...">
+                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 بحث سريع عن وجبة...">
                     </div>
                     
                     <div id="posCategoriesBar" class="categories-container" style="margin-bottom:12px; padding:0;"></div>
 
-                    <!-- شبكة أزرار الوجبات للضغط المباشر -->
+                    <!-- شبكة أزرار الوجبات المتناسقة -->
                     <div id="posProductsGrid" class="pos-items-grid"></div>
                 </div>
 
-                <!-- الجانب الأيسر: فاتورة الطلب المباشر -->
-                <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-style:space-between;">
+                <!-- الجانب الأيسر: فاتورة الطلب المباشر بأزرار اختيار فورية -->
+                <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
                     <div>
-                        <h3 style="color:var(--gold-primary); margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
+                        <h3 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
                             <i class="fa-solid fa-receipt"></i> الفاتورة الحالية
                         </h3>
 
-                        <!-- نوع الخدمة -->
-                        <div class="form-group" style="margin-bottom:8px;">
-                            <label style="font-size:0.8rem; color:var(--gold-bright);">نوع الخدمة:</label>
-                            <select id="posOrderType" class="gold-input" style="padding:6px;">
-                                <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
-                                <option value="takeaway">🛍️ استلام مباشر (سفري)</option>
-                                <option value="delivery">🚗 توصيل مباشر</option>
-                            </select>
+                        <!-- 1. أزرار نوع الخدمة المباشرة (صالة / سفري / توصيل) -->
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">نوع الخدمة:</label>
+                            <div class="toggle-btn-group" id="posOrderTypeGroup">
+                                <button type="button" class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
+                                <button type="button" class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
+                                <button type="button" class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🚗 توصيل</button>
+                            </div>
                         </div>
 
-                        <!-- طريقة الدفع -->
-                        <div class="form-group" style="margin-bottom:8px;">
-                            <label style="font-size:0.8rem; color:var(--gold-bright);">طريقة الدفع:</label>
-                            <select id="posPaymentMethod" class="gold-input" style="padding:6px;">
-                                <option value="cash">💵 كاش (نقداً)</option>
-                                <option value="visa">💳 فيزا / ماستركارد</option>
-                            </select>
+                        <!-- 2. أزرار طريقة الدفع المباشرة (كاش / فيزا) -->
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">طريقة الدفع:</label>
+                            <div class="toggle-btn-group" id="posPaymentGroup">
+                                <button type="button" class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
+                                <button type="button" class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا</button>
+                            </div>
                         </div>
 
-                        <!-- معلومات الزبون/الطاولة -->
+                        <!-- اسم الزبون / الطاولة -->
                         <div class="form-group" style="margin-bottom:8px;">
                             <input type="text" id="posCustName" class="gold-input" style="padding:6px;" placeholder="اسم الزبون / رقم الطاولة (اختياري)">
                         </div>
 
                         <!-- قائمة وجبات الفاتورة -->
-                        <div id="posCartList" style="min-height:120px; max-height:220px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
+                        <div id="posCartList" style="min-height:120px; max-height:200px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>
                         </div>
                     </div>
@@ -136,7 +136,7 @@
 
     </div>
 
-    <!-- نافذة طباعة الفاتورة الرسمية -->
+    <!-- نافذة طباعة الفاتورة -->
     <div id="receiptModal" class="modal">
         <div class="modal-content print-area" style="color:#000; background:#fff;">
             <div style="text-align:center;">
