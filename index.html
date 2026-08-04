@@ -293,7 +293,7 @@
     <div id="orderAlertModal">
         <div class="alert-box">
             <h3>🎉 أرسلت طلبك بنجاح يا غالي!</h3>
-            <p>تم استلام طلبك في المطبخ فوراً، ووجبتك الساخنة في طريقه إليك الآن 🛵🔥</p>
+            <p>تم استلام طلبك في المطبخ فوراً، ووجبتك الساخنة في طريقها إليك الآن 🛵🔥</p>
             <button onclick="closeOrderAlert()">بالهناء والشفاء</button>
         </div>
     </div>
@@ -310,7 +310,6 @@
     <script src="script.js?v=400.0"></script>
 
     <script>
-        // تهيئة Firebase بقاعدتك السحابية
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
           authDomain: "mim89-ff938.firebaseapp.com",
@@ -323,9 +322,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // نظام السلة والربط السحابي المباشر لضمان عدم ظهور "السلة فارغة"
         document.addEventListener('DOMContentLoaded', () => {
-            // دعم أزرار الإضافة للمنتجات في المينيو الأصلي
+            // دعم أزرار الإضافة بدون ظهور أي نوافذ منبثقة مزعجة
             document.querySelectorAll('.card').forEach(card => {
                 const addBtn = card.querySelector('.add-to-cart-btn');
                 if (addBtn) {
@@ -344,16 +342,14 @@
                         if (typeof window.updateCartUI === 'function') {
                             window.updateCartUI();
                         } else {
-                            // تحديث عداد السلة افتراضياً
                             const countEl = document.getElementById('cartCount');
                             if(countEl) countEl.innerText = window.cart.reduce((sum, i) => sum + i.qty, 0);
                         }
-                        alert("✨ تمت إضافة الوجبة إلى سلتك بنجاح!");
                     });
                 }
             });
 
-            // ربط زر إرسال الطلب الذكي
+            // ربط زر إرسال الطلب السحابي المباشر والمضمون
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
                 sendBtn.addEventListener('click', () => {
@@ -362,7 +358,7 @@
                     const address = document.getElementById('custAddress').value.trim();
 
                     if (!name || !phone || !address) {
-                        alert("عذراً، ييرجى إكمال (الاسم، رقم الهاتف، والعنوان) لكي تصلك الوجبة بدقة.");
+                        alert("عذراً، يرجى إكمال (الاسم، رقم الهاتف، والعنوان) لكي تصلك الوجبة بدقة.");
                         return;
                     }
 
