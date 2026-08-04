@@ -47,6 +47,8 @@
             background: #ff9f00; color: #000; border: none; padding: 10px 20px;
             border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;
         }
+        /* تنسيق تفاعلي للزر للتأكد من بصريات الضغط */
+        #sendOrderDirectBtn:active { transform: scale(0.98); }
     </style>
 </head>
 
@@ -109,7 +111,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل والشامل بجميع الأصناف والوجبات -->
+    <!-- المينيو الكامل بجميع الأقسام والأصناف -->
     <div id="main-menu-container">
         <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
@@ -342,10 +344,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- ملف التنسيقات الخارجي -->
-    <script src="style.js?v=400.0"></script>
-
-    <!-- الكود البرمجي الكامل مدمج بالداخل لضمان العمل 100% -->
+    <!-- الكود البرمجي الكامل والموحد مدمج بالداخل لمنع أي تعارض -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -360,6 +359,7 @@
         const db = firebase.firestore();
 
         document.addEventListener("DOMContentLoaded", function () {
+            // 1. إخفاء الـ Loader
             const loader = document.getElementById("loader");
             if (loader) {
                 setTimeout(() => {
@@ -368,6 +368,7 @@
                 }, 300);
             }
 
+            // 2. القائمة الجانبية
             const menuBtn = document.getElementById("menuBtn");
             const sideMenu = document.getElementById("sideMenu");
             const menuOverlay = document.getElementById("menuOverlay");
@@ -383,6 +384,7 @@
                 });
             }
 
+            // التنقل السلس للأقسام من القائمة الجانبية
             document.querySelectorAll('.close-menu-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -398,6 +400,7 @@
                 });
             });
 
+            // 3. البحث
             const searchInput = document.getElementById("search");
             if (searchInput) {
                 searchInput.addEventListener("keyup", function () {
@@ -410,6 +413,7 @@
                 });
             }
 
+            // 4. السلة وإدارة المنتجات
             let cart = [];
             window.cart = cart;
 
@@ -551,6 +555,7 @@
                 updateCartUI();
             };
 
+            // 5. زر إرسال الطلب المباشر والمضمون إلى Firebase (مربوط بالمعرفين لضمان العمل)
             const sendBtn = document.getElementById("sendOrderDirectBtn") || document.getElementById("sendOrderBtn");
             if (sendBtn) {
                 sendBtn.addEventListener("click", function (e) {
