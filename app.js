@@ -2,7 +2,7 @@
    MIM89 FAST FOOD - Complete Core Engine
    ========================================== */
 
-// 1. الاتصال الآمن بـ Firebase بمشروع mim89-ff938
+// 1. الاتصال بـ Firebase
 let db = null;
 try {
     const firebaseConfig = {
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الافتراضية للنظام
+// 2. البيانات الافتراضية
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     cashiers: [
@@ -77,7 +77,6 @@ const DEFAULT_DATA = {
     ]
 };
 
-// دالة تهيئة الذاكرة المحلية الحافظة
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -284,7 +283,7 @@ function calculateDeliveryCost() {
     let deliveryFee = 0;
     if (orderType === 'delivery') {
         if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
-            deliveryFee = 0; // القاهرة توصيل مجاني
+            deliveryFee = 0;
         } else if (areaInput !== "") {
             const areas = getData('sys_areas');
             const found = areas.find(a => areaInput.includes(a.name));
@@ -369,7 +368,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   4. نقطة البيع والبيع المباشر (cashier.html)
+   4. نقطة البيع بالرمز المباشر (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -378,36 +377,26 @@ let selectedPosPaymentMethod = 'cash';
 
 function initCashierPage() {
     initData();
-    let cashiers = getData('sys_cashiers');
-
-    // تصحيح قائمة الكاشيرية تلقائياً إن كانت فارغة
-    if (!cashiers || cashiers.length === 0) {
-        cashiers = [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }];
-        setData('sys_cashiers', cashiers);
-    }
-
-    const select = document.getElementById('cashierSelect');
-    if (select) {
-        select.innerHTML = cashiers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    }
 }
 
+// الدخول التلقائي فور كتابة الرمز السري لشخص مسجل
 function loginCashier() {
+    const inputPass = document.getElementById('cashierPassInput').value.trim();
     const cashiers = getData('sys_cashiers');
-    const selectedId = document.getElementById('cashierSelect').value;
-    const pass = document.getElementById('cashierPassInput').value;
-    const user = cashiers.find(c => c.id === selectedId && c.password === pass);
+    const user = cashiers.find(c => c.password === inputPass);
 
     if (user) {
         activeCashierUser = user;
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('cashierMainApp').style.display = 'block';
         document.getElementById('activeCashierName').innerText = "الكاشير الحالي: " + user.name;
+        document.getElementById('authError').innerText = "";
+        document.getElementById('cashierPassInput').value = "";
         
         loadPosDirectMenu('all');
         listenForIncomingOrders();
     } else {
-        document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+        document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
     }
 }
 
@@ -534,7 +523,7 @@ function renderPosCart() {
         `;
     }).join('');
 
-    totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
+    totalEl.innerText = Number(total).toLocaleString() + ' د.c';
 }
 
 function processPosDirectCheckout() {
