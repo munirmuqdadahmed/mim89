@@ -1,1 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المخزن والمواد الخام</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body onload="initInventoryPage()">
 
+    <!-- نافذة كلمة المرور -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2><i class="fa-solid fa-warehouse"></i> تسجيل دخول المخزن</h2>
+            <div class="form-group">
+                <label>كلمة مرور المخزن:</label>
+                <input type="password" id="invPassInput" class="form-control" placeholder="أدخل كلمة المرور">
+            </div>
+            <button onclick="loginInventory()" class="btn btn-primary">دخول</button>
+            <p id="authError" class="error-msg"></p>
+        </div>
+    </div>
+
+    <div id="invMainApp" class="container" style="display: none; padding: 20px;">
+        <header class="admin-header">
+            <h1><i class="fa-solid fa-boxes-stacked"></i> لوحة إدارة المخزن والمواد الخام</h1>
+            <button onclick="logoutInventory()" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+        </header>
+
+        <!-- نموذج إضافة مادة جديدة -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>إضافة مادة جديدة للمخزن</h3>
+            <div class="form-row">
+                <input type="text" id="newInvName" class="form-control" placeholder="اسم المادة (مثال: صدور دجاج)">
+                <input type="number" id="newInvQty" class="form-control" placeholder="الكمية المتاحة">
+                <input type="text" id="newInvUnit" class="form-control" placeholder="الوحدة (كغم، علبة، ربطة)">
+                <button onclick="addNewInventoryItem()" class="btn btn-success"><i class="fa-solid fa-plus"></i> إضافة للمخزن</button>
+            </div>
+        </div>
+
+        <!-- جدول عرض المخزون -->
+        <div class="card">
+            <h3>جدول المواد المسجلة</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم المادة</th>
+                        <th>الكمية المتاحة</th>
+                        <th>الوحدة</th>
+                        <th>التحكم</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
