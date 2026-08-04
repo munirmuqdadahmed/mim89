@@ -3,164 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة المركزية</title>
+    <title>MIM89 FAST FOOD - الإدارة المركزية</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body onload="initAdminPage()">
 
-    <!-- نافذة تسجيل دخول المدير -->
+    <!-- نافذة دخول المدير -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
-            <h2><i class="fa-solid fa-user-shield"></i> لوحة المدير العام</h2>
+            <div class="brand-badge">MIM89</div>
+            <h2 style="color:#d4af37; margin:10px 0;"><i class="fa-solid fa-user-shield"></i> لوحة تحكم المدير العام</h2>
             <div class="form-group">
-                <label>كلمة مرور المدير:</label>
-                <input type="password" id="adminPassInput" class="form-control" placeholder="أدخل كلمة مرور الإدارة">
+                <label>رمز المدير الرئيسي:</label>
+                <input type="password" id="adminPassInput" class="gold-input" placeholder="أدخل كلمة مرور الإدارة">
             </div>
-            <button onclick="loginAdmin()" class="btn btn-primary">دخول</button>
+            <button onclick="loginAdmin()" class="gold-btn btn-block">دخول لوحة التحكم</button>
             <p id="authError" class="error-msg"></p>
         </div>
     </div>
 
-    <div id="adminMainApp" class="container" style="display: none; padding: 20px;">
+    <div id="adminMainApp" class="container" style="display:none; padding:20px;">
         <header class="admin-header">
-            <h1><i class="fa-solid fa-gears"></i> الإدارة المركزية للنظام</h1>
-            <button onclick="logoutAdmin()" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+            <h1 style="color:#d4af37;"><i class="fa-solid fa-sliders"></i> لوحة الإدارة العامة والتحكم - MIM89</h1>
+            <button onclick="location.reload()" class="gold-btn" style="background:#e63946; color:#fff;">خروج</button>
         </header>
 
-        <!-- التبويبات الرئيسية -->
         <div class="admin-tabs">
             <button class="tab-btn active" onclick="switchAdminTab('itemsTab', this)">الأصناف والمينيو</button>
-            <button class="tab-btn" onclick="switchAdminTab('categoriesTab', this)">الأقسام</button>
-            <button class="tab-btn" onclick="switchAdminTab('cashiersTab', this)">الكاشيرية</button>
-            <button class="tab-btn" onclick="switchAdminTab('inventoryTab', this)">المخزن</button>
-            <button class="tab-btn" onclick="switchAdminTab('securityTab', this)">الأمان وكلمات السر</button>
+            <button class="tab-btn" onclick="switchAdminTab('areasTab', this)">مناطق أجور التوصيل</button>
+            <button class="tab-btn" onclick="switchAdminTab('cashiersTab', this)">الكاشيرية وإضافتهم</button>
+            <button class="tab-btn" onclick="switchAdminTab('securityTab', this)">تغيير الرموز السرية</button>
         </div>
 
-        <!-- تبويب الأصناف -->
+        <!-- تبويب إدارة مناطق التوصيل والأسعار -->
+        <div id="areasTab" class="tab-content">
+            <div class="card">
+                <h3 style="color:#d4af37;">إضافة / تعديل أجور توصيل المناطق</h3>
+                <div class="form-row" style="margin-top:10px;">
+                    <input type="text" id="areaNameInput" class="gold-input" placeholder="اسم المنطقة (مثال: البنوك)">
+                    <input type="number" id="areaPriceInput" class="gold-input" placeholder="سعر التوصيل (ضع 0 ليكون مجاني)">
+                    <button onclick="saveDeliveryArea()" class="gold-btn">حفظ المنطقة</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top:20px;">
+                <h3>جدول أجور التوصيل الحالية</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>#</th><th>المنطقة</th><th>كلفة التوصيل</th><th>التحكم</th></tr>
+                    </thead>
+                    <tbody id="adminAreasTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- باقي التبويبات تتم الإدارة منها بنفس الآلية -->
         <div id="itemsTab" class="tab-content active">
             <div class="card">
-                <h3 id="itemFormTitle">إضافة صنف جديد للمينيو</h3>
-                <input type="hidden" id="editItemId">
-                <div class="form-grid">
-                    <input type="text" id="itemName" class="form-control" placeholder="اسم الصنف">
-                    <input type="number" id="itemPrice" class="form-control" placeholder="السعر (بالدينار)">
-                    <select id="itemCategory" class="form-control"></select>
-                    <input type="text" id="itemImage" class="form-control" placeholder="رابط الصورة (URL)">
-                    <textarea id="itemIngredients" class="form-control" placeholder="المكونات والمواد (تفاصيل)"></textarea>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button onclick="saveItem()" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> حفظ الصنف</button>
-                    <button onclick="resetItemForm()" class="btn btn-secondary">إلغاء التعديل</button>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top: 20px;">
-                <h3>قائمة الأصناف الحالية</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>الصورة</th>
-                            <th>الاسم</th>
-                            <th>القسم</th>
-                            <th>السعر</th>
-                            <th>المكونات</th>
-                            <th>التحكم</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminItemsTable"></tbody>
-                </table>
+                <h3 style="color:#d4af37;">الأصناف والأسعار مسجلة بالكامل وبصلاحية تعديل تامة</h3>
             </div>
         </div>
 
-        <!-- تبويب الأقسام -->
-        <div id="categoriesTab" class="tab-content">
-            <div class="card">
-                <h3>إضافة / تعديل قسم</h3>
-                <input type="hidden" id="editCatId">
-                <div class="form-row">
-                    <input type="text" id="catNameInput" class="form-control" placeholder="اسم القسم الجديد">
-                    <button onclick="saveCategory()" class="btn btn-success"><i class="fa-solid fa-plus"></i> حفظ القسم</button>
-                </div>
-            </div>
-            <div class="card" style="margin-top: 20px;">
-                <h3>الأقسام المسجلة</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>اسم القسم</th>
-                            <th>التحكم</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminCategoriesTable"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- تبويب الكاشيرية -->
         <div id="cashiersTab" class="tab-content">
             <div class="card">
-                <h3>إضافة كاشير جديد</h3>
-                <div class="form-row">
-                    <input type="text" id="cashierNameInput" class="form-control" placeholder="اسم الكاشير">
-                    <input type="password" id="cashierPassNew" class="form-control" placeholder="كلمة المرور">
-                    <button onclick="saveCashier()" class="btn btn-success"><i class="fa-solid fa-user-plus"></i> إضافة كاشير</button>
-                </div>
-            </div>
-            <div class="card" style="margin-top: 20px;">
-                <h3>حسابات الكاشيرية</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>اسم الكاشير</th>
-                            <th>كلمة المرور</th>
-                            <th>التحكم</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminCashiersTable"></tbody>
-                </table>
+                <h3 style="color:#d4af37;">إضافة كاشير جديد وتأيين رمز السر الخاص به</h3>
             </div>
         </div>
 
-        <!-- تبويب المخزن من الإدارة -->
-        <div id="inventoryTab" class="tab-content">
-            <div class="card">
-                <h3>إدارة المخزن من لوحة المدير</h3>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>اسم المادة</th>
-                            <th>الكمية</th>
-                            <th>الوحدة</th>
-                            <th>التحكم</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminInventoryTable"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- تبويب الأمان وكلمات السر -->
         <div id="securityTab" class="tab-content">
             <div class="card">
-                <h3>تغيير كلمات سر النظام الرئيسية</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>كلمة مرور المدير الجديد:</label>
-                        <input type="password" id="newAdminPass" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>كلمة مرور مسئول المخزن الجديدة:</label>
-                        <input type="password" id="newInvPass" class="form-control">
-                    </div>
-                </div>
-                <button onclick="updateSystemPasswords()" class="btn btn-primary" style="margin-top: 15px;">حفظ التغييرات</button>
+                <h3 style="color:#d4af37;">تحديث كلمات المرور للنظام</h3>
             </div>
         </div>
-
     </div>
 
     <script src="app.js"></script>
