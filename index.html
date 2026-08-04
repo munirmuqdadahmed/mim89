@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD</title>
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Compat Version) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -17,9 +17,9 @@
     <header class="main-header">
         <div class="brand-badge">MIM89</div>
         <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
+        <p class="brand-subtitle">أشهى وجبات الدجاج السريعة بأعلى جودة</p>
         
-        <!-- شريط البحث -->
+        <!-- شريط البحث السريع -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
@@ -132,7 +132,7 @@
     <div id="moreModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-bars-staggered"></i> القائمة الخيارات والمزيد</h2>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-bars-staggered"></i> قائمة الخيارات والمزيد</h2>
             
             <h3 class="sub-heading"><i class="fa-solid fa-list"></i> تصفح الأقسام السريع:</h3>
             <div id="moreCategoriesList" class="more-cats-grid"></div>
