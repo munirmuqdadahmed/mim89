@@ -323,7 +323,6 @@
         const db = firebase.firestore();
 
         document.addEventListener('DOMContentLoaded', () => {
-            // دعم أزرار الإضافة بدون ظهور أي نوافذ منبثقة مزعجة
             document.querySelectorAll('.card').forEach(card => {
                 const addBtn = card.querySelector('.add-to-cart-btn');
                 if (addBtn) {
@@ -349,68 +348,6 @@
                 }
             });
 
-            // ربط زر إرسال الطلب السحابي المباشر والمضمون
-            const sendBtn = document.getElementById('sendOrderDirectBtn');
-            if (sendBtn) {
-                sendBtn.addEventListener('click', () => {
-                    const name = document.getElementById('custName').value.trim();
-                    const phone = document.getElementById('custPhone').value.trim();
-                    const address = document.getElementById('custAddress').value.trim();
-
-                    if (!name || !phone || !address) {
-                        alert("عذراً، يرجى إكمال (الاسم، رقم الهاتف، والعنوان) لكي تصلك الوجبة بدقة.");
-                        return;
-                    }
-
-                    let cartItems = window.cart || [];
-                    if (cartItems.length === 0) {
-                        alert("سلتك فارغة حالياً! اختر وجبتك المفضلة أولاً 🍔");
-                        return;
-                    }
-
-                    let totalAmount = 0;
-                    cartItems.forEach(i => {
-                        let p = parseInt(i.price.toString().replace(/[^0-9]/g, '')) || 0;
-                        totalAmount += p * (i.qty || 1);
-                    });
-
-                    const orderObj = {
-                        id: Date.now(),
-                        customerName: name,
-                        phone: phone,
-                        address: address,
-                        notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
-                        items: cartItems,
-                        total: totalAmount.toLocaleString() + ' د.ع',
-                        type: document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
-                        time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    db.collection("mim89_orders").add(orderObj)
-                    .then(() => {
-                        window.cart = [];
-                        if (typeof window.updateCartUI === 'function') {
-                            window.updateCartUI();
-                        }
-                        const countEl = document.getElementById('cartCount');
-                        if(countEl) countEl.innerText = '0';
-
-                        const cartModal = document.getElementById('cartModal');
-                        if (cartModal) {
-                            cartModal.style.display = 'none';
-                            document.body.classList.remove('cart-open');
-                        }
-
-                        document.getElementById('orderAlertModal').style.display = 'flex';
-                    })
-                    .catch((error) => {
-                        alert("تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
-                    });
-                });
-            }
-
-            // التنقل السلس للقائمة الجانبية
             document.querySelectorAll('.close-menu-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -428,6 +365,65 @@
                     }
                 });
             });
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target && (e.target.id === 'sendOrderDirectBtn' || e.target.closest('#sendOrderDirectBtn'))) {
+                const name = document.getElementById('custName').value.trim();
+                const phone = document.getElementById('custPhone').value.trim();
+                const address = document.getElementById('custAddress').value.trim();
+
+                if (!name || !phone || !address) {
+                    alert("عذراً، يرجى إكمال (الاسم، رقم الهاتف، والعنوان) لكي تصلك الوجبة بدقة.");
+                    return;
+                }
+
+                let cartItems = window.cart || [];
+                if (cartItems.length === 0) {
+                    alert("سلتك فارغة حالياً! اختر وجبتك المفضلة أولاً 🍔");
+                    return;
+                }
+
+                let totalAmount = 0;
+                cartItems.forEach(i => {
+                    let p = parseInt(i.price.toString().replace(/[^0-9]/g, '')) || 0;
+                    totalAmount += p * (i.qty || 1);
+                });
+
+                const orderObj = {
+                    id: Date.now(),
+                    customerName: name,
+                    phone: phone,
+                    address: address,
+                    notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
+                    items: cartItems,
+                    total: totalAmount.toLocaleString() + ' د.ع',
+                    type: document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
+                    time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                db.collection("mim89_orders").add(orderObj)
+                .then(() => {
+                    window.cart = [];
+                    if (typeof window.updateCartUI === 'function') {
+                        window.updateCartUI();
+                    }
+                    const countEl = document.getElementById('cartCount');
+                    if(countEl) countEl.innerText = '0';
+
+                    const cartModal = document.getElementById('cartModal');
+                    if (cartModal) {
+                        cartModal.style.display = 'none';
+                        document.body.classList.remove('cart-open');
+                    }
+
+                    document.getElementById('orderAlertModal').style.display = 'flex';
+                })
+                .catch((error) => {
+                    alert("تعذر إرسال الطلب، تحقق من اتصالك بالإنترنت.");
+                });
+            }
         });
 
         function closeOrderAlert() {
