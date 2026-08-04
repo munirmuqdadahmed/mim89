@@ -345,7 +345,7 @@
     <!-- ملف التنسيقات الخارجي -->
     <script src="style.js?v=400.0"></script>
 
-    <!-- الكود البرمجي الكامل مدمج بالداخل (لا يحتاج لأي ملف script.js خارجي معطل) -->
+    <!-- الكود البرمجي الكامل مدمج بالداخل لضمان العمل 100% -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -360,7 +360,6 @@
         const db = firebase.firestore();
 
         document.addEventListener("DOMContentLoaded", function () {
-            // 1. إخفاء الـ Loader
             const loader = document.getElementById("loader");
             if (loader) {
                 setTimeout(() => {
@@ -369,7 +368,6 @@
                 }, 300);
             }
 
-            // 2. القائمة الجانبية
             const menuBtn = document.getElementById("menuBtn");
             const sideMenu = document.getElementById("sideMenu");
             const menuOverlay = document.getElementById("menuOverlay");
@@ -385,7 +383,6 @@
                 });
             }
 
-            // التنقل السلس للأقسام من القائمة الجانبية
             document.querySelectorAll('.close-menu-link').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -401,7 +398,6 @@
                 });
             });
 
-            // 3. البحث
             const searchInput = document.getElementById("search");
             if (searchInput) {
                 searchInput.addEventListener("keyup", function () {
@@ -414,7 +410,6 @@
                 });
             }
 
-            // 4. السلة وإدارة المنتجات
             let cart = [];
             window.cart = cart;
 
@@ -556,7 +551,6 @@
                 updateCartUI();
             };
 
-            // 5. زر إرسال الطلب المباشر والمضمون إلى Firebase
             const sendBtn = document.getElementById("sendOrderDirectBtn") || document.getElementById("sendOrderBtn");
             if (sendBtn) {
                 sendBtn.addEventListener("click", function (e) {
