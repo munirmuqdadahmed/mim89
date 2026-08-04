@@ -3,50 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المينيو الإلكتروني</title>
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="public-menu-body">
 
     <!-- Header / الهيدر الرئيسي -->
     <header class="main-header">
-        <div class="header-container">
-            <h1 class="brand-title"><i class="fa-solid fa-utensils"></i> قائمـة الطعام</h1>
-            <p class="brand-subtitle">أشهى الوجبات الطازجة يومياً</p>
+        <div class="brand-badge">MIM89</div>
+        <h1 class="brand-title">FAST FOOD</h1>
+        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
+        
+        <!-- شريط البحث السريع -->
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
         </div>
     </header>
 
-    <!-- Navigation Categories / أشرطة الأقسام -->
+    <!-- الأقسام العلوي -->
     <nav class="categories-nav">
-        <div class="categories-container" id="categoriesNav">
-            <!-- يتم تحميل الأقسام ديناميكياً بواسطة JavaScript -->
-        </div>
+        <div class="categories-container" id="categoriesNav"></div>
     </nav>
 
-    <!-- Main Content Area / منطقة عرض الأصناف -->
+    <!-- منطقة عرض الأصناف -->
     <main class="menu-container">
-        <div id="menuSections">
-            <!-- يتم تحميل الأصناف داخل أقسمها ديناميكياً -->
-        </div>
+        <div id="menuSections"></div>
     </main>
 
-    <!-- Modal for Item Details / نافذة تفاصيل الصنف والمواد -->
-    <div id="itemModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <div class="modal-body">
-                <img id="modalImage" src="" alt="صورة الصنف" class="modal-img">
-                <h2 id="modalTitle" class="modal-title"></h2>
-                <span id="modalPrice" class="modal-price"></span>
-                <hr>
-                <h3>المكونات والمواد:</h3>
-                <p id="modalIngredients" class="modal-ingredients"></p>
+    <!-- شريط التنقل السفلي العائم (Bottom Navigation Bar) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="scrollToTop()">
+            <i class="fa-solid fa-house"></i>
+            <span>الرئيسية</span>
+        </button>
+        
+        <button class="nav-item" onclick="openModal('contactModal')">
+            <i class="fa-solid fa-phone"></i>
+            <span>اتصل بنا</span>
+        </button>
+
+        <!-- زر السلة الأوسط البارز -->
+        <div class="cart-btn-wrapper">
+            <button class="cart-main-btn" onclick="openCartModal()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span id="cartBadgeCount" class="cart-badge">0</span>
+            </button>
+        </div>
+
+        <button class="nav-item" onclick="openModal('moreModal')">
+            <i class="fa-solid fa-bars"></i>
+            <span>المزيد</span>
+        </button>
+    </nav>
+
+    <!-- 1. نافذة السلة وإتمام الطلب -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content modal-lg">
+            <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-basket-shopping"></i> سلة الشراء وإتمام الطلب</h2>
+            
+            <div class="cart-modal-body">
+                <div id="cartItemsContainer" class="cart-items-wrapper"></div>
+                
+                <div class="order-form-section">
+                    <h3><i class="fa-solid fa-user-pen"></i> معلومات إرسال الطلب</h3>
+                    
+                    <div class="form-group">
+                        <label>نوع الطلب:</label>
+                        <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
+                            <option value="delivery">توصيل منزلي</option>
+                            <option value="takeaway">استلام من المطعم (سفري)</option>
+                            <option value="dine_in">تناول داخل المطعم</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الاسم الكامل:</label>
+                        <input type="text" id="custName" class="gold-input" placeholder="أدخل اسمك الكريم">
+                    </div>
+
+                    <div class="form-group">
+                        <label>رقم الهاتف:</label>
+                        <input type="tel" id="custPhone" class="gold-input" placeholder="07XXXXXXXXX">
+                    </div>
+
+                    <div id="deliveryFieldsGroup">
+                        <div class="form-group">
+                            <label>المنطقة / الحي:</label>
+                            <input type="text" id="custArea" class="gold-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
+                        </div>
+                        <div class="form-group">
+                            <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
+                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الشقة أو المحلة">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ملاحظات إضافية للطلب:</label>
+                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
+                    </div>
+
+                    <!-- ملخص الحساب -->
+                    <div class="checkout-summary">
+                        <div class="summary-line">
+                            <span>مجموع الوجبات:</span>
+                            <span id="subtotalPrice">0 د.ع</span>
+                        </div>
+                        <div class="summary-line" id="deliveryFeeLine">
+                            <span>كلفة التوصيل:</span>
+                            <span id="deliveryFeePrice">0 د.ع</span>
+                        </div>
+                        <hr class="gold-hr">
+                        <div class="summary-line total-line">
+                            <span>المجموع الكلي:</span>
+                            <span id="finalTotalPrice">0 د.ع</span>
+                        </div>
+                    </div>
+
+                    <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
+                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب للكاشير
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript File -->
+    <!-- 2. نافذة اتصل بنا -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا</h2>
+            <div class="contact-links-list">
+                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
+                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب</a>
+                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
+                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
+                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقعنا على الخريطة</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. نافذة المزيد والملاحظات -->
+    <div id="moreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والملاحظات</h2>
+            
+            <h3>التنقل السريع للأقسام:</h3>
+            <div id="moreCategoriesList" class="more-cats-grid"></div>
+            
+            <hr class="gold-hr">
+            
+            <h3>إرسال اقتراح أو ملاحظة للإدارة:</h3>
+            <div class="form-group">
+                <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
+            </div>
+            <div class="form-group">
+                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+            </div>
+            <button class="gold-btn" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
+        </div>
+    </div>
+
+    <!-- 4. نافذة تفاصيل الوجبة -->
+    <div id="itemDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
+            <img id="detailImg" src="" alt="" class="modal-img">
+            <h2 id="detailTitle" class="modal-gold-title"></h2>
+            <p id="detailPrice" class="detail-price"></p>
+            <p id="detailIngredients" class="detail-ingredients"></p>
+            <div class="modal-actions">
+                <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
