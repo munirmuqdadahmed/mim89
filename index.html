@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
+    <title>MIM89 FAST FOOD</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -19,36 +19,31 @@
         <h1 class="brand-title">FAST FOOD</h1>
         <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
         
-        <!-- شريط البحث السريع -->
+        <!-- شريط البحث -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
         </div>
     </header>
 
-    <!-- الأقسام العلوي -->
+    <!-- الأقسام -->
     <nav class="categories-nav">
         <div class="categories-container" id="categoriesNav"></div>
     </nav>
 
-    <!-- منطقة عرض الأصناف -->
+    <!-- منطقة عرض الوجبات -->
     <main class="menu-container">
         <div id="menuSections"></div>
     </main>
 
-    <!-- شريط التنقل السفلي العائم (Bottom Navigation Bar) -->
+    <!-- شريط التنقل السفلي المتناسق (3 أزرار فقط) -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
             <span>الرئيسية</span>
         </button>
-        
-        <button class="nav-item" onclick="openModal('contactModal')">
-            <i class="fa-solid fa-phone"></i>
-            <span>اتصل بنا</span>
-        </button>
 
-        <!-- زر السلة الأوسط البارز -->
+        <!-- زر السلة الذهبي البارز في الوسط -->
         <div class="cart-btn-wrapper">
             <button class="cart-main-btn" onclick="openCartModal()">
                 <i class="fa-solid fa-cart-shopping"></i>
@@ -57,7 +52,7 @@
         </div>
 
         <button class="nav-item" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-bars"></i>
+            <i class="fa-solid fa-ellipsis"></i>
             <span>المزيد</span>
         </button>
     </nav>
@@ -100,16 +95,15 @@
                         </div>
                         <div class="form-group">
                             <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الشقة أو المحلة">
+                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، المحلة، أو رقم الدار">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>ملاحظات إضافية للطلب:</label>
-                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
+                        <label>ملاحظات الطلب:</label>
+                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية..."></textarea>
                     </div>
 
-                    <!-- ملخص الحساب -->
                     <div class="checkout-summary">
                         <div class="summary-line">
                             <span>مجموع الوجبات:</span>
@@ -127,51 +121,44 @@
                     </div>
 
                     <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب للكاشير
+                        <i class="fa-solid fa-paper-plane"></i> إرسال الطلب للكاشير
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. نافذة اتصل بنا -->
-    <div id="contactModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا</h2>
-            <div class="contact-links-list">
-                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
-                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب</a>
-                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
-                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
-                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقعنا على الخريطة</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. نافذة المزيد والملاحظات -->
+    <!-- 2. نافذة المزيد (تضم الأقسام + اتصل بنا + الملاحظات) -->
     <div id="moreModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والملاحظات</h2>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-bars-staggered"></i> القائمة الخيارات والمزيد</h2>
             
-            <h3>التنقل السريع للأقسام:</h3>
+            <h3 class="sub-heading"><i class="fa-solid fa-list"></i> تصفح الأقسام السريع:</h3>
             <div id="moreCategoriesList" class="more-cats-grid"></div>
             
             <hr class="gold-hr">
             
-            <h3>إرسال اقتراح أو ملاحظة للإدارة:</h3>
-            <div class="form-group">
-                <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
+            <h3 class="sub-heading"><i class="fa-solid fa-headset"></i> اتصل بنا وتواصل معنا:</h3>
+            <div class="contact-links-list">
+                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
+                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة الواتساب</a>
+                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> الإنستغرام</a>
+                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> الفيس بوك</a>
+                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقع المطعم على الخريطة</a>
             </div>
+
+            <hr class="gold-hr">
+
+            <h3 class="sub-heading"><i class="fa-solid fa-comment-dots"></i> أرسل ملاحظة للمطعم:</h3>
             <div class="form-group">
-                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب اقتراحك أو ملاحظتك هنا..."></textarea>
             </div>
-            <button class="gold-btn" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
+            <button class="gold-btn btn-block" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
         </div>
     </div>
 
-    <!-- 4. نافذة تفاصيل الوجبة -->
+    <!-- 3. نافذة تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
@@ -179,9 +166,7 @@
             <h2 id="detailTitle" class="modal-gold-title"></h2>
             <p id="detailPrice" class="detail-price"></p>
             <p id="detailIngredients" class="detail-ingredients"></p>
-            <div class="modal-actions">
-                <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
-            </div>
+            <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
         </div>
     </div>
 
