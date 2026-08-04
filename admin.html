@@ -3,113 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 - لوحة الإدارة المركزية</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
-        body { background: #111; color: #fff; padding: 20px; }
-        h2 { color: #ff9f00; text-align: center; margin-bottom: 20px; }
-        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-family: 'Cairo'; }
-        button { background: #ff9f00; color: #000; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
-        .back-link { display: block; text-align: center; color: #ff9f00; text-decoration: none; margin-top: 15px; font-weight: bold; }
-        
-        .pin-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 3000; display: flex; justify-content: center; align-items: center; }
-        .pin-box { background: #1a1a1a; border: 1px solid #444; border-radius: 12px; padding: 25px; width: 90%; max-width: 350px; text-align: center; }
-    </style>
+    <title>لوحة الإدارة المركزية</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body onload="initAdminPage()">
 
-    <!-- شاشة حماية برمز الإدارة -->
-    <div id="pinScreen" class="pin-screen">
-        <div class="pin-box">
-            <h3 style="color:#ff9f00; margin-bottom:10px;">🔐 لوحة الإدارة المحمية</h3>
-            <p style="font-size:12px; color:#aaa; margin-bottom:15px;">يرجى إدخال رمز الإدارة للدخول (افتراضي: 9999)</p>
-            <input type="password" id="adminPinInput" placeholder="****" style="text-align:center; font-size:18px;" autofocus>
-            <button onclick="verifyAdminPin()">دخول للإدارة</button>
-            <a href="index.html" style="display:block; color:#777; margin-top:15px; font-size:12px; text-decoration:none;">العودة للرئيسية</a>
+    <!-- نافذة تسجيل دخول المدير -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2><i class="fa-solid fa-user-shield"></i> لوحة المدير العام</h2>
+            <div class="form-group">
+                <label>كلمة مرور المدير:</label>
+                <input type="password" id="adminPassInput" class="form-control" placeholder="أدخل كلمة مرور الإدارة">
+            </div>
+            <button onclick="loginAdmin()" class="btn btn-primary">دخول</button>
+            <p id="authError" class="error-msg"></p>
         </div>
     </div>
 
-    <!-- لوحة الإدارة الفعليـة -->
-    <div id="adminContent" style="display:none;">
-        <h2>⚙️ لوحة الإدارة المركزية - MIM89</h2>
+    <div id="adminMainApp" class="container" style="display: none; padding: 20px;">
+        <header class="admin-header">
+            <h1><i class="fa-solid fa-gears"></i> الإدارة المركزية للنظام</h1>
+            <button onclick="logoutAdmin()" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+        </header>
 
-        <div class="card">
-            <h3 style="color:#ff9f00; font-size:14px; margin-bottom:10px;">🔐 إعدادات الرموز وأسماء الكاشير</h3>
-            <label style="font-size:11px; color:#aaa;">اسم الكاشير الأول:</label><input type="text" id="c1Name">
-            <label style="font-size:11px; color:#aaa;">رمز الكاشير الأول:</label><input type="text" id="c1Pin">
-            <label style="font-size:11px; color:#aaa;">اسم الكاشير الثاني:</label><input type="text" id="c2Name">
-            <label style="font-size:11px; color:#aaa;">رمز الكاشير الثاني:</label><input type="text" id="c2Pin">
-            <label style="font-size:11px; color:#aaa;">رمز المخزن:</label><input type="text" id="invPin">
-            <label style="font-size:11px; color:#aaa;">رمز الإدارة:</label><input type="text" id="admPin">
-            <button onclick="saveSettings()">حفظ الإعدادات</button>
+        <!-- التبويبات الرئيسية -->
+        <div class="admin-tabs">
+            <button class="tab-btn active" onclick="switchAdminTab('itemsTab', this)">الأصناف والمينيو</button>
+            <button class="tab-btn" onclick="switchAdminTab('categoriesTab', this)">الأقسام</button>
+            <button class="tab-btn" onclick="switchAdminTab('cashiersTab', this)">الكاشيرية</button>
+            <button class="tab-btn" onclick="switchAdminTab('inventoryTab', this)">المخزن</button>
+            <button class="tab-btn" onclick="switchAdminTab('securityTab', this)">الأمان وكلمات السر</button>
         </div>
 
-        <div class="card">
-            <h3 style="color:#ff9f00; font-size:14px; margin-bottom:10px;">🍔 إضافة وجبة جديدة للمينيو</h3>
-            <input type="text" id="mCat" placeholder="القسم (مثلاً: 🌯 قسم الشاورما)">
-            <input type="text" id="mName" placeholder="اسم الوجبة">
-            <input type="text" id="mPrice" placeholder="السعر (مثلاً: 3,000 د.ع)">
-            <input type="text" id="mImg" placeholder="رابط الصورة">
-            <button onclick="addNewMeal()">إضافة الوجبة</button>
+        <!-- تبويب الأصناف -->
+        <div id="itemsTab" class="tab-content active">
+            <div class="card">
+                <h3 id="itemFormTitle">إضافة صنف جديد للمينيو</h3>
+                <input type="hidden" id="editItemId">
+                <div class="form-grid">
+                    <input type="text" id="itemName" class="form-control" placeholder="اسم الصنف">
+                    <input type="number" id="itemPrice" class="form-control" placeholder="السعر (بالدينار)">
+                    <select id="itemCategory" class="form-control"></select>
+                    <input type="text" id="itemImage" class="form-control" placeholder="رابط الصورة (URL)">
+                    <textarea id="itemIngredients" class="form-control" placeholder="المكونات والمواد (تفاصيل)"></textarea>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button onclick="saveItem()" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> حفظ الصنف</button>
+                    <button onclick="resetItemForm()" class="btn btn-secondary">إلغاء التعديل</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h3>قائمة الأصناف الحالية</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الصورة</th>
+                            <th>الاسم</th>
+                            <th>القسم</th>
+                            <th>السعر</th>
+                            <th>المكونات</th>
+                            <th>التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminItemsTable"></tbody>
+                </table>
+            </div>
         </div>
 
-        <a href="index.html" class="back-link">⬅ العودة إلى القائمة الرئيسية</a>
-        <a href="cashier.html" class="back-link" style="color:#25d366;">💻 الانتقال لشاشة الكاشير</a>
+        <!-- تبويب الأقسام -->
+        <div id="categoriesTab" class="tab-content">
+            <div class="card">
+                <h3>إضافة / تعديل قسم</h3>
+                <input type="hidden" id="editCatId">
+                <div class="form-row">
+                    <input type="text" id="catNameInput" class="form-control" placeholder="اسم القسم الجديد">
+                    <button onclick="saveCategory()" class="btn btn-success"><i class="fa-solid fa-plus"></i> حفظ القسم</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>الأقسام المسجلة</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم القسم</th>
+                            <th>التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminCategoriesTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب الكاشيرية -->
+        <div id="cashiersTab" class="tab-content">
+            <div class="card">
+                <h3>إضافة كاشير جديد</h3>
+                <div class="form-row">
+                    <input type="text" id="cashierNameInput" class="form-control" placeholder="اسم الكاشير">
+                    <input type="password" id="cashierPassNew" class="form-control" placeholder="كلمة المرور">
+                    <button onclick="saveCashier()" class="btn btn-success"><i class="fa-solid fa-user-plus"></i> إضافة كاشير</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>حسابات الكاشيرية</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم الكاشير</th>
+                            <th>كلمة المرور</th>
+                            <th>التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminCashiersTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب المخزن من الإدارة -->
+        <div id="inventoryTab" class="tab-content">
+            <div class="card">
+                <h3>إدارة المخزن من لوحة المدير</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم المادة</th>
+                            <th>الكمية</th>
+                            <th>الوحدة</th>
+                            <th>التحكم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminInventoryTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب الأمان وكلمات السر -->
+        <div id="securityTab" class="tab-content">
+            <div class="card">
+                <h3>تغيير كلمات سر النظام الرئيسية</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>كلمة مرور المدير الجديد:</label>
+                        <input type="password" id="newAdminPass" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة مرور مسئول المخزن الجديدة:</label>
+                        <input type="password" id="newInvPass" class="form-control">
+                    </div>
+                </div>
+                <button onclick="updateSystemPasswords()" class="btn btn-primary" style="margin-top: 15px;">حفظ التغييرات</button>
+            </div>
+        </div>
+
     </div>
 
-<script>
-    function verifyAdminPin() {
-        const pin = document.getElementById('adminPinInput').value.trim();
-        const settings = JSON.parse(localStorage.getItem('mim89_settings')) || { admPin: "9999" };
-
-        if (pin === settings.admPin) {
-            document.getElementById('pinScreen').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
-            loadSettings();
-        } else {
-            alert("❌ الرمز السري للإدارة غير صحيح!");
-        }
-    }
-
-    function loadSettings() {
-        const settings = JSON.parse(localStorage.getItem('mim89_settings')) || { c1Name: "الكاشير الأول", c1Pin: "1111", c2Name: "الكاشير الثاني", c2Pin: "2222", invPin: "3333", admPin: "9999" };
-        document.getElementById('c1Name').value = settings.c1Name;
-        document.getElementById('c1Pin').value = settings.c1Pin;
-        document.getElementById('c2Name').value = settings.c2Name;
-        document.getElementById('c2Pin').value = settings.c2Pin;
-        document.getElementById('invPin').value = settings.invPin;
-        document.getElementById('admPin').value = settings.admPin;
-    }
-
-    function saveSettings() {
-        const newSettings = {
-            c1Name: document.getElementById('c1Name').value,
-            c1Pin: document.getElementById('c1Pin').value,
-            c2Name: document.getElementById('c2Name').value,
-            c2Pin: document.getElementById('c2Pin').value,
-            invPin: document.getElementById('invPin').value,
-            admPin: document.getElementById('admPin').value
-        };
-        localStorage.setItem('mim89_settings', JSON.stringify(newSettings));
-        alert("✅ تم حفظ إعدادات النظام بنجاح!");
-    }
-
-    function addNewMeal() {
-        let cat = document.getElementById('mCat').value.trim();
-        let name = document.getElementById('mName').value.trim();
-        let price = document.getElementById('mPrice').value.trim();
-        let img = document.getElementById('mImg').value.trim() || "https://foodish-api.com/images/burger/burger1.jpg";
-
-        if(!cat || !name || !price) return alert("يرجى تعبئة الحقول الأساسية!");
-        let menu = JSON.parse(localStorage.getItem('mim89_custom_menu')) || [];
-        menu.push({ id: Date.now(), cat, name, price, img });
-        localStorage.setItem('mim89_custom_menu', JSON.stringify(menu));
-        alert("✅ تمت إضافة الوجبة بنجاح!");
-        document.getElementById('mName').value = '';
-        document.getElementById('mPrice').value = '';
-    }
-</script>
+    <script src="app.js"></script>
 </body>
 </html>
