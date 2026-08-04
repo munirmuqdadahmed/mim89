@@ -7,7 +7,7 @@
     <title>MIM89 FAST FOOD</title>
     <meta name="description" content="MIM89 Fast Food">
 
-    <link rel="stylesheet" href="style.css?v=400.0">
+    <link rel="stylesheet" href="style.css?v=500.0">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,26 +16,50 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     
     <style>
+        /* تأمين القائمة الجانبية لضمان عدم ظهورها أبداً في أعلى الصفحة */
+        .side-menu {
+            position: fixed !important;
+            top: 0 !important;
+            right: -280px !important;
+            width: 280px !important;
+            height: 100vh !important;
+            background: #1a1a1a !important;
+            border-left: 2px solid #ff9f00 !important;
+            z-index: 99999 !important;
+            padding: 25px 15px !important;
+            transition: right 0.3s ease !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow-y: auto !important;
+        }
+        .side-menu.active { right: 0 !important; }
+        .menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 99998; display: none;
+        }
+        .menu-overlay.active { display: block; }
+
         .top-nav { display: flex; justify-content: center; align-items: center; }
         .logo { text-align: center; display: flex; flex-direction: column; align-items: center; width: 100%; }
         .logo h1 { font-size: 26px; font-weight: 900; color: #ff9f00; line-height: 1; }
         .logo span { font-size: 11px; color: #ccc; font-weight: bold; margin-top: 5px; }
         .hero-content h2, .hero-content p { display: none; }
         .hero-content { padding: 5px 0; text-align: center; }
-        .bottom-nav .center-cart-btn {
+        
+        .bottom-nav .center-btn {
             background: #ff9f00 !important; color: #000 !important; width: 45px; height: 45px;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             margin-top: -15px; border: 3px solid #111; position: relative; cursor: pointer;
         }
-        .bottom-nav .center-cart-btn i { font-size: 18px; }
-        .bottom-nav .center-cart-btn span {
+        .bottom-nav .center-btn i { font-size: 18px; }
+        .bottom-nav .center-btn span {
             position: absolute; top: -3px; right: -3px; background: #e63946; color: #fff;
             font-size: 9px; width: 17px; height: 17px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; font-weight: bold;
         }
         #orderAlertModal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center;
         }
         .alert-box {
             background: #1a1a1a; border: 2px solid #ff9f00; padding: 25px; border-radius: 15px;
@@ -47,7 +71,6 @@
             background: #ff9f00; color: #000; border: none; padding: 10px 20px;
             border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;
         }
-        #sendOrderDirectBtn:active { transform: scale(0.98); }
     </style>
 </head>
 
@@ -58,46 +81,44 @@
         <h2>MIM89</h2>
     </div>
 
-    <div id="menuOverlay" class="menu-overlay"></div>
+    <div class="menu-overlay" id="menuOverlay"></div>
 
+    <!-- القائمة الجانبية المخفية تماماً بالطريقة الصحيحة -->
     <div class="side-menu" id="sideMenu">
-        <a href="tel:07750008630">📞 07750008630</a>
-        <a href="tel:07850008630">📞 07850008630</a>
-        <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
-        <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
-        <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 انستغرام</a>
-        <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 فيسبوك</a>
-        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
+        <a href="tel:07750008630" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fas fa-phone"></i> 07750008630</a>
+        <a href="tel:07850008630" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fas fa-phone"></i> 07850008630</a>
+        <a href="https://wa.me/9647750008630" target="_blank" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fab fa-whatsapp"></i> واتساب الأول</a>
+        <a href="https://wa.me/9647850008630" target="_blank" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fab fa-whatsapp"></i> واتساب الثاني</a>
+        <a href="https://www.instagram.com/mim89fastfood" target="_blank" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fab fa-instagram"></i> انستغرام</a>
+        <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fab fa-facebook"></i> فيسبوك</a>
+        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank" style="color:#fff; padding:12px 10px; border-bottom:1px solid #333; font-size:15px; font-weight:bold; display:flex; align-items:center; gap:10px;"><i class="fas fa-map-marker-alt"></i> موقع المطعم</a>
 
-        <div class="side-menu-sections">
-            <h4>📋 أقسام المينيو السريعة:</h4>
-            <a href="javascript:void(0);" data-target="offers" class="close-menu-link">🔥 العروض الخاصة</a>
-            <a href="javascript:void(0);" data-target="burger" class="close-menu-link">🍔 قسم البركر</a>
-            <a href="javascript:void(0);" data-target="fajita" class="close-menu-link">🌮 قسم الفاهيتا</a>
-            <a href="javascript:void(0);" data-target="shawarma" class="close-menu-link">🌯 قسم الشاورما</a>
-            <a href="javascript:void(0);" data-target="rizo" class="close-menu-link">🍚 قسم الريزو</a>
-            <a href="javascript:void(0);" data-target="kentucky" class="close-menu-link">🍗 قسم الكنتاكي</a>
-            <a href="javascript:void(0);" data-target="appetizers" class="close-menu-link">🍟 المقبلات والفنكر</a>
-            <a href="javascript:void(0);" data-target="drinks" class="close-menu-link">🥤 قسم المشروبات</a>
+        <div class="side-menu-sections" style="border-top: 1px solid #333; margin-top: 15px; padding-top: 10px;">
+            <h4 style="color: #ff9f00; font-size: 14px; margin-bottom: 8px;">📋 أقسام المينيو السريعة:</h4>
+            <a href="javascript:void(0);" data-target="offers" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🔥 العروض الخاصة</a>
+            <a href="javascript:void(0);" data-target="burger" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🍔 قسم البركر</a>
+            <a href="javascript:void(0);" data-target="fajita" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🌮 قسم الفاهيتا</a>
+            <a href="javascript:void(0);" data-target="shawarma" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🌯 قسم الشاورما</a>
+            <a href="javascript:void(0);" data-target="rizo" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🍚 قسم الريزو</a>
+            <a href="javascript:void(0);" data-target="kentucky" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🍗 قسم الكنتاكي</a>
+            <a href="javascript:void(0);" data-target="appetizers" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🍟 المقبلات والفنكر</a>
+            <a href="javascript:void(0);" data-target="drinks" style="color:#fff; padding:8px 5px; display:block; font-size:14px;">🥤 قسم المشروبات</a>
         </div>
     </div>
 
     <header class="hero">
-        <div class="overlay"></div>
-
-        <nav class="top-nav">
+        <div class="top-nav">
             <div class="logo">
                 <h1>MIM89 FAST FOOD</h1>
                 <span>كل الطعم... في مكان واحد</span>
             </div>
-        </nav>
-
+        </div>
         <div class="hero-content"></div>
 
         <nav class="bottom-nav">
             <a href="#"><i class="fas fa-house"></i><span>الرئيسية</span></a>
             <a href="#offers"><i class="fas fa-fire"></i><span>العروض</span></a>
-            <a href="javascript:void(0);" id="cartBtn" class="center-cart-btn">
+            <a href="javascript:void(0);" id="cartBtn" class="center-btn">
                 <i class="fas fa-shopping-cart"></i>
                 <span id="cartCount">0</span>
             </a>
@@ -126,7 +147,7 @@
                 </div>
             </div>
             <div class="card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="8500">
-                <span class="badge">الأكثر طلباً</span>
+                <span class="badge new">الأكثر طلباً</span>
                 <img src="https://foodish-api.com/images/samosa/samosa1.jpg" alt="عرض الشاورما">
                 <h3>🌯 عرض ميكس الشاورما</h3>
                 <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
@@ -287,38 +308,38 @@
     </section>
 
     <!-- Cart Modal Box -->
-    <div id="cartModal" class="cart-modal">
-        <div class="cart-content">
-            <div class="cart-header">
-                <h3><i class="fas fa-shopping-bag"></i> سلة الطلبات</h3>
-                <span id="closeCart" class="close-cart">&times;</span>
+    <div id="cartModal" class="cart-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center; padding: 15px;">
+        <div class="cart-content" style="background: #1a1a1a; border-radius: 15px; border: 2px solid #ff9f00; width: 100%; max-width: 450px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div class="cart-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333;">
+                <h3 style="color: #ff9f00; font-size: 18px;"><i class="fas fa-shopping-bag"></i> سلة الطلبات</h3>
+                <span id="closeCart" class="close-cart" style="font-size: 24px; color: #aaa; cursor: pointer;">&times;</span>
             </div>
             
-            <div class="cart-scroll-body">
-                <div id="cartItems" class="cart-items">
-                    <p class="empty-msg">السلة فارغة حالياً</p>
+            <div class="cart-scroll-body" style="padding: 15px; overflow-y: auto;">
+                <div id="cartItems" class="cart-items" style="margin-bottom: 15px; max-height: 180px; overflow-y: auto;">
+                    <p class="empty-msg" style="text-align: center; color: #777; font-size: 14px;">السلة فارغة حالياً</p>
                 </div>
 
                 <div class="cart-footer">
-                    <div class="total-price">
+                    <div class="total-price" style="display: flex; justify-content: space-between; font-size: 17px; font-weight: 900; color: #ff9f00; padding: 10px 0; border-top: 1px solid #333; margin-bottom: 15px;">
                         <span>المجموع الكلي:</span>
                         <span id="cartTotal">0 د.ع</span>
                     </div>
                     
                     <div class="user-details">
-                        <div class="segmented-control">
-                            <button type="button" class="segment-btn active" id="btnDelivery">🛵 توصيل</button>
-                            <button type="button" class="segment-btn" id="btnTakeaway">🛍️ استلام من المطعم</button>
+                        <div class="segmented-control" style="display: flex; background: #222; border-radius: 8px; padding: 3px; margin-bottom: 12px;">
+                            <button type="button" class="segment-btn active" id="btnDelivery" style="flex:1; background:#ff9f00; color:#000; border:none; padding:8px; font-size:13px; font-weight:bold; border-radius:6px; cursor:pointer;">🛵 توصيل</button>
+                            <button type="button" class="segment-btn" id="btnTakeaway" style="flex:1; background:transparent; border:none; color:#aaa; padding:8px; font-size:13px; font-weight:bold; border-radius:6px; cursor:pointer;">🛍️ استلام من المطعم</button>
                         </div>
 
-                        <input type="text" id="custName" placeholder="الاسم الكامل" required>
-                        <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required>
-                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة (مثال: القاهرة...)" required>
-                        <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
+                        <input type="text" id="custName" placeholder="الاسم الكامل" required style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #333; border-radius:8px; color:#fff; font-size:16px;">
+                        <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #333; border-radius:8px; color:#fff; font-size:16px;">
+                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة (مثال: القاهرة...)" required style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #333; border-radius:8px; color:#fff; font-size:16px;">
+                        <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)" style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #333; border-radius:8px; color:#fff; font-size:16px;">
                     </div>
 
                     <!-- زر إرسال الطلب السحابي الفوري -->
-                    <button id="sendOrderDirectBtn" class="send-order-btn" style="background: linear-gradient(135deg, #25d366, #128c7e); width: 100%; border: none; padding: 12px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                    <button id="sendOrderDirectBtn" style="background: linear-gradient(135deg, #25d366, #128c7e); width: 100%; border: none; padding: 12px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px;">
                         <i class="fas fa-paper-plane"></i> إرسال الطلب والاستمتاع بأطيب طعم 🍔✨
                     </button>
                 </div>
@@ -343,7 +364,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <!-- الكود البرمجي بالكامل مع تفويض عام للأحداث (Event Delegation) لضمان العمل المطلق -->
+    <!-- الكود البرمجي الكامل والمضبوط تماماً -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -381,12 +402,12 @@
                 });
             }
 
-            document.querySelectorAll('.close-menu-link').forEach(link => {
+            document.querySelectorAll('.side-menu-sections a').forEach(link => {
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
                     const targetId = this.getAttribute('data-target');
-                    sideMenu.classList.remove('active');
-                    menuOverlay.classList.remove('active');
+                    if (sideMenu) sideMenu.classList.remove('active');
+                    if (menuOverlay) menuOverlay.classList.remove('active');
                     const targetEl = document.getElementById(targetId);
                     if (targetEl) {
                         setTimeout(() => {
@@ -432,15 +453,19 @@
             if (btnDelivery && btnTakeaway) {
                 btnDelivery.addEventListener("click", () => {
                     isDelivery = true;
-                    btnDelivery.classList.add("active");
-                    btnTakeaway.classList.remove("active");
+                    btnDelivery.style.background = "#ff9f00";
+                    btnDelivery.style.color = "#000";
+                    btnTakeaway.style.background = "transparent";
+                    btnTakeaway.style.color = "#aaa";
                     updateCartUI();
                 });
 
                 btnTakeaway.addEventListener("click", () => {
                     isDelivery = false;
-                    btnTakeaway.classList.add("active");
-                    btnDelivery.classList.remove("active");
+                    btnTakeaway.style.background = "#ff9f00";
+                    btnTakeaway.style.color = "#000";
+                    btnDelivery.style.background = "transparent";
+                    btnDelivery.style.color = "#aaa";
                     updateCartUI();
                 });
             }
@@ -468,7 +493,7 @@
                 if (cartCount) cartCount.innerText = totalQty;
 
                 if (cart.length === 0) {
-                    cartItems.innerHTML = '<p class="empty-msg" style="color:#777; text-align:center; font-size:12px;">السلة فارغة حالياً</p>';
+                    cartItems.innerHTML = '<p class="empty-msg" style="text-align: center; color: #777; font-size: 14px;">السلة فارغة حالياً</p>';
                     if (cartTotal) cartTotal.innerText = "0 د.ع";
                     return;
                 }
@@ -524,9 +549,8 @@
             };
         });
 
-        // استخدام تفويض الأحداث العام (Global Delegation) لإضافة المنتجات وزر الإرسال لضمان عدم توقفهم أبداً
+        // تفويض عام للأحداث لضمان عمل الأزرار والإرسال الفوري لـ Firebase
         document.addEventListener("click", function (e) {
-            // إضافة المنتج للسلة
             const addBtn = e.target.closest(".add-to-cart-btn");
             if (addBtn) {
                 const card = addBtn.closest(".card");
@@ -554,8 +578,7 @@
                 return;
             }
 
-            // زر إرسال الطلب المباشر والسحابي
-            const sendBtn = e.target.closest("#sendOrderDirectBtn") || e.target.closest("#sendOrderBtn");
+            const sendBtn = e.target.closest("#sendOrderDirectBtn");
             if (sendBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -587,16 +610,8 @@
                     return;
                 }
 
-                const btnDelivery = document.getElementById("btnDelivery");
-                const isDelivery = btnDelivery ? btnDelivery.classList.contains("active") : true;
-
-                if (isDelivery && !address) {
-                    alert("⚠️ يرجى كتابة العنوان التفصيلي / المنطقة لتوصيل الطلب!");
-                    if (addressInput) addressInput.focus();
-                    return;
-                }
-
-                const deliveryFee = (isDelivery && !(address.toLowerCase().includes("القاهرة") || address.toLowerCase().includes("قاهرة") || address.toLowerCase().includes("القاهره"))) ? 3000 : 0;
+                const addressText = address.toLowerCase();
+                const deliveryFee = (addressText.includes("القاهرة") || addressText.includes("قاهرة") || addressText.includes("القاهره")) ? 0 : 3000;
                 const subtotal = window.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
                 const grandTotal = subtotal + deliveryFee;
 
@@ -604,11 +619,11 @@
                     id: Date.now(),
                     customerName: name,
                     phone: phone,
-                    address: isDelivery ? address : "استلام من المطعم",
+                    address: address,
                     notes: notes,
                     items: window.cart,
                     total: grandTotal.toLocaleString() + " د.ع",
-                    type: isDelivery ? "توصيل للمنزل" : "استلام من المطعم",
+                    type: "توصيل للمنزل",
                     time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -620,15 +635,10 @@
                         window.updateCartUI();
                     }
                     const cartModal = document.getElementById("cartModal");
-                    if (cartModal) {
-                        cartModal.style.display = "none";
-                        document.body.classList.remove('cart-open');
-                    }
+                    if (cartModal) cartModal.style.display = "none";
                     
                     const alertModal = document.getElementById("orderAlertModal");
-                    if (alertModal) {
-                        alertModal.style.display = "flex";
-                    }
+                    if (alertModal) alertModal.style.display = "flex";
 
                     if (nameInput) nameInput.value = "";
                     if (phoneInput) phoneInput.value = "";
