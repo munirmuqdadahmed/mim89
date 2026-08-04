@@ -180,7 +180,7 @@
 
         <div class="hero-content"></div>
 
-        <!-- الشريط السفلي (مع تعديل الموقع إلى "اتصل بنا" وأيقونة هاتف) -->
+        <!-- الشريط السفلي -->
         <nav class="bottom-nav">
             <a href="#">
                 <i class="fas fa-house"></i>
@@ -414,14 +414,11 @@
     <script src="script.js?v=400.0"></script>
 
     <script>
-        // معالجة إرسال الطلب عبر قراءة محتوى سلة الـ DOM مباشرة لضمان عدم ظهور "السلة فارغة"
+        // ربط زر الإرسال المباشر للكاشير مع السلة الأصلية
         document.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
-                sendBtn.replaceWith(sendBtn.cloneNode(true));
-                const newSendBtn = document.getElementById('sendOrderDirectBtn');
-                
-                newSendBtn.addEventListener('click', () => {
+                sendBtn.addEventListener('click', () => {
                     const name = document.getElementById('custName').value.trim();
                     const phone = document.getElementById('custPhone').value.trim();
                     const address = document.getElementById('custAddress').value.trim();
@@ -431,71 +428,47 @@
                         return;
                     }
 
-                    // جمع الأطباق الموجودة في السلة مباشرة من الشاشة (DOM) لضمان الدقة المطلقة
-                    let extractedItems = [];
-                    const cartRows = document.querySelectorAll('#cartItems .cart-item, #cartItems > div');
-                    
-                    cartRows.forEach(row => {
-                        const titleEl = row.querySelector('h4, .item-name, span:first-child');
-                        const priceEl = row.querySelector('.item-price, span');
-                        const qtyEl = row.querySelector('.qty, input, span');
-                        
-                        if (titleEl && titleEl.innerText.trim() !== "السلة فارغة حالياً") {
-                            extractedItems.push({
-                                name: titleEl.innerText.trim(),
-                                price: priceEl ? priceEl.innerText.trim() : '0',
-                                qty: 1
-                            });
-                        }
-                    });
-
-                    // فحص احتياطي من المتغيرات العامة في الـ script.js إن وجدت
-                    if (extractedItems.length === 0 && window.cart && Array.isArray(window.cart) && window.cart.length > 0) {
-                        extractedItems = window.cart;
-                    }
-
-                    // فحص إضافي بناءً على نص الـ المجموع الكلي أو عدد عناصر العداد
-                    const cartCountEl = document.getElementById('cartCount');
-                    const badgeCount = cartCountEl ? parseInt(cartCountEl.innerText) || 0 : 0;
-
-                    if (extractedItems.length === 0 && badgeCount === 0) {
-                        alert("سلة الطلبات فارغة حالياً! يرجى إضافة وجبات أولاً.");
+                    let cartItems = window.cart || [];
+                    if (cartItems.length === 0) {
+                        alert("سلة الطلبات فارغة حالياً!");
                         return;
                     }
 
-                    // إذا وُجد عداد في السلة ولكن فشل استخلاص الأسطر، ننشئ عنصراً افتراضياً لتأكيد الطلب
-                    if (extractedItems.length === 0 && badgeCount > 0) {
-                        extractedItems.push({ name: "أصناف متنوعة من المينيو", price: document.getElementById('cartTotal').innerText, qty: badgeCount });
-                    }
+                    let totalAmount = 0;
+                    cartItems.forEach(i => {
+                        let p = parseInt(i.price.toString().replace(/[^0-9]/g, '')) || 0;
+                        totalAmount += p * (i.qty || 1);
+                    });
 
                     const orderObj = {
                         id: Date.now(),
                         customerName: name,
                         phone: phone,
                         address: address,
-                        notes: document.getElementById('custNotes').value,
-                        items: extractedItems,
-                        total: document.getElementById('cartTotal').innerText,
-                        type: document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
+                        notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
+                        items: cartItems,
+                        total: totalAmount.toLocaleString() + ' د.ع',
+                        type: document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم',
                         time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'})
                     };
 
-                    // حفظ الطلب في الذاكرة المشتركة ليصل لشاشة الكاشير فوراً
-                    localStorage.setItem('mim89_online_order', JSON.stringify(orderObj));
+                    let existingOrders = JSON.parse(localStorage.getItem('mim89_pending_orders')) || [];
+                    existingOrders.push(orderObj);
+                    localStorage.setItem('mim89_pending_orders', JSON.stringify(existingOrders));
 
-                    // تفريغ السلة وتحديث الواجهة
-                    if (window.cart) window.cart = [];
-                    const cartContainer = document.getElementById('cartItems');
-                    if (cartContainer) cartContainer.innerHTML = '<p class="empty-msg">السلة فارغة حالياً</p>';
-                    if (cartCountEl) cartCountEl.innerText = '0';
-                    const cartTotalEl = document.getElementById('cartTotal');
-                    if (cartTotalEl) cartTotalEl.innerText = '0 د.ع';
+                    window.cart = [];
+                    if (typeof window.updateCartUI === 'function') {
+                        window.updateCartUI();
+                    }
 
-                    document.getElementById('cartModal').style.display = 'none';
-                    document.body.classList.remove('cart-open');
+                    const cartModal = document.getElementById('cartModal');
+                    if (cartModal) {
+                        cartModal.style.display = 'none';
+                        document.body.classList.remove('cart-open');
+                    }
 
-                    // إظهار نافذة التنبيه بنجاح الإرسال للزبون
-                    document.getElementById('orderAlertModal').style.display = 'flex';
+                    const alertModal = document.getElementById('orderAlertModal');
+                    if (alertModal) alertModal.style.display = 'flex';
                 });
             }
 
