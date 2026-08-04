@@ -301,7 +301,7 @@
                         <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
                     </div>
 
-                    <!-- زر إرسال الطلب السحابي -->
+                    <!-- زر إرسال الطلب السحابي المباشر -->
                     <button id="sendOrderDirectBtn" class="send-order-btn" style="background: linear-gradient(135deg, #25d366, #128c7e); width: 100%; border: none; padding: 12px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; margin-top: 10px;">
                         <i class="fas fa-paper-plane"></i> إرسال الطلب والاستمتاع بأطيب طعم 🍔✨
                     </button>
@@ -331,7 +331,7 @@
     <script src="style.js?v=400.0"></script>
     <script src="script.js?v=400.0"></script>
 
-    <!-- كود الربط السحابي وإرسال الطلبات المضمون (قراءة مرئية من الشاشة) -->
+    <!-- كود الإرسال السحابي (بدون قيود، يرسل مباشرة ما يراه الزبون في شاشته) -->
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -349,7 +349,7 @@
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (!sendBtn) return;
 
-            // إبدال الزر لقطع أي تعارض محتمل مع script.js القديم
+            // استبدال الزر لقص أي تداخل قديم من script.js
             const cleanBtn = sendBtn.cloneNode(true);
             sendBtn.parentNode.replaceChild(cleanBtn, sendBtn);
 
@@ -366,16 +366,10 @@
                     return;
                 }
 
-                // قراءة محتويات السلة المرئية على الشاشة بدلاً من الاعتماد على متغيرات script.js الداخلية
+                // قراءة محتويات السلة من الشاشة مباشرة دون شروط معقدة
                 const cartContainer = document.getElementById('cartItems');
-                const cartHTML = cartContainer ? cartContainer.innerHTML : "";
+                const itemsText = cartContainer ? cartContainer.innerText : "طلب مباشر";
                 const totalText = document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "0 د.ع";
-
-                if (!cartContainer || cartHTML.includes("فارغة") || cartHTML.trim() === "") {
-                    alert("سلتك فارغة حالياً! اختر وجبتك المفضلة أولاً 🍔");
-                    return;
-                }
-
                 const orderType = document.getElementById('btnDelivery') && document.getElementById('btnDelivery').classList.contains('active') ? 'توصيل' : 'استلام من المطعم';
 
                 const orderObj = {
@@ -384,13 +378,14 @@
                     phone: phone,
                     address: address,
                     notes: document.getElementById('custNotes') ? document.getElementById('custNotes').value : '',
-                    itemsSummary: cartHTML,
+                    itemsSummary: itemsText,
                     total: totalText,
                     type: orderType,
                     time: new Date().toLocaleTimeString('ar-IQ', {hour: '2-digit', minute:'2-digit'}),
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
+                // إرسال الطلب فوراً إلى فايربيس
                 db.collection("mim89_orders").add(orderObj)
                 .then(() => {
                     const cartModal = document.getElementById('cartModal');
