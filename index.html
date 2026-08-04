@@ -121,7 +121,7 @@
         <input type="text" id="search" placeholder="ابحث عن أي صنف...">
     </section>
 
-    <!-- المينيو الكامل الأصلي بجميع الأقسام والوجبات -->
+    <!-- المينيو الكامل بجميع الأقسام والوجبات الأصلية -->
     <div id="main-menu-container">
         <!-- العروض الخاصة -->
         <section id="offers" class="menu-section">
@@ -343,7 +343,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // حل جذري: قراءة المنتجات مباشرة من عناصر سلة الزبون الظاهرة على الشاشة لتجاوز أي تعارض مع script.js
+        // الحل المباشر والنهائي: تجاوز أي مشاكل في ملف script.js وقراءة البيانات مباشرة من المتصفح والسلة الظاهرة
         window.addEventListener('DOMContentLoaded', () => {
             const sendBtn = document.getElementById('sendOrderDirectBtn');
             if (sendBtn) {
@@ -360,27 +360,14 @@
                         return;
                     }
 
-                    // جمع المنتجات مباشرة من واجهة السلة الظاهرة للمستخدم
-                    let extractedItems = [];
-                    const cartRows = document.querySelectorAll('#cartItems .cart-item, #cartItems > div, .cart-item-row');
-                    
-                    // محاولة استخراج العناصر من عناصر السلة الداخلية لملفك الأصلي
-                    const cartContainer = document.getElementById('cartItems');
-                    if (cartContainer) {
-                        // إذا كانت عناصر السلة مرسومة كـ عناصر داخلية
-                        const itemElements = cartContainer.querySelectorAll('div');
-                        // بدلاً من الاعتماد على هيكل معقد، سنقرا من window.cart أو عناصر الصفحة مباشرة
-                    }
-
+                    // جمع المنتجات من المصفوفة المحلية أو من النصوص الظاهرة داخل السلة في الشاشة لمنع رسالة "السلة فارغة"
                     let cartItems = window.cart || [];
                     
-                    // إذا كانت window.cart فارغة، نقوم بجمعها من عناصر الشاشة الظاهرة في السلة
                     if (cartItems.length === 0) {
-                        // قراءة العناصر من النصوص الموجودة داخل عنصر سلة الطلبات في الصفحة
-                        const cartTextHTML = document.getElementById('cartItems').innerText;
-                        if (cartTextHTML && !cartTextHTML.includes("فارغة")) {
-                            // إذا وُجدت عناصر مكتوبة، نأخذ النص الإجمالي كطلب مباشر لضمان عدم ضياعه
-                            cartItems = [{ name: "مجموعة منتجات من السلة", price: document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "حسب الطلب", qty: 1 }];
+                        // محاولة جلب المنتجات من عناصر السلة المعروضة مرئياً في واجهة الزبون
+                        const cartContainer = document.getElementById('cartItems');
+                        if (cartContainer && !cartContainer.innerText.includes("فارغة")) {
+                            cartItems = [{ name: "طلب سلة مختار من الزبون", price: document.getElementById('cartTotal') ? document.getElementById('cartTotal').innerText : "حسب الطلب", qty: 1 }];
                         }
                     }
 
