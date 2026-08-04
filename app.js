@@ -3,6 +3,8 @@
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
+let selectedPosOrderType = 'dine_in';
+let selectedPosPaymentMethod = 'cash';
 
 function initCashierPage() {
     initData();
@@ -41,9 +43,22 @@ function switchCashierTab(tabId, btn) {
     btn.classList.add('active');
 }
 
-/* تحميل المينيو المباشر للكاشير مع الصور والأسعار */
+/* التبديل المباشر بين أزرار نوع الخدمة والدفع */
+function selectOrderType(btnElement) {
+    document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    selectedPosOrderType = btnElement.getAttribute('data-value');
+}
+
+function selectPaymentMethod(btnElement) {
+    document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    selectedPosPaymentMethod = btnElement.getAttribute('data-value');
+}
+
+/* تحميل المينيو المباشر للكاشير مع الصور والأسعار المتناسقة */
 function loadPosDirectMenu(catId = 'all') {
-    initData(); // التأكد من تحميل البيانات الافتراضية
+    initData();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     const catBar = document.getElementById('posCategoriesBar');
@@ -51,7 +66,6 @@ function loadPosDirectMenu(catId = 'all') {
 
     if (!catBar || !grid) return;
 
-    // شريط الأقسام
     catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل</button>`;
     categories.forEach(c => {
         catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
@@ -67,7 +81,7 @@ function loadPosDirectMenu(catId = 'all') {
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:5px 0 2px 0;">${item.name}</h4>
+            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
@@ -82,7 +96,7 @@ function filterPosProducts() {
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:5px 0 2px 0;">${item.name}</h4>
+            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
@@ -151,18 +165,20 @@ function renderPosCart() {
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
-    const type = document.getElementById('posOrderType').value;
-    const payment = document.getElementById('posPaymentMethod').value;
     const custName = document.getElementById('posCustName').value.trim() || "زبون مباشر";
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+    let typeText = '🍽️ صالة';
+    if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
+    if (selectedPosOrderType === 'delivery') typeText = '🚗 توصيل';
 
     const directOrder = {
         id: 'POS_' + Date.now(),
         customerName: custName,
         phone: "-",
-        orderType: type,
-        paymentMethod: payment === 'cash' ? '💵 كاش (نقداً)' : '💳 فيزا / ماستركارد',
-        area: type === 'dine_in' ? 'تناول داخل المطعم' : (type === 'delivery' ? 'توصيل' : 'سفري'),
+        orderType: selectedPosOrderType,
+        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش (نقداً)' : '💳 فيزا / ماستركارد',
+        area: typeText,
         address: "-",
         notes: "-",
         items: posCart,
@@ -175,24 +191,4 @@ function processPosDirectCheckout() {
     printReceipt(directOrder);
     clearPosCart();
     document.getElementById('posCustName').value = '';
-}
-
-function printReceipt(order) {
-    document.getElementById('receiptCashierName').innerText = "اسم الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName}`;
-    document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-    document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'سفري'}`;
-    
-    document.getElementById('receiptItemsBody').innerHTML = order.items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>${i.name} (×${i.qty})</span>
-            <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
-        </div>
-    `).join('');
-
-    document.getElementById('receiptSubtotal').innerText = order.subtotal.toLocaleString() + ' د.ع';
-    document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
-    document.getElementById('receiptGrandTotal').innerText = order.totalAmount.toLocaleString() + ' د.ع';
-
-    openModal('receiptModal');
 }
