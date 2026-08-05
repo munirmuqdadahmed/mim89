@@ -2,6 +2,7 @@
    MIM89 FAST FOOD - Complete Core Engine
    ========================================== */
 
+// 1. الاتصال بـ Firebase بمشروع mim89-ff938
 let db = null;
 try {
     const firebaseConfig = {
@@ -25,6 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
+// 2. البيانات الافتراضية للنظام
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     cashiers: [
@@ -96,7 +98,7 @@ function getTodayString() {
 }
 
 /* ==========================================
-   المينيو العام (index.html)
+   3. المينيو العام وتجربة الزبون (index.html)
    ========================================== */
 let cart = [];
 
@@ -394,7 +396,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   نقطة البيع والأرشيف والكشوفات (cashier.html)
+   4. نقطة البيع والأرشيف والكشوفات (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -665,7 +667,7 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   📊 نظام حسابات وتقارير كشف الحساب اليومي (Z-Report)
+   5. تقارير كشف الحساب اليومي (Z-Report)
    ========================================== */
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
@@ -701,7 +703,6 @@ function renderDailyReport(targetDate) {
             totalCash += orderTotal;
         }
 
-        // تجميع تفاصيل الوجبات المباعة
         if (ord.items && Array.isArray(ord.items)) {
             ord.items.forEach(item => {
                 if (itemsSoldMap[item.name]) {
@@ -722,7 +723,6 @@ function renderDailyReport(targetDate) {
     document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
     document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
 
-    // عرض القائمة بالوجبات وأعدادها
     const itemsListEl = document.getElementById('repItemsSoldList');
     const itemNames = Object.keys(itemsSoldMap);
 
@@ -738,6 +738,9 @@ function renderDailyReport(targetDate) {
     }
 }
 
+/* ==========================================
+   6. مزامنة الطلبات والطباعة المزدوجة
+   ========================================== */
 let knownOrderIds = new Set();
 
 function listenForIncomingOrders() {
@@ -879,6 +882,7 @@ function deductInventoryFromRecipe(items) {
 }
 
 function printReceipt(order) {
+    // 1. فاتورة الزبون
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
@@ -895,6 +899,7 @@ function printReceipt(order) {
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
+    // 2. وصل المطبخ
     document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
     document.getElementById('kitchenCustName').innerText = `الزبون / الطاولة: ${order.customerName || 'مباشر'}`;
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
@@ -916,7 +921,7 @@ function printReceipt(order) {
 }
 
 /* ==========================================
-   إدارة المخزن والإدارة العامة
+   7. إدارة المخزن والإدارة العامة
    ========================================== */
 function initInventoryPage() { initData(); }
 
