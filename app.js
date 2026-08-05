@@ -611,7 +611,7 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    const waUrl = `https://wa.me/964775008630?text=${encodeURIComponent(waText)}`;
+    const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`;
     
     alert("شكرًا لك! سيتم فتح الواتساب لإرسال تأكيد الطلب المباشر للمطعم.");
     window.open(waUrl, '_blank');
