@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Full Menu + POS + CRM + Live Caller ID)
+   (Full Menu + POS + CRM + Live Caller ID + Thermal Receipt)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -240,7 +240,6 @@ const DEFAULT_DATA = {
 };
 
 function initData() {
-    // تحديث البيانات بقائمة الوجبات الجديدة الشاملة
     localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
@@ -294,11 +293,14 @@ function onCashierPhoneInput(phone) {
     
     if (cust) {
         if (document.getElementById('posCustName')) document.getElementById('posCustName').value = cust.name;
+        if (document.getElementById('posCustPhone')) document.getElementById('posCustPhone').value = phone;
+        if (document.getElementById('posCustAddress')) document.getElementById('posCustAddress').value = (cust.area || '') + ' ' + (cust.address || '');
         if (infoSpan) {
             infoSpan.style.display = "block";
             infoSpan.innerHTML = `🟢 زبون دائم (طلب ${cust.orderCount} مرات سابقاً)`;
         }
     } else {
+        if (document.getElementById('posCustPhone')) document.getElementById('posCustPhone').value = phone;
         if (infoSpan) {
             infoSpan.style.display = "block";
             infoSpan.innerHTML = `🟡 زبون جديد (أول مرة)`;
@@ -366,13 +368,27 @@ function triggerIncomingCallPopup(phone, source) {
     document.body.insertAdjacentHTML('beforeend', popupHtml);
 }
 
+// 🎯 تعبئة وتثبيت بيانات المتصل في الفاتورة فوراً
 function applyCallToPOS(phone, name) {
+    const cust = lookupCustomerByPhone(phone);
+    
     if (document.getElementById('posCustName')) {
-        document.getElementById('posCustName').value = name;
+        document.getElementById('posCustName').value = cust ? cust.name : (name !== 'زبون جديد (غير مسجل)' ? name : '');
     }
+    if (document.getElementById('posCustPhone')) {
+        document.getElementById('posCustPhone').value = phone;
+    }
+    if (document.getElementById('posCustAddress')) {
+        document.getElementById('posCustAddress').value = cust ? ((cust.area || '') + ' ' + (cust.address || '')) : '';
+    }
+
     onCashierPhoneInput(phone);
+
+    // إظهار تنبيه نجاح الربط
     const alertBox = document.getElementById('callerIdAlert');
     if (alertBox) alertBox.remove();
+
+    alert(`🟢 تم ربط بيانات المتصل بالفاتورة (${phone}) بنجاح!\nأضف الوجبات الآن للفاتورة.`);
 }
 
 /* ==========================================
@@ -591,14 +607,12 @@ function submitOrderToCashier() {
 
     if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف الكريمتين");
 
-    // حفظ الزبون تلقائياً
     saveOrUpdateCustomer(phone, name, area, address);
 
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     let deliveryFee = (type === 'delivery') ? ((area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 2500) : 0;
     const totalAmount = subtotal + deliveryFee;
 
-    // توثيق الطلب عبر الواتساب لمنع الطلبات الوهمية
     let itemsText = cart.map(i => `• ${i.name} (العدد: ${i.qty})`).join('\n');
     let waText = `🍔 *طلب جديد - MIM89 FAST FOOD*\n` +
                  `👤 *الزبون:* ${name}\n` +
@@ -611,7 +625,7 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`;
+    const waUrl = `https://wa.me/964775008630?text=${encodeURIComponent(waText)}`;
     
     alert("شكرًا لك! سيتم فتح الواتساب لإرسال تأكيد الطلب المباشر للمطعم.");
     window.open(waUrl, '_blank');
@@ -630,7 +644,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   6️⃣ كاشير البيع المباشر (cashier.html)
+   6️⃣ كاشير البيع المباشر وطباعة الفاتورة الحرارية
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -775,19 +789,28 @@ function renderPosCart() {
     totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
 }
 
+// 🖨️ معالجة الفاتورة وحفظ بيانات الزبون
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
-    const custName = document.getElementById('posCustName').value.trim() || "زبون مباشر";
+    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName').value.trim()) || "زبون مباشر";
+    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone').value.trim()) || "-";
+    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress').value.trim()) || "-";
+
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
+    if (custPhone !== "-") {
+        saveOrUpdateCustomer(custPhone, custName, custAddress, custAddress);
+    }
+
     const directOrder = {
-        id: 'POS_' + Date.now(),
+        id: 'POS_' + Date.now().toString().slice(-6),
         customerName: custName,
-        phone: "-",
+        phone: custPhone,
+        address: custAddress,
         orderType: selectedPosOrderType,
         paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
-        area: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
+        serviceType: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
         items: posCart,
         subtotal: subtotal,
         deliveryFee: 0,
@@ -799,13 +822,76 @@ function processPosDirectCheckout() {
     saveCompletedOrder(directOrder);
     printReceipt(directOrder);
     clearPosCart();
-    document.getElementById('posCustName').value = '';
+    
+    if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
+    if (document.getElementById('posCustPhone')) document.getElementById('posCustPhone').value = '';
+    if (document.getElementById('posCustAddress')) document.getElementById('posCustAddress').value = '';
 }
 
 function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
     completed.unshift(order);
     setData('sys_completed_orders', completed);
+}
+
+// 🧾 طباعة الفاتورة الحرارية المنسقة 100%
+function printReceipt(order) {
+    const receiptContainer = document.getElementById('receiptModal');
+    if (!receiptContainer) return;
+
+    const itemsHtml = (order.items || []).map(i => `
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:3px;">
+            <span style="font-weight:bold;">${i.name} (×${i.qty})</span>
+            <span>${(i.price * i.qty).toLocaleString()}</span>
+        </div>
+    `).join('');
+
+    const printableHtml = `
+        <div class="modal-content" style="background:#fff !important; color:#000 !important; width:280px; margin:0 auto; padding:15px; font-family:'Tajawal', sans-serif; text-align:right;">
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:10px;">
+                <h2 style="margin:0; font-size:18px; font-weight:900;">MIM89 FAST FOOD</h2>
+                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 0775008630</p>
+                <div style="font-size:12px; font-weight:bold; margin-top:4px; background:#000; color:#fff; padding:2px 0; border-radius:4px;">
+                    فاتورة رقم: #${order.id || '101'}
+                </div>
+            </div>
+
+            <div style="font-size:11px; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:6px;">
+                <div><strong>👤 الزبون:</strong> ${order.customerName || 'مباشر'}</div>
+                <div><strong>📞 الهاتف:</strong> ${order.phone || '-'}</div>
+                <div><strong>📍 العنوان:</strong> ${order.address || '-'}</div>
+                <div><strong>🚗 نوع الخدمة:</strong> ${order.serviceType || 'صالة'} (${order.paymentMethod || 'كاش'})</div>
+                <div><strong>⏰ الوقت:</strong> ${order.dateDate || getTodayString()} | ${order.timestamp || ''}</div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <div style="font-size:11px; font-weight:bold; border-bottom:1px solid #000; padding-bottom:2px; margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>الوجبة والعدد</span>
+                    <span>السعر</span>
+                </div>
+                ${itemsHtml}
+            </div>
+
+            <div style="border-top:2px solid #000; padding-top:6px; margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; font-weight:900; font-size:14px;">
+                    <span>المجموع الكلي:</span>
+                    <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top:15px; border-top:1px dashed #aaa; padding-top:8px; font-size:10px; color:#555;">
+                شكراً لزيارتكم مطعم MIM89 🎉<br>بالعافية وصحة وهنا!
+            </div>
+
+            <div style="margin-top:12px; display:flex; gap:6px;" class="no-print">
+                <button onclick="window.print()" style="flex:1; background:#000; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer;">🖨️ طباعة الفاتورة</button>
+                <button onclick="closeModal('receiptModal')" style="background:#888; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer;">إغلاق</button>
+            </div>
+        </div>
+    `;
+
+    receiptContainer.innerHTML = printableHtml;
+    openModal('receiptModal');
 }
 
 function openCompletedOrdersModal() {
@@ -819,7 +905,7 @@ function openCompletedOrdersModal() {
         list.innerHTML = completed.map(ord => `
             <div style="background:#202028; border:1px solid var(--card-border); border-radius:12px; padding:10px; margin-bottom:8px;">
                 <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
-                    <strong>${ord.customerName}</strong>
+                    <strong>${ord.customerName} (${ord.phone || '-'})</strong>
                     <small style="color:#aaa;">${ord.timestamp}</small>
                 </div>
                 <div style="font-size:0.82rem; color:#ccc; margin-top:4px;">
@@ -858,21 +944,6 @@ function renderDailyReport(targetDate) {
     document.getElementById('repOrdersCount').innerText = filteredOrders.length;
     document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
     document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
-}
-
-function printReceipt(order) {
-    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'مباشر'}`;
-    document.getElementById('receiptTypeInfo').innerText = `الخدمة: ${order.area || 'صالة'} | الدفع: ${order.paymentMethod || 'كاش'}`;
-    
-    document.getElementById('receiptItemsBody').innerHTML = (order.items || []).map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.85rem;">
-            <span>${i.name} (×${i.qty})</span>
-            <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
-        </div>
-    `).join('');
-
-    document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
-    openModal('receiptModal');
 }
 
 function openModal(id) {
