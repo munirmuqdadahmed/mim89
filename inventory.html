@@ -16,7 +16,7 @@
             <h2 style="color:var(--gold-primary); margin:10px 0;"><i class="fa-solid fa-boxes-stacked"></i> دخول مسئول المخزن</h2>
             <div class="form-group">
                 <label>رمز مرور المخزن:</label>
-                <input type="password" id="invPassInput" class="gold-input" placeholder="أدخل كلمة السر">
+                <input type="password" id="invPassInput" class="gold-input" placeholder="أدخل كلمة السر" onkeypress="if(event.key==='Enter') loginInventory()">
             </div>
             <button onclick="loginInventory()" class="gold-btn btn-block">دخول المخزن</button>
             <p id="authError" class="error-msg"></p>
