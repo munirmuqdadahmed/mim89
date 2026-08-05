@@ -13,7 +13,7 @@
 </head>
 <body onload="initCashierPage()">
 
-    <!-- نافذة تسجيل دخول الكاشير (برمز السر فقط) -->
+    <!-- نافذة تسجيل دخول الكاشير -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <div class="brand-badge">MIM89</div>
@@ -32,16 +32,23 @@
     <!-- واجهة الكاشير الرئيسية -->
     <div id="cashierMainApp" class="container" style="display:none; padding:12px;">
         
-        <!-- الهيدر والتبويبات -->
-        <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+        <!-- الهيدر مع زر سجل الفواتير السابقة -->
+        <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
             <div>
-                <h1 style="color:var(--gold-primary); font-size:1.5rem;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
-                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.95rem;"></span>
+                <h1 style="color:var(--gold-primary); font-size:1.4rem; margin:0;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.85rem;"></span>
             </div>
-            <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 12px; font-size:0.85rem;">خروج</button>
+            
+            <div style="display:flex; gap:8px; align-items:center;">
+                <!-- زر الأرشيف والسجل المباشر -->
+                <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:6px 12px; font-size:0.85rem; font-weight:bold;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> سجل الفواتير السابقة
+                </button>
+                <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 12px; font-size:0.85rem;">خروج</button>
+            </div>
         </header>
 
-        <!-- أزرار التنقل بين البيع المباشر وطلبات أونلاين -->
+        <!-- أزرار التنقل -->
         <div class="admin-tabs" style="margin-bottom:12px;">
             <button class="tab-btn active" onclick="switchCashierTab('posDirectTab', this)">
                 <i class="fa-solid fa-cash-register"></i> بيع مباشر (المينيو)
@@ -51,11 +58,10 @@
             </button>
         </div>
 
-        <!-- 1️⃣ تبويب البيع المباشر داخل المطعم -->
+        <!-- 1️⃣ البيع المباشر -->
         <div id="posDirectTab" class="tab-content active">
             <div class="pos-responsive-grid">
                 
-                <!-- الجانب الأيمن: تصفح أصناف المينيو -->
                 <div class="card" style="padding:12px;">
                     <div style="margin-bottom:10px;">
                         <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 بحث سريع عن وجبة...">
@@ -65,14 +71,13 @@
                     <div id="posProductsGrid" class="pos-items-grid"></div>
                 </div>
 
-                <!-- الجانب الأيسر: فاتورة الطلب المباشر -->
+                <!-- الفاتورة الحالية -->
                 <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
                     <div>
                         <h3 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
                             <i class="fa-solid fa-receipt"></i> الفاتورة الحالية
                         </h3>
 
-                        <!-- نوع الخدمة -->
                         <div class="form-group" style="margin-bottom:10px;">
                             <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">نوع الخدمة:</label>
                             <div class="toggle-btn-group" id="posOrderTypeGroup">
@@ -82,7 +87,6 @@
                             </div>
                         </div>
 
-                        <!-- طريقة الدفع -->
                         <div class="form-group" style="margin-bottom:10px;">
                             <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">طريقة الدفع:</label>
                             <div class="toggle-btn-group" id="posPaymentGroup">
@@ -91,18 +95,15 @@
                             </div>
                         </div>
 
-                        <!-- اسم الزبون / الطاولة -->
                         <div class="form-group" style="margin-bottom:8px;">
                             <input type="text" id="posCustName" class="gold-input" style="padding:6px;" placeholder="اسم الزبون / رقم الطاولة (اختياري)">
                         </div>
 
-                        <!-- قائمة الوجبات -->
                         <div id="posCartList" style="min-height:120px; max-height:200px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>
                         </div>
                     </div>
 
-                    <!-- الحساب والطباعة -->
                     <div>
                         <div class="checkout-summary" style="margin:8px 0; padding:8px;">
                             <div class="summary-line total-line">
@@ -121,7 +122,7 @@
             </div>
         </div>
 
-        <!-- 2️⃣ تبويب الطلبات القادمة أونلاين -->
+        <!-- 2️⃣ طلبات أونلاين -->
         <div id="liveOrdersTab" class="tab-content">
             <div class="card">
                 <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-bell"></i> الطلبات الواردة عبر المينيو الإلكتروني</h2>
@@ -129,6 +130,17 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- نافذة سجل الفواتير السابقة المكتملة -->
+    <div id="completedOrdersModal" class="modal">
+        <div class="modal-content" style="max-width:650px; width:95%; max-height:85vh; overflow-y:auto; background:#18181c; border:1px solid var(--gold-primary);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--card-border); padding-bottom:10px;">
+                <h3 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-clock-rotate-left"></i> أرشيف الفواتير المطبوعة</h3>
+                <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="background:#ef4444; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
+            </div>
+            <div id="completedOrdersList"></div>
+        </div>
     </div>
 
     <!-- نافذة طباعة الفاتورة الرسمية -->
@@ -155,7 +167,7 @@
             <p style="text-align:center; font-size:0.85rem;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
             
             <div class="no-print" style="margin-top:15px; text-align:center;">
-                <button onclick="window.print()" class="gold-btn">طباعة الفاتورة</button>
+                <button onclick="window.print()" class="gold-btn">🖨️ طباعة الفاتورة الآن</button>
                 <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff;">إغلاق</button>
             </div>
         </div>
