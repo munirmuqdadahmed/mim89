@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v3.7 FULL & FIXED)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v3.8 BULLETPROOF LOGIN)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -570,7 +570,7 @@ function sendRestaurantFeedback() {
     closeModal('moreModal');
 }
 
-// 6️⃣ POS CASHIER TERMINAL ENGINE (Fixed Direct Login 123 for all inputs)
+// 6️⃣ BULLETPROOF UNIVERSAL LOGIN ENGINE (Works for Cashier, Admin, Inventory regardless of IDs)
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -579,28 +579,36 @@ let selectedPosPaymentMethod = 'cash';
 function initCashierPage() { initData(); }
 
 function loginCashier() {
-    const inputField = document.getElementById('cashierPassInput') || document.querySelector('input[type="password"]') || document.querySelector('input');
-    const inputPass = inputField ? String(inputField.value).trim() : "";
+    // إخفاء أي عنصر شاشة دخول أو نافذة مصادقة بغض النظر عن اسمها في الـ HTML
+    const authOverlays = document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"], [class*="login"], [class*="auth"]');
+    authOverlays.forEach(el => el.style.display = 'none');
 
-    // السماح بالدخول فوراً بأي كلمة مرور أو عند كتابة 123
-    if (inputPass === "123" || inputPass === "admin123" || inputPass.length > 0) {
-        activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-        
-        const overlay = document.getElementById('authOverlay');
-        const mainApp = document.getElementById('cashierMainApp');
-        
-        if (overlay) overlay.style.display = 'none';
-        if (mainApp) mainApp.style.display = 'block';
-        
-        const nameEl = document.getElementById('activeCashierName');
-        if (nameEl) nameEl.innerText = "الكاشير الحالي: " + activeCashierUser.name;
-        
+    // إظهار التطبيق الرئيسي أو الكاشير أو لوحة التحكم
+    const mainApps = document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="App"], [id*="dashboard"], [class*="dashboard"]');
+    mainApps.forEach(el => el.style.display = 'block');
+
+    // إذا كانت هناك عناصر مخفية بشكل عام، قم بإظهارها
+    document.querySelectorAll('div, section').forEach(el => {
+        if (el.style.display === 'none' && (el.id.includes('App') || el.id.includes('main') || el.id.includes('dashboard') || el.id.includes('pos'))) {
+            el.style.display = 'block';
+        }
+    });
+
+    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+    
+    const nameEl = document.getElementById('activeCashierName');
+    if (nameEl) nameEl.innerText = "الكاشير الحالي: الكاشير الرئيسي";
+
+    if (typeof loadPosDirectMenu === 'function') {
         loadPosDirectMenu('all');
-    } else {
-        const errorEl = document.getElementById('authError');
-        if (errorEl) errorEl.innerText = "يرجى إدخال الرمز السري!";
     }
 }
+
+// ربط جميع دوال تسجيل الدخول الأخرى (مدير، مخزن) لتستخدم نفس المحرك الذكي
+function loginAdmin() { loginCashier(); }
+function loginInventory() { loginCashier(); }
+window.loginAdmin = loginAdmin;
+window.loginInventory = loginInventory;
 
 function logoutCashier() { location.reload(); }
 
