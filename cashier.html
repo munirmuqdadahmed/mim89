@@ -40,11 +40,9 @@
             </div>
             
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <!-- زر كشف الحساب وتقفيل الدوام -->
                 <button onclick="openDailyReportModal()" class="gold-btn" style="background:#10b981; color:#fff; padding:8px 12px; font-size:0.85rem; font-weight:bold;">
                     <i class="fa-solid fa-chart-line"></i> كشف الحساب والتقفيل
                 </button>
-                <!-- زر السجل الفواتير -->
                 <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:8px 12px; font-size:0.85rem; font-weight:bold;">
                     <i class="fa-solid fa-clock-rotate-left"></i> سجل الفواتير
                 </button>
@@ -159,13 +157,11 @@
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
             </div>
             
-            <!-- اختيارات التقرير -->
             <div class="no-print" style="margin-bottom:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <label style="color:var(--gold-bright); font-size:0.85rem;">تاريخ الكشف:</label>
                 <input type="date" id="reportDateInput" class="gold-input" style="width:auto; padding:6px; margin:0;" onchange="renderDailyReport(this.value)">
             </div>
 
-            <!-- ورقة التقرير المطبوعة -->
             <div id="reportPrintArea" style="background:#fff; color:#000; padding:15px; border-radius:8px;">
                 <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:10px;">
                     <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
@@ -174,7 +170,6 @@
                     <p id="reportCashierText" style="font-size:0.85rem; margin:2px 0;"></p>
                 </div>
 
-                <!-- البطاقات الحسابية -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:0.85rem;">
                     <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
                         <strong>إجمالي المبيعات:</strong> <span id="repTotalSales" style="font-weight:bold;">0</span> د.ع
@@ -209,12 +204,12 @@
         </div>
     </div>
 
-    <!-- نافذة الطباعة المزدوجة (فاتورة الزبون + وصل المطبخ) -->
+    <!-- نافذة الطباعة المزدوجة التلقائية -->
     <div id="receiptModal" class="modal">
         <div class="modal-content print-area" style="color:#000; background:#fff; max-width:500px;">
             
-            <!-- 1️⃣ فاتورة الزبون -->
-            <div id="customerReceiptTicket" style="border-bottom:2px dashed #000; padding-bottom:15px; margin-bottom:15px;">
+            <!-- 1️⃣ وصل الزبون (طابعة الكاشير) -->
+            <div id="customerReceiptTicket" style="padding-bottom:15px;">
                 <div style="text-align:center;">
                     <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
                     <p style="font-size:0.8rem; margin-bottom:4px;">بغداد - القاهرة | فاتورة الزبون</p>
@@ -235,8 +230,8 @@
                 <p style="text-align:center; font-size:0.8rem; margin-top:8px;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
             </div>
 
-            <!-- 2️⃣ وصل المطبخ -->
-            <div id="kitchenReceiptTicket" style="padding-top:5px;">
+            <!-- 2️⃣ وصل المطبخ (طابعة المطبخ) -->
+            <div id="kitchenReceiptTicket" style="padding-top:15px;">
                 <div style="text-align:center; background:#eee; padding:5px; border-radius:4px; margin-bottom:8px;">
                     <h2 style="margin:0; font-weight:900; font-size:1.3rem;">🍳 وصل المطبخ - MIM89</h2>
                     <p id="kitchenOrderType" style="font-size:1rem; font-weight:bold; margin:2px 0; color:#000;"></p>
