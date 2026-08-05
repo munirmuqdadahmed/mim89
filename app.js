@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.1 FINAL FIXED)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.2 INSTANT LOGIN)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -257,7 +257,7 @@ function addToCart(itemId, event) {
     if (event && event.currentTarget) {
         const btn = event.currentTarget;
         btn.style.transform = 'scale(1.2)';
-        setTimeout(() => { btn.style.transform = 'scale(1);'; }, 200);
+        setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
     }
 }
 
@@ -385,8 +385,6 @@ function submitOrderToCashier() {
                  `طلب الوجبات:\n${itemsText}\n` +
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
-
-    const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waUrlText)}`; // fixed encoding variable reference
     
     alert("سيتم تحويلك إلى الواتساب لإرسال الفاتورة الرسمية للمطعم.");
     window.open(`https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`, '_blank');
@@ -396,7 +394,7 @@ function submitOrderToCashier() {
     closeModal('cartModal');
 }
 
-// 5️⃣ POS CASHIER TERMINAL ENGINE (Fixed Grid Layout & Responsive Top Buttons)
+// 5️⃣ POS CASHIER TERMINAL ENGINE (Instant Login & Fixed Buttons)
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -406,28 +404,33 @@ function initCashierPage() {
     initData(); 
     loadPosDirectMenu('all');
     bindTopActionButtons();
+    // تفعيل الدخول الفوري تلقائياً عند تحميل الصفحة وتجاوز شاشة الرمز
+    executeInstantLogin();
 }
 
-function loginCashier() {
+// دخول فوري وتلقائي بدون مطابقة رموز سرية
+function executeInstantLogin() {
     document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"]').forEach(el => el.style.display = 'none');
     document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="dashboard"]').forEach(el => el.style.display = 'block');
     activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-    loadPosDirectMenu('all');
-    bindTopActionButtons();
 }
 
-function loginAdmin() { loginCashier(); }
-function loginInventory() { loginCashier(); }
+function loginCashier() { executeInstantLogin(); }
+function loginAdmin() { executeInstantLogin(); }
+function loginInventory() { executeInstantLogin(); }
 window.loginAdmin = loginAdmin;
 window.loginInventory = loginInventory;
+window.loginCashier = loginCashier;
 
 function logoutCashier() { location.reload(); }
 
-// ربط الأزرار العلوية للكاشير (تفعيل الدوام، السجل، خروج، طلبات المينيو) لتعمل بكفاءة
 function bindTopActionButtons() {
+    // ربط أي زر دخول أو شاشة فوراً بالدخول الفوري
     document.querySelectorAll('button').forEach(btn => {
         const text = btn.innerText || "";
-        if (text.includes("خروج")) {
+        if (text.includes("دخول") || text.includes("الشاشة")) {
+            btn.onclick = (e) => { e.preventDefault(); executeInstantLogin(); };
+        } else if (text.includes("خروج")) {
             btn.onclick = () => logoutCashier();
         } else if (text.includes("السجل")) {
             btn.onclick = () => alert("سجل المبيعات والطلبات المكتملة نشط.");
@@ -439,7 +442,6 @@ function bindTopActionButtons() {
     });
 }
 
-// تحميل وترتيب شبكة الوجبات داخل الكاشير بشكل متناسق واحترافي (Grid Layout)
 function loadPosDirectMenu(catId = 'all') {
     initData();
     const categories = getData('sys_categories');
@@ -456,7 +458,6 @@ function loadPosDirectMenu(catId = 'all') {
     }
 
     if (targetGrid) {
-        // تصميم شبكي احترافي (Grid) يمنع التداخل ويجعل الكاردات مرتبة ومنسقة تماماً
         targetGrid.style.display = 'grid';
         targetGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(110px, 1fr))';
         targetGrid.style.gap = '10px';
@@ -543,5 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         loadPosDirectMenu('all');
         bindTopActionButtons();
+        executeInstantLogin();
     }
 });
