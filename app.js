@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Strict Validation + Interactive Buttons + Custom Icons)
+   (Original Design + Fixed Numbers + Verified Validation)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -390,7 +390,7 @@ function applyCallToPOS(phone, name) {
 }
 
 /* ==========================================
-   5️⃣ محرك المينيو الإلكتروني للزبائن (تفاعلي بأيقونة شوكة وسكينة)
+   5️⃣ محرك المينيو الإلكتروني للزبائن (التصميم الأصلي)
    ========================================== */
 let cart = [];
 
@@ -400,11 +400,9 @@ function loadPublicMenu() {
     const items = getData('sys_items');
     const navContainer = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
-    const moreCatsList = document.getElementById('moreCategoriesList');
 
     if (!navContainer || !sectionsContainer) return;
     navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
-    if (moreCatsList) moreCatsList.innerHTML = '';
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
@@ -418,10 +416,6 @@ function loadPublicMenu() {
         btn.innerText = cat.name;
         btn.onclick = () => filterCategory(cat.id, btn);
         navContainer.appendChild(btn);
-
-        if (moreCatsList) {
-            moreCatsList.innerHTML += `<button class="more-cat-chip" onclick="closeModal('moreModal'); filterCategory(${cat.id}, null);">${cat.name}</button>`;
-        }
 
         const catItems = items.filter(i => Number(i.categoryId) === Number(cat.id));
         if (catItems.length > 0) {
@@ -439,9 +433,7 @@ function loadPublicMenu() {
                                 <p class="item-desc">${item.ingredients || ''}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                                    <button class="add-cart-btn" id="addBtn_${item.id}" onclick="addToCart(${item.id}, event)">
-                                        <i class="fa-solid fa-plus"></i>
-                                    </button>
+                                    <button class="add-cart-btn" onclick="addToCart(${item.id}, event)">+</button>
                                 </div>
                             </div>
                         </div>
@@ -451,12 +443,6 @@ function loadPublicMenu() {
             sectionsContainer.appendChild(sec);
         }
     });
-
-    // تحديث أيقونة السلة الشوكة والسكينة 🍴
-    const cartIconBtn = document.getElementById('floatingCartBtn') || document.querySelector('.cart-float-btn');
-    if (cartIconBtn) {
-        cartIconBtn.innerHTML = `<i class="fa-solid fa-utensils"></i> <span id="cartBadgeCount" class="badge">0</span>`;
-    }
 }
 
 function filterCategory(catId, btnElement) {
@@ -487,9 +473,7 @@ function filterPublicMenu() {
                         <p class="item-desc">${item.ingredients}</p>
                         <div class="item-footer">
                             <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                            <button class="add-cart-btn" id="addBtn_${item.id}" onclick="addToCart(${item.id}, event)">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
+                            <button class="add-cart-btn" onclick="addToCart(${item.id}, event)">+</button>
                         </div>
                     </div>
                 </div>
@@ -509,7 +493,6 @@ function openItemDetails(id) {
     openModal('itemDetailModal');
 }
 
-// ⚡ زر الإضافة التفاعلي السريع مع التأثير البصري
 function addToCart(itemId, event) {
     const items = getData('sys_items');
     const item = items.find(i => i.id === itemId);
@@ -520,18 +503,10 @@ function addToCart(itemId, event) {
     
     updateCartBadge();
 
-    // تأثير ضغطة الزر التفاعلي
     if (event && event.currentTarget) {
         const btn = event.currentTarget;
-        btn.style.transform = 'scale(1.25)';
-        btn.style.backgroundColor = '#22c55e';
-        btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
-        
-        setTimeout(() => {
-            btn.style.transform = 'scale(1)';
-            btn.style.backgroundColor = 'var(--gold-primary)';
-            btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
-        }, 300);
+        btn.style.transform = 'scale(1.2)';
+        setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
     }
 }
 
@@ -631,7 +606,6 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
-// 🛑 التثبت الصارم وحذف كلمة "الكريمين"
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -676,14 +650,6 @@ function submitOrderToCashier() {
     cart = [];
     updateCartBadge();
     closeModal('cartModal');
-}
-
-function sendRestaurantFeedback() {
-    const msg = document.getElementById('feedbackMsg').value;
-    if (!msg) return alert("اكتب ملاحظتك أولاً");
-    alert("شكراً لك! تم إرسال ملاحظتك لإدارة المطعم.");
-    document.getElementById('feedbackMsg').value = '';
-    closeModal('moreModal');
 }
 
 /* ==========================================
@@ -933,58 +899,6 @@ function printReceipt(order) {
 
     receiptContainer.innerHTML = printableHtml;
     openModal('receiptModal');
-}
-
-function openCompletedOrdersModal() {
-    const list = document.getElementById('completedOrdersList');
-    const completed = getData('sys_completed_orders');
-    if (!list) return;
-
-    if (completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">لا توجد فواتير مطبوعة حتى الآن</p>`;
-    } else {
-        list.innerHTML = completed.map(ord => `
-            <div style="background:#202028; border:1px solid var(--card-border); border-radius:12px; padding:10px; margin-bottom:8px;">
-                <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
-                    <strong>${ord.customerName} (${ord.phone || '-'})</strong>
-                    <small style="color:#aaa;">${ord.timestamp}</small>
-                </div>
-                <div style="font-size:0.82rem; color:#ccc; margin-top:4px;">
-                    ${ord.items.map(i => `${i.name} (×${i.qty})`).join('، ')}
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
-                    <strong style="color:var(--gold-bright);">${Number(ord.totalAmount).toLocaleString()} د.ع</strong>
-                    <button class="gold-btn" style="padding:4px 10px; font-size:0.78rem; border-radius:6px;" onclick="printReceipt(${JSON.stringify(ord).replace(/"/g, '&quot;')})">🖨️ إعادة طباعة</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    openModal('completedOrdersModal');
-}
-
-function openDailyReportModal() {
-    renderDailyReport(getTodayString());
-    openModal('dailyReportModal');
-}
-
-function renderDailyReport(targetDate) {
-    const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => o.dateDate === targetDate || (!o.dateDate && targetDate === getTodayString()));
-
-    let totalSales = 0, totalCash = 0, totalVisa = 0;
-    filteredOrders.forEach(ord => {
-        const amt = Number(ord.totalAmount || 0);
-        totalSales += amt;
-        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) totalVisa += amt;
-        else totalCash += amt;
-    });
-
-    document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
-    document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
-    document.getElementById('repOrdersCount').innerText = filteredOrders.length;
-    document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
-    document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
 }
 
 function openModal(id) {
