@@ -3,82 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD</title>
+    <title>MIM89 FAST FOOD - النظام الحديث</title>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Tajawal -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     
+    <style>
+        :root {
+            --bg-main: #0c0c10;
+            --bg-card: #16161f;
+            --gold-primary: #d4af37;
+            --gold-bright: #f3e5ab;
+            --text-light: #ffffff;
+            --text-muted: #9ca3af;
+            --border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-light); padding-bottom: 90px; }
+
+        /* Modern Header */
+        .modern-header {
+            background: linear-gradient(135deg, #16161f 0%, #0c0c10 100%);
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .brand-title { font-size: 2rem; font-weight: 900; color: var(--gold-primary); letter-spacing: 1px; }
+        .brand-subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin-top: -4px; display: block; }
+        .brand-tagline { font-size: 0.9rem; color: var(--gold-bright); margin-top: 8px; font-weight: 500; }
+
+        /* Search Bar */
+        .search-container { padding: 15px 20px; max-width: 600px; margin: 0 auto; }
+        .search-box {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 50px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .search-box i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-primary);
+        }
+
+        /* Categories Navigation */
+        .categories-wrapper {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 20px;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .categories-wrapper::-webkit-scrollbar { display: none; }
+        .cat-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .cat-chip.active, .cat-chip:hover {
+            background: var(--gold-primary);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Main Container & Cards */
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
+        .section-title { font-size: 1.25rem; color: var(--gold-primary); margin: 20px 0 15px 0; display: flex; align-items: center; gap: 8px; border-right: 4px solid var(--gold-primary); padding-right: 10px; }
+        
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .item-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.15); }
+        .item-img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; }
+        .item-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+        .item-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 5px; cursor: pointer; }
+        .item-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; flex-grow: 1; line-height: 1.4; }
+        .item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .item-price { font-size: 1rem; font-weight: 900; color: var(--gold-bright); }
+        
+        .add-btn {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        .add-btn:active { transform: scale(1.2); }
+
+        /* Modern Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(12, 12, 16, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 1000;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.6);
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
+        .nav-item.active, .nav-item:hover { color: var(--gold-primary); }
+        .cart-badge {
+            position: absolute;
+            top: -6px;
+            right: 8px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+        /* Modals Modern */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 15px;
+        }
+        .modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            animation: modalPop 0.3s ease;
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px; left: 20px;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem; cursor: pointer;
+        }
+        .modal-title { color: var(--gold-primary); font-size: 1.2rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: #0c0c10;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            outline: none;
+        }
+        .form-control:focus { border-color: var(--gold-primary); }
+
+        .gold-action-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
+            color: #000;
+            border: none;
+            width: 100%;
+            padding: 13px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transition: opacity 0.2s;
+        }
+        .gold-action-btn:active { opacity: 0.85; }
+    </style>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
-<body class="public-menu-body">
+<body>
 
-    <!-- الهيدر الرئيسي -->
-    <header class="main-header">
-        <div class="logo-container">
-            <h1 class="brand-title">MIM89</h1>
-            <span class="brand-subtitle">FAST FOOD</span>
-        </div>
+    <!-- Header -->
+    <header class="modern-header">
+        <h1 class="brand-title">MIM89</h1>
+        <span class="brand-subtitle">FAST FOOD</span>
         <p class="brand-tagline">الطعم اللي ما يتكرر 🔥</p>
     </header>
 
-    <!-- شريط البحث السريع -->
-    <div class="search-box-container">
-        <div class="search-input-wrapper">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    <!-- Search Box -->
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="publicSearchInput" placeholder="ابحث عن وجبتك المفضلة..." oninput="filterPublicMenu()">
         </div>
     </div>
 
-    <!-- شريط الأقسام العلوي -->
-    <nav class="categories-nav-wrapper">
-        <div id="categoriesNav" class="categories-nav"></div>
+    <!-- Categories Bar -->
+    <div class="categories-wrapper" id="categoriesNav"></div>
+
+    <!-- Menu Sections Container -->
+    <main id="menuSections" class="container"></main>
+
+    <!-- Bottom Navigation Bar (Modern) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="scrollToTop()">
+            <i class="fa-solid fa-house"></i>
+            الرئيسية
+        </button>
+        <button class="nav-item" onclick="openCartModal()">
+            <i class="fa-solid fa-utensils"></i>
+            السلة
+            <span id="cartBadgeCount" class="cart-badge">0</span>
+        </button>
+        <button class="nav-item" onclick="openModal('moreModal')">
+            <i class="fa-solid fa-bars-staggered"></i>
+            المزيد
+        </button>
     </nav>
 
-    <!-- أقسام المينيو -->
-    <main id="menuSections" class="container" style="padding-bottom: 90px;"></main>
-
-    <!-- ⚡ شريط الأزرار السفلي الأصلي والمرتب (Bottom Navigation Bar) -->
-    <div class="bottom-nav-bar" style="position: fixed; bottom: 0; left: 0; width: 100%; background: #15151a; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);">
-        <button onclick="scrollToTop()" style="background: none; border: none; color: var(--gold-primary); display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer;">
-            <i class="fa-solid fa-house" style="font-size: 1.2rem; margin-bottom: 3px;"><span></span></i> الرئيسية
-        </button>
-        <button onclick="openCartModal()" style="background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer; position: relative;">
-            <i class="fa-solid fa-utensils" style="font-size: 1.2rem; margin-bottom: 3px; color: var(--gold-primary);"></i> السلة
-            <span id="cartBadgeCount" class="badge" style="position: absolute; top: -5px; right: 10px; background: #ef4444; color: #fff; font-size: 0.65rem; padding: 2px 5px; border-radius: 50%;">0</span>
-        </button>
-        <button onclick="openModal('moreModal')" style="background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer;">
-            <i class="fa-solid fa-bars" style="font-size: 1.2rem; margin-bottom: 3px; color: var(--gold-primary);"></i> المزيد
-        </button>
-    </div>
-
-    <!-- نافذة تفاصيل الوجبة -->
-    <div id="itemDetailModal" class="modal-overlay" style="display:none;">
-        <div class="modal-content">
-            <button class="close-modal-btn" onclick="closeModal('itemDetailModal')">&times;</button>
-            <img id="detailImg" src="" class="detail-modal-img" alt="وجبة">
-            <h2 id="detailTitle" style="color:var(--gold-primary); margin:10px 0 5px 0;"></h2>
-            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem;"></p>
-            <p id="detailIngredients" style="color:#ccc; font-size:0.9rem; margin:10px 0 20px 0;"></p>
-            <button id="detailAddBtn" class="gold-btn btn-block">➕ إضافة للسلة</button>
+    <!-- Modal: Item Details -->
+    <div id="itemDetailModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal('itemDetailModal')">&times;</button>
+            <img id="detailImg" src="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
+            <h2 id="detailTitle" class="modal-title"></h2>
+            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem; margin-bottom:8px;"></p>
+            <p id="detailIngredients" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:20px; line-height:1.5;"></p>
+            <button id="detailAddBtn" class="gold-action-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
         </div>
     </div>
 
-    <!-- نافذة السلة والشراء -->
-    <div id="cartModal" class="modal-overlay" style="display:none;">
-        <div class="modal-content" style="max-width:450px; width:92%;">
-            <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-                <i class="fa-solid fa-utensils"></i> سلة الوجبات
-            </h3>
+    <!-- Modal: Cart & Checkout -->
+    <div id="cartModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal('cartModal')">&times;</button>
+            <h3 class="modal-title"><i class="fa-solid fa-utensils"></i> سلة الوجبات</h3>
             
-            <div id="cartItemsContainer" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
+            <div id="cartItemsContainer" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;"></div>
 
-            <div class="form-group" style="margin-bottom:10px;">
-                <label style="font-size:0.85rem; color:#aaa;">نوع الخدمة:</label>
-                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" style="width:100%; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" class="form-control">
                     <option value="delivery">🚗 توصيل للبيت</option>
                     <option value="takeaway">🛍️ سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
@@ -86,16 +313,16 @@
             </div>
 
             <div id="deliveryFieldsGroup">
-                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
-                <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
-                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
-                <input type="text" id="custAddress" placeholder="العنوان التفصيلي *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control">
+                <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control">
+                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control">
+                <input type="text" id="custAddress" placeholder="العنوان التفصيلي *" oninput="calculateDeliveryCost()" class="form-control">
             </div>
 
-            <textarea id="orderNotes" placeholder="ملاحظات إضافية..." style="width:100%; height:50px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:12px; font-family:'Tajawal', sans-serif;"></textarea>
+            <textarea id="orderNotes" placeholder="ملاحظات إضافية على الطلب..." class="form-control" style="height: 50px; resize: none;"></textarea>
 
-            <div style="background:#181820; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <div style="background: #0c0c10; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-muted);">
                     <span>مجموع الوجبات:</span>
                     <span id="subtotalPrice">0 د.ع</span>
                 </div>
@@ -109,27 +336,28 @@
                 </div>
             </div>
 
-            <button onclick="submitOrderToCashier()" class="gold-btn btn-block" style="padding:12px; font-weight:bold; background:#25d366; color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%;">
-                <i class="fa-brands fa-whatsapp" style="font-size:1.1rem; margin-left:6px;"></i> إرسال الفاتورة عبر الواتساب
+            <button onclick="submitOrderToCashier()" class="gold-action-btn" style="background: #25d366; color: #fff;">
+                <i class="fa-brands fa-whatsapp"></i> إرسال الفاتورة عبر الواتساب
             </button>
         </div>
     </div>
 
-    <!-- نافذة المزيد -->
-    <div id="moreModal" class="modal-overlay" style="display:none;">
-        <div class="modal-content" style="max-width:400px; width:90%;">
-            <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px;">الأقسام والملاحظات</h3>
-            <div id="moreCategoriesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
+    <!-- Modal: More Options -->
+    <div id="moreModal" class="modal-overlay">
+        <div class="modal-card">
+            <button class="close-btn" onclick="closeModal('moreModal')">&times;</button>
+            <h3 class="modal-title"><i class="fa-solid fa-list"></i> الأقسام السريعة</h3>
+            <div id="moreCategoriesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;"></div>
             
-            <hr style="border:none; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
             
-            <h4 style="color:#fff; font-size:0.95rem; margin-bottom:8px;">إرسال ملاحظة أو اقتراح للمطعم:</h4>
-            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." style="width:100%; height:70px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:10px; font-family:'Tajawal', sans-serif;"></textarea>
-            <button onclick="sendRestaurantFeedback()" class="gold-btn btn-block" style="padding:10px; border-radius:8px; font-weight:bold;">إرسال للمطعم</button>
+            <h4 style="font-size: 0.9rem; color: #fff; margin-bottom: 8px;">إرسال ملاحظة أو اقتراح للمطعم:</h4>
+            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." class="form-control" style="height: 60px; resize: none;"></textarea>
+            <button onclick="sendRestaurantFeedback()" class="gold-action-btn">إرسال للمطعم</button>
         </div>
     </div>
 
-    <script src="app.js?v=2026.fixed"></script>
+    <!-- ربط محرك التشغيل -->
+    <script src="app.js?v=modern.1"></script>
 </body>
 </html>
