@@ -7,7 +7,7 @@
     <!-- خط تجوال العربي والأيقونات -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     
@@ -17,20 +17,20 @@
 </head>
 <body class="public-menu-body">
 
-    <!-- الهيدر الرئيسي -->
+    <!-- الهيدر الرئيسي المودرن -->
     <header class="main-header">
         <div class="brand-badge">MIM89</div>
         <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة | بغداد - القاهرة</p>
+        <p class="brand-subtitle"><i class="fa-solid fa-location-dot"></i> أشهى الوجبات السريعة | بغداد - القاهرة</p>
         
-        <!-- شريط البحث -->
+        <!-- شريط البحث المودرن -->
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
             <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
         </div>
     </header>
 
-    <!-- الأقسام العلوية للتصفح السريع -->
+    <!-- الأقسام العلوية الأفقي التفاعلي -->
     <nav class="categories-nav">
         <div class="categories-container" id="categoriesNav"></div>
     </nav>
@@ -40,7 +40,7 @@
         <div id="menuSections"></div>
     </main>
 
-    <!-- 📱 الشريط السفلي العائم (الرئيسية - السلة - المزيد) -->
+    <!-- 📱 الشريط السفلي العائم (3 أزرار رئيسية) -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
@@ -55,26 +55,29 @@
         </div>
 
         <button class="nav-item" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-bars"></i>
+            <i class="fa-solid fa-grid-2"></i>
             <span>المزيد</span>
         </button>
     </nav>
 
     <!-- 🛒 1. نافذة السلة والشراء -->
     <div id="cartModal" class="modal">
-        <div class="modal-content modal-lg">
+        <div class="modal-content modern-modal">
             <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-basket-shopping"></i> سلة الشراء وإتمام الطلب</h2>
+            <div class="modal-header-title">
+                <i class="fa-solid fa-basket-shopping" style="color:var(--gold-primary);"></i>
+                <h2>سلة الشراء وإتمام الطلب</h2>
+            </div>
             
             <div class="cart-modal-body">
                 <div id="cartItemsContainer" class="cart-items-wrapper"></div>
                 
-                <div class="order-form-section">
-                    <h3><i class="fa-solid fa-user-pen"></i> معلومات إرسال الطلب</h3>
+                <div class="order-form-section" style="margin-top:15px;">
+                    <h3 class="more-section-title"><i class="fa-solid fa-user-pen"></i> تفاصيل الطلب والتوصيل</h3>
                     
                     <div class="form-group">
-                        <label>نوع الطلب:</label>
-                        <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
+                        <label class="form-label">نوع الخدمة:</label>
+                        <select id="orderTypeSelect" class="gold-input modern-input" onchange="toggleDeliveryFields()">
                             <option value="delivery">🚗 توصيل منزلي</option>
                             <option value="takeaway">🛍️ استلام من المطعم (سفري)</option>
                             <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
@@ -82,29 +85,29 @@
                     </div>
 
                     <div class="form-group">
-                        <label>الاسم الكامل:</label>
-                        <input type="text" id="custName" class="gold-input" placeholder="أدخل اسمك الكريم">
+                        <label class="form-label">الاسم الكامل:</label>
+                        <input type="text" id="custName" class="gold-input modern-input" placeholder="أدخل اسمك الكريم">
                     </div>
 
                     <div class="form-group">
-                        <label>رقم الهاتف:</label>
-                        <input type="tel" id="custPhone" class="gold-input" placeholder="07XXXXXXXXX">
+                        <label class="form-label">رقم الهاتف:</label>
+                        <input type="tel" id="custPhone" class="gold-input modern-input" placeholder="07XXXXXXXXX">
                     </div>
 
                     <div id="deliveryFieldsGroup">
                         <div class="form-group">
-                            <label>المنطقة / الحي:</label>
-                            <input type="text" id="custArea" class="gold-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
+                            <label class="form-label">المنطقة / الحي:</label>
+                            <input type="text" id="custArea" class="gold-input modern-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
                         </div>
                         <div class="form-group">
-                            <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
+                            <label class="form-label">العنوان التفصيلي / أقرب نقطة دالة:</label>
+                            <input type="text" id="custAddress" class="gold-input modern-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>ملاحظات إضافية للطلب:</label>
-                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
+                        <label class="form-label">ملاحظات إضافية:</label>
+                        <textarea id="orderNotes" class="gold-input modern-input" rows="2" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
                     </div>
 
                     <div class="checkout-summary">
@@ -123,66 +126,115 @@
                         </div>
                     </div>
 
-                    <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب للكاشير
+                    <button class="gold-btn btn-block modern-submit-btn" onclick="submitOrderToCashier()">
+                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 📑 2. نافذة المزيد الشاملة (تضم الأقسام + اتصل بنا + الملاحظات) -->
+    <!-- 📑 2. نافذة المزيد المودرن (شبكة عصرية) -->
     <div id="moreModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modern-modal">
             <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والمزيد</h2>
             
-            <!-- أقسام المينيو داخل المزيد -->
-            <h3 style="color:#fff; font-size:1rem; margin-top:10px;"><i class="fa-solid fa-layer-group"></i> أقسام المينيو السريعة:</h3>
-            <div id="moreCategoriesList" class="more-cats-grid" style="display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;"></div>
-            
-            <hr class="gold-hr" style="margin:15px 0;">
-            
-            <!-- قسم اتصل بنا داخل المزيد -->
-            <h3 style="color:#fff; font-size:1rem; margin-bottom:10px;"><i class="fa-solid fa-headset"></i> اتصل بنا وتواصل معنا:</h3>
-            <div class="contact-links-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-                <a href="tel:0775008630" class="gold-btn" style="text-decoration:none; justify-content:flex-start;"><i class="fa-solid fa-phone"></i> اتصال مباشر: 0775008630</a>
-                <a href="tel:0785008630" class="gold-btn" style="text-decoration:none; justify-content:flex-start;"><i class="fa-solid fa-mobile-screen"></i> اتصال مباشر: 0785008630</a>
-                <a href="https://wa.me/964775008630" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب 1</a>
-                <a href="https://wa.me/964785008630" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب 2</a>
-                <a href="https://instagram.com" target="_blank" class="gold-btn" style="background:#E1306C; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-instagram"></i> صفحة الإنستغرام</a>
-                <a href="https://facebook.com" target="_blank" class="gold-btn" style="background:#1877F2; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
+            <div class="modal-header-title">
+                <i class="fa-solid fa-layer-group" style="color:var(--gold-primary);"></i>
+                <h2>القائمة والمزيد</h2>
             </div>
 
-            <hr class="gold-hr" style="margin:15px 0;">
-            
-            <!-- إرسال ملاحظة -->
-            <h3 style="color:#fff; font-size:1rem;"><i class="fa-solid fa-comment-dots"></i> إرسال ملاحظة للإدارة:</h3>
-            <div class="form-group" style="margin-top:8px;">
-                <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
+            <!-- 1. أقسام المينيو السريعة -->
+            <div class="more-section">
+                <h3 class="more-section-title"><i class="fa-solid fa-utensils"></i> أقسام المينيو</h3>
+                <div id="moreCategoriesList" class="more-cats-grid"></div>
             </div>
-            <div class="form-group" style="margin-top:8px;">
-                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+
+            <!-- 2. شبكة التواصل المودرن (2 في السطر) -->
+            <div class="more-section">
+                <h3 class="more-section-title"><i class="fa-solid fa-headset"></i> تواصل معنا</h3>
+                <div class="modern-contact-grid">
+                    <a href="tel:0775008630" class="contact-card phone-card">
+                        <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                        <div class="contact-info">
+                            <span class="label">اتصال مباشر 1</span>
+                            <span class="val">0775008630</span>
+                        </div>
+                    </a>
+                    
+                    <a href="tel:0785008630" class="contact-card phone-card">
+                        <div class="contact-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                        <div class="contact-info">
+                            <span class="label">اتصال مباشر 2</span>
+                            <span class="val">0785008630</span>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/964775008630" target="_blank" class="contact-card wa-card">
+                        <div class="contact-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                        <div class="contact-info">
+                            <span class="label">واتساب 1</span>
+                            <span class="val">مراسلة سريعة</span>
+                        </div>
+                    </a>
+
+                    <a href="https://wa.me/964785008630" target="_blank" class="contact-card wa-card">
+                        <div class="contact-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                        <div class="contact-info">
+                            <span class="label">واتساب 2</span>
+                            <span class="val">مراسلة سريعة</span>
+                        </div>
+                    </a>
+
+                    <a href="https://instagram.com" target="_blank" class="contact-card ig-card">
+                        <div class="contact-icon"><i class="fa-brands fa-instagram"></i></div>
+                        <div class="contact-info">
+                            <span class="label">إنستغرام</span>
+                            <span class="val">الصفحة الرسمية</span>
+                        </div>
+                    </a>
+
+                    <a href="https://facebook.com" target="_blank" class="contact-card fb-card">
+                        <div class="contact-icon"><i class="fa-brands fa-facebook-f"></i></div>
+                        <div class="contact-info">
+                            <span class="label">فيسبوك</span>
+                            <span class="val">الصفحة الرسمية</span>
+                        </div>
+                    </a>
+                </div>
             </div>
-            <button class="gold-btn btn-block" style="margin-top:10px;" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
+
+            <!-- 3. إرسال ملاحظة -->
+            <div class="more-section">
+                <h3 class="more-section-title"><i class="fa-solid fa-comment-dots"></i> إرسال ملاحظة للإدارة</h3>
+                <div class="form-group">
+                    <input type="text" id="feedbackName" class="gold-input modern-input" placeholder="اسمك الكريم (اختياري)">
+                </div>
+                <div class="form-group">
+                    <textarea id="feedbackMsg" class="gold-input modern-input" rows="2" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+                </div>
+                <button class="gold-btn btn-block modern-submit-btn" onclick="sendRestaurantFeedback()">
+                    <i class="fa-solid fa-paper-plane"></i> إرسال الملاحظة
+                </button>
+            </div>
+
         </div>
     </div>
 
     <!-- 🍕 3. نافذة تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modern-modal">
             <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
             <img id="detailImg" src="" alt="" class="modal-img">
             <h2 id="detailTitle" class="modal-gold-title"></h2>
             <p id="detailPrice" class="detail-price"></p>
             <p id="detailIngredients" class="detail-ingredients"></p>
             <div class="modal-actions">
-                <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
+                <button id="detailAddBtn" class="gold-btn btn-block modern-submit-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
             </div>
         </div>
     </div>
 
-    <!-- المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
 </body>
 </html>
