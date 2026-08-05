@@ -15,15 +15,15 @@
         body {
             background-color: #121212;
             color: #ffffff;
-            padding-bottom: 80px;
+            padding-bottom: 70px; /* مساحة لشريط التنقل السفلي */
         }
 
-        /* الهيدر */
+        /* الهيدر الأنيق */
         header {
             background-color: #1a1a1a;
             padding: 15px 20px;
             text-align: center;
-            border-bottom: 2px solid #ff9800;
+            border-bottom: 1px solid #333;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -32,60 +32,59 @@
         .brand-logo {
             background-color: #ff9800;
             color: #000;
-            font-weight: 900;
-            font-size: 1.1rem;
-            padding: 3px 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 4px 12px;
             border-radius: 6px;
             display: inline-block;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
         .brand-title {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 900;
             letter-spacing: 1px;
             color: #fff;
         }
 
         .brand-subtitle {
-            font-size: 0.8rem;
-            color: #ff9800;
-            margin-top: 2px;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 3px;
         }
 
-        /* التصنيفات والبحث */
-        .controls-container {
+        /* البحث والتصنيفات */
+        .search-container {
             padding: 15px 20px 5px;
         }
 
         .search-input {
             width: 100%;
-            padding: 12px 18px;
-            border-radius: 25px;
+            padding: 10px 15px;
+            border-radius: 20px;
             border: 1px solid #333;
-            background-color: #1e1e1e;
+            background-color: #222;
             color: #fff;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             outline: none;
-            margin-bottom: 12px;
         }
 
         .categories-tab {
             display: flex;
             gap: 10px;
+            padding: 15px 20px;
             overflow-x: auto;
             white-space: nowrap;
-            padding-bottom: 5px;
         }
 
         .category-btn {
             background-color: #262626;
             color: #ccc;
-            padding: 8px 18px;
+            padding: 8px 16px;
             border-radius: 20px;
-            border: 1px solid #333;
+            border: none;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             transition: 0.2s;
         }
 
@@ -93,20 +92,20 @@
             background-color: #ff9800;
             color: #000;
             font-weight: bold;
-            border-color: #ff9800;
         }
 
-        /* تصميم قسم الوجبات */
+        /* عناوين الأقسام */
         .section-title {
-            font-size: 1.2rem;
-            padding: 15px 20px 5px;
-            color: #ff9800;
-            font-weight: bold;
+            font-size: 1.3rem;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
             gap: 8px;
+            color: #fff;
+            font-weight: bold;
         }
 
+        /* شبكة الوجبات المنظمة */
         .items-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -121,19 +120,23 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            border: 1px solid #2d2d2d;
+            border: 1px solid #2a2a2a;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .food-card:hover {
+            transform: translateY(-3px);
         }
 
         .food-card img {
             width: 100%;
-            height: 125px;
+            height: 130px;
             object-fit: cover;
         }
 
         .food-info {
-            padding: 10px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             flex-grow: 1;
@@ -141,7 +144,7 @@
         }
 
         .food-name {
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: bold;
             margin-bottom: 4px;
             color: #fff;
@@ -149,7 +152,7 @@
 
         .food-desc {
             font-size: 0.75rem;
-            color: #aaa;
+            color: #999;
             margin-bottom: 10px;
             line-height: 1.3;
             display: -webkit-box;
@@ -168,133 +171,174 @@
         .food-price {
             font-size: 0.95rem;
             font-weight: bold;
-            color: #ff9800;
+            color: #fff;
         }
 
         .add-btn {
-            background-color: #ff9800;
+            background-color: #ffffff;
             color: #000;
             border: none;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
         }
 
-        .add-btn:active {
-            transform: scale(0.9);
-        }
-
-        /* شريط السلة السفلي المباشر للكاشير */
-        .cart-bar {
+        /* شريط التنقل السفلي الأصلي (Bottom Nav) */
+        .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: #ff9800;
-            color: #000;
-            padding: 12px 20px;
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
-            cursor: pointer;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
         }
 
-        .cart-badge {
-            background-color: #000;
-            color: #fff;
-            padding: 2px 8px;
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #888;
+            text-decoration: none;
+            font-size: 0.75rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: #ff9800;
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
+        }
+
+        .cart-badge-nav {
+            position: absolute;
+            top: -4px;
+            right: 18px;
+            background-color: #ff9800;
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 2px 6px;
             border-radius: 10px;
-            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
 
+    <!-- الهيدر الأصلي -->
     <header>
         <div class="brand-logo">MIM89</div>
         <div class="brand-title">FAST FOOD</div>
-        <div class="brand-subtitle">🔥 الطعم اللي ما يتكرر - مشوي على الفحم 🔥</div>
+        <div class="brand-subtitle">أشهى وجبات الدجاج السريعة بأعلى جودة</div>
     </header>
 
-    <div class="controls-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ابحث عن وجبتك المفضلة..." oninput="filterMenu()">
-        <div class="categories-tab" id="categoriesTab">
-            <button class="category-btn active" onclick="filterCategory('all', this)">الكل</button>
-            <button class="category-btn" onclick="filterCategory('shawarma', this)">قسم الشاورما</button>
-            <button class="category-btn" onclick="filterCategory('burger', this)">قسم البركر</button>
-            <button class="category-btn" onclick="filterCategory('fried_chicken', this)">قسم الكنتاكي</button>
-            <button class="category-btn" onclick="filterCategory('rizo', this)">قسم الريزو</button>
-            <button class="category-btn" onclick="filterCategory('fries', this)">الفنكر والمقبلات</button>
-            <button class="category-btn" onclick="filterCategory('drinks', this)">المشروبات</button>
+    <!-- البحث -->
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن وجبتك المفضلة..." oninput="filterMenu()">
+    </div>
+
+    <!-- التصنيفات -->
+    <div class="categories-tab">
+        <button class="category-btn active" onclick="filterCategory('all', this)">الكل</button>
+        <button class="category-btn" onclick="filterCategory('shawarma', this)">وجبات الشاورما الدجاج</button>
+        <button class="category-btn" onclick="filterCategory('burger', this)">قسم البركر</button>
+        <button class="category-btn" onclick="filterCategory('fried_chicken', this)">قسم الكنتاكي</button>
+        <button class="category-btn" onclick="filterCategory('rizo', this)">قسم الريزو</button>
+        <button class="category-btn" onclick="filterCategory('appetizers', this)">المقبلات والمقرمشات</button>
+        <button class="category-btn" onclick="filterCategory('drinks', this)">المشروبات والإضافات</button>
+    </div>
+
+    <!-- حاوي الوجبات -->
+    <div id="menuContainer"></div>
+
+    <!-- شريط التنقل السفلي الأصلي -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            <span class="nav-icon">🏠</span>
+            <span>الرئيسية</span>
+        </div>
+        <div class="nav-item" onclick="openCart()">
+            <span class="nav-icon">🛒</span>
+            <span>السلة</span>
+            <span id="cartCountNav" class="cart-badge-nav" style="display:none;">0</span>
+        </div>
+        <div class="nav-item" onclick="alert('MIM89 FAST FOOD - أهلاً وسهلاً بكم!')">
+            <span class="nav-icon">➕</span>
+            <span>المزيد</span>
         </div>
     </div>
 
-    <!-- حاوي الوجبات الديناميكي -->
-    <div id="menuContainer"></div>
-
-    <!-- شريط السلة السفلي -->
-    <div class="cart-bar" onclick="sendToCashier()">
-        <span>🛒 الطلب الحالي (<span id="cartCount" class="cart-badge">0</span>)</span>
-        <span id="cartTotal">0 د.ع ⬅️ إرسال للكاشير</span>
-    </div>
-
     <script>
-        // 1. مصفوفة الوجبات المربوطة بالمخزن والإدارة
-        const defaultMenuItems = [
-            // شاورما
-            { id: 101, name: "شاورما صاج عادي", category: "shawarma", price: 3000, desc: "خبز صاج، شاورما دجاج طازجة، ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_100G" },
-            { id: 102, name: "شاورما صاج دبل", category: "shawarma", price: 5000, desc: "خبز صاج مضاعف، دجاج إضافي، ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_200G" },
-            { id: 103, name: "شاورما عربي (وجبة)", category: "shawarma", price: 7000, desc: "تقطيع عربي + بطاطس مقلية + ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_200G" },
-            { id: 104, name: "شاورما 89 الخاص", category: "shawarma", price: 8500, desc: "تتبيلة 89 المميزة، جبنة موزاريلا، بطاطس وصوص خاص", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_250G" },
-            
-            // بركر
-            { id: 201, name: "بركر كلاسيك (لحم)", category: "burger", price: 6000, desc: "شريحة لحم مشوية، خس، طماطم، بصل، مخلل وصوص خاص", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80", inv_code: "BEEF_PATTY_1" },
-            { id: 202, name: "بركر 89 الخاص (لحم)", category: "burger", price: 9500, desc: "شريحة لحم، صوص 89، جبن، بصل وموزاريلا مقرمشة", img: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=400&q=80", inv_code: "BEEF_PATTY_1" },
-            { id: 203, name: "تشيكن فيليه (دجاج)", category: "burger", price: 5500, desc: "قطعة دجاج مقرمشة، خس، جبنة شيدر وصوص خاص", img: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=400&q=80", inv_code: "CHICKEN_FILLET_1" },
+        // كافة الوجبات والأقسام المعتمدة
+        const menuItems = [
+            // قسم الشاورما
+            { id: 101, name: "شاورما صاج عادي", category: "shawarma", price: 3000, desc: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 102, name: "شاورما صاج دبل", category: "shawarma", price: 5000, desc: "خبز صاج مضاعف، دجاج إضافي، ثومية، مخلل، بطاطس", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 103, name: "شاورما صاج سوبر", category: "shawarma", price: 6000, desc: "وجبة شاورما غنية بالجبن والمكونات الخاصة", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 104, name: "شاورما عربي (وجبة)", category: "shawarma", price: 7000, desc: "تقطيع عربي مع بطاطس مقلية، ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 105, name: "وجبة شاورما دبل", category: "shawarma", price: 9000, desc: "ساندويتشين عربي + بطاطس عائلية + صوصات", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 106, name: "شاورما فرت (250 غم)", category: "shawarma", price: 7500, desc: "لحم دجاج شاورما صافي 250 غرام", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 107, name: "شاورما فرت (500 غم)", category: "shawarma", price: 14000, desc: "لحم دجاج شاورما صافي نصف كيلو", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
+            { id: 108, name: "شاورما 89 الخاص", category: "shawarma", price: 8500, desc: "تتبيلة 89 المميزة، جبنة موزاريلا، بطاطس وصوص خاص", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=500&q=80" },
 
-            // كنتاكي
-            { id: 301, name: "وجبة كنتاكي (قطعتين)", category: "fried_chicken", price: 6500, desc: "2 قطعة دجاج مقرمش + بطاطس + صوص + خبز", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_2PCS" },
-            { id: 302, name: "وجبة كنتاكي (4 قطع)", category: "fried_chicken", price: 11500, desc: "4 قطع دجاج مقرمش + بطاطس + كول سلو + صوص", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_4PCS" },
-            { id: 303, name: "🔥 بوكس العائلة (Family Box)", category: "fried_chicken", price: 28000, desc: "12 قطعة دجاج مقرمش + بطاطس عائلي + كول سلو + بيبسي", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_12PCS" },
+            // قسم البركر
+            { id: 201, name: "بركر كلاسيك (لحم)", category: "burger", price: 6000, desc: "قطعة لحم مشوية، خس، طماطم، بصل، مخلل، صوص خاص", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80" },
+            { id: 202, name: "بركر الجبن (لحم)", category: "burger", price: 6500, desc: "قطعة لحم مشوية، جبنة شيدر، خس، طماطم، صوص", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80" },
+            { id: 203, name: "دبل تشيز بركر (لحم)", category: "burger", price: 8500, desc: "شريحتا لحم مشويتان، double شيدر، صوص خاص", img: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=500&q=80" },
+            { id: 204, name: "بركر 89 الخاص (لحم)", category: "burger", price: 9500, desc: "شريحة لحم مشوية، صوص 89، جبن، بصل وموزاريلا مقرمشة", img: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=500&q=80" },
+            { id: 205, name: "تشيكن فيليه (دجاج)", category: "burger", price: 5500, desc: "قطعة دجاج مقرمشة، خس، جبنة شيدر، صوص خاص", img: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=500&q=80" },
+            { id: 206, name: "بركر 89 الخاص (دجاج)", category: "burger", price: 8500, desc: "3 قطع ستربس دجاج، صوص 89، جبن، موزاريلا مقرمشة", img: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=500&q=80" },
 
-            // ريزو
-            { id: 401, name: "ريزو كلاسيك", category: "rizo", price: 5000, desc: "أرز مبهر مع قطع دجاج مقرمشة وصوص خاص", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", inv_code: "RIZO_PORTION" },
-            { id: 402, name: "ريزو 89 الخاص", category: "rizo", price: 6500, desc: "أرز بنكهة خاصة، قطع دجاج، صوص 89 وجبنة مذابة", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", inv_code: "RIZO_PORTION" },
+            // قسم الكنتاكي
+            { id: 301, name: "وجبة كنتاكي (قطعتين)", category: "fried_chicken", price: 6500, desc: "2 قطعة دجاج مقرمش + بطاطس + صوص + خبز", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=500&q=80" },
+            { id: 302, name: "وجبة كنتاكي (4 قطع)", category: "fried_chicken", price: 11500, desc: "4 قطع دجاج مقرمش + بطاطس + كول سلو + صوص", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=500&q=80" },
+            { id: 303, name: "وجبة كنتاكي (6 قطع)", category: "fried_chicken", price: 16000, desc: "6 قطع دجاج مقرمش + بطاطس حجم عائلي + صوصات", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=500&q=80" },
+            { id: 304, name: "🔥 بوكس العائلة (Family Box)", category: "fried_chicken", price: 28000, desc: "12 قطعة دجاج مقرمش + بطاطس عائلي + كول سلو + لتر بيبسي", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=500&q=80" },
 
-            // مقبلات ومشروبات
-            { id: 501, name: "فنكر كلاسيك", category: "fries", price: 2500, desc: "بطاطس مقلية مقرمشة مع الصوص الخاص", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=400&q=80", inv_code: "FRIES_BAG" },
-            { id: 601, name: "مشروب غازي", category: "drinks", price: 1000, desc: "بيبسي / سفن أب / ميرندا - علبة باردة", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80", inv_code: "CAN_PEPSI" }
+            // قسم الريزو
+            { id: 401, name: "ريزو كلاسيك", category: "rizo", price: 5000, desc: "أرز مبهر مع قطع دجاج مقرمشة وصوص خاص", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80" },
+            { id: 402, name: "ريزو 89 الخاص", category: "rizo", price: 6500, desc: "أرز بنكهة خاصة، قطع دجاج، صوص 89، وجبنة شيدر مذابة", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80" },
+
+            // قسم المقبلات والمقرمشات
+            { id: 501, name: "فنكر كلاسيك", category: "appetizers", price: 2500, desc: "قطع دجاج مقرمشة تقدم مع الصوص الخاص", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 502, name: "فنكر 89 الخاص", category: "appetizers", price: 4000, desc: "قطع دجاج مقرمشة تقدم مع صوص 89 الخاص", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" },
+            { id: 503, name: "أصابع موزاريلا", category: "appetizers", price: 4000, desc: "جبنة موزاريلا مقرمشة غنية", img: "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?auto=format&fit=crop&w=500&q=80" },
+            { id: 504, name: "حلقات بصل", category: "appetizers", price: 3000, desc: "حلقات بصل مقرمشة ومتبلة", img: "https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&w=500&q=80" },
+
+            // المشروبات والإضافات
+            { id: 601, name: "مشروب غازي (بيبسي / سفن / ميرندا)", category: "drinks", price: 1000, desc: "علبة باردة 330 مل", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80" },
+            { id: 602, name: "ماء معدني", category: "drinks", price: 500, desc: "عبوة ماء باردة", img: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=500&q=80" },
+            { id: 603, name: "إضافة (جبنة / صوص / هالابينو)", category: "drinks", price: 1000, desc: "إضافة اختيارية للوجبات", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" }
         ];
 
-        // قراءة البيانات من الإدارة أو اعتماد الافتراضي
-        let menuItems = JSON.parse(localStorage.getItem('mim89_admin_menu')) || defaultMenuItems;
-        let cart = JSON.parse(localStorage.getItem('mim89_current_cart')) || [];
-
+        let cart = [];
         let currentCategory = 'all';
 
-        // 2. عرض المنيو
         function renderMenu() {
             const container = document.getElementById('menuContainer');
             const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
 
-            // تجميع حسب الأقسام
             const categories = {
-                'shawarma': '🍴 قسم الشاورما (دجاج)',
+                'shawarma': '🍴 وجبات الشاورما الدجاج',
                 'burger': '🍔 قسم البركر',
                 'fried_chicken': '🍗 قسم الكنتاكي',
                 'rizo': '🍚 قسم الريزو',
-                'fries': '🍟 الفنكر والمقبلات',
-                'drinks': '🥤 قسم المشروبات'
+                'appetizers': '🍟 المقبلات والمقرمشات',
+                'drinks': '🥤 المشروبات والإضافات'
             };
 
             for (let catKey in categories) {
@@ -316,10 +360,8 @@
                             <div class="food-card">
                                 <img src="${item.img}" alt="${item.name}">
                                 <div class="food-info">
-                                    <div>
-                                        <div class="food-name">${item.name}</div>
-                                        <div class="food-desc">${item.desc}</div>
-                                    </div>
+                                    <div class="food-name">${item.name}</div>
+                                    <div class="food-desc">${item.desc}</div>
                                     <div class="food-bottom">
                                         <span class="food-price">${item.price.toLocaleString()} د.ع</span>
                                         <button class="add-btn" onclick="addToCart(${item.id})">+</button>
@@ -333,10 +375,8 @@
                     container.innerHTML += sectionHTML;
                 }
             }
-            updateCartUI();
         }
 
-        // 3. إضافة الوجبة للسلة وتمريرها لنظام الكاشير
         function addToCart(itemId) {
             const item = menuItems.find(i => i.id === itemId);
             const exist = cart.find(c => c.id === itemId);
@@ -344,30 +384,30 @@
             if (exist) {
                 exist.qty += 1;
             } else {
-                cart.push({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    inv_code: item.inv_code,
-                    qty: 1
-                });
+                cart.push({ ...item, qty: 1 });
             }
-
-            // حفظ التغيير ليتعرف عليه الكاشير
-            localStorage.setItem('mim89_current_cart', JSON.stringify(cart));
-            updateCartUI();
+            updateCartNav();
         }
 
-        // 4. تحديث واجهة السلة
-        function updateCartUI() {
+        function updateCartNav() {
+            const badge = document.getElementById('cartCountNav');
             const count = cart.reduce((sum, item) => sum + item.qty, 0);
-            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-
-            document.getElementById('cartCount').innerText = count;
-            document.getElementById('cartTotal').innerText = total.toLocaleString() + ' د.ع ⬅️ فتح في الكاشير';
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
 
-        // 5. التصفية حسب الأقسام
+        function openCart() {
+            if(cart.length === 0) {
+                alert("السلة فارغة حالياً!");
+            } else {
+                alert(`لديك ${cart.reduce((s,i)=>s+i.qty,0)} وجبات في السلة!`);
+            }
+        }
+
         function filterCategory(cat, btn) {
             currentCategory = cat;
             document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
@@ -379,16 +419,7 @@
             renderMenu();
         }
 
-        // 6. التحويل التلقائي لصفحة الكاشير
-        function sendToCashier() {
-            if (cart.length === 0) {
-                alert('السلة فارغة حالياً، أضف بعض الوجبات أولاً!');
-                return;
-            }
-            window.location.href = 'cashier.html';
-        }
-
-        // تشغيل الصفحة
+        // التشغيل الابتدائي
         renderMenu();
     </script>
 </body>
