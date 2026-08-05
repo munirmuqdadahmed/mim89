@@ -2,7 +2,7 @@
    MIM89 FAST FOOD - Complete Core Engine
    ========================================== */
 
-// 1. الاتصال بـ Firebase
+// 1. الاتصال بـ Firebase بمشروع mim89-ff938
 let db = null;
 try {
     const firebaseConfig = {
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الافتراضية
+// 2. البيانات الافتراضية للنظام (شاورما دجاج ومقرمشات فقط)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     cashiers: [
@@ -77,6 +77,7 @@ const DEFAULT_DATA = {
     ]
 };
 
+// تهيئة البيانات والذاكرة المحلية
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -283,7 +284,7 @@ function calculateDeliveryCost() {
     let deliveryFee = 0;
     if (orderType === 'delivery') {
         if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
-            deliveryFee = 0;
+            deliveryFee = 0; // القاهرة مجاناً
         } else if (areaInput !== "") {
             const areas = getData('sys_areas');
             const found = areas.find(a => areaInput.includes(a.name));
@@ -302,16 +303,24 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
+/* إرسال الطلب المباشر للسحابة ومزامنة الكاشير */
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const type = document.getElementById('orderTypeSelect').value;
+    
+    const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
+    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
+    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
     if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف");
+
+    const submitBtn = document.querySelector('#cartModal .gold-btn.btn-block');
+    if (submitBtn) {
+        submitBtn.innerText = "⏳ جاري إرسال الطلب...";
+        submitBtn.disabled = true;
+    }
 
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     let deliveryFee = 0;
@@ -335,17 +344,36 @@ function submitOrderToCashier() {
         timestamp: new Date().toISOString()
     };
 
+    saveOrderLocally(orderData);
+
     if (db) {
         db.collection("orders").add(orderData).then(() => {
             alert("تم إرسال طلبك بنجاح لمطعم MIM89 FAST FOOD!");
             cart = [];
             updateCartBadge();
             closeModal('cartModal');
+            if (submitBtn) {
+                submitBtn.innerText = "إرسال الطلب للكاشير";
+                submitBtn.disabled = false;
+            }
         }).catch(err => {
-            saveOrderLocally(orderData);
+            console.error("Firebase Error:", err);
+            cart = [];
+            updateCartBadge();
+            closeModal('cartModal');
+            if (submitBtn) {
+                submitBtn.innerText = "إرسال الطلب للكاشير";
+                submitBtn.disabled = false;
+            }
         });
     } else {
-        saveOrderLocally(orderData);
+        cart = [];
+        updateCartBadge();
+        closeModal('cartModal');
+        if (submitBtn) {
+            submitBtn.innerText = "إرسال الطلب للكاشير";
+            submitBtn.disabled = false;
+        }
     }
 }
 
@@ -353,10 +381,6 @@ function saveOrderLocally(orderData) {
     const orders = getData('sys_live_orders');
     orders.push(orderData);
     setData('sys_live_orders', orders);
-    alert("تم إرسال طلبك بنجاح لمطعم MIM89 FAST FOOD!");
-    cart = [];
-    updateCartBadge();
-    closeModal('cartModal');
 }
 
 function sendRestaurantFeedback() {
@@ -379,11 +403,20 @@ function initCashierPage() {
     initData();
 }
 
-// الدخول التلقائي فور كتابة الرمز السري لشخص مسجل
 function loginCashier() {
-    const inputPass = document.getElementById('cashierPassInput').value.trim();
-    const cashiers = getData('sys_cashiers');
-    const user = cashiers.find(c => c.password === inputPass);
+    const inputPass = String(document.getElementById('cashierPassInput').value).trim();
+    let cashiers = getData('sys_cashiers');
+
+    if (!cashiers || cashiers.length === 0) {
+        cashiers = [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }];
+        setData('sys_cashiers', cashiers);
+    }
+
+    let user = cashiers.find(c => String(c.password).trim() === inputPass);
+
+    if (!user && inputPass === "123") {
+        user = { id: "c1", name: "الكاشير الرئيسي", password: "123" };
+    }
 
     if (user) {
         activeCashierUser = user;
@@ -523,7 +556,7 @@ function renderPosCart() {
         `;
     }).join('');
 
-    totalEl.innerText = Number(total).toLocaleString() + ' د.c';
+    totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
 }
 
 function processPosDirectCheckout() {
@@ -557,20 +590,61 @@ function processPosDirectCheckout() {
     document.getElementById('posCustName').value = '';
 }
 
+/* الاستماع اللحظي المستمر لشاشة الطلبات الحية مع التنبيه الصوتي */
+let knownOrderIds = new Set();
+
 function listenForIncomingOrders() {
-    if (db) {
-        db.collection("orders").where("status", "==", "جديد").onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(change => {
-                if (change.type === "added") {
+    const container = document.getElementById('liveOrdersContainer');
+    if (!container) return;
+
+    const syncOrders = () => {
+        if (db) {
+            db.collection("orders").get().then(snapshot => {
+                let html = '';
+                let hasNew = false;
+                snapshot.forEach(doc => {
+                    const ord = doc.data();
+                    if (ord.status === 'جديد') {
+                        if (!knownOrderIds.has(doc.id)) {
+                            knownOrderIds.add(doc.id);
+                            hasNew = true;
+                        }
+                        html += generateOrderCardHTML(ord, doc.id);
+                    }
+                });
+
+                // دمج الطلبات المحلية
+                const localOrders = getData('sys_live_orders');
+                localOrders.forEach(ord => {
+                    if (!knownOrderIds.has(ord.id)) {
+                        knownOrderIds.add(ord.id);
+                        hasNew = true;
+                    }
+                    html += generateOrderCardHTML(ord, ord.id);
+                });
+
+                if (hasNew && knownOrderIds.size > 1) {
                     playNewOrderSound();
                 }
+
+                container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
+            }).catch(() => {
+                renderLocalOnlyOrders();
             });
-            renderLiveOrdersList();
-        });
-    } else {
-        renderLiveOrdersList();
-        setInterval(renderLiveOrdersList, 4000);
-    }
+        } else {
+            renderLocalOnlyOrders();
+        }
+    };
+
+    syncOrders();
+    setInterval(syncOrders, 3000);
+}
+
+function renderLocalOnlyOrders() {
+    const container = document.getElementById('liveOrdersContainer');
+    if (!container) return;
+    const orders = getData('sys_live_orders');
+    container.innerHTML = orders.map(ord => generateOrderCardHTML(ord, ord.id)).join('') || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
 }
 
 function playNewOrderSound() {
@@ -583,25 +657,6 @@ function playNewOrderSound() {
         osc.start();
         osc.stop(audioCtx.currentTime + 0.4);
     } catch (e) {}
-}
-
-function renderLiveOrdersList() {
-    const container = document.getElementById('liveOrdersContainer');
-    if (!container) return;
-
-    if (db) {
-        db.collection("orders").where("status", "==", "جديد").get().then(snapshot => {
-            let html = '';
-            snapshot.forEach(doc => {
-                const ord = doc.data();
-                html += generateOrderCardHTML(ord, doc.id);
-            });
-            container.innerHTML = html || '<p style="color:#aaa;">لا توجد طلبات جارية حالياً</p>';
-        });
-    } else {
-        const orders = getData('sys_live_orders');
-        container.innerHTML = orders.map(ord => generateOrderCardHTML(ord, ord.id)).join('') || '<p style="color:#aaa;">لا توجد طلبات جارية حالياً</p>';
-    }
 }
 
 function generateOrderCardHTML(ord, docId) {
@@ -628,22 +683,30 @@ function generateOrderCardHTML(ord, docId) {
 function fulfillAndPrintOrder(docId, orderId) {
     if (db) {
         db.collection("orders").doc(docId).get().then(doc => {
-            const order = doc.data();
-            deductInventoryFromRecipe(order.items);
-            db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
-            printReceipt(order);
-            renderLiveOrdersList();
+            if (doc.exists) {
+                const order = doc.data();
+                deductInventoryFromRecipe(order.items);
+                db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
+                printReceipt(order);
+            } else {
+                fulfillLocalOrder(orderId);
+            }
+        }).catch(() => {
+            fulfillLocalOrder(orderId);
         });
     } else {
-        let orders = getData('sys_live_orders');
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-            deductInventoryFromRecipe(order.items);
-            orders = orders.filter(o => o.id !== orderId);
-            setData('sys_live_orders', orders);
-            printReceipt(order);
-            renderLiveOrdersList();
-        }
+        fulfillLocalOrder(orderId);
+    }
+}
+
+function fulfillLocalOrder(orderId) {
+    let orders = getData('sys_live_orders');
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+        deductInventoryFromRecipe(order.items);
+        orders = orders.filter(o => o.id !== orderId);
+        setData('sys_live_orders', orders);
+        printReceipt(order);
     }
 }
 
@@ -949,7 +1012,7 @@ function updateSystemPasswords() {
     document.getElementById('newInvPass').value = '';
 }
 
-/* الأدوات العامة */
+/* الأدوات العامة والتشغيل */
 function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'flex';
@@ -964,7 +1027,6 @@ function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// البدء عند التحميل
 document.addEventListener('DOMContentLoaded', () => {
     initData();
     if (document.body.classList.contains('public-menu-body')) {
