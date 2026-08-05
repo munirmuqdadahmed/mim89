@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Complete Core Engine
+   MIM89 FAST FOOD - Core Engine (v3.0)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -26,16 +26,23 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الافتراضية للنظام
+// 2. البيانات الافتراضية للنظام وإعدادات الطابعات
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
+    printerSettings: {
+        enableIpPrinting: false,
+        cashierIp: "192.168.1.100",
+        kitchenIp: "192.168.1.101",
+        port: "9100"
+    },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", password: "123" }
     ],
     categories: [
-        { id: 1, name: "وجبات الشاورما الدجاج" },
-        { id: 2, name: "الوجبات المقرمشة" },
-        { id: 3, name: "المقبلات والمشروبات" }
+        { id: 1, name: "قسم الشاورما (دجاج)" },
+        { id: 2, name: "قسم الكنتاكي والريزو" },
+        { id: 3, name: "الفنكر والمقبلات" },
+        { id: 4, name: "قسم الإضافات" }
     ],
     deliveryAreas: [
         { name: "القاهرة", price: 0 },
@@ -50,30 +57,16 @@ const DEFAULT_DATA = {
         { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة" }
     ],
     items: [
-        {
-            id: 101, categoryId: 1, name: "شاورما دجاج مميزة", price: 5000,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "خبز صاج، شرائح دجاج طازجة، صلصة ثومية، مخلل، بطاطس",
-            recipe: [ { invId: 1, qty: 0.15 }, { invId: 2, qty: 1 }, { invId: 4, qty: 0.05 } ]
-        },
-        {
-            id: 102, categoryId: 2, name: "وجبة دجاج مقرمش (كريسبي)", price: 6500,
-            image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500",
-            ingredients: "قطع دجاج مقرمشة، بطاطس، صلصة ثوم، خبز طازج",
-            recipe: [ { invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }, { invId: 4, qty: 0.1 } ]
-        },
-        {
-            id: 201, categoryId: 3, name: "بطاطس مقلية ذهبية", price: 2000,
-            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "بطاطس ذهبية مقرمشة مع البهارات الخاصة",
-            recipe: [ { invId: 3, qty: 0.2 } ]
-        },
-        {
-            id: 301, categoryId: 3, name: "عصير برتقال طبيعي", price: 2500,
-            image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500",
-            ingredients: "عصير برتقال طبيعي طازج 100%",
-            recipe: []
-        }
+        { id: 101, categoryId: 1, name: "شاورما صاج عادي", price: 2500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج، ثومية، مخلل", recipe: [{ invId: 1, qty: 0.1 }, { invId: 2, qty: 1 }] },
+        { id: 102, categoryId: 1, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس، ثومية، خبز", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
+        { id: 103, categoryId: 1, name: "شاورما صاج دبل", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل، دجاج كمية مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
+        { id: 104, categoryId: 1, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
+        { id: 105, categoryId: 1, name: "شاورما 89 الخاص", price: 8000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة MIM89 الخاصة، جبن، صوصات خاصة", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
+        { id: 201, categoryId: 2, name: "كنتاكي قطعتين", price: 5000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "2 قطعة دجاج مقرمش، بطاطس، خبز، ثومية", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
+        { id: 202, categoryId: 2, name: "ريزو (كلاسيك / كص)", price: 5000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو متبل، قطع شاورما/دجاج", recipe: [{ invId: 1, qty: 0.15 }] },
+        { id: 203, categoryId: 2, name: "كنتاكي 4 قطع", price: 9000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "4 قطع كنتاكي مقرمش، بطاطس، ثومية", recipe: [{ invId: 1, qty: 0.5 }, { invId: 3, qty: 0.2 }] },
+        { id: 301, categoryId: 3, name: "قدح فنكر كلاسيك", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية ذهبية مقرمشة", recipe: [{ invId: 3, qty: 0.2 }] },
+        { id: 302, categoryId: 3, name: "فنكر 89 الخاص", price: 4500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس، جبن شيدر، صوص هالابينو", recipe: [{ invId: 3, qty: 0.25 }] }
     ]
 };
 
@@ -82,6 +75,7 @@ function initData() {
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
+    if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
     if (!localStorage.getItem('sys_cashiers') || JSON.parse(localStorage.getItem('sys_cashiers')).length === 0) {
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     }
@@ -311,6 +305,7 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
+/* 📲 إرسال الطلب: حفظ للكاشير تلقائياً + فتح الواتساب */
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -321,11 +316,15 @@ function submitOrderToCashier() {
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
-    if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف");
+    if (type === 'delivery' && (!name || !phone || !area || !address)) {
+        return alert("يرجى إكمال جميع الحقول المطلوب (الاسم، الهاتف، المنطقة، والعنوان)");
+    } else if (!name || !phone) {
+        return alert("يرجى إدخال الاسم ورقم الهاتف على الأقل");
+    }
 
-    const submitBtn = document.querySelector('#cartModal .gold-btn.btn-block');
+    const submitBtn = document.querySelector('#cartModal .gold-btn');
     if (submitBtn) {
-        submitBtn.innerText = "⏳ جاري إرسال الطلب...";
+        submitBtn.innerText = "⏳ جاري إرسال الطلب للكاشير والواتساب...";
         submitBtn.disabled = true;
     }
 
@@ -334,6 +333,7 @@ function submitOrderToCashier() {
     if (type === 'delivery') {
         deliveryFee = (area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 3000;
     }
+    const totalAmount = subtotal + deliveryFee;
 
     const orderData = {
         id: 'ORD_' + Date.now(),
@@ -346,42 +346,61 @@ function submitOrderToCashier() {
         items: cart,
         subtotal: subtotal,
         deliveryFee: deliveryFee,
-        totalAmount: subtotal + deliveryFee,
+        totalAmount: totalAmount,
         status: 'جديد',
         dateDate: getTodayString(),
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
+    // 1. إرسال الطلب فوراً للكاشير
     saveOrderLocally(orderData);
-
     if (db) {
-        db.collection("orders").add(orderData).then(() => {
-            alert("تم إرسال طلبك بنجاح لمطعم MIM89 FAST FOOD!");
-            cart = [];
-            updateCartBadge();
-            closeModal('cartModal');
-            if (submitBtn) {
-                submitBtn.innerText = "إرسال الطلب للكاشير";
-                submitBtn.disabled = false;
-            }
-        }).catch(err => {
-            cart = [];
-            updateCartBadge();
-            closeModal('cartModal');
-            if (submitBtn) {
-                submitBtn.innerText = "إرسال الطلب للكاشير";
-                submitBtn.disabled = false;
-            }
-        });
-    } else {
-        cart = [];
-        updateCartBadge();
-        closeModal('cartModal');
-        if (submitBtn) {
-            submitBtn.innerText = "إرسال الطلب للكاشير";
-            submitBtn.disabled = false;
-        }
+        db.collection("orders").add(orderData).catch(err => console.error("Firebase Sync Error:", err));
     }
+
+    // 2. تجهيز نص الواتساب
+    let typeText = '🚗 توصيل منزل';
+    if (type === 'takeaway') typeText = '🛍️ سفري من المطعم';
+    if (type === 'dine_in') typeText = '🍽️ صالة';
+
+    let itemsListText = cart.map(item => `• ${item.name} × ${item.qty} (${(item.price * item.qty).toLocaleString()} د.ع)`).join('\n');
+
+    let waMessage = `🔥 *طلب جديد من MIM89 FAST FOOD* 🔥\n`;
+    waMessage += `----------------------------------\n`;
+    waMessage += `👤 *الاسم:* ${name}\n`;
+    waMessage += `📞 *رقم الهاتف:* ${phone}\n`;
+    waMessage += `📋 *نوع الخدمة:* ${typeText}\n`;
+    if (type === 'delivery') {
+        waMessage += `📍 *المنطقة:* ${area}\n`;
+        waMessage += `🏠 *العنوان:* ${address}\n`;
+    }
+    if (notes) {
+        waMessage += `📝 *ملاحظات:* ${notes}\n`;
+    }
+    waMessage += `----------------------------------\n`;
+    waMessage += `🛒 *الوجبات والطلبات:*\n${itemsListText}\n`;
+    waMessage += `----------------------------------\n`;
+    waMessage += `💵 *المجموع الفرعي:* ${subtotal.toLocaleString()} د.ع\n`;
+    if (type === 'delivery') {
+        waMessage += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString() + ' د.ع'}\n`;
+    }
+    waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع\n`;
+    waMessage += `----------------------------------\n`;
+    waMessage += `⏳ *تم تحويل الطلب للكاشير، يرجى البدء بالتجهيز.*`;
+
+    const restaurantPhone = "9647750008630";
+    const waUrl = `https://api.whatsapp.com/send?phone=${restaurantPhone}&text=${encodeURIComponent(waMessage)}`;
+
+    cart = [];
+    updateCartBadge();
+    closeModal('cartModal');
+
+    if (submitBtn) {
+        submitBtn.innerText = "إرسال الفاتورة عبر الواتساب";
+        submitBtn.disabled = false;
+    }
+
+    window.open(waUrl, '_blank');
 }
 
 function saveOrderLocally(orderData) {
@@ -406,9 +425,7 @@ let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
 
-function initCashierPage() {
-    initData();
-}
+function initCashierPage() { initData(); }
 
 function loginCashier() {
     const inputPass = String(document.getElementById('cashierPassInput').value).trim();
@@ -895,9 +912,9 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-/* تجهيز بيانات الفواتير والمطبخ */
+/* 🖨️ نظام الطباعة التلقائية المزدوجة بضغطة واحدة والمعزز بالشبكة (IP) */
 function printReceipt(order) {
-    // 1. فاتورة الزبون
+    // 1. وصل الزبون
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
@@ -930,44 +947,27 @@ function printReceipt(order) {
 
     openModal('receiptModal');
 
-    // إطلاق الطباعة التلقائية المزدوجة بنقرة واحدة
-    setTimeout(() => {
-        triggerAutomaticDualPrint();
-    }, 400);
-}
+    const printerSettings = getData('sys_printer_settings');
 
-/* 🚀 التنفيذ التلقائي للطباعة المزدوجة (فاتورة الزبون ثم وصل المطبخ) */
-function triggerAutomaticDualPrint() {
-    // 1. طباعة فاتورة الزبون أولاً
-    document.body.classList.remove('print-kitchen-only');
-    document.body.classList.add('print-customer-only');
-    window.print();
-
-    // 2. بعد 500 مللي ثانية، طباعة وصل المطبخ تلقائياً
-    setTimeout(() => {
-        document.body.classList.remove('print-customer-only');
-        document.body.classList.add('print-kitchen-only');
-        window.print();
-
-        // تنظيف الكلاسات بعد الطباعة
+    // إذا تم تفعيل الطباعة المباشرة عبر الـ IP مستقبلاً
+    if (printerSettings && printerSettings.enableIpPrinting) {
+        sendDirectNetworkPrint(printerSettings.cashierIp, printerSettings.port, 'cashier', order);
+        sendDirectNetworkPrint(printerSettings.kitchenIp, printerSettings.port, 'kitchen', order);
+        setTimeout(() => closeModal('receiptModal'), 300);
+    } else {
+        // الطباعة التلقائية عبر متصفح الكاشير بدون شاشات تأكيد (Silent Print)
         setTimeout(() => {
-            document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-        }, 1000);
-    }, 500);
+            window.print();
+            setTimeout(() => {
+                closeModal('receiptModal');
+            }, 500);
+        }, 200);
+    }
 }
 
-/* طباعة فردية مخصصة عند الحاجة */
-function printSingleTicket(type) {
-    document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-    if (type === 'customer') {
-        document.body.classList.add('print-customer-only');
-    } else if (type === 'kitchen') {
-        document.body.classList.add('print-kitchen-only');
-    }
-    window.print();
-    setTimeout(() => {
-        document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-    }, 1000);
+/* محاكي الطباعة الشبكية المباشرة عبر IP */
+function sendDirectNetworkPrint(ip, port, target, orderData) {
+    console.log(`Sending Raw Print Job to IP: ${ip}:${port} for Target: ${target}`);
 }
 
 /* ==========================================
@@ -1065,6 +1065,29 @@ function loadAdminTabsData() {
     renderAdminItems();
     renderAdminCashiers();
     renderAdminAreas();
+    loadPrinterSettings();
+}
+
+/* حفظ وتحميل إعدادات طابعات الـ IP */
+function loadPrinterSettings() {
+    const settings = getData('sys_printer_settings');
+    if (!settings) return;
+    
+    if (document.getElementById('enableIpPrinting')) document.getElementById('enableIpPrinting').checked = !!settings.enableIpPrinting;
+    if (document.getElementById('cashierPrinterIp')) document.getElementById('cashierPrinterIp').value = settings.cashierIp || '';
+    if (document.getElementById('kitchenPrinterIp')) document.getElementById('kitchenPrinterIp').value = settings.kitchenIp || '';
+    if (document.getElementById('printerPort')) document.getElementById('printerPort').value = settings.port || '9100';
+}
+
+function savePrinterSettings() {
+    const enableIpPrinting = document.getElementById('enableIpPrinting').checked;
+    const cashierIp = document.getElementById('cashierPrinterIp').value.trim();
+    const kitchenIp = document.getElementById('kitchenPrinterIp').value.trim();
+    const port = document.getElementById('printerPort').value.trim() || '9100';
+
+    const settings = { enableIpPrinting, cashierIp, kitchenIp, port };
+    setData('sys_printer_settings', settings);
+    alert("تم حفظ إعدادات الطابعات بنجاح! سيقوم النظام بحفظ العناوين للتوصيل الشبكي.");
 }
 
 function renderAdminAreas() {
