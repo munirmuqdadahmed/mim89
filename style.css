@@ -94,7 +94,7 @@ body {
     transition: 0.2s;
     display: inline-flex;
     align-items: center;
-    justify-content me: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 16px;
 }
@@ -304,12 +304,12 @@ body {
 }
 
 /* ==========================================
-   إعدادات طباعة الفواتير وكشوفات الحساب
+   قواعد الفصل التام والطباعة المزدوجة المتخصصة
    ========================================== */
 @media print {
     @page {
         size: auto;
-        margin: 0mm;
+        margin: 0;
     }
     body {
         background: #ffffff !important;
@@ -325,23 +325,37 @@ body {
         top: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        height: auto !important;
         background: #ffffff !important;
         color: #000000 !important;
         padding: 0 !important;
         margin: 0 !important;
-        box-shadow: none !important;
         border: none !important;
+        box-shadow: none !important;
     }
     #receiptModal .modal-content, #dailyReportModal .modal-content {
         border: none !important;
         box-shadow: none !important;
         width: 100% !important;
-        max-width: 100% !important;
         padding: 10px !important;
         background: #ffffff !important;
         color: #000000 !important;
     }
+
+    /* التحكم التلقائي بالطباعة المزدوجة المستقلة */
+    body.print-customer-only #kitchenReceiptTicket {
+        display: none !important;
+    }
+    body.print-customer-only #customerReceiptTicket {
+        display: block !important;
+    }
+
+    body.print-kitchen-only #customerReceiptTicket {
+        display: none !important;
+    }
+    body.print-kitchen-only #kitchenReceiptTicket {
+        display: block !important;
+    }
+
     .no-print {
         display: none !important;
     }
