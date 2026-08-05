@@ -4,16 +4,462 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
+    
     <!-- خط تجوال العربي والأيقونات -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- التنسيقات المودرن المدمجة المباشرة -->
+    <style>
+        :root {
+            --gold-primary: #f59e0b;
+            --gold-bright: #fbbf24;
+            --gold-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+            --bg-dark: #0d0d10;
+            --card-bg: #16161b;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-light: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --danger-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark) !important;
+            color: var(--text-light) !important;
+            direction: rtl;
+            text-align: right;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        /* الهيدر الرئيسي المودرن */
+        .main-header {
+            text-align: center;
+            padding: 22px 15px 12px 15px;
+            background: radial-gradient(circle at top, #22222a 0%, var(--bg-dark) 100%);
+        }
+
+        .brand-badge {
+            background: var(--gold-gradient);
+            color: #000;
+            font-weight: 900;
+            font-size: 1.5rem;
+            padding: 4px 18px;
+            border-radius: 10px;
+            display: inline-block;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .brand-title {
+            color: #fff;
+            font-size: 1.7rem;
+            margin-top: 6px;
+            letter-spacing: 2px;
+            font-weight: 900;
+        }
+
+        .brand-subtitle {
+            color: var(--gold-bright);
+            font-size: 0.85rem;
+            margin-top: 3px;
+        }
+
+        /* شريط البحث المودرن */
+        .search-box {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            margin: 14px auto 0 auto;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-primary);
+            font-size: 0.95rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 11px 42px 11px 15px;
+            background: #1c1c22;
+            border: 1px solid var(--card-border);
+            border-radius: 25px;
+            color: #fff;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        /* شريط الأقسام */
+        .categories-nav {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            background: rgba(13, 13, 16, 0.92);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .categories-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 0 15px;
+            scrollbar-width: none;
+        }
+
+        .categories-container::-webkit-scrollbar { display: none; }
+
+        .category-tab {
+            background: #202028;
+            color: #bbb;
+            border: 1px solid var(--card-border);
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .category-tab.active {
+            background: var(--gold-gradient);
+            color: #000;
+            border-color: var(--gold-primary);
+        }
+
+        /* كروت الوجبات بالمينيو */
+        .menu-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .section-title {
+            color: var(--gold-primary);
+            font-size: 1.2rem;
+            margin: 20px 0 12px 0;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 6px;
+            font-weight: 800;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .items-grid { grid-template-columns: 1fr; }
+        }
+
+        .item-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-img {
+            width: 100%;
+            height: 185px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .item-details {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: space-between;
+        }
+
+        .item-name {
+            font-size: 1.05rem;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+
+        .item-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 10px;
+            margin-top: auto;
+        }
+
+        .item-price {
+            color: var(--gold-bright);
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+        .add-cart-btn {
+            background: var(--gold-gradient);
+            color: #000;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* الشريط السفلي العائم */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 62px;
+            background: #121215;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .nav-item i { font-size: 1.15rem; margin-bottom: 2px; }
+        .nav-item.active { color: var(--gold-primary); }
+
+        .cart-btn-wrapper {
+            position: relative;
+            top: -16px;
+        }
+
+        .cart-main-btn {
+            background: var(--gold-gradient);
+            border: 4px solid var(--bg-dark);
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            color: #000;
+            font-size: 1.35rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: var(--danger-red);
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        /* النوافذ العائمة المودرن */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .modern-modal {
+            background: #16161a !important;
+            border: 1px solid rgba(245, 158, 11, 0.25) !important;
+            border-radius: 20px !important;
+            padding: 22px 18px !important;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
+        }
+
+        .close-btn {
+            position: absolute;
+            left: 15px;
+            top: 12px;
+            font-size: 1.6rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .modal-header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gold-primary);
+            margin-bottom: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 10px;
+        }
+
+        .modal-header-title h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+
+        .more-section { margin-bottom: 20px; }
+
+        .more-section-title {
+            font-size: 0.9rem;
+            color: var(--gold-bright);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        /* الأقسام المودرن داخل نافذة المزيد */
+        .more-cats-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .more-cat-chip {
+            background: #22222a;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e4e4e7;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* شبكة الاتصال المودرن الجذابة (2 في السطر) */
+        .modern-contact-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+        }
+
+        .contact-card {
+            background: #202028 !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            border-radius: 14px !important;
+            padding: 10px 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            text-decoration: none !important;
+            color: #ffffff !important;
+        }
+
+        .contact-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .phone-card .contact-icon { background: rgba(245, 158, 11, 0.15); color: var(--gold-bright); }
+        .wa-card .contact-icon { background: rgba(37, 211, 102, 0.15); color: #25D366; }
+        .ig-card .contact-icon { background: rgba(225, 48, 108, 0.15); color: #E1306C; }
+        .fb-card .contact-icon { background: rgba(24, 119, 242, 0.15); color: #1877F2; }
+
+        .contact-info { display: flex; flex-direction: column; overflow: hidden; }
+        .contact-info .label { font-size: 0.72rem; color: #a1a1aa !important; font-weight: 500; }
+        .contact-info .val { font-size: 0.82rem; color: #ffffff !important; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* المدخلات والأزرار المودرن */
+        .modern-input {
+            background: #202028 !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            border-radius: 12px !important;
+            padding: 11px !important;
+            font-size: 0.88rem !important;
+            color: #fff !important;
+            width: 100%;
+        }
+
+        .modern-submit-btn {
+            background: var(--gold-gradient);
+            color: #000;
+            border: none;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            font-size: 0.95rem !important;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-block { width: 100%; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { font-size: 0.82rem; color: var(--gold-bright); margin-bottom: 4px; display: block; }
+
+        .checkout-summary {
+            background: #202028;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 12px 0;
+            font-size: 0.85rem;
+        }
+
+        .summary-line { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .total-line { color: var(--gold-bright); font-weight: bold; font-size: 1.05rem; }
+        .gold-hr { border-color: rgba(255,255,255,0.08); margin: 8px 0; }
+        .modal-img { width: 100%; height: 185px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
+        .detail-price { color: var(--gold-bright); font-weight: bold; font-size: 1.15rem; margin: 6px 0; }
+        .detail-ingredients { color: #ccc; font-size: 0.88rem; margin-bottom: 16px; }
+    </style>
 </head>
 <body class="public-menu-body">
 
@@ -30,7 +476,7 @@
         </div>
     </header>
 
-    <!-- الأقسام العلوية الأفقي التفاعلي -->
+    <!-- الأقسام العلوية -->
     <nav class="categories-nav">
         <div class="categories-container" id="categoriesNav"></div>
     </nav>
@@ -40,7 +486,7 @@
         <div id="menuSections"></div>
     </main>
 
-    <!-- 📱 الشريط السفلي العائم (3 أزرار رئيسية) -->
+    <!-- 📱 الشريط السفلي العائم (3 أزرار فقط) -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
@@ -77,7 +523,7 @@
                     
                     <div class="form-group">
                         <label class="form-label">نوع الخدمة:</label>
-                        <select id="orderTypeSelect" class="gold-input modern-input" onchange="toggleDeliveryFields()">
+                        <select id="orderTypeSelect" class="modern-input" onchange="toggleDeliveryFields()">
                             <option value="delivery">🚗 توصيل منزلي</option>
                             <option value="takeaway">🛍️ استلام من المطعم (سفري)</option>
                             <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
@@ -86,28 +532,28 @@
 
                     <div class="form-group">
                         <label class="form-label">الاسم الكامل:</label>
-                        <input type="text" id="custName" class="gold-input modern-input" placeholder="أدخل اسمك الكريم">
+                        <input type="text" id="custName" class="modern-input" placeholder="أدخل اسمك الكريم">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">رقم الهاتف:</label>
-                        <input type="tel" id="custPhone" class="gold-input modern-input" placeholder="07XXXXXXXXX">
+                        <input type="tel" id="custPhone" class="modern-input" placeholder="07XXXXXXXXX">
                     </div>
 
                     <div id="deliveryFieldsGroup">
                         <div class="form-group">
                             <label class="form-label">المنطقة / الحي:</label>
-                            <input type="text" id="custArea" class="gold-input modern-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
+                            <input type="text" id="custArea" class="modern-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
                         </div>
                         <div class="form-group">
                             <label class="form-label">العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input modern-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
+                            <input type="text" id="custAddress" class="modern-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">ملاحظات إضافية:</label>
-                        <textarea id="orderNotes" class="gold-input modern-input" rows="2" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
+                        <textarea id="orderNotes" class="modern-input" rows="2" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
                     </div>
 
                     <div class="checkout-summary">
@@ -208,10 +654,10 @@
             <div class="more-section">
                 <h3 class="more-section-title"><i class="fa-solid fa-comment-dots"></i> إرسال ملاحظة للإدارة</h3>
                 <div class="form-group">
-                    <input type="text" id="feedbackName" class="gold-input modern-input" placeholder="اسمك الكريم (اختياري)">
+                    <input type="text" id="feedbackName" class="modern-input" placeholder="اسمك الكريم (اختياري)">
                 </div>
                 <div class="form-group">
-                    <textarea id="feedbackMsg" class="gold-input modern-input" rows="2" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+                    <textarea id="feedbackMsg" class="modern-input" rows="2" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
                 </div>
                 <button class="gold-btn btn-block modern-submit-btn" onclick="sendRestaurantFeedback()">
                     <i class="fa-solid fa-paper-plane"></i> إرسال الملاحظة
