@@ -1,8 +1,9 @@
 /* ==========================================
-   MIM89 FAST FOOD - Complete Core Engine
+   MIM89 FAST FOOD - Complete System Engine
+   (Public Menu + POS + CRM + Live Caller ID)
    ========================================== */
 
-// 1. الاتصال بـ Firebase بمشروع mim89-ff938
+// 1️⃣ تهيئة Firebase
 let db = null;
 try {
     const firebaseConfig = {
@@ -11,68 +12,46 @@ try {
         projectId: "mim89-ff938",
         storageBucket: "mim89-ff938.firebasestorage.app",
         messagingSenderId: "8207632733",
-        appId: "1:8207632733:web:49cd53fe5dbf26216b80b4",
-        measurementId: "G-D9GK0G77ZD"
+        appId: "1:8207632733:web:49cd53fe5dbf26216b80b4"
     };
 
     if (typeof firebase !== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        console.log("تم الاتصال بـ Firebase بنجاح! 🚀");
     }
 } catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي:", e);
+    console.log("Firebase Init Error:", e);
 }
 
-// 2. البيانات الافتراضية للنظام
+// 2️⃣ البيانات الافتراضية للسيستم
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
-    cashiers: [
-        { id: "c1", name: "الكاشير الرئيسي", password: "123" }
-    ],
+    cashiers: [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }],
     categories: [
         { id: 1, name: "وجبات الشاورما الدجاج" },
         { id: 2, name: "الوجبات المقرمشة" },
         { id: 3, name: "المقبلات والمشروبات" }
     ],
-    deliveryAreas: [
-        { name: "القاهرة", price: 0 },
-        { name: "البنوك", price: 2000 },
-        { name: "الأعظمية", price: 3000 },
-        { name: "الشعب", price: 2500 }
-    ],
-    inventory: [
-        { id: 1, name: "صدور دجاج طازجة", quantity: 100, unit: "كغم" },
-        { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع" },
-        { id: 3, name: "بطاطس", quantity: 150, unit: "كغم" },
-        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة" }
-    ],
     items: [
         {
             id: 101, categoryId: 1, name: "شاورما دجاج مميزة", price: 5000,
             image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "خبز صاج، شرائح دجاج طازجة، صلصة ثومية، مخلل، بطاطس",
-            recipe: [ { invId: 1, qty: 0.15 }, { invId: 2, qty: 1 }, { invId: 4, qty: 0.05 } ]
+            ingredients: "خبز صاج، شرائح دجاج طازجة، صلصة ثومية، مخلل، بطاطس"
         },
         {
             id: 102, categoryId: 2, name: "وجبة دجاج مقرمش (كريسبي)", price: 6500,
             image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500",
-            ingredients: "قطع دجاج مقرمشة، بطاطس، صلصة ثوم، خبز طازج",
-            recipe: [ { invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }, { invId: 4, qty: 0.1 } ]
+            ingredients: "قطع دجاج مقرمشة، بطاطس، صلصة ثوم، خبز طازج"
         },
         {
             id: 201, categoryId: 3, name: "بطاطس مقلية ذهبية", price: 2000,
             image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "بطاطس ذهبية مقرمشة مع البهارات الخاصة",
-            recipe: [ { invId: 3, qty: 0.2 } ]
+            ingredients: "بطاطس ذهبية مقرمشة مع البهارات الخاصة"
         },
         {
             id: 301, categoryId: 3, name: "عصير برتقال طبيعي", price: 2500,
             image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500",
-            ingredients: "عصير برتقال طبيعي طازج 100%",
-            recipe: []
+            ingredients: "عصير برتقال طبيعي طازج 100%"
         }
     ]
 };
@@ -80,13 +59,10 @@ const DEFAULT_DATA = {
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-    if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
-    if (!localStorage.getItem('sys_cashiers') || JSON.parse(localStorage.getItem('sys_cashiers')).length === 0) {
-        localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
-    }
-    if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+    if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
+    if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify({}));
 }
 
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -94,14 +70,129 @@ function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
 function getTodayString() {
     const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 /* ==========================================
-   3. المينيو العام وتجربة الزبون (index.html)
+   3️⃣ إدارة سجل الزبائن الذكي (CRM)
+   ========================================== */
+function saveOrUpdateCustomer(phone, name, area, address) {
+    if (!phone || phone === "-") return;
+    let customers = JSON.parse(localStorage.getItem('sys_customers')) || {};
+    
+    if (customers[phone]) {
+        customers[phone].name = name || customers[phone].name;
+        customers[phone].area = area || customers[phone].area;
+        customers[phone].address = address || customers[phone].address;
+        customers[phone].orderCount = (customers[phone].orderCount || 1) + 1;
+        customers[phone].lastOrder = getTodayString();
+    } else {
+        customers[phone] = {
+            name: name,
+            area: area,
+            address: address,
+            orderCount: 1,
+            firstOrder: getTodayString()
+        };
+    }
+    localStorage.setItem('sys_customers', JSON.stringify(customers));
+}
+
+function lookupCustomerByPhone(phone) {
+    if (!phone) return null;
+    let customers = JSON.parse(localStorage.getItem('sys_customers')) || {};
+    return customers[phone] || null;
+}
+
+function onCashierPhoneInput(phone) {
+    const cust = lookupCustomerByPhone(phone);
+    const infoSpan = document.getElementById('cashierCustHistoryBadge');
+    
+    if (cust) {
+        if (document.getElementById('posCustName')) document.getElementById('posCustName').value = cust.name;
+        if (infoSpan) {
+            infoSpan.style.display = "block";
+            infoSpan.innerHTML = `🟢 زبون دائم (طلب ${cust.orderCount} مرات سابقاً)`;
+        }
+    } else {
+        if (infoSpan) {
+            infoSpan.style.display = "block";
+            infoSpan.innerHTML = `🟡 زبون جديد (أول مرة)`;
+        }
+    }
+}
+
+/* ==========================================
+   4️⃣ الربط الفوري المباشر للمكالمات الواردة (Caller ID)
+   ========================================== */
+function listenToIncomingCalls() {
+    if (!db) return;
+
+    db.collection("incoming_calls")
+      .orderBy("timestamp", "desc")
+      .limit(1)
+      .onSnapshot((snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+              if (change.type === "added") {
+                  const callData = change.doc.data();
+                  const now = Date.now();
+                  if (now - callData.timestamp < 30000) { // تنبيه إذا كان الاتصال حديثاً (آخر 30 ثانية)
+                      triggerIncomingCallPopup(callData.phone, callData.source);
+                  }
+              }
+          });
+      });
+}
+
+function triggerIncomingCallPopup(phone, source) {
+    const cust = lookupCustomerByPhone(phone);
+    
+    try {
+        let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play();
+    } catch(e) {}
+
+    const name = cust ? cust.name : "زبون جديد (غير مسجل)";
+    const area = cust ? (cust.area + ' - ' + cust.address) : "لا يوجد عنوان سابق";
+    const badge = cust ? `🟢 زبون دائم (طلب ${cust.orderCount} مرات)` : `🟡 زبون جديد`;
+
+    const popupHtml = `
+        <div id="callerIdAlert" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:9999; background:#1c1c24; border:2px solid var(--gold-primary); border-radius:16px; padding:15px 20px; box-shadow:0 10px 30px rgba(0,0,0,0.85); color:#fff; width:90%; max-width:400px; text-align:center; animation: bounce 0.4s;">
+            <div style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold; margin-bottom:5px;">
+                📞 اتصال وارد الآن (${source === 'whatsapp' ? 'واتساب' : 'شريحة'})
+            </div>
+            <h3 style="margin:4px 0; font-size:1.2rem; color:#fff;">${name}</h3>
+            <p style="font-size:0.9rem; color:var(--gold-primary); font-weight:bold; margin:2px 0;">${phone}</p>
+            <p style="font-size:0.8rem; color:#aaa; margin-bottom:8px;">${area}</p>
+            <span style="font-size:0.75rem; background:#222; padding:3px 8px; border-radius:8px; display:inline-block; margin-bottom:10px;">${badge}</span>
+            
+            <div style="display:flex; gap:8px;">
+                <button onclick="applyCallToPOS('${phone}', '${name}')" class="gold-btn btn-block" style="padding:8px; font-size:0.85rem;">
+                    ➕ فتح فاتورة باسمه
+                </button>
+                <button onclick="document.getElementById('callerIdAlert').remove()" class="gold-btn" style="background:#ef4444; color:#fff; padding:8px;">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    `;
+
+    const oldAlert = document.getElementById('callerIdAlert');
+    if (oldAlert) oldAlert.remove();
+    document.body.insertAdjacentHTML('beforeend', popupHtml);
+}
+
+function applyCallToPOS(phone, name) {
+    if (document.getElementById('posCustName')) {
+        document.getElementById('posCustName').value = name;
+    }
+    onCashierPhoneInput(phone);
+    const alertBox = document.getElementById('callerIdAlert');
+    if (alertBox) alertBox.remove();
+}
+
+/* ==========================================
+   5️⃣ محرك المينيو الإلكتروني للزبائن
    ========================================== */
 let cart = [];
 
@@ -131,7 +222,7 @@ function loadPublicMenu() {
         navContainer.appendChild(btn);
 
         if (moreCatsList) {
-            moreCatsList.innerHTML += `<button class="gold-btn" style="font-size:0.85rem;" onclick="closeModal('moreModal'); filterCategory(${cat.id}, null);">${cat.name}</button>`;
+            moreCatsList.innerHTML += `<button class="more-cat-chip" onclick="closeModal('moreModal'); filterCategory(${cat.id}, null);">${cat.name}</button>`;
         }
 
         const catItems = items.filter(i => Number(i.categoryId) === Number(cat.id));
@@ -144,13 +235,13 @@ function loadPublicMenu() {
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <img src="${item.image}" class="item-img" onclick="openItemDetails(${item.id})">
                             <div class="item-details">
                                 <h3 class="item-name" onclick="openItemDetails(${item.id})">${item.name}</h3>
-                                <p class="item-desc">${item.ingredients || 'وجبة طازجة من MIM89'}</p>
+                                <p class="item-desc">${item.ingredients || ''}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                                    <button class="add-cart-btn" onclick="addToCart(${item.id})" title="إضافة للسلة"><i class="fa-solid fa-plus"></i></button>
+                                    <button class="add-cart-btn" onclick="addToCart(${item.id})">+</button>
                                 </div>
                             </div>
                         </div>
@@ -184,13 +275,13 @@ function filterPublicMenu() {
         <div class="items-grid">
             ${filtered.map(item => `
                 <div class="item-card">
-                    <img src="${item.image}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})">
+                    <img src="${item.image}" class="item-img" onclick="openItemDetails(${item.id})">
                     <div class="item-details">
                         <h3 class="item-name">${item.name}</h3>
                         <p class="item-desc">${item.ingredients}</p>
                         <div class="item-footer">
                             <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                            <button class="add-cart-btn" onclick="addToCart(${item.id})"><i class="fa-solid fa-plus"></i></button>
+                            <button class="add-cart-btn" onclick="addToCart(${item.id})">+</button>
                         </div>
                     </div>
                 </div>
@@ -215,11 +306,8 @@ function addToCart(itemId) {
     const item = items.find(i => i.id === itemId);
     const exist = cart.find(c => c.id === itemId);
 
-    if (exist) {
-        exist.qty += 1;
-    } else {
-        cart.push({ ...item, qty: 1 });
-    }
+    if (exist) { exist.qty += 1; }
+    else { cart.push({ ...item, qty: 1 }); }
     updateCartBadge();
 }
 
@@ -245,14 +333,14 @@ function renderCartModalItems() {
     }
 
     container.innerHTML = cart.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#222; padding:8px 12px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#202028; padding:10px 12px; border-radius:12px;">
             <div>
-                <strong style="color:var(--gold-primary);">${item.name}</strong><br>
+                <strong style="color:var(--gold-primary); font-size:0.95rem;">${item.name}</strong><br>
                 <small style="color:#aaa;">${Number(item.price).toLocaleString()} د.ع</small>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <button onclick="changeCartQty(${item.id}, -1)" class="gold-btn" style="padding:2px 10px;">-</button>
-                <span>${item.qty}</span>
+                <span style="font-weight:bold;">${item.qty}</span>
                 <button onclick="changeCartQty(${item.id}, 1)" class="gold-btn" style="padding:2px 10px;">+</button>
             </div>
         </div>
@@ -293,12 +381,8 @@ function calculateDeliveryCost() {
     if (orderType === 'delivery') {
         if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
             deliveryFee = 0;
-        } else if (areaInput !== "") {
-            const areas = getData('sys_areas');
-            const found = areas.find(a => areaInput.includes(a.name));
-            deliveryFee = found ? found.price : 3000;
         } else {
-            deliveryFee = 3000;
+            deliveryFee = areaInput !== "" ? 2500 : 3000;
         }
     }
 
@@ -314,80 +398,43 @@ function calculateDeliveryCost() {
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
-    const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
-    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
-    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const type = document.getElementById('orderTypeSelect').value;
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
-    if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف");
+    if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف الكريمتين");
 
-    const submitBtn = document.querySelector('#cartModal .gold-btn.btn-block');
-    if (submitBtn) {
-        submitBtn.innerText = "⏳ جاري إرسال الطلب...";
-        submitBtn.disabled = true;
-    }
+    // حفظ الزبون تلقائياً
+    saveOrUpdateCustomer(phone, name, area, address);
 
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    let deliveryFee = 0;
-    if (type === 'delivery') {
-        deliveryFee = (area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 3000;
-    }
+    let deliveryFee = (type === 'delivery') ? ((area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 2500) : 0;
+    const totalAmount = subtotal + deliveryFee;
 
-    const orderData = {
-        id: 'ORD_' + Date.now(),
-        customerName: name,
-        phone: phone,
-        orderType: type,
-        area: area,
-        address: address,
-        notes: notes,
-        items: cart,
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        totalAmount: subtotal + deliveryFee,
-        status: 'جديد',
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-    };
+    // توثيق الطلب عبر الواتساب لمنع الطلبات الوهمية
+    let itemsText = cart.map(i => `• ${i.name} (العدد: ${i.qty})`).join('\n');
+    let waText = `🍔 *طلب جديد - MIM89 FAST FOOD*\n` +
+                 `👤 *الزبون:* ${name}\n` +
+                 `📞 *الهاتف:* ${phone}\n` +
+                 `🚗 *الخدمة:* ${type === 'delivery' ? 'توصيل' : 'سفري/صالة'}\n` +
+                 `📍 *العنوان:* ${area} - ${address}\n` +
+                 `📝 *ملاحظات:* ${notes || 'لا يوجد'}\n` +
+                 `---------------------------\n` +
+                 `طلب الوجبات:\n${itemsText}\n` +
+                 `---------------------------\n` +
+                 `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    saveOrderLocally(orderData);
+    const waUrl = `https://wa.me/964775008630?text=${encodeURIComponent(waText)}`;
+    
+    alert("شكرًا لك! سيتم فتح الواتساب لإرسال تأكيد الطلب المباشر للمطعم.");
+    window.open(waUrl, '_blank');
 
-    if (db) {
-        db.collection("orders").add(orderData).then(() => {
-            alert("تم إرسال طلبك بنجاح لمطعم MIM89 FAST FOOD!");
-            cart = [];
-            updateCartBadge();
-            closeModal('cartModal');
-            if (submitBtn) {
-                submitBtn.innerText = "إرسال الطلب للكاشير";
-                submitBtn.disabled = false;
-            }
-        }).catch(err => {
-            cart = [];
-            updateCartBadge();
-            closeModal('cartModal');
-            if (submitBtn) {
-                submitBtn.innerText = "إرسال الطلب للكاشير";
-                submitBtn.disabled = false;
-            }
-        });
-    } else {
-        cart = [];
-        updateCartBadge();
-        closeModal('cartModal');
-        if (submitBtn) {
-            submitBtn.innerText = "إرسال الطلب للكاشير";
-            submitBtn.disabled = false;
-        }
-    }
-}
-
-function saveOrderLocally(orderData) {
-    const orders = getData('sys_live_orders');
-    orders.push(orderData);
-    setData('sys_live_orders', orders);
+    cart = [];
+    updateCartBadge();
+    closeModal('cartModal');
 }
 
 function sendRestaurantFeedback() {
@@ -399,42 +446,28 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   4. نقطة البيع والأرشيف والكشوفات (cashier.html)
+   6️⃣ كاشير البيع المباشر (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
 
-function initCashierPage() {
-    initData();
-}
+function initCashierPage() { initData(); }
 
 function loginCashier() {
     const inputPass = String(document.getElementById('cashierPassInput').value).trim();
     let cashiers = getData('sys_cashiers');
 
-    if (!cashiers || cashiers.length === 0) {
-        cashiers = [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }];
-        setData('sys_cashiers', cashiers);
-    }
-
-    let user = cashiers.find(c => String(c.password).trim() === inputPass);
-
-    if (!user && inputPass === "123") {
-        user = { id: "c1", name: "الكاشير الرئيسي", password: "123" };
-    }
+    let user = cashiers.find(c => String(c.password).trim() === inputPass) || (inputPass === "123" ? { id: "c1", name: "الكاشير الرئيسي" } : null);
 
     if (user) {
         activeCashierUser = user;
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('cashierMainApp').style.display = 'block';
         document.getElementById('activeCashierName').innerText = "الكاشير الحالي: " + user.name;
-        document.getElementById('authError').innerText = "";
-        document.getElementById('cashierPassInput').value = "";
-        
         loadPosDirectMenu('all');
-        listenForIncomingOrders();
+        listenToIncomingCalls(); // تشغيل استماع الاتصالات فور الدخول
     } else {
         document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
     }
@@ -477,16 +510,11 @@ function loadPosDirectMenu(catId = 'all') {
 
     const filtered = catId === 'all' ? items : items.filter(i => Number(i.categoryId) === Number(catId));
 
-    if (filtered.length === 0) {
-        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
-        return;
-    }
-
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <img src="${item.image}" class="pos-product-img">
+            <h4 style="font-size:0.82rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.82rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
@@ -499,9 +527,9 @@ function filterPosProducts() {
     const filtered = items.filter(i => i.name.toLowerCase().includes(query));
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <img src="${item.image}" class="pos-product-img">
+            <h4 style="font-size:0.82rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.82rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
@@ -511,11 +539,8 @@ function addToPosCart(itemId) {
     const item = items.find(i => i.id === itemId);
     const exist = posCart.find(c => c.id === itemId);
 
-    if (exist) {
-        exist.qty += 1;
-    } else {
-        posCart.push({ ...item, qty: 1 });
-    }
+    if (exist) { exist.qty += 1; } 
+    else { posCart.push({ ...item, qty: 1 }); }
     renderPosCart();
 }
 
@@ -539,7 +564,7 @@ function renderPosCart() {
     if (!list) return;
 
     if (posCart.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>`;
+        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.82rem; padding:20px;">انقر على الوجبة لإضافتها للفاتورة</p>`;
         totalEl.innerText = "0 د.ع";
         return;
     }
@@ -549,15 +574,15 @@ function renderPosCart() {
         const itemTotal = item.price * item.qty;
         total += itemTotal;
         return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; background:#1c1c20; padding:6px; border-radius:6px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; background:#202028; padding:6px; border-radius:8px; font-size:0.82rem;">
                 <div>
                     <strong style="color:var(--gold-primary);">${item.name}</strong><br>
                     <small style="color:#aaa;">${Number(item.price).toLocaleString()} × ${item.qty}</small>
                 </div>
                 <div style="display:flex; gap:5px; align-items:center;">
-                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 8px; font-size:0.8rem;">-</button>
+                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 8px;">-</button>
                     <span>${item.qty}</span>
-                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 8px; font-size:0.8rem;">+</button>
+                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 8px;">+</button>
                 </div>
             </div>
         `;
@@ -572,19 +597,13 @@ function processPosDirectCheckout() {
     const custName = document.getElementById('posCustName').value.trim() || "زبون مباشر";
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-    let typeText = '🍽️ صالة';
-    if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
-    if (selectedPosOrderType === 'delivery') typeText = '🚗 توصيل';
-
     const directOrder = {
         id: 'POS_' + Date.now(),
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش (نقداً)' : '💳 فيزا / ماستركارد',
-        area: typeText,
-        address: "-",
-        notes: "-",
+        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
+        area: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
         items: posCart,
         subtotal: subtotal,
         deliveryFee: 0,
@@ -594,7 +613,6 @@ function processPosDirectCheckout() {
     };
 
     saveCompletedOrder(directOrder);
-    deductInventoryFromRecipe(directOrder.items);
     printReceipt(directOrder);
     clearPosCart();
     document.getElementById('posCustName').value = '';
@@ -602,306 +620,65 @@ function processPosDirectCheckout() {
 
 function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
-    if (!order.dateDate) order.dateDate = getTodayString();
-    
-    const existingIndex = completed.findIndex(o => o.id === order.id);
-    if (existingIndex !== -1) {
-        completed[existingIndex] = order;
-    } else {
-        completed.unshift(order);
-    }
+    completed.unshift(order);
     setData('sys_completed_orders', completed);
 }
 
 function openCompletedOrdersModal() {
     const list = document.getElementById('completedOrdersList');
     const completed = getData('sys_completed_orders');
-
     if (!list) return;
 
-    if (!completed || completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:30px; font-size:0.95rem;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
+    if (completed.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">لا توجد فواتير مطبوعة حتى الآن</p>`;
     } else {
-        list.innerHTML = completed.map(ord => {
-            const itemsText = (ord.items || []).map(i => `${i.name} (×${i.qty})`).join(' ، ');
-            return `
-                <div style="background:#222228; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; color:var(--gold-primary); margin-bottom:6px;">
-                        <strong><i class="fa-solid fa-user"></i> ${ord.customerName || 'زبون'}</strong>
-                        <span style="font-size:0.8rem; color:#aaa;">⏰ ${ord.timestamp || 'سابق'} (${ord.dateDate || ''})</span>
-                    </div>
-                    <div style="font-size:0.85rem; color:#ccc; margin-bottom:6px;">
-                        <span>خدمة: ${ord.area || 'صالة'}</span> | 
-                        <span>دفع: ${ord.paymentMethod || 'كاش'}</span>
-                    </div>
-                    <div style="font-size:0.85rem; color:#888; margin-bottom:8px; background:#18181c; padding:6px; border-radius:6px;">
-                        <strong>الوجبات:</strong> ${itemsText}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:8px;">
-                        <strong style="color:var(--gold-bright); font-size:1rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
-                        <button class="gold-btn" style="padding:6px 14px; font-size:0.85rem;" onclick="reprintCompletedOrder('${ord.id}')">
-                            🖨️ إعادة طباعة
-                        </button>
-                    </div>
+        list.innerHTML = completed.map(ord => `
+            <div style="background:#202028; border:1px solid var(--card-border); border-radius:12px; padding:10px; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
+                    <strong>${ord.customerName}</strong>
+                    <small style="color:#aaa;">${ord.timestamp}</small>
                 </div>
-            `;
-        }).join('');
+                <div style="font-size:0.82rem; color:#ccc; margin-top:4px;">
+                    ${ord.items.map(i => `${i.name} (×${i.qty})`).join('، ')}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
+                    <strong style="color:var(--gold-bright);">${Number(ord.totalAmount).toLocaleString()} د.ع</strong>
+                    <button class="gold-btn" style="padding:4px 10px; font-size:0.78rem; border-radius:6px;" onclick="printReceipt(${JSON.stringify(ord).replace(/"/g, '&quot;')})">🖨️ إعادة طباعة</button>
+                </div>
+            </div>
+        `).join('');
     }
 
     openModal('completedOrdersModal');
 }
 
-function reprintCompletedOrder(orderId) {
-    const completed = getData('sys_completed_orders');
-    const order = completed.find(o => o.id === orderId);
-    if (order) {
-        closeModal('completedOrdersModal');
-        printReceipt(order);
-    } else {
-        alert("لم يتم العثور على الفاتورة!");
-    }
-}
-
-function clearCompletedOrdersHistory() {
-    if (confirm("هل أنت متأكد من مسح جميع الفواتير السابقة من السجل؟")) {
-        setData('sys_completed_orders', []);
-        openCompletedOrdersModal();
-    }
-}
-
-/* ==========================================
-   5. تقارير كشف الحساب والتقفيل اليومي (Z-Report)
-   ========================================== */
 function openDailyReportModal() {
-    const dateInput = document.getElementById('reportDateInput');
-    const today = getTodayString();
-    if (dateInput) dateInput.value = today;
-    renderDailyReport(today);
+    renderDailyReport(getTodayString());
     openModal('dailyReportModal');
 }
 
 function renderDailyReport(targetDate) {
     const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => {
-        if (o.dateDate) return o.dateDate === targetDate;
-        return targetDate === getTodayString();
-    });
+    const filteredOrders = completed.filter(o => o.dateDate === targetDate || (!o.dateDate && targetDate === getTodayString()));
 
-    let totalSales = 0;
-    let totalCash = 0;
-    let totalVisa = 0;
-    let totalDelivery = 0;
-    let subtotalFood = 0;
-    let itemsSoldMap = {};
-
+    let totalSales = 0, totalCash = 0, totalVisa = 0;
     filteredOrders.forEach(ord => {
-        const orderTotal = Number(ord.totalAmount || 0);
-        const delivery = Number(ord.deliveryFee || 0);
-        const sub = Number(ord.subtotal || 0);
-
-        totalSales += orderTotal;
-        totalDelivery += delivery;
-        subtotalFood += sub;
-
-        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
-            totalVisa += orderTotal;
-        } else {
-            totalCash += orderTotal;
-        }
-
-        if (ord.items && Array.isArray(ord.items)) {
-            ord.items.forEach(item => {
-                if (itemsSoldMap[item.name]) {
-                    itemsSoldMap[item.name] += item.qty;
-                } else {
-                    itemsSoldMap[item.name] = item.qty;
-                }
-            });
-        }
+        const amt = Number(ord.totalAmount || 0);
+        totalSales += amt;
+        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) totalVisa += amt;
+        else totalCash += amt;
     });
 
     document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
-    document.getElementById('reportCashierText').innerText = "الكاشير المسؤول: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
     document.getElementById('repOrdersCount').innerText = filteredOrders.length;
     document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
     document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
-    document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
-    document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
-
-    const itemsListEl = document.getElementById('repItemsSoldList');
-    const itemNames = Object.keys(itemsSoldMap);
-
-    if (itemNames.length === 0) {
-        itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات في هذا التاريخ</p>`;
-    } else {
-        itemsListEl.innerHTML = itemNames.map(name => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:4px 0;">
-                <span>● ${name}</span>
-                <strong>العدد: ${itemsSoldMap[name]}</strong>
-            </div>
-        `).join('');
-    }
 }
 
-/* ==========================================
-   6. مزامنة الطلبات والطباعة المزدوجة التلقائية
-   ========================================== */
-let knownOrderIds = new Set();
-
-function listenForIncomingOrders() {
-    const container = document.getElementById('liveOrdersContainer');
-    if (!container) return;
-
-    const syncOrders = () => {
-        let unhandledCount = 0;
-
-        const updateUIWithOrders = (ordersList) => {
-            let html = '';
-            ordersList.forEach(ord => {
-                if (ord.status === 'جديد') {
-                    unhandledCount++;
-                    if (!knownOrderIds.has(ord.id)) {
-                        knownOrderIds.add(ord.id);
-                    }
-                    html += generateOrderCardHTML(ord, ord.docId || ord.id);
-                }
-            });
-
-            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
-            
-            const badge = document.getElementById('liveOrdersBadge');
-            const alertBanner = document.getElementById('pendingOrdersAlertBanner');
-            const bannerCount = document.getElementById('pendingOrdersBannerCount');
-
-            if (unhandledCount > 0) {
-                if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
-                if (alertBanner) { alertBanner.style.display = 'block'; }
-                if (bannerCount) { bannerCount.innerText = unhandledCount; }
-                playNewOrderSound();
-            } else {
-                if (badge) { badge.style.display = 'none'; }
-                if (alertBanner) { alertBanner.style.display = 'none'; }
-            }
-        };
-
-        if (db) {
-            db.collection("orders").get().then(snapshot => {
-                let list = [];
-                snapshot.forEach(doc => {
-                    list.push({ ...doc.data(), docId: doc.id });
-                });
-                
-                const localOrders = getData('sys_live_orders');
-                localOrders.forEach(ord => {
-                    if (!list.some(l => l.id === ord.id)) list.push(ord);
-                });
-
-                updateUIWithOrders(list);
-            }).catch(() => {
-                updateUIWithOrders(getData('sys_live_orders'));
-            });
-        } else {
-            updateUIWithOrders(getData('sys_live_orders'));
-        }
-    };
-
-    syncOrders();
-    setInterval(syncOrders, 3000);
-}
-
-function playNewOrderSound() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        osc.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-    } catch (e) {}
-}
-
-function generateOrderCardHTML(ord, docId) {
-    return `
-        <div style="background:#222228; border:1px solid var(--gold-primary); padding:12px; margin-bottom:10px; border-radius:10px;">
-            <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
-                <strong>${ord.customerName} (${ord.phone})</strong>
-                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
-            </div>
-            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address}</p>
-            <p style="font-size:0.85rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'لا يوجد'}</p>
-            <hr style="border-color:#333; margin:8px 0;">
-            <ul style="padding-right:15px; font-size:0.9rem;">
-                ${ord.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join('')}
-            </ul>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <strong style="color:var(--gold-bright);">المجموع: ${ord.totalAmount.toLocaleString()} د.ع</strong>
-                <button class="gold-btn" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة الفاتورة</button>
-            </div>
-        </div>
-    `;
-}
-
-function fulfillAndPrintOrder(docId, orderId) {
-    if (db) {
-        db.collection("orders").doc(docId).get().then(doc => {
-            if (doc.exists) {
-                const order = doc.data();
-                saveCompletedOrder(order);
-                deductInventoryFromRecipe(order.items);
-                db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
-                printReceipt(order);
-            } else {
-                fulfillLocalOrder(orderId);
-            }
-        }).catch(() => {
-            fulfillLocalOrder(orderId);
-        });
-    } else {
-        fulfillLocalOrder(orderId);
-    }
-}
-
-function fulfillLocalOrder(orderId) {
-    let orders = getData('sys_live_orders');
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-        saveCompletedOrder(order);
-        deductInventoryFromRecipe(order.items);
-        orders = orders.filter(o => o.id !== orderId);
-        setData('sys_live_orders', orders);
-        printReceipt(order);
-    }
-}
-
-function deductInventoryFromRecipe(items) {
-    let inventory = getData('sys_inventory');
-    const allMenuItems = getData('sys_items');
-
-    items.forEach(cartItem => {
-        const menuItem = allMenuItems.find(m => m.id === cartItem.id);
-        if (menuItem && menuItem.recipe) {
-            menuItem.recipe.forEach(ingredient => {
-                const stockItem = inventory.find(inv => inv.id === ingredient.invId);
-                if (stockItem) {
-                    const totalDeduct = ingredient.qty * cartItem.qty;
-                    stockItem.quantity = Math.max(0, stockItem.quantity - totalDeduct);
-                }
-            });
-        }
-    });
-
-    setData('sys_inventory', inventory);
-}
-
-/* تجهيز بيانات الفواتير والمطبخ */
 function printReceipt(order) {
-    // 1. فاتورة الزبون
-    document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
-    document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-    document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'مباشر'}`;
+    document.getElementById('receiptTypeInfo').innerText = `الخدمة: ${order.area || 'صالة'} | الدفع: ${order.paymentMethod || 'كاش'}`;
     
     document.getElementById('receiptItemsBody').innerHTML = (order.items || []).map(i => `
         <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.85rem;">
@@ -910,326 +687,8 @@ function printReceipt(order) {
         </div>
     `).join('');
 
-    document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
-    document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
-
-    // 2. وصل المطبخ
-    document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
-    document.getElementById('kitchenCustName').innerText = `الزبون / الطاولة: ${order.customerName || 'مباشر'}`;
-    document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
-
-    document.getElementById('kitchenItemsBody').innerHTML = (order.items || []).map(i => `
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:4px 0;">
-            <span>● ${i.name}</span>
-            <span style="font-size:1.2rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
-        </div>
-    `).join('');
-
-    document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
-
     openModal('receiptModal');
-
-    // إطلاق الطباعة التلقائية المزدوجة بنقرة واحدة
-    setTimeout(() => {
-        triggerAutomaticDualPrint();
-    }, 400);
-}
-
-/* 🚀 التنفيذ التلقائي للطباعة المزدوجة (فاتورة الزبون ثم وصل المطبخ) */
-function triggerAutomaticDualPrint() {
-    // 1. طباعة فاتورة الزبون أولاً
-    document.body.classList.remove('print-kitchen-only');
-    document.body.classList.add('print-customer-only');
-    window.print();
-
-    // 2. بعد 500 مللي ثانية، طباعة وصل المطبخ تلقائياً
-    setTimeout(() => {
-        document.body.classList.remove('print-customer-only');
-        document.body.classList.add('print-kitchen-only');
-        window.print();
-
-        // تنظيف الكلاسات بعد الطباعة
-        setTimeout(() => {
-            document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-        }, 1000);
-    }, 500);
-}
-
-/* طباعة فردية مخصصة عند الحاجة */
-function printSingleTicket(type) {
-    document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-    if (type === 'customer') {
-        document.body.classList.add('print-customer-only');
-    } else if (type === 'kitchen') {
-        document.body.classList.add('print-kitchen-only');
-    }
-    window.print();
-    setTimeout(() => {
-        document.body.classList.remove('print-customer-only', 'print-kitchen-only');
-    }, 1000);
-}
-
-/* ==========================================
-   7. إدارة المخزن والإدارة العامة
-   ========================================== */
-function initInventoryPage() { initData(); }
-
-function loginInventory() {
-    const pass = document.getElementById('invPassInput').value;
-    const sysPasses = getData('sys_passwords');
-
-    if (pass === sysPasses.inventory || pass === sysPasses.admin) {
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('invMainApp').style.display = 'block';
-        renderInventoryTable();
-    } else {
-        document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
-    }
-}
-
-function renderInventoryTable() {
-    const inv = getData('sys_inventory');
-    const tbody = document.getElementById('inventoryTableBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = inv.map((item, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td><input type="text" value="${item.name}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input"></td>
-            <td><input type="number" value="${item.quantity}" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input"></td>
-            <td><input type="text" value="${item.unit}" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input"></td>
-            <td><button onclick="deleteInvItem(${item.id})" class="btn-sm btn-danger">حذف</button></td>
-        </tr>
-    `).join('');
-}
-
-function addNewInventoryItem() {
-    const name = document.getElementById('newInvName').value;
-    const qty = Number(document.getElementById('newInvQty').value);
-    const unit = document.getElementById('newInvUnit').value;
-
-    if (!name || !qty) return alert("أدخل الاسم والكمية");
-
-    const inv = getData('sys_inventory');
-    inv.push({ id: Date.now(), name, quantity: qty, unit: unit || 'قطع' });
-    setData('sys_inventory', inv);
-
-    document.getElementById('newInvName').value = '';
-    document.getElementById('newInvQty').value = '';
-    document.getElementById('newInvUnit').value = '';
-    renderInventoryTable();
-}
-
-function updateInvField(id, field, value) {
-    const inv = getData('sys_inventory');
-    const item = inv.find(i => i.id === id);
-    if (item) {
-        item[field] = field === 'quantity' ? Number(value) : value;
-        setData('sys_inventory', inv);
-    }
-}
-
-function deleteInvItem(id) {
-    if (confirm("حذف هذه المادة من الجرد؟")) {
-        let inv = getData('sys_inventory').filter(i => i.id !== id);
-        setData('sys_inventory', inv);
-        renderInventoryTable();
-    }
-}
-
-function initAdminPage() { initData(); }
-
-function loginAdmin() {
-    const pass = document.getElementById('adminPassInput').value;
-    const sysPasses = getData('sys_passwords');
-
-    if (pass === sysPasses.admin) {
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('adminMainApp').style.display = 'block';
-        loadAdminTabsData();
-    } else {
-        document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
-    }
-}
-
-function switchAdminTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if (btn) btn.classList.add('active');
-}
-
-function loadAdminTabsData() {
-    renderAdminCategories();
-    renderAdminItems();
-    renderAdminCashiers();
-    renderAdminAreas();
-}
-
-function renderAdminAreas() {
-    const areas = getData('sys_areas');
-    const tbody = document.getElementById('adminAreasTable');
-    if (!tbody) return;
-    tbody.innerHTML = areas.map((a, idx) => `
-        <tr>
-            <td>${idx + 1}</td>
-            <td>${a.name}</td>
-            <td>${a.price === 0 ? 'مجاني' : a.price.toLocaleString() + ' د.ع'}</td>
-            <td><button class="btn-sm btn-danger" onclick="deleteArea('${a.name}')">حذف</button></td>
-        </tr>
-    `).join('');
-}
-
-function saveDeliveryArea() {
-    const name = document.getElementById('areaNameInput').value.trim();
-    const price = Number(document.getElementById('areaPriceInput').value);
-    if (!name) return alert("أدخل اسم المنطقة");
-
-    let areas = getData('sys_areas');
-    areas.push({ name, price });
-    setData('sys_areas', areas);
-
-    document.getElementById('areaNameInput').value = '';
-    document.getElementById('areaPriceInput').value = '';
-    renderAdminAreas();
-}
-
-function deleteArea(name) {
-    let areas = getData('sys_areas').filter(a => a.name !== name);
-    setData('sys_areas', areas);
-    renderAdminAreas();
-}
-
-function renderAdminItems() {
-    const items = getData('sys_items');
-    const categories = getData('sys_categories');
-    const tbody = document.getElementById('adminItemsTable');
-    const select = document.getElementById('itemCategory');
-
-    if (select) select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    if (!tbody) return;
-
-    tbody.innerHTML = items.map(item => {
-        const cat = categories.find(c => c.id == item.categoryId);
-        return `
-            <tr>
-                <td><img src="${item.image}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
-                <td>${item.name}</td>
-                <td>${cat ? cat.name : '-'}</td>
-                <td>${Number(item.price).toLocaleString()} د.ع</td>
-                <td>
-                    <button onclick="editItem(${item.id})" class="btn-sm gold-btn">تعديل</button>
-                    <button onclick="deleteItem(${item.id})" class="btn-sm btn-danger">حذف</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function saveItem() {
-    const id = document.getElementById('editItemId').value;
-    const name = document.getElementById('itemName').value;
-    const price = Number(document.getElementById('itemPrice').value);
-    const categoryId = Number(document.getElementById('itemCategory').value);
-    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/300';
-    const ingredients = document.getElementById('itemIngredients').value;
-
-    if (!name || !price) return alert("أدخل الاسم والسعر");
-
-    let items = getData('sys_items');
-    if (id) {
-        items = items.map(i => i.id == id ? { ...i, name, price, categoryId, image, ingredients } : i);
-    } else {
-        items.push({ id: Date.now(), name, price, categoryId, image, ingredients, recipe: [] });
-    }
-
-    setData('sys_items', items);
-    resetItemForm();
-    renderAdminItems();
-}
-
-function editItem(id) {
-    const item = getData('sys_items').find(i => i.id === id);
-    if (!item) return;
-
-    document.getElementById('editItemId').value = item.id;
-    document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPrice').value = item.price;
-    document.getElementById('itemCategory').value = item.categoryId;
-    document.getElementById('itemImage').value = item.image;
-    document.getElementById('itemIngredients').value = item.ingredients;
-    document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
-}
-
-function resetItemForm() {
-    document.getElementById('editItemId').value = '';
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemPrice').value = '';
-    document.getElementById('itemImage').value = '';
-    document.getElementById('itemIngredients').value = '';
-    document.getElementById('itemFormTitle').innerText = "إضافة / تعديل صنف للمينيو";
-}
-
-function deleteItem(id) {
-    if (confirm("حذف الصنف؟")) {
-        let items = getData('sys_items').filter(i => i.id !== id);
-        setData('sys_items', items);
-        renderAdminItems();
-    }
-}
-
-function renderAdminCategories() {}
-
-function renderAdminCashiers() {
-    const cashiers = getData('sys_cashiers');
-    const tbody = document.getElementById('adminCashiersTable');
-    if (!tbody) return;
-
-    tbody.innerHTML = cashiers.map((c, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td>${c.name}</td>
-            <td>${c.password}</td>
-            <td><button onclick="deleteCashier('${c.id}')" class="btn-sm btn-danger">حذف</button></td>
-        </tr>
-    `).join('');
-}
-
-function saveCashier() {
-    const name = document.getElementById('cashierNameInput').value;
-    const pass = document.getElementById('cashierPassNew').value;
-    if (!name || !pass) return alert("أدخل الاسم وكلمة المرور");
-
-    const cashiers = getData('sys_cashiers');
-    cashiers.push({ id: 'c_' + Date.now(), name, password: pass });
-    setData('sys_cashiers', cashiers);
-
-    document.getElementById('cashierNameInput').value = '';
-    document.getElementById('cashierPassNew').value = '';
-    renderAdminCashiers();
-}
-
-function deleteCashier(id) {
-    if (confirm("حذف الكاشير؟")) {
-        let cashiers = getData('sys_cashiers').filter(c => c.id !== id);
-        setData('sys_cashiers', cashiers);
-        renderAdminCashiers();
-    }
-}
-
-function updateSystemPasswords() {
-    const newAdmin = document.getElementById('newAdminPass').value;
-    const newInv = document.getElementById('newInvPass').value;
-    const passes = getData('sys_passwords');
-
-    if (newAdmin) passes.admin = newAdmin;
-    if (newInv) passes.inventory = newInv;
-
-    setData('sys_passwords', passes);
-    alert("تم تحديث كلمات المرور بنجاح!");
-    document.getElementById('newAdminPass').value = '';
-    document.getElementById('newInvPass').value = '';
 }
 
 function openModal(id) {
@@ -1242,9 +701,7 @@ function closeModal(id) {
     if (modal) modal.style.display = 'none';
 }
 
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 document.addEventListener('DOMContentLoaded', () => {
     initData();
