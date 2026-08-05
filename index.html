@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIM89 FAST FOOD</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملف التصميم الأصلي الخاص بك -->
     <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -33,7 +34,7 @@
 
     <main id="menuSections" class="container"></main>
 
-    <!-- زر السلة Floating -->
+    <!-- زر السلة العائم -->
     <button id="floatingCartBtn" class="cart-float-btn" onclick="openCartModal()">
         <i class="fa-solid fa-utensils"></i>
         <span id="cartBadgeCount" class="badge">0</span>
@@ -51,7 +52,7 @@
         </div>
     </div>
 
-    <!-- modal السلة -->
+    <!-- modal السلة والشراء -->
     <div id="cartModal" class="modal-overlay">
         <div class="modal-content">
             <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
@@ -98,6 +99,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- ربط ملف الجافاسكريبت مع رقم إصدار جديد لكسر الـ Cache -->
+    <script src="app.js?v=99"></script>
 </body>
 </html>
