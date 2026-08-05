@@ -4,82 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MIM89 FAST FOOD - كاشير البيع المباشر</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body onload="initCashierPage()">
 
+    <!-- نافذة تسجيل دخول الكاشير -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <div class="brand-badge">MIM89</div>
             <h2 style="color:var(--gold-primary); margin:15px 0;"><i class="fa-solid fa-cash-register"></i> تسجيل دخول الكاشير</h2>
             
             <div class="form-group" style="margin-bottom:15px;">
-                <label style="color:var(--gold-bright); font-size:0.9rem;">أدخل الرمز السري الخاص بك:</label>
-                <input type="password" id="cashierPassInput" class="gold-input" placeholder="••••" style="text-align:center; font-size:1.2rem; letter-spacing:4px;" onkeypress="if(event.key==='Enter') loginCashier()">
+                <label style="color:var(--gold-bright); font-size:0.85rem; margin-bottom:6px; display:block;">رمز الدخول السري:</label>
+                <input type="password" id="cashierPassInput" class="gold-input modern-input" placeholder="••••" style="text-align:center; font-size:1.3rem; letter-spacing:4px;" onkeypress="if(event.key==='Enter') loginCashier()">
             </div>
             
-            <button onclick="loginCashier()" class="gold-btn btn-block" style="padding:12px;">دخول الشاشة</button>
+            <button onclick="loginCashier()" class="gold-btn btn-block modern-submit-btn">دخول الشاشة</button>
             <p id="authError" class="error-msg"></p>
         </div>
     </div>
 
+    <!-- واجهة الكاشير الرئيسية -->
     <div id="cashierMainApp" class="container" style="display:none; padding:12px;">
         
-        <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <!-- الهيدر المودرن لكاشير POS -->
+        <header class="admin-header">
             <div>
-                <h1 style="color:var(--gold-primary); font-size:1.4rem; margin:0;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
-                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:bold; font-size:0.85rem;"></span>
+                <h1 style="color:var(--gold-primary); font-size:1.3rem; margin:0;"><i class="fa-solid fa-calculator"></i> MIM89 POS - كاشير المبيعات</h1>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-weight:700; font-size:0.82rem;"></span>
             </div>
             
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button onclick="openDailyReportModal()" class="gold-btn" style="background:#10b981; color:#fff; padding:8px 12px; font-size:0.85rem; font-weight:bold;">
-                    <i class="fa-solid fa-chart-line"></i> كشف الحساب والتقفيل
+                <button onclick="openDailyReportModal()" class="gold-btn" style="background:#10b981; color:#fff; padding:8px 14px; font-size:0.82rem; border-radius:10px;">
+                    <i class="fa-solid fa-chart-line"></i> تقفيل الدوام (Z)
                 </button>
-                <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:8px 12px; font-size:0.85rem; font-weight:bold;">
-                    <i class="fa-solid fa-clock-rotate-left"></i> سجل الفواتير
+                <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:8px 14px; font-size:0.82rem; border-radius:10px;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> السجل
                 </button>
-                <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:8px 12px; font-size:0.85rem;">خروج</button>
+                <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:8px 12px; font-size:0.82rem; border-radius:10px;">خروج</button>
             </div>
         </header>
 
-        <div id="pendingOrdersAlertBanner" style="display:none; background:#b91c1c; color:#fff; padding:10px; border-radius:8px; margin-bottom:12px; text-align:center; font-weight:bold; cursor:pointer;" onclick="switchCashierTab('liveOrdersTab', document.querySelectorAll('.tab-btn')[1])">
-            🚨 تنبيه: يوجد (<span id="pendingOrdersBannerCount">0</span>) طلبات أونلاين جديدة تنتظر التجهيز! انقر هنا لمشاهدتها.
-        </div>
-
+        <!-- أزرار التبويب -->
         <div class="admin-tabs" style="margin-bottom:12px;">
             <button class="tab-btn active" onclick="switchCashierTab('posDirectTab', this)">
-                <i class="fa-solid fa-cash-register"></i> بيع مباشر (المينيو)
+                <i class="fa-solid fa-cash-register"></i> نقطة البيع (POS)
             </button>
             <button class="tab-btn" onclick="switchCashierTab('liveOrdersTab', this)">
-                <i class="fa-solid fa-bell"></i> طلبات المينيو أونلاين 
-                <span id="liveOrdersBadge" style="display:none; background:#ef4444; color:#fff; border-radius:10px; padding:1px 7px; font-size:0.75rem; margin-right:4px;">0</span>
+                <i class="fa-solid fa-bell"></i> طلبات المينيو
             </button>
         </div>
 
+        <!-- 1️⃣ البيع المباشر -->
         <div id="posDirectTab" class="tab-content active">
             <div class="pos-responsive-grid">
                 
-                <div class="card" style="padding:12px;">
+                <div class="card" style="padding:14px; border-radius:16px;">
                     <div style="margin-bottom:10px;">
-                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input" style="margin-top:0;" placeholder="🔍 بحث سريع عن وجبة...">
+                        <input type="text" id="posSearchInput" oninput="filterPosProducts()" class="gold-input modern-input" style="margin-top:0;" placeholder="🔍 بحث عن وجبة...">
                     </div>
                     
+                    <!-- شريط الأقسام السريع للكاشير -->
                     <div id="posCategoriesBar" class="categories-container" style="margin-bottom:12px; padding:0;"></div>
                     <div id="posProductsGrid" class="pos-items-grid"></div>
                 </div>
 
-                <div class="card" style="padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                <!-- الفاتورة الحالية -->
+                <div class="card" style="padding:14px; border-radius:16px; display:flex; flex-direction:column; justify-content:space-between;">
                     <div>
-                        <h3 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:5px; font-size:1.1rem;">
+                        <h3 style="color:var(--gold-primary); margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:6px; font-size:1.05rem;">
                             <i class="fa-solid fa-receipt"></i> الفاتورة الحالية
                         </h3>
 
                         <div class="form-group" style="margin-bottom:10px;">
-                            <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">نوع الخدمة:</label>
+                            <label style="font-size:0.78rem; color:var(--gold-bright); margin-bottom:4px; display:block;">نوع الخدمة:</label>
                             <div class="toggle-btn-group" id="posOrderTypeGroup">
                                 <button type="button" class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
                                 <button type="button" class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
@@ -88,7 +94,7 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom:10px;">
-                            <label style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:4px; display:block;">طريقة الدفع:</label>
+                            <label style="font-size:0.78rem; color:var(--gold-bright); margin-bottom:4px; display:block;">طريقة الدفع:</label>
                             <div class="toggle-btn-group" id="posPaymentGroup">
                                 <button type="button" class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
                                 <button type="button" class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا</button>
@@ -96,16 +102,16 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom:8px;">
-                            <input type="text" id="posCustName" class="gold-input" style="padding:6px;" placeholder="اسم الزبون / رقم الطاولة (اختياري)">
+                            <input type="text" id="posCustName" class="gold-input modern-input" style="padding:8px;" placeholder="اسم الزبون / الطاولة (اختياري)">
                         </div>
 
-                        <div id="posCartList" style="min-height:120px; max-height:200px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:6px; border-radius:8px; background:#121214;">
-                            <p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>
+                        <div id="posCartList" style="min-height:130px; max-height:220px; overflow-y:auto; margin:8px 0; border:1px solid var(--card-border); padding:8px; border-radius:12px; background:#121215;">
+                            <p style="text-align:center; color:#777; font-size:0.82rem; padding:20px;">انقر على الوجبة لإضافتها للفاتورة</p>
                         </div>
                     </div>
 
                     <div>
-                        <div class="checkout-summary" style="margin:8px 0; padding:8px;">
+                        <div class="checkout-summary" style="margin:10px 0; padding:10px;">
                             <div class="summary-line total-line">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
@@ -113,8 +119,8 @@
                         </div>
 
                         <div style="display:flex; gap:8px;">
-                            <button onclick="clearPosCart()" class="gold-btn" style="background:#ef4444; color:#fff; flex:1; padding:10px;">إلغاء</button>
-                            <button onclick="processPosDirectCheckout()" class="gold-btn" style="flex:2; padding:10px;"><i class="fa-solid fa-print"></i> دفع وطباعة</button>
+                            <button onclick="clearPosCart()" class="gold-btn" style="background:#ef4444; color:#fff; flex:1; padding:12px; border-radius:10px;">إلغاء</button>
+                            <button onclick="processPosDirectCheckout()" class="gold-btn modern-submit-btn" style="flex:2;"><i class="fa-solid fa-print"></i> دفع وطباعة</button>
                         </div>
                     </div>
                 </div>
@@ -122,130 +128,82 @@
             </div>
         </div>
 
+        <!-- 2️⃣ طلبات أونلاين -->
         <div id="liveOrdersTab" class="tab-content">
-            <div class="card">
-                <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-bell"></i> الطلبات الواردة عبر المينيو الإلكتروني</h2>
+            <div class="card" style="border-radius:16px;">
+                <h2 style="color:var(--gold-primary); margin-bottom:15px; font-size:1.1rem;"><i class="fa-solid fa-bell"></i> الطلبات الواردة عبر المينيو</h2>
                 <div id="liveOrdersContainer"></div>
             </div>
         </div>
 
     </div>
 
+    <!-- نافذة سجل الفواتير -->
     <div id="completedOrdersModal" class="modal">
-        <div class="modal-content" style="max-width:650px; width:95%; max-height:85vh; overflow-y:auto; background:#18181c; border:1px solid var(--gold-primary);">
+        <div class="modal-content modern-modal" style="max-width:600px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--card-border); padding-bottom:10px;">
-                <h3 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-clock-rotate-left"></i> أرشيف الفواتير المطبوعة</h3>
-                <div style="display:flex; gap:8px;">
-                    <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:#ef4444; color:#fff; padding:4px 10px; font-size:0.8rem;">مسح السجل</button>
-                    <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
-                </div>
+                <h3 style="color:var(--gold-primary); margin:0; font-size:1.1rem;"><i class="fa-solid fa-clock-rotate-left"></i> أرشيف الفواتير</h3>
+                <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem; border-radius:8px;">إغلاق</button>
             </div>
             <div id="completedOrdersList"></div>
         </div>
     </div>
 
+    <!-- 📊 نافذة كشف الحساب والتقرير اليومي -->
     <div id="dailyReportModal" class="modal">
-        <div class="modal-content print-area" style="max-width:650px; width:95%; max-height:90vh; overflow-y:auto; background:#18181c; border:1px solid var(--gold-primary); color:#fff;">
-            
+        <div class="modal-content modern-modal" style="max-width:600px;">
             <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--card-border); padding-bottom:10px;">
-                <h3 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-chart-line"></i> كشف الحساب وتقارير نهاية الدوام</h3>
-                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
+                <h3 style="color:var(--gold-primary); margin:0; font-size:1.1rem;"><i class="fa-solid fa-chart-line"></i> تقفيل الحسابات</h3>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem; border-radius:8px;">إغلاق</button>
             </div>
             
-            <div class="no-print" style="margin-bottom:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <label style="color:var(--gold-bright); font-size:0.85rem;">اختر تاريخ الكشف:</label>
-                <input type="date" id="reportDateInput" class="gold-input" style="width:auto; padding:6px; margin:0;" onchange="renderDailyReport(this.value)">
-            </div>
-
-            <div id="reportPrintArea" style="background:#fff; color:#000; padding:15px; border-radius:8px;">
+            <div id="reportPrintArea" style="background:#fff; color:#000; padding:15px; border-radius:12px;">
                 <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:10px;">
                     <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
-                    <h3 style="margin:4px 0; font-size:1.1rem;">📊 كشف الحساب والتقفيل اليومي (Z-Report)</h3>
-                    <p id="reportDateText" style="font-size:0.85rem; font-weight:bold; margin:2px 0;"></p>
-                    <p id="reportCashierText" style="font-size:0.85rem; margin:2px 0;"></p>
+                    <h3 style="margin:4px 0; font-size:1rem;">📊 كشف الحساب اليومي (Z-Report)</h3>
+                    <p id="reportDateText" style="font-size:0.82rem; font-weight:bold; margin:2px 0;"></p>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:0.85rem;">
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>إجمالي المبيعات:</strong> <span id="repTotalSales" style="font-weight:bold;">0</span> د.ع
-                    </div>
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>عدد الطلبات:</strong> <span id="repOrdersCount" style="font-weight:bold;">0</span> طلب
-                    </div>
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>مقبوضات الكاش:</strong> <span id="repTotalCash" style="font-weight:bold;">0</span> د.ع
-                    </div>
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>مقبوضات الفيزا:</strong> <span id="repTotalVisa" style="font-weight:bold;">0</span> د.ع
-                    </div>
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>إجمالي التوصيل:</strong> <span id="repTotalDelivery" style="font-weight:bold;">0</span> د.ع
-                    </div>
-                    <div style="border:1px solid #000; padding:6px 10px; border-radius:4px; background:#f9f9f9;">
-                        <strong>صافي الوجبات:</strong> <span id="repNetFood" style="font-weight:bold;">0</span> د.ع
-                    </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:0.82rem;">
+                    <div style="border:1px solid #000; padding:6px; border-radius:4px; background:#f9f9f9;"><strong>إجمالي المبيعات:</strong> <span id="repTotalSales">0</span> د.ع</div>
+                    <div style="border:1px solid #000; padding:6px; border-radius:4px; background:#f9f9f9;"><strong>عدد الطلبات:</strong> <span id="repOrdersCount">0</span></div>
+                    <div style="border:1px solid #000; padding:6px; border-radius:4px; background:#f9f9f9;"><strong>الكاش:</strong> <span id="repTotalCash">0</span> د.ع</div>
+                    <div style="border:1px solid #000; padding:6px; border-radius:4px; background:#f9f9f9;"><strong>الفيزا:</strong> <span id="repTotalVisa">0</span> د.ع</div>
                 </div>
 
-                <h4 style="margin:10px 0 5px 0; border-bottom:1px solid #000; padding-bottom:3px; font-size:0.95rem;">تفاصيل الوجبات المباعة:</h4>
-                <div id="repItemsSoldList" style="font-size:0.85rem; min-height:50px;"></div>
-
-                <hr style="border-color:#000; margin:10px 0;">
-                <p style="text-align:center; font-size:0.75rem; margin:0;">تم استخراج الكشف آلياً من نظام MIM89 POS</p>
+                <p style="text-align:center; font-size:0.75rem; margin:0;">تم استخراج التقرير آلياً من نظام MIM89 POS</p>
             </div>
 
             <div class="no-print" style="margin-top:15px; text-align:center;">
-                <button onclick="window.print()" class="gold-btn" style="padding:10px 20px;">🖨️ طباعة كشف الحساب</button>
+                <button onclick="window.print()" class="gold-btn modern-submit-btn">🖨️ طباعة التقرير</button>
             </div>
         </div>
     </div>
 
+    <!-- نافذة الطباعة -->
     <div id="receiptModal" class="modal">
-        <div class="modal-content print-area" style="color:#000; background:#fff; max-width:500px;">
-            
-            <div id="customerReceiptTicket" style="padding-bottom:15px; margin-bottom:15px;">
+        <div class="modal-content print-area" style="color:#000; background:#fff; max-width:480px; border-radius:12px;">
+            <div id="customerReceiptTicket" style="padding-bottom:12px;">
                 <div style="text-align:center;">
                     <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
-                    <p style="font-size:0.8rem; margin-bottom:4px;">بغداد - القاهرة | فاتورة الزبون</p>
+                    <p style="font-size:0.8rem; margin:2px 0;">بغداد - القاهرة | فاتورة الزبون</p>
                     <hr style="border-color:#000; margin:4px 0;">
-                    <p id="receiptCashierName" style="font-weight:bold; margin:2px 0; font-size:0.85rem;"></p>
-                    <p id="receiptCustInfo" style="margin:2px 0; font-size:0.85rem;"></p>
-                    <p id="receiptPaymentInfo" style="font-weight:bold; margin:2px 0; font-size:0.85rem;"></p>
-                    <p id="receiptTypeInfo" style="font-size:0.85rem; margin:2px 0;"></p>
+                    <p id="receiptCustInfo" style="margin:2px 0; font-size:0.85rem; font-weight:bold;"></p>
+                    <p id="receiptTypeInfo" style="font-size:0.82rem; margin:2px 0;"></p>
                 </div>
                 <hr style="border-color:#000; margin:4px 0;">
                 <div id="receiptItemsBody"></div>
                 <hr style="border-color:#000; margin:4px 0;">
-                <div style="font-size:0.85rem;">
-                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span><span id="receiptSubtotal"></span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span><span id="receiptDeliveryFee"></span></div>
-                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem; margin-top:4px;"><span>المجموع الكلي:</span><span id="receiptGrandTotal"></span></div>
+                <div style="font-size:0.88rem; font-weight:bold; display:flex; justify-content:space-between;">
+                    <span>المجموع الكلي:</span>
+                    <span id="receiptGrandTotal"></span>
                 </div>
-                <p style="text-align:center; font-size:0.8rem; margin-top:8px;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
             </div>
 
-            <div id="kitchenReceiptTicket" style="padding-top:10px;">
-                <div style="text-align:center; background:#eee; padding:5px; border-radius:4px; margin-bottom:8px;">
-                    <h2 style="margin:0; font-weight:900; font-size:1.3rem;">🍳 وصل المطبخ - MIM89</h2>
-                    <p id="kitchenOrderType" style="font-size:1rem; font-weight:bold; margin:2px 0; color:#000;"></p>
-                    <p id="kitchenCustName" style="font-size:0.9rem; margin:2px 0; font-weight:bold;"></p>
-                    <p id="kitchenTimeInfo" style="font-size:0.8rem; margin:0;"></p>
-                </div>
-                <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; line-height:1.6;"></div>
-                <hr style="border-color:#000; margin:8px 0;">
-                <p id="kitchenNotesInfo" style="font-size:0.95rem; font-weight:bold; background:#fff3cd; padding:4px; border:1px solid #ffeba1; margin:0;"></p>
+            <div class="no-print" style="margin-top:15px; display:flex; gap:8px;">
+                <button onclick="window.print()" class="gold-btn modern-submit-btn" style="flex:1;">🖨️ طباعة الفاتورة</button>
+                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:10px; border-radius:10px;">إغلاق</button>
             </div>
-
-            <div class="no-print" style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
-                <button onclick="triggerAutomaticDualPrint()" class="gold-btn" style="padding:12px; font-size:0.95rem; background:var(--gold-gradient);">
-                    🚀 طباعة الفواتير التلقائية المزدوجة (الكاشير + المطبخ)
-                </button>
-                <div style="display:flex; gap:8px;">
-                    <button onclick="printSingleTicket('customer')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">🧾 فاتورة الزبون فقط</button>
-                    <button onclick="printSingleTicket('kitchen')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">🍳 وصل المطبخ فقط</button>
-                </div>
-                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:6px;">إغلاق</button>
-            </div>
-
         </div>
     </div>
 
