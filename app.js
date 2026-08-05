@@ -94,7 +94,10 @@ function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
 function getTodayString() {
     const d = new Date();
-    return d.toISOString().split('T')[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 /* ==========================================
@@ -443,7 +446,7 @@ function switchCashierTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
 }
 
 function selectOrderType(btnElement) {
@@ -667,7 +670,7 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   5. تقارير كشف الحساب اليومي (Z-Report)
+   5. تقارير كشف الحساب والتقفيل اليومي (Z-Report)
    ========================================== */
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
@@ -679,7 +682,10 @@ function openDailyReportModal() {
 
 function renderDailyReport(targetDate) {
     const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => o.dateDate === targetDate || (!o.dateDate && targetDate === getTodayString()));
+    const filteredOrders = completed.filter(o => {
+        if (o.dateDate) return o.dateDate === targetDate;
+        return targetDate === getTodayString();
+    });
 
     let totalSales = 0;
     let totalCash = 0;
@@ -730,7 +736,7 @@ function renderDailyReport(targetDate) {
         itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات في هذا التاريخ</p>`;
     } else {
         itemsListEl.innerHTML = itemNames.map(name => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:3px 0;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:4px 0;">
                 <span>● ${name}</span>
                 <strong>العدد: ${itemsSoldMap[name]}</strong>
             </div>
@@ -739,7 +745,7 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. مزامنة الطلبات والطباعة المزدوجة
+   6. مزامنة الطلبات والطباعة المزدوجة التلقائية
    ========================================== */
 let knownOrderIds = new Set();
 
@@ -748,52 +754,60 @@ function listenForIncomingOrders() {
     if (!container) return;
 
     const syncOrders = () => {
-        if (db) {
-            db.collection("orders").get().then(snapshot => {
-                let html = '';
-                let hasNew = false;
-                snapshot.forEach(doc => {
-                    const ord = doc.data();
-                    if (ord.status === 'جديد') {
-                        if (!knownOrderIds.has(doc.id)) {
-                            knownOrderIds.add(doc.id);
-                            hasNew = true;
-                        }
-                        html += generateOrderCardHTML(ord, doc.id);
-                    }
-                });
+        let unhandledCount = 0;
 
-                const localOrders = getData('sys_live_orders');
-                localOrders.forEach(ord => {
+        const updateUIWithOrders = (ordersList) => {
+            let html = '';
+            ordersList.forEach(ord => {
+                if (ord.status === 'جديد') {
+                    unhandledCount++;
                     if (!knownOrderIds.has(ord.id)) {
                         knownOrderIds.add(ord.id);
-                        hasNew = true;
                     }
-                    html += generateOrderCardHTML(ord, ord.id);
+                    html += generateOrderCardHTML(ord, ord.docId || ord.id);
+                }
+            });
+
+            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
+            
+            const badge = document.getElementById('liveOrdersBadge');
+            const alertBanner = document.getElementById('pendingOrdersAlertBanner');
+            const bannerCount = document.getElementById('pendingOrdersBannerCount');
+
+            if (unhandledCount > 0) {
+                if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
+                if (alertBanner) { alertBanner.style.display = 'block'; }
+                if (bannerCount) { bannerCount.innerText = unhandledCount; }
+                playNewOrderSound();
+            } else {
+                if (badge) { badge.style.display = 'none'; }
+                if (alertBanner) { alertBanner.style.display = 'none'; }
+            }
+        };
+
+        if (db) {
+            db.collection("orders").get().then(snapshot => {
+                let list = [];
+                snapshot.forEach(doc => {
+                    list.push({ ...doc.data(), docId: doc.id });
+                });
+                
+                const localOrders = getData('sys_live_orders');
+                localOrders.forEach(ord => {
+                    if (!list.some(l => l.id === ord.id)) list.push(ord);
                 });
 
-                if (hasNew && knownOrderIds.size > 1) {
-                    playNewOrderSound();
-                }
-
-                container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
+                updateUIWithOrders(list);
             }).catch(() => {
-                renderLocalOnlyOrders();
+                updateUIWithOrders(getData('sys_live_orders'));
             });
         } else {
-            renderLocalOnlyOrders();
+            updateUIWithOrders(getData('sys_live_orders'));
         }
     };
 
     syncOrders();
     setInterval(syncOrders, 3000);
-}
-
-function renderLocalOnlyOrders() {
-    const container = document.getElementById('liveOrdersContainer');
-    if (!container) return;
-    const orders = getData('sys_live_orders');
-    container.innerHTML = orders.map(ord => generateOrderCardHTML(ord, ord.id)).join('') || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
 }
 
 function playNewOrderSound() {
@@ -804,7 +818,7 @@ function playNewOrderSound() {
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         osc.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
+        osc.stop(audioCtx.currentTime + 0.3);
     } catch (e) {}
 }
 
@@ -881,6 +895,7 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
+/* تجهيز بيانات الفواتير والمطبخ */
 function printReceipt(order) {
     // 1. فاتورة الزبون
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
@@ -915,9 +930,44 @@ function printReceipt(order) {
 
     openModal('receiptModal');
 
+    // إطلاق الطباعة التلقائية المزدوجة بنقرة واحدة
     setTimeout(() => {
+        triggerAutomaticDualPrint();
+    }, 400);
+}
+
+/* 🚀 التنفيذ التلقائي للطباعة المزدوجة (فاتورة الزبون ثم وصل المطبخ) */
+function triggerAutomaticDualPrint() {
+    // 1. طباعة فاتورة الزبون أولاً
+    document.body.classList.remove('print-kitchen-only');
+    document.body.classList.add('print-customer-only');
+    window.print();
+
+    // 2. بعد 500 مللي ثانية، طباعة وصل المطبخ تلقائياً
+    setTimeout(() => {
+        document.body.classList.remove('print-customer-only');
+        document.body.classList.add('print-kitchen-only');
         window.print();
-    }, 300);
+
+        // تنظيف الكلاسات بعد الطباعة
+        setTimeout(() => {
+            document.body.classList.remove('print-customer-only', 'print-kitchen-only');
+        }, 1000);
+    }, 500);
+}
+
+/* طباعة فردية مخصصة عند الحاجة */
+function printSingleTicket(type) {
+    document.body.classList.remove('print-customer-only', 'print-kitchen-only');
+    if (type === 'customer') {
+        document.body.classList.add('print-customer-only');
+    } else if (type === 'kitchen') {
+        document.body.classList.add('print-kitchen-only');
+    }
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove('print-customer-only', 'print-kitchen-only');
+    }, 1000);
 }
 
 /* ==========================================
@@ -1007,7 +1057,7 @@ function switchAdminTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
 }
 
 function loadAdminTabsData() {
