@@ -90,6 +90,11 @@ function initData() {
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
 function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
+function getTodayString() {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+}
+
 /* ==========================================
    المينيو العام (index.html)
    ========================================== */
@@ -338,6 +343,7 @@ function submitOrderToCashier() {
         deliveryFee: deliveryFee,
         totalAmount: subtotal + deliveryFee,
         status: 'جديد',
+        dateDate: getTodayString(),
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -388,7 +394,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   نقطة البيع والأرشيف (cashier.html)
+   نقطة البيع والأرشيف والكشوفات (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -578,6 +584,7 @@ function processPosDirectCheckout() {
         subtotal: subtotal,
         deliveryFee: 0,
         totalAmount: subtotal,
+        dateDate: getTodayString(),
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -588,9 +595,10 @@ function processPosDirectCheckout() {
     document.getElementById('posCustName').value = '';
 }
 
-/* إدارة حفظ واسترجاع الفواتير المكتملة بالأرشيف */
 function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
+    if (!order.dateDate) order.dateDate = getTodayString();
+    
     const existingIndex = completed.findIndex(o => o.id === order.id);
     if (existingIndex !== -1) {
         completed[existingIndex] = order;
@@ -615,7 +623,7 @@ function openCompletedOrdersModal() {
                 <div style="background:#222228; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; color:var(--gold-primary); margin-bottom:6px;">
                         <strong><i class="fa-solid fa-user"></i> ${ord.customerName || 'زبون'}</strong>
-                        <span style="font-size:0.8rem; color:#aaa;">⏰ ${ord.timestamp || 'سابق'}</span>
+                        <span style="font-size:0.8rem; color:#aaa;">⏰ ${ord.timestamp || 'سابق'} (${ord.dateDate || ''})</span>
                     </div>
                     <div style="font-size:0.85rem; color:#ccc; margin-bottom:6px;">
                         <span>خدمة: ${ord.area || 'صالة'}</span> | 
@@ -653,6 +661,80 @@ function clearCompletedOrdersHistory() {
     if (confirm("هل أنت متأكد من مسح جميع الفواتير السابقة من السجل؟")) {
         setData('sys_completed_orders', []);
         openCompletedOrdersModal();
+    }
+}
+
+/* ==========================================
+   📊 نظام حسابات وتقارير كشف الحساب اليومي (Z-Report)
+   ========================================== */
+function openDailyReportModal() {
+    const dateInput = document.getElementById('reportDateInput');
+    const today = getTodayString();
+    if (dateInput) dateInput.value = today;
+    renderDailyReport(today);
+    openModal('dailyReportModal');
+}
+
+function renderDailyReport(targetDate) {
+    const completed = getData('sys_completed_orders');
+    const filteredOrders = completed.filter(o => o.dateDate === targetDate || (!o.dateDate && targetDate === getTodayString()));
+
+    let totalSales = 0;
+    let totalCash = 0;
+    let totalVisa = 0;
+    let totalDelivery = 0;
+    let subtotalFood = 0;
+    let itemsSoldMap = {};
+
+    filteredOrders.forEach(ord => {
+        const orderTotal = Number(ord.totalAmount || 0);
+        const delivery = Number(ord.deliveryFee || 0);
+        const sub = Number(ord.subtotal || 0);
+
+        totalSales += orderTotal;
+        totalDelivery += delivery;
+        subtotalFood += sub;
+
+        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
+            totalVisa += orderTotal;
+        } else {
+            totalCash += orderTotal;
+        }
+
+        // تجميع تفاصيل الوجبات المباعة
+        if (ord.items && Array.isArray(ord.items)) {
+            ord.items.forEach(item => {
+                if (itemsSoldMap[item.name]) {
+                    itemsSoldMap[item.name] += item.qty;
+                } else {
+                    itemsSoldMap[item.name] = item.qty;
+                }
+            });
+        }
+    });
+
+    document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
+    document.getElementById('reportCashierText').innerText = "الكاشير المسؤول: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
+    document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
+    document.getElementById('repOrdersCount').innerText = filteredOrders.length;
+    document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
+    document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
+    document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
+    document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
+
+    // عرض القائمة بالوجبات وأعدادها
+    const itemsListEl = document.getElementById('repItemsSoldList');
+    const itemNames = Object.keys(itemsSoldMap);
+
+    if (itemNames.length === 0) {
+        itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات في هذا التاريخ</p>`;
+    } else {
+        itemsListEl.innerHTML = itemNames.map(name => `
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:3px 0;">
+                <span>● ${name}</span>
+                <strong>العدد: ${itemsSoldMap[name]}</strong>
+            </div>
+        `).join('');
     }
 }
 
@@ -797,13 +879,13 @@ function deductInventoryFromRecipe(items) {
 }
 
 function printReceipt(order) {
-    document.getElementById('receiptCashierName').innerText = "اسم الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
+    document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
     document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
     
     document.getElementById('receiptItemsBody').innerHTML = (order.items || []).map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.9rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.85rem;">
             <span>${i.name} (×${i.qty})</span>
             <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
         </div>
@@ -813,9 +895,21 @@ function printReceipt(order) {
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
+    document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
+    document.getElementById('kitchenCustName').innerText = `الزبون / الطاولة: ${order.customerName || 'مباشر'}`;
+    document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
+
+    document.getElementById('kitchenItemsBody').innerHTML = (order.items || []).map(i => `
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:4px 0;">
+            <span>● ${i.name}</span>
+            <span style="font-size:1.2rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
+        </div>
+    `).join('');
+
+    document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
+
     openModal('receiptModal');
 
-    // إطلاق أمر الطباعة التلقائية
     setTimeout(() => {
         window.print();
     }, 300);
