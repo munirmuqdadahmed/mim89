@@ -2,189 +2,372 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Tajawal -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     
+    <style>
+        :root {
+            --bg-main: #0c0c10;
+            --bg-card: #16161f;
+            --gold-primary: #d4af37;
+            --gold-bright: #f3e5ab;
+            --text-light: #ffffff;
+            --text-muted: #9ca3af;
+            --border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-light); padding-bottom: 90px; }
+
+        /* Modern Header */
+        .modern-header {
+            background: linear-gradient(135deg, #16161f 0%, #0c0c10 100%);
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .brand-title { font-size: 2rem; font-weight: 900; color: var(--gold-primary); letter-spacing: 1px; }
+        .brand-subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin-top: -4px; display: block; }
+        .brand-tagline { font-size: 0.9rem; color: var(--gold-bright); margin-top: 8px; font-weight: 500; }
+
+        /* Search Bar */
+        .search-container { padding: 15px 20px; max-width: 600px; margin: 0 auto; }
+        .search-box {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 50px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .search-box i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-primary);
+        }
+
+        /* Categories Navigation */
+        .categories-wrapper {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 20px;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .categories-wrapper::-webkit-scrollbar { display: none; }
+        .category-tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .category-tab.active, .category-tab:hover {
+            background: var(--gold-primary);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Main Container & Cards */
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
+        .section-title { font-size: 1.25rem; color: var(--gold-primary); margin: 25px 0 15px 0; display: flex; align-items: center; gap: 8px; border-right: 4px solid var(--gold-primary); padding-right: 10px; }
+        
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .item-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.15); }
+        .item-img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; }
+        .item-details { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+        .item-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 5px; cursor: pointer; }
+        .item-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; flex-grow: 1; line-height: 1.4; }
+        .item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+        .item-price { font-size: 1rem; font-weight: 900; color: var(--gold-bright); }
+        
+        .add-cart-btn {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        .add-cart-btn:active { transform: scale(1.2); }
+
+        /* Modern Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(12, 12, 16, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 1000;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.6);
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
+        .nav-item.active, .nav-item:hover { color: var(--gold-primary); }
+        .badge {
+            position: absolute;
+            top: -6px;
+            right: 8px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+        /* Modals Modern */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 15px;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            padding: 25px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            animation: modalPop 0.3s ease;
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .close-modal-btn {
+            position: absolute;
+            top: 15px; left: 20px;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem; cursor: pointer;
+        }
+        .modal-title { color: var(--gold-primary); font-size: 1.2rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: #0c0c10;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            outline: none;
+        }
+        .form-control:focus { border-color: var(--gold-primary); }
+
+        .gold-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
+            color: #000;
+            border: none;
+            width: 100%;
+            padding: 13px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            transition: opacity 0.2s;
+        }
+        .gold-btn:active { opacity: 0.85; }
+
+        .more-cat-chip {
+            background: #0c0c10;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+    </style>
+
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body class="public-menu-body">
 
-    <!-- Header / الهيدر الرئيسي -->
-    <header class="main-header">
-        <div class="brand-badge">MIM89</div>
-        <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
-        
-        <!-- شريط البحث السريع -->
-        <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
-        </div>
+    <!-- Header -->
+    <header class="modern-header">
+        <h1 class="brand-title">MIM89</h1>
+        <span class="brand-subtitle">FAST FOOD</span>
+        <p class="brand-tagline">الطعم اللي ما يتكرر 🔥</p>
     </header>
 
-    <!-- الأقسام العلوية -->
-    <nav class="categories-nav">
-        <div class="categories-container" id="categoriesNav"></div>
-    </nav>
+    <!-- Search Box -->
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="publicSearchInput" placeholder="ابحث عن وجبتك المفضلة..." oninput="filterPublicMenu()">
+        </div>
+    </div>
 
-    <!-- منطقة عرض الأصناف -->
-    <main class="menu-container">
-        <div id="menuSections"></div>
-    </main>
+    <!-- Categories Bar -->
+    <div class="categories-wrapper" id="categoriesNav"></div>
 
-    <!-- شريط التنقل السفلي العائم (Bottom Navigation Bar) -->
+    <!-- Menu Sections Container -->
+    <main id="menuSections" class="container"></main>
+
+    <!-- Bottom Navigation Bar (Modern) -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
-            <span>الرئيسية</span>
+            الرئيسية
         </button>
-        
-        <button class="nav-item" onclick="openModal('contactModal')">
-            <i class="fa-solid fa-phone"></i>
-            <span>اتصل بنا</span>
+        <button class="nav-item" onclick="openCartModal()">
+            <i class="fa-solid fa-utensils"></i>
+            السلة
+            <span id="cartBadgeCount" class="badge">0</span>
         </button>
-
-        <!-- زر السلة الأوسط البارز -->
-        <div class="cart-btn-wrapper">
-            <button class="cart-main-btn" onclick="openCartModal()">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span id="cartBadgeCount" class="cart-badge">0</span>
-            </button>
-        </div>
-
         <button class="nav-item" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-bars"></i>
-            <span>المزيد</span>
+            <i class="fa-solid fa-bars-staggered"></i>
+            المزيد
         </button>
     </nav>
 
-    <!-- 1. نافذة السلة وإتمام الطلب -->
-    <div id="cartModal" class="modal">
-        <div class="modal-content modal-lg">
-            <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-basket-shopping"></i> سلة الشراء وإتمام الطلب</h2>
+    <!-- Modal: Item Details -->
+    <div id="itemDetailModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('itemDetailModal')">&times;</button>
+            <img id="detailImg" src="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
+            <h2 id="detailTitle" class="modal-title"></h2>
+            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem; margin-bottom:8px;"></p>
+            <p id="detailIngredients" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:20px; line-height:1.5;"></p>
+            <button id="detailAddBtn" class="gold-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
+        </div>
+    </div>
+
+    <!-- Modal: Cart & Checkout -->
+    <div id="cartModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
+            <h3 class="modal-title"><i class="fa-solid fa-utensils"></i> سلة الوجبات</h3>
             
-            <div class="cart-modal-body">
-                <div id="cartItemsContainer" class="cart-items-wrapper"></div>
-                
-                <div class="order-form-section">
-                    <h3><i class="fa-solid fa-user-pen"></i> معلومات إرسال الطلب</h3>
-                    
-                    <div class="form-group">
-                        <label>نوع الطلب:</label>
-                        <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
-                            <option value="delivery">توصيل منزلي</option>
-                            <option value="takeaway">استلام من المطعم (سفري)</option>
-                            <option value="dine_in">تناول داخل المطعم</option>
-                        </select>
-                    </div>
+            <div id="cartItemsContainer" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;"></div>
 
-                    <div class="form-group">
-                        <label>الاسم الكامل:</label>
-                        <input type="text" id="custName" class="gold-input" placeholder="أدخل اسمك الكريم">
-                    </div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" class="form-control">
+                    <option value="delivery">🚗 توصيل للبيت</option>
+                    <option value="takeaway">🛍️ سفري من المطعم</option>
+                    <option value="dine_in">🍽️ تناول داخل الصالة</option>
+                </select>
+            </div>
 
-                    <div class="form-group">
-                        <label>رقم الهاتف:</label>
-                        <input type="tel" id="custPhone" class="gold-input" placeholder="07XXXXXXXXX">
-                    </div>
+            <div id="deliveryFieldsGroup">
+                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control">
+                <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control">
+                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control">
+                <input type="text" id="custAddress" placeholder="العنوان التفصيلي *" oninput="calculateDeliveryCost()" class="form-control">
+            </div>
 
-                    <div id="deliveryFieldsGroup">
-                        <div class="form-group">
-                            <label>المنطقة / الحي:</label>
-                            <input type="text" id="custArea" class="gold-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
-                        </div>
-                        <div class="form-group">
-                            <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الشقة أو المحلة">
-                        </div>
-                    </div>
+            <textarea id="orderNotes" placeholder="ملاحظات إضافية على الطلب..." class="form-control" style="height: 50px; resize: none;"></textarea>
 
-                    <div class="form-group">
-                        <label>ملاحظات إضافية للطلب:</label>
-                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
-                    </div>
-
-                    <!-- ملخص الحساب -->
-                    <div class="checkout-summary">
-                        <div class="summary-line">
-                            <span>مجموع الوجبات:</span>
-                            <span id="subtotalPrice">0 د.ع</span>
-                        </div>
-                        <div class="summary-line" id="deliveryFeeLine">
-                            <span>كلفة التوصيل:</span>
-                            <span id="deliveryFeePrice">0 د.ع</span>
-                        </div>
-                        <hr class="gold-hr">
-                        <div class="summary-line total-line">
-                            <span>المجموع الكلي:</span>
-                            <span id="finalTotalPrice">0 د.ع</span>
-                        </div>
-                    </div>
-
-                    <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب
-                    </button>
+            <div style="background: #0c0c10; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--text-muted);">
+                    <span>مجموع الوجبات:</span>
+                    <span id="subtotalPrice">0 د.ع</span>
+                </div>
+                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--gold-bright);">
+                    <span>أجور التوصيل:</span>
+                    <span id="deliveryFeePrice">0 د.ع</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.05rem; color:var(--gold-primary); border-top:1px solid rgba(255,255,255,0.1); padding-top:6px; margin-top:4px;">
+                    <span>المجموع الكلي:</span>
+                    <span id="finalTotalPrice">0 د.ع</span>
                 </div>
             </div>
+
+            <button onclick="submitOrderToCashier()" class="gold-btn" style="background: #25d366; color: #fff;">
+                <i class="fa-brands fa-whatsapp"></i> إرسال الفاتورة عبر الواتساب
+            </button>
         </div>
     </div>
 
-    <!-- 2. نافذة اتصل بنا -->
-    <div id="contactModal" class="modal">
+    <!-- Modal: More Options -->
+    <div id="moreModal" class="modal-overlay">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا</h2>
-            <div class="contact-links-list">
-                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
-                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب</a>
-                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
-                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
-                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقعنا على الخريطة</a>
-            </div>
+            <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
+            <h3 class="modal-title"><i class="fa-solid fa-list"></i> الأقسام السريعة</h3>
+            <div id="moreCategoriesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;"></div>
+            
+            <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            
+            <h4 style="font-size: 0.9rem; color: #fff; margin-bottom: 8px;">إرسال ملاحظة أو اقتراح للمطعم:</h4>
+            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." class="form-control" style="height: 60px; resize: none;"></textarea>
+            <button onclick="sendRestaurantFeedback()" class="gold-btn">إرسال للمطعم</button>
         </div>
     </div>
 
-    <!-- 3. نافذة المزيد والملاحظات -->
-    <div id="moreModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والملاحظات</h2>
-            
-            <h3>التنقل السريع للأقسام:</h3>
-            <div id="moreCategoriesList" class="more-cats-grid"></div>
-            
-            <hr class="gold-hr">
-            
-            <h3>إرسال اقتراح أو ملاحظة للإدارة:</h3>
-            <div class="form-group">
-                <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
-            </div>
-            <div class="form-group">
-                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
-            </div>
-            <button class="gold-btn" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
-        </div>
-    </div>
-
-    <!-- 4. نافذة تفاصيل الوجبة -->
-    <div id="itemDetailModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
-            <img id="detailImg" src="" alt="" class="modal-img">
-            <h2 id="detailTitle" class="modal-gold-title"></h2>
-            <p id="detailPrice" class="detail-price"></p>
-            <p id="detailIngredients" class="detail-ingredients"></p>
-            <div class="modal-actions">
-                <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+    <!-- ربط محرك التشغيل -->
+    <script src="app.js?v=full.menu.1"></script>
 </body>
 </html>
