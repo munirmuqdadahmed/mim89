@@ -13,7 +13,7 @@
 </head>
 <body onload="initCashierPage()">
 
-    <!-- نافذة تسجيل دخول الكاشير بالرمز -->
+    <!-- نافذة تسجيل دخول الكاشير -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <div class="brand-badge">MIM89</div>
@@ -32,7 +32,7 @@
     <!-- واجهة الكاشير الرئيسية -->
     <div id="cashierMainApp" class="container" style="display:none; padding:12px;">
         
-        <!-- الهيدر مع زر سجل الفواتير السابقة -->
+        <!-- الهيدر -->
         <header class="admin-header" style="flex-wrap:wrap; gap:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <h1 style="color:var(--gold-primary); font-size:1.4rem; margin:0;"><i class="fa-solid fa-calculator"></i> MIM89 - نقطة البيع (POS)</h1>
@@ -57,7 +57,7 @@
             </button>
         </div>
 
-        <!-- 1️⃣ البيع المباشر -->
+        <!-- البيع المباشر -->
         <div id="posDirectTab" class="tab-content active">
             <div class="pos-responsive-grid">
                 
@@ -121,7 +121,7 @@
             </div>
         </div>
 
-        <!-- 2️⃣ طلبات أونلاين -->
+        <!-- طلبات أونلاين -->
         <div id="liveOrdersTab" class="tab-content">
             <div class="card">
                 <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-bell"></i> الطلبات الواردة عبر المينيو الإلكتروني</h2>
@@ -131,7 +131,7 @@
 
     </div>
 
-    <!-- نافذة سجل الفواتير السابقة المكتملة -->
+    <!-- نافذة سجل الفواتير السابقة -->
     <div id="completedOrdersModal" class="modal">
         <div class="modal-content" style="max-width:650px; width:95%; max-height:85vh; overflow-y:auto; background:#18181c; border:1px solid var(--gold-primary);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--card-border); padding-bottom:10px;">
@@ -145,33 +145,50 @@
         </div>
     </div>
 
-    <!-- نافذة طباعة الفاتورة الرسمية -->
+    <!-- نافذة الطباعة المزدوجة (فاتورة الزبون + وصل المطبخ) -->
     <div id="receiptModal" class="modal">
-        <div class="modal-content print-area" style="color:#000; background:#fff;">
-            <div style="text-align:center;">
-                <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
-                <p style="font-size:0.85rem; margin-bottom:5px;">بغداد - القاهرة | هاتف: 07800000000</p>
-                <hr style="border-color:#000;">
-                <p id="receiptCashierName" style="font-weight:bold; margin:3px 0;"></p>
-                <p id="receiptCustInfo" style="margin:3px 0;"></p>
-                <p id="receiptPaymentInfo" style="font-weight:bold; margin:3px 0;"></p>
-                <p id="receiptTypeInfo" style="font-size:0.85rem; margin:3px 0;"></p>
-            </div>
-            <hr style="border-color:#000;">
-            <div id="receiptItemsBody"></div>
-            <hr style="border-color:#000;">
-            <div>
-                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span><span id="receiptSubtotal"></span></div>
-                <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span><span id="receiptDeliveryFee"></span></div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; margin-top:5px;"><span>المجموع الكلي:</span><span id="receiptGrandTotal"></span></div>
-            </div>
-            <hr style="border-color:#000;">
-            <p style="text-align:center; font-size:0.85rem;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
+        <div class="modal-content print-area" style="color:#000; background:#fff; max-width:500px;">
             
+            <!-- 1️⃣ فاتورة الزبون -->
+            <div id="customerReceiptTicket" style="border-bottom:2px dashed #000; padding-bottom:15px; margin-bottom:15px;">
+                <div style="text-align:center;">
+                    <h2 style="margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
+                    <p style="font-size:0.8rem; margin-bottom:4px;">بغداد - القاهرة | فاتورة الزبون</p>
+                    <hr style="border-color:#000; margin:4px 0;">
+                    <p id="receiptCashierName" style="font-weight:bold; margin:2px 0; font-size:0.85rem;"></p>
+                    <p id="receiptCustInfo" style="margin:2px 0; font-size:0.85rem;"></p>
+                    <p id="receiptPaymentInfo" style="font-weight:bold; margin:2px 0; font-size:0.85rem;"></p>
+                    <p id="receiptTypeInfo" style="font-size:0.85rem; margin:2px 0;"></p>
+                </div>
+                <hr style="border-color:#000; margin:4px 0;">
+                <div id="receiptItemsBody"></div>
+                <hr style="border-color:#000; margin:4px 0;">
+                <div style="font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span><span id="receiptSubtotal"></span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span><span id="receiptDeliveryFee"></span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1rem; margin-top:4px;"><span>المجموع الكلي:</span><span id="receiptGrandTotal"></span></div>
+                </div>
+                <p style="text-align:center; font-size:0.8rem; margin-top:8px;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
+            </div>
+
+            <!-- 2️⃣ وصل المطبخ (التجهيز) -->
+            <div id="kitchenReceiptTicket" style="padding-top:5px;">
+                <div style="text-align:center; background:#eee; padding:5px; border-radius:4px; margin-bottom:8px;">
+                    <h2 style="margin:0; font-weight:900; font-size:1.3rem;">🍳 وصل المطبخ - MIM89</h2>
+                    <p id="kitchenOrderType" style="font-size:1rem; font-weight:bold; margin:2px 0; color:#000;"></p>
+                    <p id="kitchenCustName" style="font-size:0.9rem; margin:2px 0; font-weight:bold;"></p>
+                    <p id="kitchenTimeInfo" style="font-size:0.8rem; margin:0;"></p>
+                </div>
+                <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; line-height:1.6;"></div>
+                <hr style="border-color:#000; margin:8px 0;">
+                <p id="kitchenNotesInfo" style="font-size:0.95rem; font-weight:bold; background:#fff3cd; padding:4px; border:1px solid #ffeba1; margin:0;"></p>
+            </div>
+
             <div class="no-print" style="margin-top:15px; text-align:center; display:flex; gap:10px; justify-content:center;">
-                <button onclick="window.print()" class="gold-btn" style="flex:1;">🖨️ طباعة الفاتورة الآن</button>
+                <button onclick="window.print()" class="gold-btn" style="flex:1;">🖨️ طباعة الفواتير الآن</button>
                 <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff; flex:1;">إغلاق</button>
             </div>
+
         </div>
     </div>
 
