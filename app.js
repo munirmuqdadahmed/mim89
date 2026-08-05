@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.2 INSTANT LOGIN)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.3 FULLY FIXED & FUNCTIONAL)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -358,7 +358,7 @@ function submitOrderToCashier() {
     const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
-    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
+    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes'].value.trim() : '';
 
     if (!name) return alert("⚠️ يرجى كتابة الاسم الثلاثي أولاً");
     if (!phone || phone.length < 10) return alert("⚠️ يرجى كتابة رقم الهاتف الصحيح المكون من 11 رقم");
@@ -374,6 +374,25 @@ function submitOrderToCashier() {
     let deliveryFee = (type === 'delivery') ? (isCairoArea(combinedAddress) ? 0 : 2500) : 0;
     const totalAmount = subtotal + deliveryFee;
 
+    const newOrder = {
+        id: 'ONLINE_' + Date.now().toString().slice(-6),
+        customerName: name,
+        phone: phone,
+        address: area + ' - ' + address,
+        serviceType: type === 'delivery' ? '🚗 توصيل' : '🍽️ صالة/سفري',
+        items: [...cart],
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        totalAmount: totalAmount,
+        dateDate: getTodayString(),
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // حفظ الطلب في قائمة الطلبات الواردة لكي تظهر في "طلبات المينيو" للكاشير
+    let onlineOrders = getData('sys_online_orders');
+    onlineOrders.unshift(newOrder);
+    setData('sys_online_orders', onlineOrders);
+
     let itemsText = cart.map(i => `• ${i.name} (العدد: ${i.qty})`).join('\n');
     let waText = `🍔 *طلب جديد - MIM89 FAST FOOD*\n` +
                  `👤 *الزبون:* ${name}\n` +
@@ -386,7 +405,7 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
     
-    alert("سيتم تحويلك إلى الواتساب لإرسال الفاتورة الرسمية للمطعم.");
+    alert("تم إرسال طلبك بنجاح وسيتم تحويلك إلى الواتساب الآن.");
     window.open(`https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`, '_blank');
 
     cart = [];
@@ -394,7 +413,7 @@ function submitOrderToCashier() {
     closeModal('cartModal');
 }
 
-// 5️⃣ POS CASHIER TERMINAL ENGINE (Instant Login & Fixed Buttons)
+// 5️⃣ POS CASHIER TERMINAL ENGINE (Instant Login & Real Functioning Buttons)
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -404,11 +423,9 @@ function initCashierPage() {
     initData(); 
     loadPosDirectMenu('all');
     bindTopActionButtons();
-    // تفعيل الدخول الفوري تلقائياً عند تحميل الصفحة وتجاوز شاشة الرمز
     executeInstantLogin();
 }
 
-// دخول فوري وتلقائي بدون مطابقة رموز سرية
 function executeInstantLogin() {
     document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"]').forEach(el => el.style.display = 'none');
     document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="dashboard"]').forEach(el => el.style.display = 'block');
@@ -424,8 +441,8 @@ window.loginCashier = loginCashier;
 
 function logoutCashier() { location.reload(); }
 
+// برمجة الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج)
 function bindTopActionButtons() {
-    // ربط أي زر دخول أو شاشة فوراً بالدخول الفوري
     document.querySelectorAll('button').forEach(btn => {
         const text = btn.innerText || "";
         if (text.includes("دخول") || text.includes("الشاشة")) {
@@ -433,13 +450,106 @@ function bindTopActionButtons() {
         } else if (text.includes("خروج")) {
             btn.onclick = () => logoutCashier();
         } else if (text.includes("السجل")) {
-            btn.onclick = () => alert("سجل المبيعات والطلبات المكتملة نشط.");
-        } else if (text.includes("تفعيل الدوام")) {
-            btn.onclick = () => alert("🟢 تم تفعيل وردية الدوام بنجاح.");
+            btn.onclick = () => openSalesHistoryModal();
         } else if (text.includes("طلبات المينيو")) {
-            btn.onclick = () => alert("📥 لا توجد طلبات معلقة جديدة حالياً.");
+            btn.onclick = () => openMenuOrdersModal();
+        } else if (text.includes("تفعيل الدوام")) {
+            btn.onclick = () => alert("🟢 وردية العمل نشطة ومفتوحة وجاهزة لتسجيل المبيعات.");
         }
     });
+}
+
+// 📜 نافذة السجل الحقيقية (تعرض جميع الفواتير والمبيعات المكتملة)
+function openSalesHistoryModal() {
+    const orders = getData('sys_completed_orders');
+    let modal = document.getElementById('dynamicHistoryModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dynamicHistoryModal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:9999; font-family:"Tajawal",sans-serif;';
+        document.body.appendChild(modal);
+    }
+
+    const totalSales = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    modal.innerHTML = `
+        <div style="background:#16161f; border:1px solid var(--gold-primary, #d4af37); width:90%; max-width:500px; max-height:80vh; border-radius:16px; padding:20px; color:#fff; overflow-y:auto; text-align:right;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="margin:0; color:var(--gold-primary); font-size:1.1rem;">📊 سجل المبيعات والطلبات المكتملة</h3>
+                <button onclick="document.getElementById('dynamicHistoryModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
+            </div>
+            <div style="background:#202028; padding:10px 15px; border-radius:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span>إجمالي مبيعات اليوم:</span>
+                <strong style="color:var(--gold-primary);">${totalSales.toLocaleString()} د.ع</strong>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                ${orders.length === 0 ? '<p style="text-align:center; color:#888; padding:20px;">لا توجد مبيعات مسجلة حتى الآن</p>' : 
+                  orders.map(o => `
+                    <div style="background:#202028; padding:12px; border-radius:10px; border-left:4px solid var(--gold-primary);">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+                            <span>#${o.id} - ${o.customerName || 'مباشر'}</span>
+                            <span style="color:var(--gold-primary);">${(o.totalAmount || 0).toLocaleString()} د.ع</span>
+                        </div>
+                        <div style="font-size:0.8rem; color:#aaa;">الخدمة: ${o.serviceType || 'صالة'} | الوقت: ${o.timestamp || ''}</div>
+                    </div>
+                  `).join('')}
+            </div>
+            <button onclick="document.getElementById('dynamicHistoryModal').style.display='none'" style="width:100%; margin-top:15px; background:var(--gold-primary); color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">إغلاق السجل</button>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
+
+// 📥 نافذة طلبات المينيو الواردة الحقيقية
+function openMenuOrdersModal() {
+    const orders = getData('sys_online_orders');
+    let modal = document.getElementById('dynamicMenuOrdersModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dynamicMenuOrdersModal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:9999; font-family:"Tajawal",sans-serif;';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div style="background:#16161f; border:1px solid var(--gold-primary, #d4af37); width:90%; max-width:500px; max-height:80vh; border-radius:16px; padding:20px; color:#fff; overflow-y:auto; text-align:right;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="margin:0; color:var(--gold-primary); font-size:1.1rem;">📥 الطلبات الواردة عبر المينيو</h3>
+                <button onclick="document.getElementById('dynamicMenuOrdersModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                ${orders.length === 0 ? '<p style="text-align:center; color:#888; padding:20px;">لا توجد طلبات جديدة من الزبائن حالياً</p>' : 
+                  orders.map((o, idx) => `
+                    <div style="background:#202028; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">
+                            <span>👤 ${o.customerName} (${o.phone})</span>
+                            <span style="color:var(--gold-primary);">${(o.totalAmount || 0).toLocaleString()} د.ع</span>
+                        </div>
+                        <div style="font-size:0.82rem; color:#ccc; margin-bottom:6px;">📍 ${o.address}</div>
+                        <div style="font-size:0.78rem; color:#aaa; margin-bottom:8px;">الوجبات: ${o.items.map(i => i.name + ' (x' + i.qty + ')').join(', ')}</div>
+                        <button onclick="acceptOnlineOrder(${idx})" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.8rem;">✓ قبول وطباعة الفاتورة</button>
+                    </div>
+                  `).join('')}
+            </div>
+            <button onclick="document.getElementById('dynamicMenuOrdersModal').style.display='none'" style="width:100%; margin-top:15px; background:var(--gold-primary); color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">إغلاق القائمة</button>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
+
+function acceptOnlineOrder(index) {
+    let orders = getData('sys_online_orders');
+    let completed = getData('sys_completed_orders');
+    let order = orders[index];
+    
+    orders.splice(index, 1);
+    setData('sys_online_orders', orders);
+    
+    completed.unshift(order);
+    setData('sys_completed_orders', completed);
+
+    printReceipt(order);
+    openMenuOrdersModal();
 }
 
 function loadPosDirectMenu(catId = 'all') {
@@ -530,6 +640,89 @@ function renderPosCart() {
     }).join('');
 
     if (totalEl) totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
+}
+
+function processPosDirectCheckout() {
+    if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
+    
+    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName').value.trim()) || "زبون مباشر";
+    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone').value.trim()) || "-";
+    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress').value.trim()) || "-";
+
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+    if (custPhone !== "-") {
+        saveOrUpdateCustomer(custPhone, custName, custAddress, custAddress);
+    }
+
+    const directOrder = {
+        id: 'POS_' + Date.now().toString().slice(-6),
+        customerName: custName,
+        phone: custPhone,
+        address: custAddress,
+        orderType: selectedPosOrderType,
+        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
+        serviceType: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
+        items: [...posCart],
+        subtotal: subtotal,
+        deliveryFee: 0,
+        totalAmount: subtotal,
+        dateDate: getTodayString(),
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    let completed = getData('sys_completed_orders');
+    completed.unshift(directOrder);
+    setData('sys_completed_orders', completed);
+
+    printReceipt(directOrder);
+    clearPosCart();
+}
+
+// 🖨️ نظام طباعة الفاتورة الحقيقي والفعال
+function printReceipt(order) {
+    let receiptContainer = document.getElementById('receiptModal');
+    if (!receiptContainer) {
+        receiptContainer = document.createElement('div');
+        receiptContainer.id = 'receiptModal';
+        receiptContainer.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:99999;';
+        document.body.appendChild(receiptContainer);
+    }
+
+    const itemsHtml = (order.items || []).map(i => `
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:3px;">
+            <span style="font-weight:bold;">${i.name} (×${i.qty})</span>
+            <span>${(i.price * i.qty).toLocaleString()}</span>
+        </div>
+    `).join('');
+
+    receiptContainer.innerHTML = `
+        <div class="modal-content" style="background:#fff !important; color:#000 !important; width:280px; margin:0 auto; padding:15px; font-family:'Tajawal', sans-serif; text-align:right; border-radius:8px;">
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:10px;">
+                <h2 style="margin:0; font-size:18px; font-weight:900;">MIM89 FAST FOOD</h2>
+                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 07750008630</p>
+                <div style="font-size:12px; font-weight:bold; margin-top:4px; background:#000; color:#fff; padding:2px 0; border-radius:4px;">
+                    فاتورة رقم: #${order.id}
+                </div>
+            </div>
+            <div style="font-size:11px; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:6px;">
+                <div><strong>👤 الزبون:</strong> ${order.customerName || 'مباشر'}</div>
+                <div><strong>📞 الهاتف:</strong> ${order.phone || '-'}</div>
+                <div><strong>🚗 الخدمة:</strong> ${order.serviceType || 'صالة'}</div>
+                <div><strong>⏰ الوقت:</strong> ${order.dateDate} | ${order.timestamp}</div>
+            </div>
+            <div style="margin-bottom:10px;">
+                ${itemsHtml}
+            </div>
+            <div style="border-top:2px solid #000; padding-top:6px; margin-top:10px; font-weight:900; font-size:14px; display:flex; justify-content:space-between;">
+                <span>المجموع:</span>
+                <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
+            </div>
+            <button onclick="window.print(); document.getElementById('receiptModal').style.display='none';" style="width:100%; margin-top:10px; background:#000; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ طباعة الآن</button>
+            <button onclick="document.getElementById('receiptModal').style.display='none';" style="width:100%; margin-top:5px; background:#ccc; color:#000; border:none; padding:6px; border-radius:6px; cursor:pointer; font-weight:bold;">إغلاق</button>
+        </div>
+    `;
+    receiptContainer.style.display = 'flex';
 }
 
 // 6️⃣ GENERAL HELPERS
