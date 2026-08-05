@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Full Menu + POS + CRM + Live Caller ID + Thermal Receipt)
+   (Correct Phones + Verified WA Orders + Live Caller ID)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -368,7 +368,6 @@ function triggerIncomingCallPopup(phone, source) {
     document.body.insertAdjacentHTML('beforeend', popupHtml);
 }
 
-// 🎯 تعبئة وتثبيت بيانات المتصل في الفاتورة فوراً
 function applyCallToPOS(phone, name) {
     const cust = lookupCustomerByPhone(phone);
     
@@ -384,7 +383,6 @@ function applyCallToPOS(phone, name) {
 
     onCashierPhoneInput(phone);
 
-    // إظهار تنبيه نجاح الربط
     const alertBox = document.getElementById('callerIdAlert');
     if (alertBox) alertBox.remove();
 
@@ -392,7 +390,7 @@ function applyCallToPOS(phone, name) {
 }
 
 /* ==========================================
-   5️⃣ محرك المينيو الإلكتروني للزبائن
+   5️⃣ محرك المينيو الإلكتروني للزبائن (تحقق الواتساب الآمن)
    ========================================== */
 let cart = [];
 
@@ -595,6 +593,7 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
+// 🛡️ توثيق إرسال الطلب عبر الواتساب حصراً
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -625,9 +624,10 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    const waUrl = `https://wa.me/964775008630?text=${encodeURIComponent(waText)}`;
+    // استخدام الرقم الصحيح (07750008630)
+    const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`;
     
-    alert("شكرًا لك! سيتم فتح الواتساب لإرسال تأكيد الطلب المباشر للمطعم.");
+    alert("سيتم فتح الواتساب الآن لإرسال الطلب رسمياً إلى الكاشير. لن يتم اعتماد الطلب إلا بعد إرسال الرسالة.");
     window.open(waUrl, '_blank');
 
     cart = [];
@@ -789,7 +789,6 @@ function renderPosCart() {
     totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
 }
 
-// 🖨️ معالجة الفاتورة وحفظ بيانات الزبون
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
@@ -834,7 +833,6 @@ function saveCompletedOrder(order) {
     setData('sys_completed_orders', completed);
 }
 
-// 🧾 طباعة الفاتورة الحرارية المنسقة 100%
 function printReceipt(order) {
     const receiptContainer = document.getElementById('receiptModal');
     if (!receiptContainer) return;
@@ -850,7 +848,7 @@ function printReceipt(order) {
         <div class="modal-content" style="background:#fff !important; color:#000 !important; width:280px; margin:0 auto; padding:15px; font-family:'Tajawal', sans-serif; text-align:right;">
             <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:10px;">
                 <h2 style="margin:0; font-size:18px; font-weight:900;">MIM89 FAST FOOD</h2>
-                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 0775008630</p>
+                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 07750008630</p>
                 <div style="font-size:12px; font-weight:bold; margin-top:4px; background:#000; color:#fff; padding:2px 0; border-radius:4px;">
                     فاتورة رقم: #${order.id || '101'}
                 </div>
