@@ -2,748 +2,134 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    
-    <!-- خط تجوال العربي وأيقونات FontAwesome 6 المجانية -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- مكتبة الأيقونات FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <!-- التنسيقات الفائقة الحداثة (Ultra Modern CSS) -->
-    <style>
-        :root {
-            --gold-primary: #f59e0b;
-            --gold-bright: #fbbf24;
-            --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --bg-dark: #09090b;
-            --card-bg: #141418;
-            --card-border: rgba(255, 255, 255, 0.07);
-            --text-light: #f4f4f5;
-            --text-muted: #9ca3af;
-            --danger-red: #ef4444;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Tajawal', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-dark) !important;
-            color: var(--text-light) !important;
-            direction: rtl;
-            text-align: right;
-            min-height: 100vh;
-            padding-bottom: 85px;
-        }
-
-        /* الهيدر المودرن الفخم */
-        .main-header {
-            text-align: center;
-            padding: 25px 15px 15px 15px;
-            background: radial-gradient(circle at top, #1f1f28 0%, var(--bg-dark) 100%);
-        }
-
-        .brand-badge {
-            background: var(--gold-gradient);
-            color: #000;
-            font-weight: 900;
-            font-size: 1.5rem;
-            padding: 4px 20px;
-            border-radius: 12px;
-            display: inline-block;
-            letter-spacing: 2px;
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35);
-        }
-
-        .brand-title {
-            color: #fff;
-            font-size: 1.75rem;
-            margin-top: 8px;
-            letter-spacing: 2px;
-            font-weight: 900;
-        }
-
-        .brand-subtitle {
-            color: var(--gold-bright);
-            font-size: 0.85rem;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-
-        /* شريط البحث المودرن */
-        .search-box {
-            position: relative;
-            width: 100%;
-            max-width: 480px;
-            margin: 16px auto 0 auto;
-        }
-
-        .search-icon {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gold-primary);
-            font-size: 1rem;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 46px 12px 16px;
-            background: #18181f;
-            border: 1px solid var(--card-border);
-            border-radius: 25px;
-            color: #fff;
-            font-size: 0.9rem;
-            outline: none;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        .search-box input:focus {
-            border-color: var(--gold-primary);
-            background: #1c1c24;
-        }
-
-        /* شريط الأقسام التفاعلي */
-        .categories-nav {
-            position: sticky;
-            top: 0;
-            z-index: 90;
-            background: rgba(9, 9, 11, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 12px 0;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        .categories-container {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 0 15px;
-            scrollbar-width: none;
-        }
-
-        .categories-container::-webkit-scrollbar { display: none; }
-
-        .category-tab {
-            background: #18181f;
-            color: #a1a1aa;
-            border: 1px solid var(--card-border);
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            white-space: nowrap;
-            font-size: 0.88rem;
-            font-weight: 700;
-            transition: all 0.2s ease;
-        }
-
-        .category-tab.active {
-            background: var(--gold-gradient);
-            color: #000;
-            border-color: var(--gold-primary);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-        }
-
-        /* كروت الوجبات المودرن */
-        .menu-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 15px;
-        }
-
-        .section-title {
-            color: var(--gold-primary);
-            font-size: 1.25rem;
-            margin: 22px 0 14px 0;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 8px;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-            .items-grid { grid-template-columns: 1fr; }
-        }
-
-        .item-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.2s;
-        }
-
-        .item-card:active {
-            transform: scale(0.98);
-        }
-
-        .item-img {
-            width: 100%;
-            height: 190px;
-            object-fit: cover;
-            cursor: pointer;
-            display: block;
-        }
-
-        .item-details {
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            justify-content: space-between;
-        }
-
-        .item-name {
-            font-size: 1.1rem;
-            color: #ffffff;
-            font-weight: 800;
-            cursor: pointer;
-            margin-bottom: 4px;
-        }
-
-        .item-desc {
-            font-size: 0.83rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-
-        .item-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            padding-top: 10px;
-            margin-top: auto;
-        }
-
-        .item-price {
-            color: var(--gold-bright);
-            font-weight: 800;
-            font-size: 1.05rem;
-        }
-
-        .add-cart-btn {
-            background: var(--gold-gradient);
-            color: #000;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-weight: 900;
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
-        }
-
-        /* 📱 الشريط السفلي المودرن المتطابق مع التطبيقات العالمية */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: rgba(18, 18, 24, 0.94);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-top: 1px solid var(--card-border);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .nav-item {
-            background: transparent;
-            border: none;
-            color: #a1a1aa;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            width: 30%;
-            gap: 4px;
-            transition: color 0.2s;
-        }
-
-        .nav-item i {
-            font-size: 1.25rem;
-        }
-
-        .nav-item.active {
-            color: var(--gold-primary);
-        }
-
-        .cart-btn-wrapper {
-            position: relative;
-            top: -18px;
-        }
-
-        .cart-main-btn {
-            background: var(--gold-gradient);
-            border: 4px solid var(--bg-dark);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            color: #000;
-            font-size: 1.4rem;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .cart-badge {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            background: var(--danger-red);
-            color: #fff;
-            font-size: 0.72rem;
-            padding: 2px 7px;
-            border-radius: 10px;
-            font-weight: 800;
-            border: 2px solid var(--bg-dark);
-        }
-
-        /* النوافذ العائمة المودرن */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-        }
-
-        .modern-modal {
-            background: #141419 !important;
-            border: 1px solid rgba(245, 158, 11, 0.2) !important;
-            border-radius: 22px !important;
-            padding: 22px 18px !important;
-            width: 100%;
-            max-width: 480px;
-            position: relative;
-            max-height: 88vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.85) !important;
-        }
-
-        .close-btn {
-            position: absolute;
-            left: 16px;
-            top: 14px;
-            font-size: 1.6rem;
-            color: #a1a1aa;
-            cursor: pointer;
-        }
-
-        .modal-header-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--gold-primary);
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding-bottom: 12px;
-        }
-
-        .modal-header-title i {
-            font-size: 1.3rem;
-        }
-
-        .modal-header-title h2 {
-            font-size: 1.25rem;
-            font-weight: 800;
-            margin: 0;
-            color: #fff;
-        }
-
-        .more-section { margin-bottom: 22px; }
-
-        .more-section-title {
-            font-size: 0.92rem;
-            color: var(--gold-bright);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
-        }
-
-        /* رقائق الأقسام داخل المزيد */
-        .more-cats-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-
-        .more-cat-chip {
-            background: #202028;
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #e4e4e7;
-            padding: 9px 16px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .more-cat-chip:active {
-            background: var(--gold-gradient);
-            color: #000;
-        }
-
-        /* شبكة الاتصال المودرن (2 في السطر) */
-        .modern-contact-grid {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 10px !important;
-        }
-
-        .contact-card {
-            background: #1c1c24 !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 14px !important;
-            padding: 12px !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-            text-decoration: none !important;
-            color: #ffffff !important;
-            transition: transform 0.2s;
-        }
-
-        .contact-card:active {
-            transform: scale(0.96);
-            background: #242430 !important;
-        }
-
-        .contact-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            flex-shrink: 0;
-        }
-
-        .phone-card .contact-icon { background: rgba(245, 158, 11, 0.15); color: var(--gold-bright); }
-        .wa-card .contact-icon { background: rgba(37, 211, 102, 0.15); color: #25D366; }
-        .ig-card .contact-icon { background: rgba(225, 48, 108, 0.15); color: #E1306C; }
-        .fb-card .contact-icon { background: rgba(24, 119, 242, 0.15); color: #1877F2; }
-
-        .contact-info { display: flex; flex-direction: column; overflow: hidden; }
-        .contact-info .label { font-size: 0.72rem; color: #a1a1aa !important; font-weight: 500; }
-        .contact-info .val { font-size: 0.82rem; color: #ffffff !important; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-
-        /* المدخلات والأزرار المودرن */
-        .modern-input {
-            background: #1c1c24 !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 12px !important;
-            padding: 12px !important;
-            font-size: 0.88rem !important;
-            color: #fff !important;
-            width: 100%;
-            outline: none;
-        }
-
-        .modern-input:focus {
-            border-color: var(--gold-primary) !important;
-        }
-
-        .modern-submit-btn {
-            background: var(--gold-gradient);
-            color: #000;
-            border: none;
-            border-radius: 12px !important;
-            padding: 13px !important;
-            font-size: 0.95rem !important;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-block { width: 100%; }
-        .form-group { margin-bottom: 12px; }
-        .form-label { font-size: 0.83rem; color: var(--gold-bright); margin-bottom: 4px; display: block; font-weight: 600; }
-
-        .checkout-summary {
-            background: #1c1c24;
-            padding: 14px;
-            border-radius: 14px;
-            margin: 14px 0;
-            font-size: 0.88rem;
-        }
-
-        .summary-line { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .total-line { color: var(--gold-bright); font-weight: 800; font-size: 1.08rem; }
-        .gold-hr { border-color: rgba(255,255,255,0.08); margin: 8px 0; }
-        .modal-img { width: 100%; height: 190px; object-fit: cover; border-radius: 14px; margin-bottom: 12px; }
-        .detail-price { color: var(--gold-bright); font-weight: 800; font-size: 1.18rem; margin: 6px 0; }
-        .detail-ingredients { color: #ccc; font-size: 0.88rem; margin-bottom: 16px; line-height: 1.5; }
-    </style>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body class="public-menu-body">
 
-    <!-- الهيدر الرئيسي المودرن -->
+    <!-- الهيدر الرئيسي -->
     <header class="main-header">
-        <div class="brand-badge">MIM89</div>
-        <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle"><i class="fa-solid fa-location-dot"></i> أشهى الوجبات السريعة | بغداد - القاهرة</p>
-        
-        <!-- شريط البحث المودرن -->
-        <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
+        <div class="logo-container">
+            <h1 class="brand-title">MIM89</h1>
+            <span class="brand-subtitle">FAST FOOD</span>
         </div>
+        <p class="brand-tagline">الطعم اللي ما يتكرر 🔥</p>
     </header>
 
-    <!-- الأقسام العلوية الأفقي -->
-    <nav class="categories-nav">
-        <div class="categories-container" id="categoriesNav"></div>
+    <!-- شريط البحث -->
+    <div class="search-box-container">
+        <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="publicSearchInput" placeholder="ابحث عن وجبتك المفضلة..." oninput="filterPublicMenu()">
+        </div>
+    </div>
+
+    <!-- شريط الأقسام المتقلب -->
+    <nav class="categories-nav-wrapper">
+        <div id="categoriesNav" class="categories-nav"></div>
     </nav>
 
-    <!-- منطقة عرض الوجبات -->
-    <main class="menu-container">
-        <div id="menuSections"></div>
-    </main>
+    <!-- أقسام المينيو والوجبات -->
+    <main id="menuSections" class="container"></main>
 
-    <!-- 📱 الشريط السفلي العائم المودرن (أيقونات مجانية مضمونة 100%) -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="scrollToTop()">
-            <i class="fa-solid fa-house"></i>
-            <span>الرئيسية</span>
+    <!-- زر السلة العائم السريع (برمز الشوكة والسكينة 🍴) -->
+    <button id="floatingCartBtn" class="cart-float-btn" onclick="openCartModal()">
+        <i class="fa-solid fa-utensils"></i>
+        <span id="cartBadgeCount" class="badge">0</span>
+    </button>
+
+    <!-- زر "المزيد" السفلي المنسق -->
+    <div class="bottom-more-bar" style="text-align:center; margin:30px 0 80px 0;">
+        <button class="gold-btn" style="padding:10px 24px; border-radius:25px; font-weight:bold;" onclick="openModal('moreModal')">
+            <i class="fa-solid fa-ellipsis-vertical" style="margin-left:8px;"></i> المزيد من الخيارات
         </button>
-        
-        <div class="cart-btn-wrapper">
-            <button class="cart-main-btn" onclick="openCartModal()">
-                <i class="fa-solid fa-basket-shopping"></i>
-                <span id="cartBadgeCount" class="cart-badge">0</span>
+    </div>
+
+    <!-- modal تفاصيل الوجبة -->
+    <div id="itemDetailModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('itemDetailModal')">&times;</button>
+            <img id="detailImg" src="" class="detail-modal-img">
+            <h2 id="detailTitle" style="color:var(--gold-primary); margin:10px 0 5px 0;"></h2>
+            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem;"></p>
+            <p id="detailIngredients" style="color:#ccc; font-size:0.9rem; margin:10px 0 20px 0;"></p>
+            <button id="detailAddBtn" class="gold-btn btn-block">➕ إضافة للسلة</button>
+        </div>
+    </div>
+
+    <!-- modal السلة والشراء -->
+    <div id="cartModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
+            <h3 style="color:var(--gold-primary); margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+                <i class="fa-solid fa-utensils"></i> سلة الوجبات
+            </h3>
+            
+            <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:15px;"></div>
+
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:0.85rem; color:#aaa;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" style="width:100%; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+                    <option value="delivery">🚗 توصيل للبيت</option>
+                    <option value="takeaway">🛍️ سفري من المطعم</option>
+                    <option value="dine_in">🍽️ تناول داخل الصالة</option>
+                </select>
+            </div>
+
+            <!-- بيانات الزبون الإجبارية -->
+            <div id="deliveryFieldsGroup">
+                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+                <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+                <input type="text" id="custAddress" placeholder="العنوان التفصيلي (أقرب نقطة دالة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+            </div>
+
+            <textarea id="orderNotes" placeholder="ملاحظات إضافية على الطلب..." style="width:100%; height:50px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:12px;"></textarea>
+
+            <div style="background:#181820; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span>مجموع الوجبات:</span>
+                    <span id="subtotalPrice">0 د.ع</span>
+                </div>
+                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--gold-bright);">
+                    <span>أجور التوصيل:</span>
+                    <span id="deliveryFeePrice">0 د.ع</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.05rem; color:var(--gold-primary); border-top:1px solid rgba(255,255,255,0.1); padding-top:6px; margin-top:4px;">
+                    <span>المجموع الكلي:</span>
+                    <span id="finalTotalPrice">0 د.ع</span>
+                </div>
+            </div>
+
+            <button onclick="submitOrderToCashier()" class="gold-btn btn-block" style="padding:12px; font-weight:bold;">
+                <i class="fa-brands fa-whatsapp" style="font-size:1.1rem; margin-left:6px;"></i> إرسال الفاتورة عبر الواتساب
             </button>
         </div>
+    </div>
 
-        <button class="nav-item" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-border-all"></i>
-            <span>المزيد</span>
-        </button>
-    </nav>
-
-    <!-- 🛒 1. نافذة السلة والشراء -->
-    <div id="cartModal" class="modal">
-        <div class="modal-content modern-modal">
-            <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
-            <div class="modal-header-title">
-                <i class="fa-solid fa-basket-shopping" style="color:var(--gold-primary);"></i>
-                <h2>سلة الشراء وإتمام الطلب</h2>
-            </div>
+    <!-- modal المزيد -->
+    <div id="moreModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
+            <h3 style="color:var(--gold-primary); margin-bottom:15px;">الأقسام والملاحظات</h3>
+            <div id="moreCategoriesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
             
-            <div class="cart-modal-body">
-                <div id="cartItemsContainer" class="cart-items-wrapper"></div>
-                
-                <div class="order-form-section" style="margin-top:15px;">
-                    <h3 class="more-section-title"><i class="fa-solid fa-user-pen"></i> تفاصيل الطلب والتوصيل</h3>
-                    
-                    <div class="form-group">
-                        <label class="form-label">نوع الخدمة:</label>
-                        <select id="orderTypeSelect" class="modern-input" onchange="toggleDeliveryFields()">
-                            <option value="delivery">🚗 توصيل منزلي</option>
-                            <option value="takeaway">🛍️ استلام من المطعم (سفري)</option>
-                            <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">الاسم الكامل:</label>
-                        <input type="text" id="custName" class="modern-input" placeholder="أدخل اسمك للاستلام">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">رقم الهاتف:</label>
-                        <input type="tel" id="custPhone" class="modern-input" placeholder="07XXXXXXXXX">
-                    </div>
-
-                    <div id="deliveryFieldsGroup">
-                        <div class="form-group">
-                            <label class="form-label">المنطقة / الحي:</label>
-                            <input type="text" id="custArea" class="modern-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="modern-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">ملاحظات إضافية:</label>
-                        <textarea id="orderNotes" class="modern-input" rows="2" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
-                    </div>
-
-                    <div class="checkout-summary">
-                        <div class="summary-line">
-                            <span>مجموع الوجبات:</span>
-                            <span id="subtotalPrice">0 د.ع</span>
-                        </div>
-                        <div class="summary-line" id="deliveryFeeLine">
-                            <span>أجور التوصيل:</span>
-                            <span id="deliveryFeePrice">0 د.ع</span>
-                        </div>
-                        <hr class="gold-hr">
-                        <div class="summary-line total-line">
-                            <span>المجموع الكلي:</span>
-                            <span id="finalTotalPrice">0 د.ع</span>
-                        </div>
-                    </div>
-
-                    <button class="gold-btn btn-block modern-submit-btn" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 📑 2. نافذة المزيد المودرن (شبكة عصرية متناسقة) -->
-    <div id="moreModal" class="modal">
-        <div class="modal-content modern-modal">
-            <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
+            <hr style="border-color:rgba(255,255,255,0.1); margin:15px 0;">
             
-            <div class="modal-header-title">
-                <i class="fa-solid fa-border-all" style="color:var(--gold-primary);"></i>
-                <h2>القائمة والمزيد</h2>
-            </div>
-
-            <!-- 1. أقسام المينيو السريعة -->
-            <div class="more-section">
-                <h3 class="more-section-title"><i class="fa-solid fa-utensils"></i> أقسام المينيو</h3>
-                <div id="moreCategoriesList" class="more-cats-grid"></div>
-            </div>
-
-            <!-- 2. شبكة التواصل المودرن (2 في السطر) -->
-            <div class="more-section">
-                <h3 class="more-section-title"><i class="fa-solid fa-headset"></i> تواصل معنا</h3>
-                <div class="modern-contact-grid">
-                    <a href="tel:07750008630" class="contact-card phone-card">
-                        <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
-                        <div class="contact-info">
-                            <span class="label">اتصال مباشر 1</span>
-                            <span class="val">07750008630</span>
-                        </div>
-                    </a>
-                    
-                    <a href="tel:07850008630" class="contact-card phone-card">
-                        <div class="contact-icon"><i class="fa-solid fa-mobile-screen"></i></div>
-                        <div class="contact-info">
-                            <span class="label">اتصال مباشر 2</span>
-                            <span class="val">07850008630</span>
-                        </div>
-                    </a>
-
-                    <a href="https://wa.me/9647750008630" target="_blank" class="contact-card wa-card">
-                        <div class="contact-icon"><i class="fa-brands fa-whatsapp"></i></div>
-                        <div class="contact-info">
-                            <span class="label">واتساب 1</span>
-                            <span class="val">مراسلة سريعة</span>
-                        </div>
-                    </a>
-
-                    <a href="https://wa.me/9647850008630" target="_blank" class="contact-card wa-card">
-                        <div class="contact-icon"><i class="fa-brands fa-whatsapp"></i></div>
-                        <div class="contact-info">
-                            <span class="label">واتساب 2</span>
-                            <span class="val">مراسلة سريعة</span>
-                        </div>
-                    </a>
-
-                    <a href="https://instagram.com" target="_blank" class="contact-card ig-card">
-                        <div class="contact-icon"><i class="fa-brands fa-instagram"></i></div>
-                        <div class="contact-info">
-                            <span class="label">إنستغرام</span>
-                            <span class="val">الصفحة الرسمية</span>
-                        </div>
-                    </a>
-
-                    <a href="https://facebook.com" target="_blank" class="contact-card fb-card">
-                        <div class="contact-icon"><i class="fa-brands fa-facebook-f"></i></div>
-                        <div class="contact-info">
-                            <span class="label">فيسبوك</span>
-                            <span class="val">الصفحة الرسمية</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 3. إرسال ملاحظة -->
-            <div class="more-section">
-                <h3 class="more-section-title"><i class="fa-solid fa-comment-dots"></i> إرسال ملاحظة للإدارة</h3>
-                <div class="form-group">
-                    <input type="text" id="feedbackName" class="modern-input" placeholder="اسمك الكريم (اختياري)">
-                </div>
-                <div class="form-group">
-                    <textarea id="feedbackMsg" class="modern-input" rows="2" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
-                </div>
-                <button class="gold-btn btn-block modern-submit-btn" onclick="sendRestaurantFeedback()">
-                    <i class="fa-solid fa-paper-plane"></i> إرسال الملاحظة
-                </button>
-            </div>
-
+            <h4>إرسال شكوى أو اقتراح للمطعم:</h4>
+            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." style="width:100%; height:70px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin:8px 0;"></textarea>
+            <button onclick="sendRestaurantFeedback()" class="gold-btn btn-block">إرسال للمطعم</button>
         </div>
     </div>
 
-    <!-- 🍕 3. نافذة تفاصيل الوجبة -->
-    <div id="itemDetailModal" class="modal">
-        <div class="modal-content modern-modal">
-            <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
-            <img id="detailImg" src="" alt="" class="modal-img">
-            <h2 id="detailTitle" class="modal-gold-title" style="color:var(--gold-primary); font-size:1.2rem; margin-bottom:6px;"></h2>
-            <p id="detailPrice" class="detail-price"></p>
-            <p id="detailIngredients" class="detail-ingredients"></p>
-            <div class="modal-actions">
-                <button id="detailAddBtn" class="gold-btn btn-block modern-submit-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+    <!-- ربط المحرك الرئيسي -->
+    <script src="app.js?v=2.0"></script>
 </body>
 </html>
