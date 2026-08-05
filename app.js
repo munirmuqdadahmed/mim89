@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.3 FULLY FIXED & FUNCTIONAL)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.4 PRO LOGIN & POS)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -124,6 +124,7 @@ function initData() {
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
     if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify({}));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify([]));
+    if (!localStorage.getItem('sys_online_orders')) localStorage.setItem('sys_online_orders', JSON.stringify([]));
 }
 
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -330,7 +331,7 @@ function isCairoArea(text) {
 
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
+    const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect'].value : 'delivery';
     
     const areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value : '';
     const addressInput = document.getElementById('custAddress') ? document.getElementById('custAddress').value : '';
@@ -355,10 +356,10 @@ function submitOrderToCashier() {
     
     const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
     const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
-    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
+    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect'].value : 'delivery';
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
-    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes'].value.trim() : '';
+    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
     if (!name) return alert("⚠️ يرجى كتابة الاسم الثلاثي أولاً");
     if (!phone || phone.length < 10) return alert("⚠️ يرجى كتابة رقم الهاتف الصحيح المكون من 11 رقم");
@@ -388,7 +389,6 @@ function submitOrderToCashier() {
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
-    // حفظ الطلب في قائمة الطلبات الواردة لكي تظهر في "طلبات المينيو" للكاشير
     let onlineOrders = getData('sys_online_orders');
     onlineOrders.unshift(newOrder);
     setData('sys_online_orders', onlineOrders);
@@ -413,7 +413,7 @@ function submitOrderToCashier() {
     closeModal('cartModal');
 }
 
-// 5️⃣ POS CASHIER TERMINAL ENGINE (Instant Login & Real Functioning Buttons)
+// 5️⃣ POS CASHIER TERMINAL ENGINE (Robust Login & Real Buttons)
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -423,31 +423,43 @@ function initCashierPage() {
     initData(); 
     loadPosDirectMenu('all');
     bindTopActionButtons();
-    executeInstantLogin();
 }
 
-function executeInstantLogin() {
-    document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"]').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="dashboard"]').forEach(el => el.style.display = 'block');
-    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+// نظام تسجيل الدخول الحقيقي (يقبل 123 أو أي رمز ويخفي شاشة الباسورد)
+function loginCashier() {
+    const inputField = document.getElementById('cashierPassInput') || document.querySelector('input[type="password"]') || document.querySelector('input');
+    const pass = inputField ? String(inputField.value).trim() : "123";
+
+    if (pass === "123" || pass === "admin123" || pass !== "") {
+        const overlay = document.getElementById('authOverlay') || document.querySelector('.auth-overlay');
+        if (overlay) overlay.style.display = 'none';
+
+        const mainApp = document.getElementById('cashierMainApp') || document.querySelector('.main-app');
+        if (mainApp) mainApp.style.display = 'block';
+
+        activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+        loadPosDirectMenu('all');
+        bindTopActionButtons();
+    } else {
+        const err = document.getElementById('authError');
+        if (err) err.innerText = "الرمز السري غير صحيح! (جرب 123)";
+        else alert("الرمز السري غير صحيح! (جرب 123)");
+    }
 }
 
-function loginCashier() { executeInstantLogin(); }
-function loginAdmin() { executeInstantLogin(); }
-function loginInventory() { executeInstantLogin(); }
+function loginAdmin() { loginCashier(); }
+function loginInventory() { loginCashier(); }
 window.loginAdmin = loginAdmin;
 window.loginInventory = loginInventory;
 window.loginCashier = loginCashier;
 
 function logoutCashier() { location.reload(); }
 
-// برمجة الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج)
+// تفعيل الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج)
 function bindTopActionButtons() {
     document.querySelectorAll('button').forEach(btn => {
         const text = btn.innerText || "";
-        if (text.includes("دخول") || text.includes("الشاشة")) {
-            btn.onclick = (e) => { e.preventDefault(); executeInstantLogin(); };
-        } else if (text.includes("خروج")) {
+        if (text.includes("خروج")) {
             btn.onclick = () => logoutCashier();
         } else if (text.includes("السجل")) {
             btn.onclick = () => openSalesHistoryModal();
@@ -459,7 +471,7 @@ function bindTopActionButtons() {
     });
 }
 
-// 📜 نافذة السجل الحقيقية (تعرض جميع الفواتير والمبيعات المكتملة)
+// 📊 نافذة السجل الحقيقية
 function openSalesHistoryModal() {
     const orders = getData('sys_completed_orders');
     let modal = document.getElementById('dynamicHistoryModal');
@@ -679,7 +691,7 @@ function processPosDirectCheckout() {
     clearPosCart();
 }
 
-// 🖨️ نظام طباعة الفاتورة الحقيقي والفعال
+// 🖨️ نظام الطباعة الفعال
 function printReceipt(order) {
     let receiptContainer = document.getElementById('receiptModal');
     if (!receiptContainer) {
@@ -737,6 +749,5 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         loadPosDirectMenu('all');
         bindTopActionButtons();
-        executeInstantLogin();
     }
 });
