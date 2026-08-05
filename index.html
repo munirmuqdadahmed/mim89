@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Tajawal -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
@@ -23,7 +21,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
         body { background-color: var(--bg-main); color: var(--text-light); padding-bottom: 90px; }
 
-        /* Modern Header */
         .modern-header {
             background: linear-gradient(135deg, #16161f 0%, #0c0c10 100%);
             padding: 25px 20px;
@@ -35,7 +32,6 @@
         .brand-subtitle { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; margin-top: -4px; display: block; }
         .brand-tagline { font-size: 0.9rem; color: var(--gold-bright); margin-top: 8px; font-weight: 500; }
 
-        /* Search Bar */
         .search-container { padding: 15px 20px; max-width: 600px; margin: 0 auto; }
         .search-box {
             position: relative;
@@ -62,7 +58,6 @@
             color: var(--gold-primary);
         }
 
-        /* Categories Navigation */
         .categories-wrapper {
             display: flex;
             gap: 10px;
@@ -90,7 +85,6 @@
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
         }
 
-        /* Main Container & Cards */
         .container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
         .section-title { font-size: 1.25rem; color: var(--gold-primary); margin: 25px 0 15px 0; display: flex; align-items: center; gap: 8px; border-right: 4px solid var(--gold-primary); padding-right: 10px; }
         
@@ -133,7 +127,6 @@
         }
         .add-cart-btn:active { transform: scale(1.2); }
 
-        /* Modern Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -174,7 +167,6 @@
             font-weight: bold;
         }
 
-        /* Modals Modern */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -237,21 +229,11 @@
             transition: opacity 0.2s;
         }
         .gold-btn:active { opacity: 0.85; }
-
-        .more-cat-chip {
-            background: #0c0c10;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 15px;
-            font-size: 0.82rem;
-            cursor: pointer;
-        }
     </style>
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="public-menu-body">
 
@@ -276,7 +258,7 @@
     <!-- Menu Sections Container -->
     <main id="menuSections" class="container"></main>
 
-    <!-- Bottom Navigation Bar (Modern) -->
+    <!-- Bottom Navigation Bar -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
@@ -367,7 +349,6 @@
         </div>
     </div>
 
-    <!-- ربط محرك التشغيل -->
-    <script src="app.js?v=full.menu.1"></script>
+    <script src="app.js"></script>
 </body>
 </html>
