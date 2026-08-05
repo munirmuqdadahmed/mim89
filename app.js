@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Strict Validation + Correct Phone + Cairo Free Delivery)
+   (Strict Validation + Interactive Buttons + Custom Icons)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -390,7 +390,7 @@ function applyCallToPOS(phone, name) {
 }
 
 /* ==========================================
-   5️⃣ محرك المينيو الإلكتروني للزبائن
+   5️⃣ محرك المينيو الإلكتروني للزبائن (تفاعلي بأيقونة شوكة وسكينة)
    ========================================== */
 let cart = [];
 
@@ -439,7 +439,9 @@ function loadPublicMenu() {
                                 <p class="item-desc">${item.ingredients || ''}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                                    <button class="add-cart-btn" onclick="addToCart(${item.id})">+</button>
+                                    <button class="add-cart-btn" id="addBtn_${item.id}" onclick="addToCart(${item.id}, event)">
+                                        <i class="fa-solid fa-plus"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -449,6 +451,12 @@ function loadPublicMenu() {
             sectionsContainer.appendChild(sec);
         }
     });
+
+    // تحديث أيقونة السلة الشوكة والسكينة 🍴
+    const cartIconBtn = document.getElementById('floatingCartBtn') || document.querySelector('.cart-float-btn');
+    if (cartIconBtn) {
+        cartIconBtn.innerHTML = `<i class="fa-solid fa-utensils"></i> <span id="cartBadgeCount" class="badge">0</span>`;
+    }
 }
 
 function filterCategory(catId, btnElement) {
@@ -479,7 +487,9 @@ function filterPublicMenu() {
                         <p class="item-desc">${item.ingredients}</p>
                         <div class="item-footer">
                             <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                            <button class="add-cart-btn" onclick="addToCart(${item.id})">+</button>
+                            <button class="add-cart-btn" id="addBtn_${item.id}" onclick="addToCart(${item.id}, event)">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -495,18 +505,34 @@ function openItemDetails(id) {
     document.getElementById('detailTitle').innerText = item.name;
     document.getElementById('detailPrice').innerText = Number(item.price).toLocaleString() + ' د.ع';
     document.getElementById('detailIngredients').innerText = item.ingredients;
-    document.getElementById('detailAddBtn').onclick = () => { addToCart(item.id); closeModal('itemDetailModal'); };
+    document.getElementById('detailAddBtn').onclick = (e) => { addToCart(item.id, e); closeModal('itemDetailModal'); };
     openModal('itemDetailModal');
 }
 
-function addToCart(itemId) {
+// ⚡ زر الإضافة التفاعلي السريع مع التأثير البصري
+function addToCart(itemId, event) {
     const items = getData('sys_items');
     const item = items.find(i => i.id === itemId);
     const exist = cart.find(c => c.id === itemId);
 
     if (exist) { exist.qty += 1; }
     else { cart.push({ ...item, qty: 1 }); }
+    
     updateCartBadge();
+
+    // تأثير ضغطة الزر التفاعلي
+    if (event && event.currentTarget) {
+        const btn = event.currentTarget;
+        btn.style.transform = 'scale(1.25)';
+        btn.style.backgroundColor = '#22c55e';
+        btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
+        
+        setTimeout(() => {
+            btn.style.transform = 'scale(1)';
+            btn.style.backgroundColor = 'var(--gold-primary)';
+            btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+        }, 300);
+    }
 }
 
 function updateCartBadge() {
@@ -570,7 +596,6 @@ function toggleDeliveryFields() {
     calculateDeliveryCost();
 }
 
-// 🚗 الفحص الدقيق لكلمة "القاهرة" بأي شكل من أشكالها
 function isCairoArea(text) {
     if (!text) return false;
     const cleanText = text.trim().toLowerCase();
@@ -606,7 +631,7 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
-// 🛑 إجبارية إدخال (الاسم + الهاتف + العنوان) قبل إرسال الطلب
+// 🛑 التثبت الصارم وحذف كلمة "الكريمين"
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -617,7 +642,6 @@ function submitOrderToCashier() {
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
-    // التحقق الإجباري الصارم من كافة الحقول
     if (!name) return alert("⚠️ يرجى كتابة الاسم الثلاثي أولاً");
     if (!phone || phone.length < 10) return alert("⚠️ يرجى كتابة رقم الهاتف الصحيح المكون من 11 رقم");
     
@@ -644,7 +668,6 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    // 🎯 استخدام الرقم الصحيح الموثق للواتساب (9647750008630)
     const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`;
     
     alert("سيتم تحويلك إلى الواتساب لإرسال الفاتورة الرسمية للمطعم.");
