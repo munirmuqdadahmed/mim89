@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    <link rel="stylesheet" href="style.css">
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني الرسمية</title>
+    <!-- خط Tajawal العربي الأنيق -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- أيقونات FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملف التنسيقات -->
+    <link rel="stylesheet" href="style.css">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -13,31 +19,52 @@
 </head>
 <body class="public-menu-body">
 
-    <!-- Header / الهيدر الرئيسي -->
-    <header class="main-header">
+    <!-- شريط التواصل السريع العلوي -->
+    <div class="top-contact-bar no-print" style="background:#121215; border-bottom:1px solid var(--card-border); padding:6px 12px; font-size:0.8rem;">
+        <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; gap:12px; align-items:center;">
+                <a href="tel:0775008630" style="color:var(--gold-bright); text-decoration:none;"><i class="fa-solid fa-phone"></i> 0775008630</a>
+                <a href="tel:0785008630" style="color:var(--gold-bright); text-decoration:none;"><i class="fa-solid fa-mobile-screen"></i> 0785008630</a>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <a href="https://wa.me/964775008630" target="_blank" style="color:#25D366; text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> واتساب 1</a>
+                <a href="https://wa.me/964785008630" target="_blank" style="color:#25D366; text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> واتساب 2</a>
+                <a href="https://instagram.com" target="_blank" style="color:#E1306C; text-decoration:none;"><i class="fa-brands fa-instagram"></i> انستغرام</a>
+                <a href="https://facebook.com" target="_blank" style="color:#1877F2; text-decoration:none;"><i class="fa-brands fa-facebook"></i> فيسبوك</a>
+                <a href="https://maps.google.com" target="_blank" style="color:var(--gold-primary); text-decoration:none;"><i class="fa-solid fa-location-dot"></i> موقع المطعم</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- الهيدر الرئيسي للمطعم -->
+    <header class="main-header" style="text-align:center; padding:20px 15px 10px 15px;">
         <div class="brand-badge">MIM89</div>
-        <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
+        <h1 class="brand-title" style="margin-top:5px; letter-spacing:2px;">FAST FOOD</h1>
+        <p class="brand-subtitle" style="color:var(--gold-bright); font-size:0.9rem; margin-top:2px;">كل الطعم... في مكان واحد | بغداد - القاهرة</p>
         
         <!-- شريط البحث السريع -->
-        <div class="search-box">
+        <div class="search-box" style="margin-top:15px;">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
+            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن أي صنف أو وجبة مفضلة...">
         </div>
     </header>
 
-    <!-- الأقسام العلوية -->
+    <!-- شريط الأقسام العلوية الأفقي -->
     <nav class="categories-nav">
-        <div class="categories-container" id="categoriesNav"></div>
+        <div class="categories-container" id="categoriesNav">
+            <!-- يتم تحميل أزرار الأقسام آلياً بواسطة app.js -->
+        </div>
     </nav>
 
-    <!-- منطقة عرض الأصناف -->
-    <main class="menu-container">
-        <div id="menuSections"></div>
+    <!-- المنطقة الرئيسية لعرض الأصناف والوجبات -->
+    <main class="menu-container" style="min-height:60vh; padding-bottom:80px;">
+        <div id="menuSections">
+            <!-- يتم عرض وجبات المينيو آلياً بواسطة app.js -->
+        </div>
     </main>
 
-    <!-- شريط التنقل السفلي العائم (Bottom Navigation Bar) -->
-    <nav class="bottom-nav">
+    <!-- شريط التنقل السفلي العائم -->
+    <nav class="bottom-nav no-print">
         <button class="nav-item active" onclick="scrollToTop()">
             <i class="fa-solid fa-house"></i>
             <span>الرئيسية</span>
@@ -45,7 +72,7 @@
         
         <button class="nav-item" onclick="openModal('contactModal')">
             <i class="fa-solid fa-phone"></i>
-            <span>اتصل بنا</span>
+            <span>تواصل معنا</span>
         </button>
 
         <!-- زر السلة الأوسط البارز -->
@@ -62,7 +89,7 @@
         </button>
     </nav>
 
-    <!-- 1. نافذة السلة وإتمام الطلب -->
+    <!-- 🛒 1. نافذة السلة وإتمام الطلب -->
     <div id="cartModal" class="modal">
         <div class="modal-content modal-lg">
             <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
@@ -77,9 +104,9 @@
                     <div class="form-group">
                         <label>نوع الطلب:</label>
                         <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
-                            <option value="delivery">توصيل منزلي</option>
-                            <option value="takeaway">استلام من المطعم (سفري)</option>
-                            <option value="dine_in">تناول داخل المطعم</option>
+                            <option value="delivery">🚗 توصيل منزلي</option>
+                            <option value="takeaway">🛍️ استلام من المطعم (سفري)</option>
+                            <option value="dine_in">🍽️ تناول داخل المطعم (صالة)</option>
                         </select>
                     </div>
 
@@ -100,7 +127,7 @@
                         </div>
                         <div class="form-group">
                             <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الشقة أو المحلة">
+                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الدار أو المحلة">
                         </div>
                     </div>
 
@@ -116,7 +143,7 @@
                             <span id="subtotalPrice">0 د.ع</span>
                         </div>
                         <div class="summary-line" id="deliveryFeeLine">
-                            <span>كلفة التوصيل:</span>
+                            <span>أجور التوصيل:</span>
                             <span id="deliveryFeePrice">0 د.ع</span>
                         </div>
                         <hr class="gold-hr">
@@ -127,64 +154,67 @@
                     </div>
 
                     <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب
+                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب للكاشير
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. نافذة اتصل بنا -->
+    <!-- 📞 2. نافذة اتصل بنا -->
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا</h2>
-            <div class="contact-links-list">
-                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
-                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب</a>
-                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
-                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
-                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقعنا على الخريطة</a>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا - MIM89</h2>
+            <div class="contact-links-list" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                <a href="tel:0775008630" class="gold-btn" style="text-decoration:none; justify-content:flex-start;"><i class="fa-solid fa-phone"></i> الاتصال المباشر (1): 0775008630</a>
+                <a href="tel:0785008630" class="gold-btn" style="text-decoration:none; justify-content:flex-start;"><i class="fa-solid fa-mobile-screen"></i> الاتصال المباشر (2): 0785008630</a>
+                <a href="https://wa.me/964775008630" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب 1</a>
+                <a href="https://wa.me/964785008630" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب 2</a>
+                <a href="https://facebook.com" target="_blank" class="gold-btn" style="background:#1877F2; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
+                <a href="https://instagram.com" target="_blank" class="gold-btn" style="background:#E1306C; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
+                <a href="https://maps.google.com" target="_blank" class="gold-btn" style="background:#ea4335; color:#fff; text-decoration:none; justify-content:flex-start;"><i class="fa-solid fa-location-dot"></i> موقع المطعم على الخريطة</a>
             </div>
         </div>
     </div>
 
-    <!-- 3. نافذة المزيد والملاحظات -->
+    <!-- 📋 3. نافذة المزيد والملاحظات -->
     <div id="moreModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
             <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والملاحظات</h2>
             
-            <h3>التنقل السريع للأقسام:</h3>
-            <div id="moreCategoriesList" class="more-cats-grid"></div>
+            <h3 style="margin-top:10px;">التنقل السريع للأقسام:</h3>
+            <div id="moreCategoriesList" class="more-cats-grid" style="display:flex; flex-wrap:wrap; gap:8px; margin:10px 0;"></div>
             
-            <hr class="gold-hr">
+            <hr class="gold-hr" style="margin:15px 0;">
             
             <h3>إرسال اقتراح أو ملاحظة للإدارة:</h3>
-            <div class="form-group">
+            <div class="form-group" style="margin-top:8px;">
                 <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top:8px;">
                 <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
             </div>
-            <button class="gold-btn" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
+            <button class="gold-btn btn-block" style="margin-top:10px;" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
         </div>
     </div>
 
-    <!-- 4. نافذة تفاصيل الوجبة -->
+    <!-- 🍕 4. نافذة تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
-            <img id="detailImg" src="" alt="" class="modal-img">
+            <img id="detailImg" src="" alt="" class="modal-img" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
             <h2 id="detailTitle" class="modal-gold-title"></h2>
-            <p id="detailPrice" class="detail-price"></p>
-            <p id="detailIngredients" class="detail-ingredients"></p>
+            <p id="detailPrice" class="detail-price" style="color:var(--gold-bright); font-size:1.2rem; font-weight:bold; margin:5px 0;"></p>
+            <p id="detailIngredients" class="detail-ingredients" style="color:#ccc; font-size:0.9rem; margin-bottom:15px;"></p>
             <div class="modal-actions">
                 <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
             </div>
         </div>
     </div>
 
+    <!-- المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
 </body>
 </html>
