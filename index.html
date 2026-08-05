@@ -1,657 +1,190 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 | Fast Food</title>
-    <meta name="description" content="MIM89 Fast Food">
-
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <link rel="stylesheet" href="style.css">
-
-    <!-- Fonts & Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-
-    <style>
-        /* إصلاحات سريعة لتناسق قسم التواصل وسلة الطلبات ومودال الشراء */
-        #contact {
-            padding: 20px 15px 90px;
-            background: #181818;
-            border-radius: 12px;
-            margin: 20px 10px;
-        }
-
-        #contact h2 {
-            font-size: 1.2rem;
-            color: #ff9800;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .contact-box {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .contact-box a {
-            background: #252525;
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid #333;
-        }
-
-        /* تنسيق مودال سلة الطلبات */
-        .cart-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-        }
-
-        .cart-modal.active {
-            display: flex;
-        }
-
-        .cart-content {
-            background: #1e1e1e;
-            width: 100%;
-            max-width: 480px;
-            max-height: 90vh;
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            border: 1px solid #333;
-        }
-
-        .cart-header {
-            padding: 15px;
-            background: #252525;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-        }
-
-        .cart-scroll-body {
-            padding: 15px;
-            overflow-y: auto;
-        }
-
-        .user-details input {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #121212;
-            color: #fff;
-            box-sizing: border-box;
-        }
-
-        .segmented-control {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .segment-btn {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #333;
-            background: #121212;
-            color: #ccc;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .segment-btn.active {
-            background: #ff9800;
-            color: #000;
-            font-weight: bold;
-        }
-
-        .send-order-btn {
-            width: 100%;
-            padding: 12px;
-            background: #25d366;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
+<body class="public-menu-body">
 
-<body>
-
-    <!-- Loader -->
-    <div id="loader">
-        <div class="spinner"></div>
-        <h2>MIM89</h2>
-    </div>
-
-    <!-- Floating Cart Button -->
-    <div id="cartBtn" class="cart-btn">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cartCount">0</span>
-    </div>
-
-    <!-- Overlay -->
-    <div id="menuOverlay" class="menu-overlay"></div>
-
-    <!-- Side Menu -->
-    <div class="side-menu" id="sideMenu">
-        <a href="tel:07750008630">📞 07750008630</a>
-        <a href="tel:07850008630">📞 07850008630</a>
-        <a href="https://wa.me/9647750008630" target="_blank">💬 واتساب الأول</a>
-        <a href="https://wa.me/9647850008630" target="_blank">💬 واتساب الثاني</a>
-        <a href="https://www.instagram.com/mim89fastfood" target="_blank">📷 انستغرام</a>
-        <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank">📘 فيسبوك</a>
-        <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank">📍 موقع المطعم</a>
-
-        <div class="side-menu-sections">
-            <h4>📋 أقسام المينيو السريعة:</h4>
-            <a href="#offers" class="close-menu-link">🔥 العروض الخاصة</a>
-            <a href="#burger" class="close-menu-link">🍔 قسم البركر</a>
-            <a href="#fajita" class="close-menu-link">🌮 قسم الفاهيتا</a>
-            <a href="#shawarma" class="close-menu-link">🌯 قسم الشاورما</a>
-            <a href="#rizo" class="close-menu-link">🍚 قسم الريزو</a>
-            <a href="#kentucky" class="close-menu-link">🍗 قسم الكنتاكي</a>
-            <a href="#appetizers" class="close-menu-link">🍟 المقبلات والفنكر</a>
-            <a href="#drinks" class="close-menu-link">🥤 قسم المشروبات</a>
+    <!-- Header / الهيدر الرئيسي -->
+    <header class="main-header">
+        <div class="brand-badge">MIM89</div>
+        <h1 class="brand-title">FAST FOOD</h1>
+        <p class="brand-subtitle">أشهى الوجبات السريعة بأعلى جودة</p>
+        
+        <!-- شريط البحث السريع -->
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
         </div>
-    </div>
-
-    <!-- Header & Main Nav -->
-    <header class="hero">
-        <div class="overlay"></div>
-
-        <nav class="top-nav">
-            <div class="logo">
-                <h1>MIM89</h1>
-                <span>FAST FOOD</span>
-            </div>
-            <ul>
-                <li><a href="#">الرئيسية</a></li>
-                <li><a href="#offers">العروض 🔥</a></li>
-                <li><a href="#burger">البركر</a></li>
-                <li><a href="#fajita">الفاهيتا</a></li>
-                <li><a href="#shawarma">الشاورما</a></li>
-                <li><a href="#rizo">الريزو</a></li>
-                <li><a href="#kentucky">الكنتاكي</a></li>
-                <li><a href="#appetizers">المقبلات والفنكر</a></li>
-                <li><a href="#drinks">المشروبات</a></li>
-                <li><a href="#contact">تواصل معنا</a></li>
-            </ul>
-        </nav>
-
-        <div class="hero-content">
-            <h2>MIM89 FAST FOOD</h2>
-            <p>كل الطعم... في مكان واحد</p>
-            <a href="#offers" class="btn">عرض المنيو</a>
-        </div>
-
-        <nav class="bottom-nav">
-            <a href="#">
-                <i class="fas fa-house"></i>
-                <span>الرئيسية</span>
-            </a>
-            <a href="#offers">
-                <i class="fas fa-fire"></i>
-                <span>العروض</span>
-            </a>
-            <a href="#offers" class="center-btn">
-                <i class="fas fa-utensils"></i>
-            </a>
-            <a href="#contact">
-                <i class="fas fa-location-dot"></i>
-                <span>الموقع</span>
-            </a>
-            <a href="javascript:void(0);" id="menuBtn">
-                <i class="fas fa-bars"></i>
-                <span>المزيد</span>
-            </a>
-        </nav>
     </header>
 
-    <section class="search-box">
-        <input type="text" id="search" placeholder="ابحث عن أي صنف...">
-    </section>
+    <!-- الأقسام العلوية -->
+    <nav class="categories-nav">
+        <div class="categories-container" id="categoriesNav"></div>
+    </nav>
 
-    <!-- المينيو الكامل الأساسي -->
-    <div id="main-menu-container">
-        <!-- العروض الخاصة -->
-        <section id="offers" class="menu-section">
-            <h2>🔥 العروض الخاصة واليومية</h2>
+    <!-- منطقة عرض الأصناف -->
+    <main class="menu-container">
+        <div id="menuSections"></div>
+    </main>
 
-            <div class="card" data-name="عرض الفردي (بركر 89 + فنكر + بيبسي)" data-price="5500">
-                <span class="badge">وفر 2,000 د.ع</span>
-                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="عرض الفردي">
-                <h3>🔥 عرض الفردي المميز</h3>
-                <p>بركر 89 الخاص + فنكر كلاسيك + بيبسي مبرد</p>
-                <div class="card-price-row">
-                    <span>5,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">7,500 د.ع</small></span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
+    <!-- شريط التنقل السفلي العائم (Bottom Navigation Bar) -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="scrollToTop()">
+            <i class="fa-solid fa-house"></i>
+            <span>الرئيسية</span>
+        </button>
+        
+        <button class="nav-item" onclick="openModal('contactModal')">
+            <i class="fa-solid fa-phone"></i>
+            <span>اتصل بنا</span>
+        </button>
 
-            <div class="card" data-name="عرض ميكس الشاورما (وجبة عربي دبل + 2 بيبسي)" data-price="8500">
-                <span class="badge">الأكثر طلباً</span>
-                <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="عرض الشاورما">
-                <h3>🌯 عرض ميكس الشاورما</h3>
-                <p>وجبة شاورما عربي دبل + ثومية ومخلل + 2 بيبسي</p>
-                <div class="card-price-row">
-                    <span>8,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">11,000 د.ع</small></span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="عرض الثنائي (2 بركر كلاسيك + فنكر دبل + 2 بيبسي)" data-price="10500">
-                <span class="badge">عرض لشخصين</span>
-                <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="عرض الثنائي">
-                <h3>🍔🍔 عرض الثنائي (2 بركر)</h3>
-                <p>2 بركر لحم/دجاج كلاسيك + فنكر دبل + 2 بيبسي</p>
-                <div class="card-price-row">
-                    <span>10,500 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">14,500 د.ع</small></span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="عرض العائلة واللمة (4 بركر + كنتاكي 4 قطع + 2 فنكر + لتر بيبسي)" data-price="28000">
-                <span class="badge new">توفير عائلي ضخم</span>
-                <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=600&q=80" alt="عرض العائلة">
-                <h3>👑 عرض اللمة والعائلة</h3>
-                <p>4 بركر كلاسيك + 4 قطع كنتاكي مقرمش + 2 فنكر كبير + لتر بيبسي</p>
-                <div class="card-price-row">
-                    <span>28,000 د.ع <small style="text-decoration: line-through; color: #888; font-size: 13px;">32,000 د.ع</small></span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 1. قسم البركر -->
-        <section id="burger" class="menu-section">
-            <h2>🍔 قسم البركر</h2>
-            
-            <div class="card" data-name="بركر كلاسيك لحم" data-price="4000">
-                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="بركر كلاسيك">
-                <h3>بركر كلاسيك (لحم)</h3>
-                <p>لحم طازج مع الصوص الخاص والخضار مع فنكر</p>
-                <div class="card-price-row">
-                    <span>4,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="بركر الجبن لحم" data-price="5000">
-                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80" alt="بركر الجبن">
-                <h3>بركر الجبن (لحم)</h3>
-                <p>شريحة لحم غنية بجبنة الشيدر الذائبة مع فنكر</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="دبل تشيز بركر لحم" data-price="8000">
-                <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="دبل تشيز بركر">
-                <h3>دبل تشيز بركر (لحم)</h3>
-                <p>قطعتين لحم مع طبقات مضاعفة من الجبن مع فنكر</p>
-                <div class="card-price-row">
-                    <span>8,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="بركر RGB العملاق" data-price="10000">
-                <span class="badge new">مميز وجديد</span>
-                <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="بركر RGB">
-                <h3>👑 بركر RGB العملاق</h3>
-                <p>3 قطع بركر لحم + 3 قطع جبن شيدر + صوص خاص مع فنكر</p>
-                <div class="card-price-row">
-                    <span>10,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="بركر 89 الخاص" data-price="8500">
-                <img src="https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80" alt="بركر 89 الخاص">
-                <h3>بركر 89 الخاص</h3>
-                <p>الخلطة الخاصة المبتكرة من مطعم MIM89 مع حلقات البصل المقرمشة وأصابع الجبن الموزاريلا</p>
-                <div class="card-price-row">
-                    <span>8,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="بركر دجاج كلاسيك" data-price="4000">
-                <img src="https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=600&q=80" alt="بركر دجاج كلاسيك">
-                <h3>بركر دجاج كلاسيك</h3>
-                <p>شريحة دجاج طازجة مع الخس والمايونيز والصوص الخاص مع فنكر</p>
-                <div class="card-price-row">
-                    <span>4,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="تشكن فيليه" data-price="5500">
-                <img src="https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=600&q=80" alt="تشكن فيليه">
-                <h3>تشكن فيليه</h3>
-                <p>سندويش صدر دجاج مقرمش مع الصوص والمايونيز مع بيبسي</p>
-                <div class="card-price-row">
-                    <span>5,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. قسم الفاهيتا -->
-        <section id="fajita" class="menu-section">
-            <h2>🌮 قسم الفاهيتا</h2>
-            
-            <div class="card" data-name="سندويش فاهيتا دجاج" data-price="5000">
-                <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80" alt="فاهيتا دجاج">
-                <h3>سندويش فاهيتا دجاج</h3>
-                <p>شرائح دجاج متبلة ومقلية مع الفلفل الألوان والبصل والجبن</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. قسم الشاورما -->
-        <section id="shawarma" class="menu-section">
-            <h2>🌯 قسم الشاورما</h2>
-
-            <div class="card" data-name="شاورما صاج عادي" data-price="2500">
-                <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="شاورما صاج عادي">
-                <h3>شاورما صاج عادي</h3>
-                <p>خبز صاج، شاورما دجاج، ثوم، وبطاطا</p>
-                <div class="card-price-row">
-                    <span>2,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="شاورما صاج دبل" data-price="5500">
-                <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="شاورما صاج دبل">
-                <h3>شاورما صاج دبل</h3>
-                <p>شاورما مضاعفة في خبز الصاج المميز مع فنكر وبيبسي</p>
-                <div class="card-price-row">
-                    <span>5,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="شاورما 89 الخاص" data-price="8000">
-                <img src="https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80" alt="شاورما 89 الخاص">
-                <h3>شاورما 89 الخاص</h3>
-                <p>طبق الشاورما الخاص المضاف له الجبن والبطاطا والصوصات وبيبسي</p>
-                <div class="card-price-row">
-                    <span>8,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. قسم الريزو -->
-        <section id="rizo" class="menu-section">
-            <h2>🍚 قسم الريزو</h2>
-
-            <div class="card" data-name="ريزو كلاسيك" data-price="5000">
-                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80" alt="ريزو كلاسيك">
-                <h3>ريزو كلاسيك</h3>
-                <p>أرز الريزو المميز مع قطع الدجاج المقرمشة وصوص الريزو</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="ريزو 89 الخاص" data-price="7500">
-                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80" alt="ريزو 89 الخاص">
-                <h3>ريزو 89 الخاص</h3>
-                <p>خلطة الريزو الخاصة مع دبل دجاج وجبن</p>
-                <div class="card-price-row">
-                    <span>7,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5. قسم الكنتاكي -->
-        <section id="kentucky" class="menu-section">
-            <h2>🍗 قسم الكنتاكي</h2>
-
-            <div class="card" data-name="كنتاكي قطعتين" data-price="5000">
-                <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=600&q=80" alt="كنتاكي قطعتين">
-                <h3>كنتاكي قطعتين</h3>
-                <p>قطعتين دجاج مقرمش + بطاطا وثومية</p>
-                <div class="card-price-row">
-                    <span>5,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="كنتاكي 4 قطع" data-price="9000">
-                <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=600&q=80" alt="كنتاكي 4 قطع">
-                <h3>كنتاكي 4 قطع</h3>
-                <p>4 قطع دجاج ذهبي + بطاطا وثومية وخبز مع بيبسي</p>
-                <div class="card-price-row">
-                    <span>9,000 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. قسم الفنكر والمقبلات والإضافات -->
-        <section id="appetizers" class="menu-section">
-            <h2>🍟 قسم الفنكر والمقبلات والإضافات</h2>
-            
-            <div class="card" data-name="قدح فنكر كلاسيك" data-price="2500">
-                <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80" alt="فنكر كلاسيك">
-                <h3>قدح فنكر كلاسيك</h3>
-                <p>بطاطا مقرمشة ذهبية مع جبن وبيبسي</p>
-                <div class="card-price-row">
-                    <span>2,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="فنكر 89 الخاص" data-price="4500">
-                <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80" alt="فنكر 89 الخاص">
-                <h3>فنكر 89 الخاص</h3>
-                <p>بطاطا مقرمشة محملة بالجبن والهالابينو والصوصات والدوريتوس</p>
-                <div class="card-price-row">
-                    <span>4,500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7. قسم المشروبات -->
-        <section id="drinks" class="menu-section">
-            <h2>🥤 قسم المشروبات</h2>
-
-            <div class="card" data-name="بيبسي" data-price="500">
-                <img src="https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80" alt="بيبسي">
-                <h3>بيبسي</h3>
-                <p>مشروب غازي بارد</p>
-                <div class="card-price-row">
-                    <span>500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="سفن أب" data-price="500">
-                <img src="https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80" alt="سفن أب">
-                <h3>سفن أب</h3>
-                <p>قدح ثلج منعش</p>
-                <div class="card-price-row">
-                    <span>500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="ميرندا" data-price="500">
-                <img src="https://images.unsplash.com/photo-1624517452488-04869289c4ca?auto=format&fit=crop&w=600&q=80" alt="ميرندا">
-                <h3>ميرندا</h3>
-                <p>مشروب غازي بنكهة البرتقال</p>
-                <div class="card-price-row">
-                    <span>500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="ديو" data-price="500">
-                <img src="https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=600&q=80" alt="ماونتن ديو">
-                <h3>ماونتن ديو</h3>
-                <p>مشروب غازي منعش</p>
-                <div class="card-price-row">
-                    <span>500 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-
-            <div class="card" data-name="ماء" data-price="250">
-                <img src="https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80" alt="ماء معدني">
-                <h3>ماء معدني</h3>
-                <p>قنينة ماء نقي مبرد</p>
-                <div class="card-price-row">
-                    <span>250 د.ع</span>
-                    <button class="add-to-cart-btn"><i class="fas fa-cart-plus"></i> إضافة</button>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Contact Section -->
-    <section id="contact">
-        <h2>📍 تواصل معنا وخدمة التوصيل</h2>
-        <div class="contact-box">
-            <a href="tel:07750008630"><i class="fas fa-phone"></i> 07750008630</a>
-            <a href="tel:07850008630"><i class="fas fa-phone"></i> 07850008630</a>
-            <a href="https://wa.me/9647750008630" target="_blank"><i class="fab fa-whatsapp"></i> واتساب الأول</a>
-            <a href="https://wa.me/9647850008630" target="_blank"><i class="fab fa-whatsapp"></i> واتساب الثاني</a>
-            <a href="https://maps.app.goo.gl/6xwwMoMUSBrJUuUa6?g_st=ic" target="_blank"><i class="fas fa-map-marker-alt"></i> موقع المطعم</a>
-            <a href="https://www.instagram.com/mim89fastfood" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
-            <a href="https://www.facebook.com/share/1Lx1pQx4oN/?mibextid=wwXIfr" target="_blank"><i class="fab fa-facebook"></i> Facebook</a>
+        <!-- زر السلة الأوسط البارز -->
+        <div class="cart-btn-wrapper">
+            <button class="cart-main-btn" onclick="openCartModal()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span id="cartBadgeCount" class="cart-badge">0</span>
+            </button>
         </div>
-    </section>
 
-    <!-- Cart Modal Box -->
-    <div id="cartModal" class="cart-modal">
-        <div class="cart-content">
-            <div class="cart-header">
-                <h3><i class="fas fa-shopping-bag"></i> سلة الطلبات</h3>
-                <span id="closeCart" class="close-cart">&times;</span>
-            </div>
+        <button class="nav-item" onclick="openModal('moreModal')">
+            <i class="fa-solid fa-bars"></i>
+            <span>المزيد</span>
+        </button>
+    </nav>
+
+    <!-- 1. نافذة السلة وإتمام الطلب -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content modal-lg">
+            <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-basket-shopping"></i> سلة الشراء وإتمام الطلب</h2>
             
-            <div class="cart-scroll-body">
-                <div id="cartItems" class="cart-items">
-                    <p class="empty-msg">السلة فارغة حالياً</p>
-                </div>
-
-                <div class="cart-footer">
-                    <div class="total-price" style="margin: 15px 0; font-weight: bold; color: #ff9800;">
-                        <span>المجموع الكلي: </span>
-                        <span id="cartTotal">0 د.ع</span>
-                    </div>
+            <div class="cart-modal-body">
+                <div id="cartItemsContainer" class="cart-items-wrapper"></div>
+                
+                <div class="order-form-section">
+                    <h3><i class="fa-solid fa-user-pen"></i> معلومات إرسال الطلب</h3>
                     
-                    <div class="user-details">
-                        <div class="segmented-control">
-                            <button type="button" class="segment-btn active" id="btnDelivery">🛵 توصيل</button>
-                            <button type="button" class="segment-btn" id="btnTakeaway">🛍️ استلام من المطعم</button>
-                        </div>
-
-                        <input type="text" id="custName" placeholder="الاسم الكامل" required>
-                        <input type="tel" id="custPhone" placeholder="رقم الهاتف (للتواصل والدلفري)" required>
-                        <input type="text" id="custAddress" placeholder="العنوان التفصيلي / المنطقة (مثال: القاهرة...)" required>
-                        <input type="text" id="custNotes" placeholder="ملاحظات إضافية (اختياري)">
+                    <div class="form-group">
+                        <label>نوع الطلب:</label>
+                        <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
+                            <option value="delivery">توصيل منزلي</option>
+                            <option value="takeaway">استلام من المطعم (سفري)</option>
+                            <option value="dine_in">تناول داخل المطعم</option>
+                        </select>
                     </div>
 
-                    <button id="sendOrderBtn" class="send-order-btn">
-                        <i class="fab fa-whatsapp"></i> تأكيد الطلب عبر الواتساب
+                    <div class="form-group">
+                        <label>الاسم الكامل:</label>
+                        <input type="text" id="custName" class="gold-input" placeholder="أدخل اسمك الكريم">
+                    </div>
+
+                    <div class="form-group">
+                        <label>رقم الهاتف:</label>
+                        <input type="tel" id="custPhone" class="gold-input" placeholder="07XXXXXXXXX">
+                    </div>
+
+                    <div id="deliveryFieldsGroup">
+                        <div class="form-group">
+                            <label>المنطقة / الحي:</label>
+                            <input type="text" id="custArea" class="gold-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
+                        </div>
+                        <div class="form-group">
+                            <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
+                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، رقم الشقة أو المحلة">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>ملاحظات إضافية للطلب:</label>
+                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية، بدون كتشب..."></textarea>
+                    </div>
+
+                    <!-- ملخص الحساب -->
+                    <div class="checkout-summary">
+                        <div class="summary-line">
+                            <span>مجموع الوجبات:</span>
+                            <span id="subtotalPrice">0 د.ع</span>
+                        </div>
+                        <div class="summary-line" id="deliveryFeeLine">
+                            <span>كلفة التوصيل:</span>
+                            <span id="deliveryFeePrice">0 د.ع</span>
+                        </div>
+                        <hr class="gold-hr">
+                        <div class="summary-line total-line">
+                            <span>المجموع الكلي:</span>
+                            <span id="finalTotalPrice">0 د.ع</span>
+                        </div>
+                    </div>
+
+                    <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
+                        <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer style="text-align: center; padding: 20px 10px 80px; font-size: 0.8rem; color: #666;">
-        <p>© 2026 MIM89 FAST FOOD - جميع الحقوق محفوظة</p>
-    </footer>
+    <!-- 2. نافذة اتصل بنا -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-headset"></i> اتصل بنا</h2>
+            <div class="contact-links-list">
+                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
+                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة واتساب</a>
+                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> صفحة الفيس بوك</a>
+                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> حساب الإنستغرام</a>
+                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقعنا على الخريطة</a>
+            </div>
+        </div>
+    </div>
 
-    <script src="script.js?v=7.0"></script>
+    <!-- 3. نافذة المزيد والملاحظات -->
+    <div id="moreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
+            <h2 class="modal-gold-title"><i class="fa-solid fa-ellipsis-vertical"></i> القائمة والملاحظات</h2>
+            
+            <h3>التنقل السريع للأقسام:</h3>
+            <div id="moreCategoriesList" class="more-cats-grid"></div>
+            
+            <hr class="gold-hr">
+            
+            <h3>إرسال اقتراح أو ملاحظة للإدارة:</h3>
+            <div class="form-group">
+                <input type="text" id="feedbackName" class="gold-input" placeholder="اسمك (اختياري)">
+            </div>
+            <div class="form-group">
+                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب ملاحظتك أو تقييمك للمطعم هنا..."></textarea>
+            </div>
+            <button class="gold-btn" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
+        </div>
+    </div>
 
-    <!-- سكربت استبدال الصور والتحديث عند التغيير من اللوحة -->
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            // إغلاق القائمة الجانبية عند النقر على قسم
-            document.querySelectorAll('.close-menu-link').forEach(link => {
-                link.addEventListener('click', () => {
-                    document.getElementById('sideMenu').classList.remove('active');
-                    document.getElementById('menuOverlay').classList.remove('active');
-                    document.body.classList.remove('menu-open');
-                });
-            });
+    <!-- 4. نافذة تفاصيل الوجبة -->
+    <div id="itemDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
+            <img id="detailImg" src="" alt="" class="modal-img">
+            <h2 id="detailTitle" class="modal-gold-title"></h2>
+            <p id="detailPrice" class="detail-price"></p>
+            <p id="detailIngredients" class="detail-ingredients"></p>
+            <div class="modal-actions">
+                <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
+            </div>
+        </div>
+    </div>
 
-            // فتح وإغلاق سلة الطلبات
-            const cartBtn = document.getElementById('cartBtn');
-            const cartModal = document.getElementById('cartModal');
-            const closeCart = document.getElementById('closeCart');
-
-            if(cartBtn && cartModal) {
-                cartBtn.addEventListener('click', () => cartModal.classList.add('active'));
-            }
-            if(closeCart && cartModal) {
-                closeCart.addEventListener('click', () => cartModal.classList.remove('active'));
-            }
-
-            // قراءة الصور والمكونات المعدلة عند وجودها
-            const savedData = localStorage.getItem('mim89_full_menu_data');
-            if (savedData) {
-                const menuData = JSON.parse(savedData);
-                if (menuData && menuData.length > 0) {
-                    menuData.forEach(item => {
-                        const cleanPrice = parseInt(item.price.toString().replace(/[^0-9]/g, '')) || 0;
-                        const cards = document.querySelectorAll('.card');
-                        cards.forEach(card => {
-                            const nameEl = card.querySelector('h3');
-                            if (nameEl && nameEl.innerText.trim().includes(item.name.trim())) {
-                                const imgEl = card.querySelector('img');
-                                const priceEl = card.querySelector('.card-price-row span');
-                                const descEl = card.querySelector('p');
-
-                                if (imgEl && item.img) imgEl.src = item.img;
-                                if (priceEl) priceEl.innerText = cleanPrice.toLocaleString() + ' د.ع';
-                                if (descEl && item.desc) descEl.innerText = item.desc;
-                                card.setAttribute('data-price', cleanPrice);
-                            }
-                        });
-                    });
-                }
-            }
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
-
 </html>
