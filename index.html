@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD - النظام الحديث</title>
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Tajawal -->
@@ -72,7 +72,7 @@
             scrollbar-width: none;
         }
         .categories-wrapper::-webkit-scrollbar { display: none; }
-        .cat-chip {
+        .category-tab {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-light);
@@ -83,7 +83,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .cat-chip.active, .cat-chip:hover {
+        .category-tab.active, .category-tab:hover {
             background: var(--gold-primary);
             color: #000;
             font-weight: 700;
@@ -92,7 +92,7 @@
 
         /* Main Container & Cards */
         .container { max-width: 1200px; margin: 0 auto; padding: 15px 20px; }
-        .section-title { font-size: 1.25rem; color: var(--gold-primary); margin: 20px 0 15px 0; display: flex; align-items: center; gap: 8px; border-right: 4px solid var(--gold-primary); padding-right: 10px; }
+        .section-title { font-size: 1.25rem; color: var(--gold-primary); margin: 25px 0 15px 0; display: flex; align-items: center; gap: 8px; border-right: 4px solid var(--gold-primary); padding-right: 10px; }
         
         .items-grid {
             display: grid;
@@ -111,13 +111,13 @@
         }
         .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(212, 175, 55, 0.15); }
         .item-img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; }
-        .item-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+        .item-details { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
         .item-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 5px; cursor: pointer; }
         .item-desc { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; flex-grow: 1; line-height: 1.4; }
         .item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
         .item-price { font-size: 1rem; font-weight: 900; color: var(--gold-bright); }
         
-        .add-btn {
+        .add-cart-btn {
             background: var(--gold-primary);
             color: #000;
             border: none;
@@ -131,7 +131,7 @@
             font-size: 1rem;
             transition: transform 0.2s;
         }
-        .add-btn:active { transform: scale(1.2); }
+        .add-cart-btn:active { transform: scale(1.2); }
 
         /* Modern Bottom Navigation */
         .bottom-nav {
@@ -162,7 +162,7 @@
         }
         .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
         .nav-item.active, .nav-item:hover { color: var(--gold-primary); }
-        .cart-badge {
+        .badge {
             position: absolute;
             top: -6px;
             right: 8px;
@@ -186,7 +186,7 @@
             z-index: 2000;
             padding: 15px;
         }
-        .modal-card {
+        .modal-content {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
@@ -201,7 +201,7 @@
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .close-btn {
+        .close-modal-btn {
             position: absolute;
             top: 15px; left: 20px;
             background: none; border: none;
@@ -223,7 +223,7 @@
         }
         .form-control:focus { border-color: var(--gold-primary); }
 
-        .gold-action-btn {
+        .gold-btn {
             background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
             color: #000;
             border: none;
@@ -236,14 +236,24 @@
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
             transition: opacity 0.2s;
         }
-        .gold-action-btn:active { opacity: 0.85; }
+        .gold-btn:active { opacity: 0.85; }
+
+        .more-cat-chip {
+            background: #0c0c10;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
     </style>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
-<body>
+<body class="public-menu-body">
 
     <!-- Header -->
     <header class="modern-header">
@@ -275,7 +285,7 @@
         <button class="nav-item" onclick="openCartModal()">
             <i class="fa-solid fa-utensils"></i>
             السلة
-            <span id="cartBadgeCount" class="cart-badge">0</span>
+            <span id="cartBadgeCount" class="badge">0</span>
         </button>
         <button class="nav-item" onclick="openModal('moreModal')">
             <i class="fa-solid fa-bars-staggered"></i>
@@ -285,20 +295,20 @@
 
     <!-- Modal: Item Details -->
     <div id="itemDetailModal" class="modal-overlay">
-        <div class="modal-card">
-            <button class="close-btn" onclick="closeModal('itemDetailModal')">&times;</button>
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('itemDetailModal')">&times;</button>
             <img id="detailImg" src="" style="width:100%; height:180px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
             <h2 id="detailTitle" class="modal-title"></h2>
             <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem; margin-bottom:8px;"></p>
             <p id="detailIngredients" style="color:var(--text-muted); font-size:0.88rem; margin-bottom:20px; line-height:1.5;"></p>
-            <button id="detailAddBtn" class="gold-action-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
+            <button id="detailAddBtn" class="gold-btn"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
         </div>
     </div>
 
     <!-- Modal: Cart & Checkout -->
     <div id="cartModal" class="modal-overlay">
-        <div class="modal-card">
-            <button class="close-btn" onclick="closeModal('cartModal')">&times;</button>
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
             <h3 class="modal-title"><i class="fa-solid fa-utensils"></i> سلة الوجبات</h3>
             
             <div id="cartItemsContainer" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;"></div>
@@ -336,7 +346,7 @@
                 </div>
             </div>
 
-            <button onclick="submitOrderToCashier()" class="gold-action-btn" style="background: #25d366; color: #fff;">
+            <button onclick="submitOrderToCashier()" class="gold-btn" style="background: #25d366; color: #fff;">
                 <i class="fa-brands fa-whatsapp"></i> إرسال الفاتورة عبر الواتساب
             </button>
         </div>
@@ -344,8 +354,8 @@
 
     <!-- Modal: More Options -->
     <div id="moreModal" class="modal-overlay">
-        <div class="modal-card">
-            <button class="close-btn" onclick="closeModal('moreModal')">&times;</button>
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
             <h3 class="modal-title"><i class="fa-solid fa-list"></i> الأقسام السريعة</h3>
             <div id="moreCategoriesList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;"></div>
             
@@ -353,11 +363,11 @@
             
             <h4 style="font-size: 0.9rem; color: #fff; margin-bottom: 8px;">إرسال ملاحظة أو اقتراح للمطعم:</h4>
             <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." class="form-control" style="height: 60px; resize: none;"></textarea>
-            <button onclick="sendRestaurantFeedback()" class="gold-action-btn">إرسال للمطعم</button>
+            <button onclick="sendRestaurantFeedback()" class="gold-btn">إرسال للمطعم</button>
         </div>
     </div>
 
     <!-- ربط محرك التشغيل -->
-    <script src="app.js?v=modern.1"></script>
+    <script src="app.js?v=full.menu.1"></script>
 </body>
 </html>
