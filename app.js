@@ -1,9 +1,9 @@
-/* ==========================================
-   MIM89 FAST FOOD - Complete System Engine
-   (Original Design + Fixed Numbers + Verified Validation)
-   ========================================== */
+/* ==========================================================================
+   MIM89 FAST FOOD - COMPLETE ENTERPRISE SYSTEM ENGINE (v3.0 FULL)
+   Includes: Public E-Menu + POS Direct Cashier + Inventory + CRM + Live Caller ID
+   ========================================================================== */
 
-// 1️⃣ تهيئة Firebase
+// 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
 let db = null;
 try {
     const firebaseConfig = {
@@ -20,13 +20,15 @@ try {
         db = firebase.firestore();
     }
 } catch (e) {
-    console.log("Firebase Init Error:", e);
+    console.error("Firebase Initialization Failure:", e);
 }
 
-// 2️⃣ البيانات الكاملة للمينيو الأصلي (MIM89 FAST FOOD)
+// 2️⃣ SYSTEM DEFAULT MASTER DATA SETUP
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
-    cashiers: [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }],
+    cashiers: [
+        { id: "c1", name: "الكاشير الرئيسي", password: "123" }
+    ],
     categories: [
         { id: 1, name: "بركر اللحم" },
         { id: 2, name: "بركر الدجاج" },
@@ -239,6 +241,7 @@ const DEFAULT_DATA = {
     ]
 };
 
+// 3️⃣ LOCAL STORAGE & UTILITY ENGINE
 function initData() {
     localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -246,6 +249,7 @@ function initData() {
     if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
     if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify({}));
+    if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify([]));
 }
 
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -256,9 +260,7 @@ function getTodayString() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/* ==========================================
-   3️⃣ إدارة سجل الزبائن الذكي (CRM)
-   ========================================== */
+// 4️⃣ CUSTOMER RELATIONSHIP MANAGEMENT (CRM ENGINE)
 function saveOrUpdateCustomer(phone, name, area, address) {
     if (!phone || phone === "-") return;
     let customers = JSON.parse(localStorage.getItem('sys_customers')) || {};
@@ -308,9 +310,7 @@ function onCashierPhoneInput(phone) {
     }
 }
 
-/* ==========================================
-   4️⃣ الربط الفوري المباشر للمكالمات الواردة (Caller ID)
-   ========================================== */
+// 5️⃣ LIVE CALLER ID & FIREBASE REALTIME LISTENER
 function listenToIncomingCalls() {
     if (!db) return;
 
@@ -389,9 +389,7 @@ function applyCallToPOS(phone, name) {
     alert(`🟢 تم ربط بيانات المتصل بالفاتورة (${phone}) بنجاح!\nأضف الوجبات الآن للفاتورة.`);
 }
 
-/* ==========================================
-   5️⃣ محرك المينيو الإلكتروني للزبائن (التصميم الأصلي)
-   ========================================== */
+// 6️⃣ PUBLIC E-MENU FRONTEND ENGINE
 let cart = [];
 
 function loadPublicMenu() {
@@ -652,9 +650,7 @@ function submitOrderToCashier() {
     closeModal('cartModal');
 }
 
-/* ==========================================
-   6️⃣ كاشير البيع المباشر وطباعة الفاتورة الحرارية
-   ========================================== */
+// 7️⃣ POS CASHIER TERMINAL ENGINE
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -842,6 +838,40 @@ function saveCompletedOrder(order) {
     setData('sys_completed_orders', completed);
 }
 
+// 8️⃣ INVENTORY MANAGEMENT & REPORTING
+function loadInventoryModule() {
+    const invData = getData('sys_inventory');
+    const tableBody = document.getElementById('inventoryTableBody');
+    if (!tableBody) return;
+
+    if (invData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#888;">المخزن فارغ حالياً</td></tr>`;
+        return;
+    }
+
+    tableBody.innerHTML = invData.map((item, idx) => `
+        <tr>
+            <td>${item.name}</td>
+            <td>${item.qty} ${item.unit}</td>
+            <td><span class="badge ${item.qty < 5 ? 'badge-danger' : 'badge-success'}">${item.qty < 5 ? 'مخزون منخفض' : 'متوفر'}</span></td>
+            <td>
+                <button onclick="updateInventoryQty(${idx}, 1)" class="gold-btn" style="padding:2px 6px;">+</button>
+                <button onclick="updateInventoryQty(${idx}, -1)" class="gold-btn" style="padding:2px 6px;">-</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateInventoryQty(idx, change) {
+    let inv = getData('sys_inventory');
+    if (inv[idx]) {
+        inv[idx].qty = Math.max(0, (inv[idx].qty || 0) + change);
+        setData('sys_inventory', inv);
+        loadInventoryModule();
+    }
+}
+
+// 9️⃣ THERMAL RECEIPT PRINTING ENGINE
 function printReceipt(order) {
     const receiptContainer = document.getElementById('receiptModal');
     if (!receiptContainer) return;
@@ -901,6 +931,7 @@ function printReceipt(order) {
     openModal('receiptModal');
 }
 
+// 🔟 GLOBAL CONTROLLER HELPERS & MODAL MANAGEMENT
 function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'flex';
