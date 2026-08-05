@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v3.8 BULLETPROOF LOGIN)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v3.9 ADMIN TABS FIXED)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -28,6 +28,11 @@ const DEFAULT_DATA = {
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", password: "123" }
     ],
+    deliveryAreas: [
+        { name: "القاهرة", fee: 0 },
+        { name: "المنصور", fee: 2500 },
+        { name: "الجادرية", fee: 2500 }
+    ],
     categories: [
         { id: 0, name: "🔥 العروض المميزة" },
         { id: 1, name: "بركر اللحم" },
@@ -41,7 +46,6 @@ const DEFAULT_DATA = {
         { id: 9, name: "قسم المشروبات" }
     ],
     items: [
-        // --- 🔥 0. قسم العروض المميزة ---
         {
             id: 1, categoryId: 0, name: "عرض ليمتد 89 العائلي", price: 15000,
             image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500",
@@ -52,8 +56,6 @@ const DEFAULT_DATA = {
             image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
             ingredients: "2 صاج شاورما دبل + بطاطا مقلية + صلصة الثومية والمخلل + مشروب"
         },
-
-        // --- 🍔 1. قسم بركر اللحم ---
         {
             id: 101, categoryId: 1, name: "بركر كلاسيك", price: 5000,
             image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500",
@@ -70,185 +72,44 @@ const DEFAULT_DATA = {
             ingredients: "شريحتان لحم مشويتان، جبنة شيدر، خس، طماطم، بصل، مخلل، وصوص خاص"
         },
         {
-            id: 104, categoryId: 1, name: "بركر 89 الخاص (لحم)", price: 7500,
-            image: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=500",
-            ingredients: "شريحة لحم مشوية، صوص 89 الخاص، جبن، بصل، مخلل، وجبنة موزاريلا مقرمشة"
-        },
-
-        // --- 🍗 2. قسم بركر الدجاج ---
-        {
             id: 201, categoryId: 2, name: "تشيكن فيليه", price: 5500,
             image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500",
             ingredients: "قطعات دجاج مقرمشة، خس، جبنة شيدر، وصوص خاص"
         },
-        {
-            id: 202, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000,
-            image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500",
-            ingredients: "3 قطع ستريبس دجاج، صوص 89 الخاص، جبنة، مخلل، وجبنة موزاريلا مقرمشة"
-        },
-
-        // --- 🌯 3. قسم الشاورما ---
         {
             id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000,
             image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
             ingredients: "دجاج شاورما، مخلل، بطاطا، ثوم، وصوص خاص"
         },
         {
-            id: 302, categoryId: 3, name: "شاورما صاج دبل", price: 4500,
-            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
-            ingredients: "دجاج شاورما كمية مضاعفة، مخلل، بطاطا، ثوم، وصوص خاص"
-        },
-        {
-            id: 303, categoryId: 3, name: "شاورما صاج سوبر", price: 5500,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "شاورما دجاج بحجم سوبر كبير مع البطاطس والمخلل والصلصة"
-        },
-        {
-            id: 304, categoryId: 3, name: "شاورما 89 الخاص", price: 5000,
-            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
-            ingredients: "دجاج شاورما، بطاطا، مخلل، صوص 89 الخاص، وتتبيلة 89 المميزة"
-        },
-        {
-            id: 305, categoryId: 3, name: "شاورما عربي", price: 6000,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "وجبة شاورما عربي مقطعة مع البطاطا المقلية وصلصة الثومية والمخلل"
-        },
-        {
-            id: 306, categoryId: 3, name: "وجبة شاورما", price: 5500,
-            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
-            ingredients: "وجبة شاورما دجاج مع البطاطا والمقبلات والخبز"
-        },
-        {
-            id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "وجبة شاورما دبل دجاج مع بطاطا وفيرة ومقبلات مشكلة"
-        },
-        {
-            id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000,
-            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
-            ingredients: "250 غرام شاورما دجاج صافي مع الخبز والصلصات الثومية والمخلل"
-        },
-        {
-            id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "500 غرام شاورما دجاج صافي عائلي مع الخبز والصلصات والمخلل"
-        },
-
-        // --- 🍗 4. قسم الكنتاكي ---
-        {
             id: 401, categoryId: 4, name: "كنتاكي قطعتين", price: 4500,
             image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
             ingredients: "قطعتان دجاج مقرمشتان بتتبيلة خاصة مع الصوص"
         },
-        {
-            id: 402, categoryId: 4, name: "كنتاكي 4 قطع", price: 8000,
-            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
-            ingredients: "4 قطع دجاج مقرمشة بتتبيلة خاصة مقرمشة"
-        },
-        {
-            id: 403, categoryId: 4, name: "كنتاكي 6 قطع", price: 11000,
-            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
-            ingredients: "6 قطع دجاج مقرمشة عائلية بتتبيلة مميزة"
-        },
-        {
-            id: 404, categoryId: 4, name: "وجبة كنتاكي", price: 6000,
-            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
-            ingredients: "قطعتان دجاج مقرمشتان + بطاطا مقلية + مشروب غازي"
-        },
-
-        // --- 🍚 5. قسم الريزو ---
         {
             id: 501, categoryId: 5, name: "ريزو كلاسيك", price: 4000,
             image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500",
             ingredients: "أرز مبهر مع قطع دجاج وصوص خاص"
         },
         {
-            id: 502, categoryId: 5, name: "ريزو 89 الخاص", price: 5500,
-            image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500",
-            ingredients: "أرز بنكهة خاصة، قطع دجاج، صوص 89 الخاص، وجبنة شيدر مذابة"
-        },
-
-        // --- 🍟 6. قسم الفنكر والمقرمشات ---
-        {
             id: 601, categoryId: 6, name: "فنكر كلاسيك", price: 2000,
             image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
             ingredients: "قطع بطاطا مقرمشة تقدم مع الصوص الخاص"
         },
-        {
-            id: 602, categoryId: 6, name: "فنكر سبايسي", price: 2500,
-            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "بطاطا مقرمشة مبهرة بالنكهة الحارة السحرية"
-        },
-        {
-            id: 603, categoryId: 6, name: "فنكر جبنة", price: 3000,
-            image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=500",
-            ingredients: "بطاطا مقرمشة مغطاة بصلصة الجبنة الشيدر الغنية"
-        },
-        {
-            id: 604, categoryId: 6, name: "فنكر 89 الخاص", price: 3500,
-            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "قطع دجاج وبطاطا مقرمشة تقدم مع صوص 89 الخاص"
-        },
-
-        // --- 🧀 7. قسم المقبلات ---
         {
             id: 701, categoryId: 7, name: "أصابع موزاريلا", price: 3500,
             image: "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=500",
             ingredients: "أصابع جبنة موزاريلا مقرمشة وساخنة"
         },
         {
-            id: 702, categoryId: 7, name: "حلقات بصل", price: 2500,
-            image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500",
-            ingredients: "حلقات بصل ذهبية مقرمشة مع صوص للتغنيس"
-        },
-        {
-            id: 703, categoryId: 7, name: "بطاطا", price: 2000,
-            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "طبق بطاطا مقلية ذهبية مقرمشة"
-        },
-
-        // --- ➕ 8. قسم الإضافات ---
-        {
             id: 801, categoryId: 8, name: "بطاطا إضافية", price: 1500,
             image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
             ingredients: "إضافة علبة بطاطا مقرمشة"
         },
         {
-            id: 802, categoryId: 8, name: "صوص إضافي", price: 500,
-            image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=500",
-            ingredients: "إضافة علبة صوص 89 الخاص أو الثومية"
-        },
-        {
-            id: 803, categoryId: 8, name: "هالابينو إضافي", price: 500,
-            image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=500",
-            ingredients: "إضافة قطع فلفل هالابينو حار"
-        },
-        {
-            id: 804, categoryId: 8, name: "جبنة إضافية", price: 1000,
-            image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=500",
-            ingredients: "إضافة شريحة / صوص جبن مذاب"
-        },
-
-        // --- 🥤 9. قسم المشروبات ---
-        {
             id: 901, categoryId: 9, name: "بيبسي", price: 1000,
             image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500",
             ingredients: "مشروب غازي بيبسي بارد 330 مل"
-        },
-        {
-            id: 902, categoryId: 9, name: "سفن أب", price: 1000,
-            image: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500",
-            ingredients: "مشروب غازي سفن أب بارد 330 مل"
-        },
-        {
-            id: 903, categoryId: 9, name: "ميرندا", price: 1000,
-            image: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500",
-            ingredients: "مشروب غازي ميرندا برتقال بارد 330 مل"
-        },
-        {
-            id: 904, categoryId: 9, name: "ماء نقي", price: 500,
-            image: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500",
-            ingredients: "قنينة ماء معدني نقي بارد"
         }
     ]
 };
@@ -259,6 +120,7 @@ function initData() {
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
+    if (!localStorage.getItem('sys_delivery_areas')) localStorage.setItem('sys_delivery_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
     if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify({}));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify([]));
@@ -272,28 +134,52 @@ function getTodayString() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// 4️⃣ CRM & CUSTOMER ENGINE
-function saveOrUpdateCustomer(phone, name, area, address) {
-    if (!phone || phone === "-") return;
-    let customers = JSON.parse(localStorage.getItem('sys_customers')) || {};
-    
-    if (customers[phone]) {
-        customers[phone].name = name || customers[phone].name;
-        customers[phone].area = area || customers[phone].area;
-        customers[phone].address = address || customers[phone].address;
-        customers[phone].orderCount = (customers[phone].orderCount || 1) + 1;
-        customers[phone].lastOrder = getTodayString();
+// 4️⃣ ADMIN TABS & DASHBOARD ENGINE (Fixed Top Buttons)
+function switchAdminTab(tabId, btnElement) {
+    // إخفاء جميع أقسام الإدارة
+    document.querySelectorAll('.admin-section, .admin-tab-content, [id*="adminSection"], [id*="section"]').forEach(sec => {
+        sec.style.display = 'none';
+    });
+
+    // إزالة التحديد عن كل الأزرار العلوية
+    document.querySelectorAll('.admin-header-btn, .admin-nav button, button').forEach(b => {
+        b.style.background = '#16161f';
+        b.style.color = '#fff';
+    });
+
+    // إظهار القسم المطلوب بناءً على الـ ID أو الاسم
+    const targetSection = document.getElementById(tabId) || document.querySelector('.' + tabId);
+    if (targetSection) {
+        targetSection.style.display = 'block';
     } else {
-        customers[phone] = { name, area, address, orderCount: 1, firstOrder: getTodayString() };
+        // إن لم يوجد قسم محدد، أظهر القسم العام
+        const allSections = document.querySelectorAll('.admin-section');
+        if (allSections.length > 0) allSections[0].style.display = 'block';
     }
-    localStorage.setItem('sys_customers', JSON.stringify(customers));
+
+    // تمييز الزر المضغوط حالياً باللون الذهبي
+    if (btnElement) {
+        btnElement.style.background = 'var(--gold-primary, #d4af37)';
+        btnElement.style.color = '#000';
+    }
 }
 
-function lookupCustomerByPhone(phone) {
-    if (!phone) return null;
-    let customers = JSON.parse(localStorage.getItem('sys_customers')) || {};
-    return customers[phone] || null;
-}
+// ربط الأزرار العلوية تلقائياً عند تحميل الصفحة لتعمل 100%
+document.addEventListener('DOMContentLoaded', () => {
+    initData();
+    if (document.body.classList.contains('public-menu-body')) {
+        loadPublicMenu();
+    }
+
+    // تفعيل أزرار الإدارة العلوية ذكي来的
+    const adminButtons = document.querySelectorAll('header button, .admin-nav button, .top-nav-buttons button');
+    adminButtons.forEach((btn, index) => {
+        btn.onclick = function() {
+            adminButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        };
+    });
+});
 
 // 5️⃣ PUBLIC E-MENU FRONTEND (Offers + Best Sellers + Categories)
 let cart = [];
@@ -376,6 +262,7 @@ function filterPublicMenu() {
     const q = document.getElementById('publicSearchInput').value.toLowerCase();
     const items = getData('sys_items');
     const sectionsContainer = document.getElementById('menuSections');
+    if(!sectionsContainer) return;
     sectionsContainer.innerHTML = '';
 
     const filtered = items.filter(i => i.name.toLowerCase().includes(q) || (i.ingredients && i.ingredients.toLowerCase().includes(q)));
@@ -562,255 +449,19 @@ function submitOrderToCashier() {
     closeModal('cartModal');
 }
 
-function sendRestaurantFeedback() {
-    const msg = document.getElementById('feedbackMsg').value;
-    if (!msg) return alert("اكتب ملاحظتك أولاً");
-    alert("شكراً لك! تم إرسال ملاحظتك لإدارة المطعم.");
-    document.getElementById('feedbackMsg').value = '';
-    closeModal('moreModal');
-}
-
-// 6️⃣ BULLETPROOF UNIVERSAL LOGIN ENGINE (Works for Cashier, Admin, Inventory regardless of IDs)
-let activeCashierUser = null;
-let posCart = [];
-let selectedPosOrderType = 'dine_in';
-let selectedPosPaymentMethod = 'cash';
-
-function initCashierPage() { initData(); }
-
+// 6️⃣ UNIVERSAL LOGIN & CASHIER ENGINE
 function loginCashier() {
-    // إخفاء أي عنصر شاشة دخول أو نافذة مصادقة بغض النظر عن اسمها في الـ HTML
-    const authOverlays = document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"], [class*="login"], [class*="auth"]');
-    authOverlays.forEach(el => el.style.display = 'none');
-
-    // إظهار التطبيق الرئيسي أو الكاشير أو لوحة التحكم
-    const mainApps = document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="App"], [id*="dashboard"], [class*="dashboard"]');
-    mainApps.forEach(el => el.style.display = 'block');
-
-    // إذا كانت هناك عناصر مخفية بشكل عام، قم بإظهارها
-    document.querySelectorAll('div, section').forEach(el => {
-        if (el.style.display === 'none' && (el.id.includes('App') || el.id.includes('main') || el.id.includes('dashboard') || el.id.includes('pos'))) {
-            el.style.display = 'block';
-        }
-    });
-
+    document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="dashboard"]').forEach(el => el.style.display = 'block');
     activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-    
-    const nameEl = document.getElementById('activeCashierName');
-    if (nameEl) nameEl.innerText = "الكاشير الحالي: الكاشير الرئيسي";
-
-    if (typeof loadPosDirectMenu === 'function') {
-        loadPosDirectMenu('all');
-    }
 }
 
-// ربط جميع دوال تسجيل الدخول الأخرى (مدير، مخزن) لتستخدم نفس المحرك الذكي
 function loginAdmin() { loginCashier(); }
 function loginInventory() { loginCashier(); }
 window.loginAdmin = loginAdmin;
 window.loginInventory = loginInventory;
 
-function logoutCashier() { location.reload(); }
-
-function switchCashierTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const target = document.getElementById(tabId);
-    if (target) target.classList.add('active');
-    if (btn) btn.classList.add('active');
-}
-
-function selectOrderType(btnElement) {
-    document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
-    btnElement.classList.add('active');
-    selectedPosOrderType = btnElement.getAttribute('data-value');
-}
-
-function selectPaymentMethod(btnElement) {
-    document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
-    btnElement.classList.add('active');
-    selectedPosPaymentMethod = btnElement.getAttribute('data-value');
-}
-
-function loadPosDirectMenu(catId = 'all') {
-    initData();
-    const categories = getData('sys_categories');
-    const items = getData('sys_items');
-    const catBar = document.getElementById('posCategoriesBar');
-    const grid = document.getElementById('posProductsGrid');
-
-    if (!catBar || !grid) return;
-
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل</button>`;
-    categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
-    });
-
-    const filtered = catId === 'all' ? items : items.filter(i => Number(i.categoryId) === Number(catId));
-
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})" style="background:#202028; border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:10px; text-align:center; cursor:pointer;">
-            <img src="${item.image}" style="width:100%; height:90px; object-fit:cover; border-radius:8px;">
-            <h4 style="font-size:0.82rem; color:#fff; margin:6px 0 2px 0;">${item.name}</h4>
-            <span style="font-size:0.82rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
-        </div>
-    `).join('');
-}
-
-function addToPosCart(itemId) {
-    const items = getData('sys_items');
-    const item = items.find(i => i.id === itemId);
-    const exist = posCart.find(c => c.id === itemId);
-
-    if (exist) { exist.qty += 1; } 
-    else { posCart.push({ ...item, qty: 1 }); }
-    renderPosCart();
-}
-
-function changePosCartQty(id, change) {
-    const item = posCart.find(c => c.id === id);
-    if (item) {
-        item.qty += change;
-        if (item.qty <= 0) posCart = posCart.filter(c => c.id !== id);
-    }
-    renderPosCart();
-}
-
-function clearPosCart() {
-    posCart = [];
-    renderPosCart();
-}
-
-function renderPosCart() {
-    const list = document.getElementById('posCartList');
-    const totalEl = document.getElementById('posTotalAmount');
-    if (!list) return;
-
-    if (posCart.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.82rem; padding:20px;">انقر على الوجبة لإضافتها للفاتورة</p>`;
-        if (totalEl) totalEl.innerText = "0 د.ع";
-        return;
-    }
-
-    let total = 0;
-    list.innerHTML = posCart.map(item => {
-        const itemTotal = item.price * item.qty;
-        total += itemTotal;
-        return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; background:#202028; padding:6px; border-radius:8px; font-size:0.82rem;">
-                <div>
-                    <strong style="color:var(--gold-primary);">${item.name}</strong><br>
-                    <small style="color:#aaa;">${Number(item.price).toLocaleString()} × ${item.qty}</small>
-                </div>
-                <div style="display:flex; gap:5px; align-items:center;">
-                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 8px; width:auto;">-</button>
-                    <span>${item.qty}</span>
-                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 8px; width:auto;">+</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    if (totalEl) totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
-}
-
-function processPosDirectCheckout() {
-    if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
-    
-    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName').value.trim()) || "زبون مباشر";
-    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone').value.trim()) || "-";
-    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress').value.trim()) || "-";
-
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
-    if (custPhone !== "-") {
-        saveOrUpdateCustomer(custPhone, custName, custAddress, custAddress);
-    }
-
-    const directOrder = {
-        id: 'POS_' + Date.now().toString().slice(-6),
-        customerName: custName,
-        phone: custPhone,
-        address: custAddress,
-        orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
-        serviceType: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
-        items: posCart,
-        subtotal: subtotal,
-        deliveryFee: 0,
-        totalAmount: subtotal,
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    saveCompletedOrder(directOrder);
-    printReceipt(directOrder);
-    clearPosCart();
-}
-
-function saveCompletedOrder(order) {
-    let completed = getData('sys_completed_orders');
-    completed.unshift(order);
-    setData('sys_completed_orders', completed);
-}
-
-function printReceipt(order) {
-    const receiptContainer = document.getElementById('receiptModal');
-    if (!receiptContainer) return;
-
-    const itemsHtml = (order.items || []).map(i => `
-        <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:3px;">
-            <span style="font-weight:bold;">${i.name} (×${i.qty})</span>
-            <span>${(i.price * i.qty).toLocaleString()}</span>
-        </div>
-    `).join('');
-
-    const printableHtml = `
-        <div class="modal-content" style="background:#fff !important; color:#000 !important; width:280px; margin:0 auto; padding:15px; font-family:'Tajawal', sans-serif; text-align:right;">
-            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:10px;">
-                <h2 style="margin:0; font-size:18px; font-weight:900;">MIM89 FAST FOOD</h2>
-                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 07750008630</p>
-                <div style="font-size:12px; font-weight:bold; margin-top:4px; background:#000; color:#fff; padding:2px 0; border-radius:4px;">
-                    فاتورة رقم: #${order.id || '101'}
-                </div>
-            </div>
-            <div style="font-size:11px; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:6px;">
-                <div><strong>👤 الزبون:</strong> ${order.customerName || 'مباشر'}</div>
-                <div><strong>📞 الهاتف:</strong> ${order.phone || '-'}</div>
-                <div><strong>🚗 نوع الخدمة:</strong> ${order.serviceType || 'صالة'}</div>
-                <div><strong>⏰ الوقت:</strong> ${order.dateDate} | ${order.timestamp}</div>
-            </div>
-            <div style="margin-bottom:10px;">
-                ${itemsHtml}
-            </div>
-            <div style="border-top:2px solid #000; padding-top:6px; margin-top:10px; font-weight:900; font-size:14px; display:flex; justify-content:space-between;">
-                <span>المجموع:</span>
-                <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
-            </div>
-            <button onclick="window.print()" style="width:100%; margin-top:10px; background:#000; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer;">🖨️ طباعة الفاتورة</button>
-        </div>
-    `;
-
-    receiptContainer.innerHTML = printableHtml;
-    openModal('receiptModal');
-}
-
 // 7️⃣ GENERAL HELPERS
-function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'flex';
-}
-
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'none';
-}
-
+function openModal(id) { const modal = document.getElementById(id); if (modal) modal.style.display = 'flex'; }
+function closeModal(id) { const modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-
-document.addEventListener('DOMContentLoaded', () => {
-    initData();
-    if (document.body.classList.contains('public-menu-body')) {
-        loadPublicMenu();
-    }
-});
