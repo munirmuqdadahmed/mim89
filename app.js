@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Correct Phones + Verified WA Orders + Live Caller ID)
+   (Strict Validation + Correct Phone + Cairo Free Delivery)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -390,7 +390,7 @@ function applyCallToPOS(phone, name) {
 }
 
 /* ==========================================
-   5️⃣ محرك المينيو الإلكتروني للزبائن (تحقق الواتساب الآمن)
+   5️⃣ محرك المينيو الإلكتروني للزبائن
    ========================================== */
 let cart = [];
 
@@ -570,17 +570,30 @@ function toggleDeliveryFields() {
     calculateDeliveryCost();
 }
 
+// 🚗 الفحص الدقيق لكلمة "القاهرة" بأي شكل من أشكالها
+function isCairoArea(text) {
+    if (!text) return false;
+    const cleanText = text.trim().toLowerCase();
+    return cleanText.includes("قاهرة") || 
+           cleanText.includes("القاهرة") || 
+           cleanText.includes("قاهره") || 
+           cleanText.includes("القاهره");
+}
+
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
-    const areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     
+    const areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value : '';
+    const addressInput = document.getElementById('custAddress') ? document.getElementById('custAddress').value : '';
+    const combinedAddress = areaInput + ' ' + addressInput;
+
     let deliveryFee = 0;
     if (orderType === 'delivery') {
-        if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
+        if (isCairoArea(combinedAddress)) {
             deliveryFee = 0;
         } else {
-            deliveryFee = areaInput !== "" ? 2500 : 3000;
+            deliveryFee = 2500;
         }
     }
 
@@ -593,23 +606,30 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
-// 🛡️ توثيق إرسال الطلب عبر الواتساب حصراً
+// 🛑 إجبارية إدخال (الاسم + الهاتف + العنوان) قبل إرسال الطلب
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const type = document.getElementById('orderTypeSelect').value;
+    const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
+    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
+    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
-    if (!name || !phone) return alert("يرجى إدخال الاسم ورقم الهاتف الكريمتين");
+    // التحقق الإجباري الصارم من كافة الحقول
+    if (!name) return alert("⚠️ يرجى كتابة الاسم الثلاثي أولاً");
+    if (!phone || phone.length < 10) return alert("⚠️ يرجى كتابة رقم الهاتف الصحيح المكون من 11 رقم");
+    
+    if (type === 'delivery' && (!area || !address)) {
+        return alert("⚠️ يرجى كتابة المنطقة والعنوان التفصيلي للتوصيل");
+    }
 
     saveOrUpdateCustomer(phone, name, area, address);
 
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    let deliveryFee = (type === 'delivery') ? ((area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 2500) : 0;
+    const combinedAddress = area + ' ' + address;
+    let deliveryFee = (type === 'delivery') ? (isCairoArea(combinedAddress) ? 0 : 2500) : 0;
     const totalAmount = subtotal + deliveryFee;
 
     let itemsText = cart.map(i => `• ${i.name} (العدد: ${i.qty})`).join('\n');
@@ -624,10 +644,10 @@ function submitOrderToCashier() {
                  `---------------------------\n` +
                  `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
 
-    // استخدام الرقم الصحيح (07750008630)
+    // 🎯 استخدام الرقم الصحيح الموثق للواتساب (9647750008630)
     const waUrl = `https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`;
     
-    alert("سيتم فتح الواتساب الآن لإرسال الطلب رسمياً إلى الكاشير. لن يتم اعتماد الطلب إلا بعد إرسال الرسالة.");
+    alert("سيتم تحويلك إلى الواتساب لإرسال الفاتورة الرسمية للمطعم.");
     window.open(waUrl, '_blank');
 
     cart = [];
