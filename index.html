@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD - نظام إدارة ومينيو المطعم</title>
+    <title>MIM89 FAST FOOD</title>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Tajawal -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="style.css">
     
     <!-- Firebase SDKs -->
@@ -17,154 +15,121 @@
 </head>
 <body class="public-menu-body">
 
-    <!-- شريط الإشعارات العلوي للترحيب -->
-    <div class="top-announcement-bar">
-        <span>🔥 مطعم MIM89 - أطيب المأكولات السريعة في بغداد | خدمة التوصيل السريع متوفرة</span>
-    </div>
-
-    <!-- الهيدر الرئيسي للموقع -->
+    <!-- الهيدر الرئيسي -->
     <header class="main-header">
         <div class="logo-container">
             <h1 class="brand-title">MIM89</h1>
             <span class="brand-subtitle">FAST FOOD</span>
         </div>
-        <p class="brand-tagline">الطعم اللي ما يتكرر والدجاج المقرمش على أصوله 🔥</p>
+        <p class="brand-tagline">الطعم اللي ما يتكرر 🔥</p>
     </header>
 
-    <!-- شريط البحث السريع عن الوجبات -->
+    <!-- شريط البحث السريع -->
     <div class="search-box-container">
         <div class="search-input-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="publicSearchInput" placeholder="ابحث عن وجبتك المفضلة (بركر، شاورما، كنتاكي...)..." oninput="filterPublicMenu()">
+            <input type="text" id="publicSearchInput" placeholder="ابحث عن وجبتك المفضلة..." oninput="filterPublicMenu()">
         </div>
     </div>
 
-    <!-- شريط التنقل بين الأقسام (Categories Navigation Bar) -->
+    <!-- شريط الأقسام العلوي -->
     <nav class="categories-nav-wrapper">
-        <div id="categoriesNav" class="categories-nav">
-            <!-- سيتم توليد الأقسام ديناميكياً من app.js -->
-        </div>
+        <div id="categoriesNav" class="categories-nav"></div>
     </nav>
 
-    <!-- حاوية عرض أقسام المينيو والوجبات -->
-    <main id="menuSections" class="container">
-        <!-- يتم جلب الكاردات والوجبات هنا -->
-    </main>
+    <!-- أقسام المينيو -->
+    <main id="menuSections" class="container" style="padding-bottom: 90px;"></main>
 
-    <!-- زر السلة العائم السريع (Floating Cart Button) -->
-    <button id="floatingCartBtn" class="cart-float-btn" onclick="openCartModal()" aria-label="سلة المشتريات">
-        <i class="fa-solid fa-cart-shopping"></i>
-        <span id="cartBadgeCount" class="badge">0</span>
-    </button>
-
-    <!-- زر فتح خيارات إضافية أو لوحة التحكم السريعة -->
-    <div class="bottom-more-bar" style="text-align:center; margin:30px 0 90px 0;">
-        <button class="gold-btn" style="padding:10px 24px; border-radius:25px; font-weight:bold; background:#1c1c24; border:1px solid var(--gold-primary);" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-bars" style="margin-left:8px;"></i> المزيد من الخيارات والأقسام
+    <!-- ⚡ شريط الأزرار السفلي الأصلي والمرتب (Bottom Navigation Bar) -->
+    <div class="bottom-nav-bar" style="position: fixed; bottom: 0; left: 0; width: 100%; background: #15151a; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);">
+        <button onclick="scrollToTop()" style="background: none; border: none; color: var(--gold-primary); display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer;">
+            <i class="fa-solid fa-house" style="font-size: 1.2rem; margin-bottom: 3px;"><span></span></i> الرئيسية
+        </button>
+        <button onclick="openCartModal()" style="background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer; position: relative;">
+            <i class="fa-solid fa-utensils" style="font-size: 1.2rem; margin-bottom: 3px; color: var(--gold-primary);"></i> السلة
+            <span id="cartBadgeCount" class="badge" style="position: absolute; top: -5px; right: 10px; background: #ef4444; color: #fff; font-size: 0.65rem; padding: 2px 5px; border-radius: 50%;">0</span>
+        </button>
+        <button onclick="openModal('moreModal')" style="background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; font-family: 'Tajawal', sans-serif; font-size: 0.75rem; cursor: pointer;">
+            <i class="fa-solid fa-bars" style="font-size: 1.2rem; margin-bottom: 3px; color: var(--gold-primary);"></i> المزيد
         </button>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- MODALS & POPUPS (النوافذ المنبثقة الكاملة للموقع) -->
-    <!-- ========================================================== -->
-
-    <!-- 1. نافذة تفاصيل الوجبة المفردة -->
+    <!-- نافذة تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal-overlay" style="display:none;">
         <div class="modal-content">
             <button class="close-modal-btn" onclick="closeModal('itemDetailModal')">&times;</button>
-            <img id="detailImg" src="" class="detail-modal-img" alt="صورة الوجبة">
-            <h2 id="detailTitle" style="color:var(--gold-primary); margin:12px 0 6px 0; font-size:1.3rem;"></h2>
-            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.2rem;"></p>
-            <p id="detailIngredients" style="color:#bbb; font-size:0.92rem; margin:12px 0 20px 0; line-height:1.6;"></p>
-            <button id="detailAddBtn" class="gold-btn btn-block" style="padding:12px; font-weight:bold; font-size:1rem;">
-                <i class="fa-solid fa-cart-plus" style="margin-left:8px;"></i> إضافة للسلة
-            </button>
+            <img id="detailImg" src="" class="detail-modal-img" alt="وجبة">
+            <h2 id="detailTitle" style="color:var(--gold-primary); margin:10px 0 5px 0;"></h2>
+            <p id="detailPrice" style="color:var(--gold-bright); font-weight:bold; font-size:1.1rem;"></p>
+            <p id="detailIngredients" style="color:#ccc; font-size:0.9rem; margin:10px 0 20px 0;"></p>
+            <button id="detailAddBtn" class="gold-btn btn-block">➕ إضافة للسلة</button>
         </div>
     </div>
 
-    <!-- 2. نافذة سلة المشتريات وإتمام الطلب -->
+    <!-- نافذة السلة والشراء -->
     <div id="cartModal" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width:450px; width:92%;">
             <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; font-size:1.2rem;">
-                <i class="fa-solid fa-basket-shopping" style="margin-left:8px;"></i> سلة الوجبات الخاصة بك
+            <h3 style="color:var(--gold-primary); margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+                <i class="fa-solid fa-utensils"></i> سلة الوجبات
             </h3>
             
-            <!-- قائمة العناصر داخل السلة -->
-            <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:15px; padding-right:4px;">
-                <!-- يتم حقن الأصناف هنا -->
-            </div>
+            <div id="cartItemsContainer" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
 
-            <!-- اختيار نوع الخدمة -->
-            <div class="form-group" style="margin-bottom:12px;">
-                <label style="font-size:0.85rem; color:#aaa; display:block; margin-bottom:5px;">اختر نوع الخدمة:</label>
-                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" style="width:100%; padding:11px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:0.85rem; color:#aaa;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" onchange="toggleDeliveryFields()" style="width:100%; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
                     <option value="delivery">🚗 توصيل للبيت</option>
                     <option value="takeaway">🛍️ سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
             </div>
 
-            <!-- حقول بيانات الزبون الإجبارية -->
-            <div id="deliveryFieldsGroup" style="background:#181820; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.05);">
-                <p style="font-size:0.8rem; color:var(--gold-bright); margin-bottom:8px; font-weight:bold;">يرجى ملء الحقول التالية لإتمام الطلب:</p>
-                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; font-family:'Tajawal', sans-serif;">
-                <input type="tel" id="custPhone" placeholder="رقم الهاتف (مثلاً: 077xxxxxxxx) *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; font-family:'Tajawal', sans-serif;">
-                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; font-family:'Tajawal', sans-serif;">
-                <input type="text" id="custAddress" placeholder="العنوان التفصيلي / أقرب نقطة دالة *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; font-family:'Tajawal', sans-serif;">
+            <div id="deliveryFieldsGroup">
+                <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+                <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+                <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
+                <input type="text" id="custAddress" placeholder="العنوان التفصيلي *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; font-family:'Tajawal', sans-serif;">
             </div>
 
-            <textarea id="orderNotes" placeholder="ملاحظات إضافية على الطلب (اختر بدون صوص، زيادة حار...)..." style="width:100%; height:55px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; padding:8px; margin-bottom:12px; font-family:'Tajawal', sans-serif; font-size:0.85rem;"></textarea>
+            <textarea id="orderNotes" placeholder="ملاحظات إضافية..." style="width:100%; height:50px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:12px; font-family:'Tajawal', sans-serif;"></textarea>
 
-            <!-- ملخص الحساب المالي والتوصيل -->
-            <div style="background:#181820; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem; border:1px solid rgba(255,255,255,0.05);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#ccc;">
+            <div style="background:#181820; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>مجموع الوجبات:</span>
                     <span id="subtotalPrice">0 د.ع</span>
                 </div>
-                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--gold-bright);">
+                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--gold-bright);">
                     <span>أجور التوصيل:</span>
                     <span id="deliveryFeePrice">0 د.ع</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; color:var(--gold-primary); border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; margin-top:6px;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.05rem; color:var(--gold-primary); border-top:1px solid rgba(255,255,255,0.1); padding-top:6px; margin-top:4px;">
                     <span>المجموع الكلي:</span>
                     <span id="finalTotalPrice">0 د.ع</span>
                 </div>
             </div>
 
-            <!-- زر التأكيد وإرسال الواتساب -->
-            <button onclick="submitOrderToCashier()" class="gold-btn btn-block" style="padding:13px; font-weight:bold; font-size:1rem; background:#25d366; color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%;">
-                <i class="fa-brands fa-whatsapp" style="font-size:1.2rem; margin-left:8px;"></i> إرسال الفاتورة الرسمية عبر الواتساب
+            <button onclick="submitOrderToCashier()" class="gold-btn btn-block" style="padding:12px; font-weight:bold; background:#25d366; color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%;">
+                <i class="fa-brands fa-whatsapp" style="font-size:1.1rem; margin-left:6px;"></i> إرسال الفاتورة عبر الواتساب
             </button>
         </div>
     </div>
 
-    <!-- 3. نافذة المزيد والأقسام الجانبية والملاحظات -->
+    <!-- نافذة المزيد -->
     <div id="moreModal" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width:400px; width:90%;">
             <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px; font-size:1.2rem;">
-                <i class="fa-solid fa-list" style="margin-left:8px;"></i> الأقسام السريعة للمينيو
-            </h3>
-            <div id="moreCategoriesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
-                <!-- يتم جلب الأقسام هنا -->
-            </div>
+            <h3 style="color:var(--gold-primary); margin-bottom:15px;">الأقسام والملاحظات</h3>
+            <div id="moreCategoriesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
             
             <hr style="border:none; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
             
-            <h4 style="color:#fff; font-size:0.95rem; margin-bottom:8px;">إرسال ملاحظة أو اقتراح لإدارة المطعم:</h4>
-            <textarea id="feedbackMsg" placeholder="اكتب اقتراحك أو شكواك هنا لنهتم بها..." style="width:100%; height:75px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:8px; padding:10px; font-family:'Tajawal', sans-serif; font-size:0.85rem; margin-bottom:10px;"></textarea>
-            <button onclick="sendRestaurantFeedback()" class="gold-btn btn-block" style="padding:10px; border-radius:8px; font-weight:bold;">إرسال الملاحظة</button>
+            <h4 style="color:#fff; font-size:0.95rem; margin-bottom:8px;">إرسال ملاحظة أو اقتراح للمطعم:</h4>
+            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." style="width:100%; height:70px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:10px; font-family:'Tajawal', sans-serif;"></textarea>
+            <button onclick="sendRestaurantFeedback()" class="gold-btn btn-block" style="padding:10px; border-radius:8px; font-weight:bold;">إرسال للمطعم</button>
         </div>
     </div>
 
-    <!-- تذييل الصفحة (Footer) -->
-    <footer style="text-align:center; padding:30px 20px; color:#777; font-size:0.82rem; border-top:1px solid rgba(255,255,255,0.05); margin-top:40px;">
-        <p style="margin:0 0 5px 0; color:var(--gold-primary); font-weight:bold; font-size:0.95rem;">MIM89 FAST FOOD © 2026</p>
-        <p style="margin:0;">جميع الحقوق محفوظة - نظام الإدارة والطلب الإلكتروني المتكامل</p>
-    </footer>
-
-    <!-- ربط ملف المحرك البرمجي app.js مع كسر الذاكرة المؤقتة -->
-    <script src="app.js?v=2026.final"></script>
+    <script src="app.js?v=2026.fixed"></script>
 </body>
 </html>
