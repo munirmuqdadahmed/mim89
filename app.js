@@ -588,10 +588,15 @@ function processPosDirectCheckout() {
     document.getElementById('posCustName').value = '';
 }
 
-/* حفظ الطلبات المكتملة بالأرشيف */
+/* إدارة حفظ واسترجاع الفواتير المكتملة بالأرشيف */
 function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
-    completed.unshift(order); // يوضع بالبداية
+    const existingIndex = completed.findIndex(o => o.id === order.id);
+    if (existingIndex !== -1) {
+        completed[existingIndex] = order;
+    } else {
+        completed.unshift(order);
+    }
     setData('sys_completed_orders', completed);
 }
 
@@ -601,38 +606,54 @@ function openCompletedOrdersModal() {
 
     if (!list) return;
 
-    if (completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:30px;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
+    if (!completed || completed.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:#888; padding:30px; font-size:0.95rem;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
     } else {
-        list.innerHTML = completed.map(ord => `
-            <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:10px; margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--gold-primary); margin-bottom:5px;">
-                    <strong>الزبون: ${ord.customerName}</strong>
-                    <span>⏰ ${ord.timestamp || 'سابق'}</span>
+        list.innerHTML = completed.map(ord => {
+            const itemsText = (ord.items || []).map(i => `${i.name} (×${i.qty})`).join(' ، ');
+            return `
+                <div style="background:#222228; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; color:var(--gold-primary); margin-bottom:6px;">
+                        <strong><i class="fa-solid fa-user"></i> ${ord.customerName || 'زبون'}</strong>
+                        <span style="font-size:0.8rem; color:#aaa;">⏰ ${ord.timestamp || 'سابق'}</span>
+                    </div>
+                    <div style="font-size:0.85rem; color:#ccc; margin-bottom:6px;">
+                        <span>خدمة: ${ord.area || 'صالة'}</span> | 
+                        <span>دفع: ${ord.paymentMethod || 'كاش'}</span>
+                    </div>
+                    <div style="font-size:0.85rem; color:#888; margin-bottom:8px; background:#18181c; padding:6px; border-radius:6px;">
+                        <strong>الوجبات:</strong> ${itemsText}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:8px;">
+                        <strong style="color:var(--gold-bright); font-size:1rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
+                        <button class="gold-btn" style="padding:6px 14px; font-size:0.85rem;" onclick="reprintCompletedOrder('${ord.id}')">
+                            🖨️ إعادة طباعة
+                        </button>
+                    </div>
                 </div>
-                <div style="font-size:0.8rem; color:#ccc;">
-                    <span>نوع الخدمة: ${ord.area || 'مباشر'}</span> | 
-                    <span>طريقة الدفع: ${ord.paymentMethod || 'كاش'}</span>
-                </div>
-                <div style="font-size:0.8rem; color:#aaa; margin:5px 0;">
-                    الوجبات: ${ord.items.map(i => `${i.name} (${i.qty})`).join(', ')}
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px solid #333; padding-top:6px;">
-                    <strong style="color:var(--gold-bright);">${ord.totalAmount.toLocaleString()} د.ع</strong>
-                    <button class="gold-btn" style="padding:4px 10px; font-size:0.8rem;" onclick='reprintCompletedOrder(${JSON.stringify(ord)})'>
-                        🖨️ إعادة طباعة الفاتورة
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     openModal('completedOrdersModal');
 }
 
-function reprintCompletedOrder(order) {
-    closeModal('completedOrdersModal');
-    printReceipt(order);
+function reprintCompletedOrder(orderId) {
+    const completed = getData('sys_completed_orders');
+    const order = completed.find(o => o.id === orderId);
+    if (order) {
+        closeModal('completedOrdersModal');
+        printReceipt(order);
+    } else {
+        alert("لم يتم العثور على الفاتورة!");
+    }
+}
+
+function clearCompletedOrdersHistory() {
+    if (confirm("هل أنت متأكد من مسح جميع الفواتير السابقة من السجل؟")) {
+        setData('sys_completed_orders', []);
+        openCompletedOrdersModal();
+    }
 }
 
 let knownOrderIds = new Set();
@@ -777,22 +798,27 @@ function deductInventoryFromRecipe(items) {
 
 function printReceipt(order) {
     document.getElementById('receiptCashierName').innerText = "اسم الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName}`;
+    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-    document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'سفري'}`;
+    document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
     
-    document.getElementById('receiptItemsBody').innerHTML = order.items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+    document.getElementById('receiptItemsBody').innerHTML = (order.items || []).map(i => `
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.9rem;">
             <span>${i.name} (×${i.qty})</span>
             <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 
-    document.getElementById('receiptSubtotal').innerText = order.subtotal.toLocaleString() + ' د.ع';
+    document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
-    document.getElementById('receiptGrandTotal').innerText = order.totalAmount.toLocaleString() + ' د.ع';
+    document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
     openModal('receiptModal');
+
+    // إطلاق أمر الطباعة التلقائية
+    setTimeout(() => {
+        window.print();
+    }, 300);
 }
 
 /* ==========================================
