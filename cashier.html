@@ -13,7 +13,7 @@
 </head>
 <body onload="initCashierPage()">
 
-    <!-- نافذة تسجيل دخول الكاشير -->
+    <!-- نافذة تسجيل دخول الكاشير بالرمز -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <div class="brand-badge">MIM89</div>
@@ -40,11 +40,10 @@
             </div>
             
             <div style="display:flex; gap:8px; align-items:center;">
-                <!-- زر الأرشيف والسجل المباشر -->
-                <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:6px 12px; font-size:0.85rem; font-weight:bold;">
+                <button onclick="openCompletedOrdersModal()" class="gold-btn" style="background:var(--gold-gradient); color:#000; padding:8px 14px; font-size:0.85rem; font-weight:bold;">
                     <i class="fa-solid fa-clock-rotate-left"></i> سجل الفواتير السابقة
                 </button>
-                <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:6px 12px; font-size:0.85rem;">خروج</button>
+                <button onclick="logoutCashier()" class="gold-btn" style="background:#ef4444; color:#fff; padding:8px 14px; font-size:0.85rem;">خروج</button>
             </div>
         </header>
 
@@ -137,7 +136,10 @@
         <div class="modal-content" style="max-width:650px; width:95%; max-height:85vh; overflow-y:auto; background:#18181c; border:1px solid var(--gold-primary);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid var(--card-border); padding-bottom:10px;">
                 <h3 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-clock-rotate-left"></i> أرشيف الفواتير المطبوعة</h3>
-                <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="background:#ef4444; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:#ef4444; color:#fff; padding:4px 10px; font-size:0.8rem;">مسح السجل</button>
+                    <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="background:#6c757d; color:#fff; padding:4px 10px; font-size:0.8rem;">إغلاق</button>
+                </div>
             </div>
             <div id="completedOrdersList"></div>
         </div>
@@ -166,9 +168,9 @@
             <hr style="border-color:#000;">
             <p style="text-align:center; font-size:0.85rem;">أهلاً وسهلاً بكم في MIM89 FAST FOOD!</p>
             
-            <div class="no-print" style="margin-top:15px; text-align:center;">
-                <button onclick="window.print()" class="gold-btn">🖨️ طباعة الفاتورة الآن</button>
-                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff;">إغلاق</button>
+            <div class="no-print" style="margin-top:15px; text-align:center; display:flex; gap:10px; justify-content:center;">
+                <button onclick="window.print()" class="gold-btn" style="flex:1;">🖨️ طباعة الفاتورة الآن</button>
+                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#6c757d; color:#fff; flex:1;">إغلاق</button>
             </div>
         </div>
     </div>
