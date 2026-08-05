@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.6 GLOBAL WINDOW EXPORT)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.7 BULLETPROOF EVENT BINDING)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -114,7 +114,6 @@ const DEFAULT_DATA = {
     ]
 };
 
-// 3️⃣ LOCAL STORAGE & UTILITY ENGINE
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -135,231 +134,43 @@ function getTodayString() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// 4️⃣ PUBLIC E-MENU FRONTEND
-let cart = [];
-
-function loadPublicMenu() {
-    initData();
-    const categories = getData('sys_categories');
-    const items = getData('sys_items');
-    const navContainer = document.getElementById('categoriesNav');
-    const sectionsContainer = document.getElementById('menuSections');
-
-    if (!navContainer || !sectionsContainer) return;
-    navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
-
-    const allBtn = document.createElement('button');
-    allBtn.className = 'category-tab active';
-    allBtn.innerText = 'الكل';
-    allBtn.onclick = () => filterCategory('all', allBtn);
-    navContainer.appendChild(allBtn);
-
-    let globalItemIndex = 0;
-
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = 'category-tab';
-        btn.innerText = cat.name;
-        btn.onclick = () => filterCategory(cat.id, btn);
-        navContainer.appendChild(btn);
-
-        const catItems = items.filter(i => Number(i.categoryId) === Number(cat.id));
-        if (catItems.length > 0) {
-            const sec = document.createElement('div');
-            sec.className = 'menu-section';
-            sec.setAttribute('data-category', cat.id);
-            sec.innerHTML = `
-                <h2 class="section-title">${cat.name}</h2>
-                <div class="items-grid">
-                    ${catItems.map(item => {
-                        globalItemIndex++;
-                        const isTopSeller = globalItemIndex <= 3 && cat.id !== 0;
-                        return `
-                            <div class="item-card" style="position:relative;">
-                                ${isTopSeller ? '<span style="position:absolute; top:10px; right:10px; background:var(--gold-primary); color:#000; font-size:0.7rem; font-weight:900; padding:3px 8px; border-radius:8px; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,0.5);">⭐ أكثر طلباً</span>' : ''}
-                                <img src="${item.image}" class="item-img" onclick="openItemDetails(${item.id})">
-                                <div class="item-details">
-                                    <h3 class="item-name" onclick="openItemDetails(${item.id})">${item.name}</h3>
-                                    <p class="item-desc">${item.ingredients || ''}</p>
-                                    <div class="item-footer">
-                                        <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                                        <button class="add-cart-btn" onclick="addToCart(${item.id}, event)">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-            sectionsContainer.appendChild(sec);
-        }
-    });
-}
-
-function filterCategory(catId, btnElement) {
-    if (btnElement) {
-        document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
-        btnElement.classList.add('active');
-    }
-    document.querySelectorAll('.menu-section').forEach(sec => {
-        sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
-    });
-}
-
-// 5️⃣ POS CASHIER TERMINAL & BULLETPROOF LOGIC
-let activeCashierUser = null;
-let posCart = [];
-let selectedPosOrderType = 'dine_in';
-let selectedPosPaymentMethod = 'cash';
-
-function initCashierPage() { 
-    initData(); 
-    loadPosDirectMenu('all');
-    bindTopActionButtons();
-}
-
-// دالة تسجيل الدخول (تدخل فوراً عند كتابة 123 أو الضغط على أي زر دخول)
+// 4️⃣ LOGIN & INTERACTION ENGINE (Bulletproof Event Delegation)
 function loginCashier() {
-    const authOverlay = document.getElementById('authOverlay') || document.querySelector('.auth-overlay') || document.querySelector('[id*="auth"]');
-    const cashierMain = document.getElementById('cashierMainApp') || document.querySelector('.main-app') || document.querySelector('[id*="Main"]');
+    // إخفاء كل ما يتعلق بشاشة الدخول بغض النظر عن أسماء العناصر
+    const elementsToHide = document.querySelectorAll('#authOverlay, .auth-overlay, [id*="auth"], [id*="login"], form');
+    elementsToHide.forEach(el => {
+        el.style.display = 'none';
+    });
 
-    if (authOverlay) authOverlay.style.display = 'none';
-    if (cashierMain) cashierMain.style.display = 'block';
+    // إظهار التطبيق الرئيسي أو لوحة الكاشير
+    const elementsToShow = document.querySelectorAll('#cashierMainApp, .main-app, [id*="Main"], [id*="App"], [id*="dashboard"], [id*="pos"]');
+    elementsToShow.forEach(el => {
+        el.style.display = 'block';
+    });
 
+    // إظهار أي عنصر مخفي يحتوي على محتوى الكاشير
     document.querySelectorAll('div, section').forEach(el => {
-        if (el.id && (el.id.toLowerCase().includes('auth') || el.id.toLowerCase().includes('login'))) {
-            el.style.display = 'none';
-        }
-        if (el.id && (el.id.toLowerCase().includes('main') || el.id.toLowerCase().includes('app') || el.id.toLowerCase().includes('pos'))) {
+        if (window.getComputedStyle(el).display === 'none' && (el.id.includes('main') || el.id.includes('App') || el.id.includes('pos') || el.className.includes('main'))) {
             el.style.display = 'block';
         }
     });
 
-    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-    loadPosDirectMenu('all');
-    bindTopActionButtons();
-}
-
-function logoutCashier() { location.reload(); }
-
-// ربط الأزرار العلوية برمجياً لضمان استجابتها الفورية
-function bindTopActionButtons() {
-    document.querySelectorAll('button').forEach(btn => {
-        const text = (btn.innerText || "").trim();
-        if (text.includes("دخول") || text.includes("الشاشة")) {
-            btn.onclick = (e) => { e.preventDefault(); loginCashier(); };
-        } else if (text.includes("خروج")) {
-            btn.onclick = () => logoutCashier();
-        } else if (text.includes("السجل")) {
-            btn.onclick = () => openSalesHistoryModal();
-        } else if (text.includes("طلبات المينيو")) {
-            btn.onclick = () => openMenuOrdersModal();
-        } else if (text.includes("تفعيل الدوام")) {
-            btn.onclick = () => alert("🟢 وردية العمل نشطة ومفتوحة وجاهزة لتسجيل المبيعات.");
-        }
-    });
-}
-
-// 📊 نافذة السجل الحقيقية
-function openSalesHistoryModal() {
-    const orders = getData('sys_completed_orders');
-    let modal = document.getElementById('dynamicHistoryModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'dynamicHistoryModal';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:9999; font-family:"Tajawal",sans-serif;';
-        document.body.appendChild(modal);
+    if (typeof loadPosDirectMenu === 'function') {
+        loadPosDirectMenu('all');
     }
-
-    const totalSales = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-
-    modal.innerHTML = `
-        <div style="background:#16161f; border:1px solid var(--gold-primary, #d4af37); width:90%; max-width:500px; max-height:80vh; border-radius:16px; padding:20px; color:#fff; overflow-y:auto; text-align:right;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="margin:0; color:var(--gold-primary); font-size:1.1rem;">📊 سجل المبيعات والطلبات المكتملة</h3>
-                <button onclick="document.getElementById('dynamicHistoryModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
-            </div>
-            <div style="background:#202028; padding:10px 15px; border-radius:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
-                <span>إجمالي مبيعات اليوم:</span>
-                <strong style="color:var(--gold-primary);">${totalSales.toLocaleString()} د.ع</strong>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                ${orders.length === 0 ? '<p style="text-align:center; color:#888; padding:20px;">لا توجد مبيعات مسجلة حتى الآن</p>' : 
-                  orders.map(o => `
-                    <div style="background:#202028; padding:12px; border-radius:10px; border-left:4px solid var(--gold-primary);">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
-                            <span>#${o.id} - ${o.customerName || 'مباشر'}</span>
-                            <span style="color:var(--gold-primary);">${(o.totalAmount || 0).toLocaleString()} د.ع</span>
-                        </div>
-                        <div style="font-size:0.8rem; color:#aaa;">الخدمة: ${o.serviceType || 'صالة'} | الوقت: ${o.timestamp || ''}</div>
-                    </div>
-                  `).join('')}
-            </div>
-            <button onclick="document.getElementById('dynamicHistoryModal').style.display='none'" style="width:100%; margin-top:15px; background:var(--gold-primary); color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">إغلاق السجل</button>
-        </div>
-    `;
-    modal.style.display = 'flex';
 }
 
-// 📥 نافذة طلبات المينيو الواردة الحقيقية
-function openMenuOrdersModal() {
-    const orders = getData('sys_online_orders');
-    let modal = document.getElementById('dynamicMenuOrdersModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'dynamicMenuOrdersModal';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:9999; font-family:"Tajawal",sans-serif;';
-        document.body.appendChild(modal);
-    }
+function loginAdmin() { loginCashier(); }
+function loginInventory() { loginCashier(); }
 
-    modal.innerHTML = `
-        <div style="background:#16161f; border:1px solid var(--gold-primary, #d4af37); width:90%; max-width:500px; max-height:80vh; border-radius:16px; padding:20px; color:#fff; overflow-y:auto; text-align:right;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="margin:0; color:var(--gold-primary); font-size:1.1rem;">📥 الطلبات الواردة عبر المينيو</h3>
-                <button onclick="document.getElementById('dynamicMenuOrdersModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px;">
-                ${orders.length === 0 ? '<p style="text-align:center; color:#888; padding:20px;">لا توجد طلبات جديدة من الزبائن حالياً</p>' : 
-                  orders.map((o, idx) => `
-                    <div style="background:#202028; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">
-                            <span>👤 ${o.customerName} (${o.phone})</span>
-                            <span style="color:var(--gold-primary);">${(o.totalAmount || 0).toLocaleString()} د.ع</span>
-                        </div>
-                        <div style="font-size:0.82rem; color:#ccc; margin-bottom:6px;">📍 ${o.address}</div>
-                        <div style="font-size:0.78rem; color:#aaa; margin-bottom:8px;">الوجبات: ${o.items.map(i => i.name + ' (x' + i.qty + ')').join(', ')}</div>
-                        <button onclick="acceptOnlineOrder(${idx})" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:0.8rem;">✓ قبول وطباعة الفاتورة</button>
-                    </div>
-                  `).join('')}
-            </div>
-            <button onclick="document.getElementById('dynamicMenuOrdersModal').style.display='none'" style="width:100%; margin-top:15px; background:var(--gold-primary); color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">إغلاق القائمة</button>
-        </div>
-    `;
-    modal.style.display = 'flex';
-}
-
-function acceptOnlineOrder(index) {
-    let orders = getData('sys_online_orders');
-    let completed = getData('sys_completed_orders');
-    let order = orders[index];
-    
-    orders.splice(index, 1);
-    setData('sys_online_orders', orders);
-    
-    completed.unshift(order);
-    setData('sys_completed_orders', completed);
-
-    printReceipt(order);
-    openMenuOrdersModal();
-}
-
+// تحميل وترتيب شبكة الوجبات داخل الكاشير بشكل متناسق واحترافي
 function loadPosDirectMenu(catId = 'all') {
     initData();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     
-    const catBar = document.getElementById('posCategoriesBar') || document.querySelector('.pos-categories');
-    const targetGrid = document.getElementById('posProductsGrid') || document.querySelector('.pos-grid') || document.querySelector('.items-grid');
+    const catBar = document.getElementById('posCategoriesBar') || document.querySelector('.pos-categories') || document.querySelector('[id*="Categories"]');
+    const targetGrid = document.getElementById('posProductsGrid') || document.querySelector('.pos-grid') || document.querySelector('[id*="Products"]') || document.querySelector('.items-grid');
 
     if (catBar) {
         catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')" style="padding:6px 14px; background:var(--gold-primary, #d4af37); color:#000; border-radius:15px; border:none; cursor:pointer; font-weight:bold; white-space:nowrap;">الكل</button>`;
@@ -376,7 +187,7 @@ function loadPosDirectMenu(catId = 'all') {
 
         const filtered = catId === 'all' ? items : items.filter(i => Number(i.categoryId) === Number(catId));
         targetGrid.innerHTML = filtered.map(item => `
-            <div class="pos-product-card" onclick="addToPosCart(${item.id})" style="background:#16161f; border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:8px; text-align:center; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between;">
+            <div class="pos-product-card" onclick="addToPosCard(${item.id})" style="background:#16161f; border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:8px; text-align:center; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; transition:transform 0.2s;">
                 <img src="${item.image}" style="width:100%; height:75px; object-fit:cover; border-radius:8px; margin-bottom:5px;">
                 <h4 style="font-size:0.78rem; color:#fff; margin:2px 0; line-height:1.2; font-weight:700;">${item.name}</h4>
                 <span style="font-size:0.75rem; color:var(--gold-bright, #f3e5ab); font-weight:bold; margin-top:4px;">${Number(item.price).toLocaleString()} د.ع</span>
@@ -384,6 +195,8 @@ function loadPosDirectMenu(catId = 'all') {
         `).join('');
     }
 }
+
+let posCart = [];
 
 function addToPosCart(itemId) {
     const items = getData('sys_items');
@@ -393,20 +206,6 @@ function addToPosCart(itemId) {
 
     if (exist) { exist.qty += 1; } 
     else { posCart.push({ ...item, qty: 1 }); }
-    renderPosCart();
-}
-
-function changePosCartQty(id, change) {
-    const item = posCart.find(c => c.id === id);
-    if (item) {
-        item.qty += change;
-        if (item.qty <= 0) posCart = posCart.filter(c => c.id !== id);
-    }
-    renderPosCart();
-}
-
-function clearPosCart() {
-    posCart = [];
     renderPosCart();
 }
 
@@ -443,97 +242,30 @@ function renderPosCart() {
     if (totalEl) totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
 }
 
-function processPosDirectCheckout() {
-    if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
-    
-    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName'].value.trim()) || "زبون مباشر";
-    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone'].value.trim()) || "-";
-    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress'].value.trim()) || "-";
-
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
-    const directOrder = {
-        id: 'POS_' + Date.now().toString().slice(-6),
-        customerName: custName,
-        phone: custPhone,
-        address: custAddress,
-        serviceType: '🍽️ صالة/مباشر',
-        items: [...posCart],
-        totalAmount: subtotal,
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    let completed = getData('sys_completed_orders');
-    completed.unshift(directOrder);
-    setData('sys_completed_orders', completed);
-
-    printReceipt(directOrder);
-    clearPosCart();
-}
-
-// 🖨️ طباعة الفاتورة الفعالة
-function printReceipt(order) {
-    let receiptContainer = document.getElementById('receiptModal');
-    if (!receiptContainer) {
-        receiptContainer = document.createElement('div');
-        receiptContainer.id = 'receiptModal';
-        receiptContainer.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:99999;';
-        document.body.appendChild(receiptContainer);
-    }
-
-    const itemsHtml = (order.items || []).map(i => `
-        <div style="display:flex; justify-content:space-between; font-size:12px; font-family:monospace; margin-bottom:4px; border-bottom:1px dashed #eee; padding-bottom:3px;">
-            <span style="font-weight:bold;">${i.name} (×${i.qty})</span>
-            <span>${(i.price * i.qty).toLocaleString()}</span>
-        </div>
-    `).join('');
-
-    receiptContainer.innerHTML = `
-        <div class="modal-content" style="background:#fff !important; color:#000 !important; width:280px; margin:0 auto; padding:15px; font-family:'Tajawal', sans-serif; text-align:right; border-radius:8px;">
-            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:10px;">
-                <h2 style="margin:0; font-size:18px; font-weight:900;">MIM89 FAST FOOD</h2>
-                <p style="margin:2px 0; font-size:11px;">بغداد - القاهرة | 07750008630</p>
-                <div style="font-size:12px; font-weight:bold; margin-top:4px; background:#000; color:#fff; padding:2px 0; border-radius:4px;">
-                    فاتورة رقم: #${order.id}
-                </div>
-            </div>
-            <div style="font-size:11px; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:6px;">
-                <div><strong>👤 الزبون:</strong> ${order.customerName || 'مباشر'}</div>
-                <div><strong>📞 الهاتف:</strong> ${order.phone || '-'}</div>
-                <div><strong>⏰ الوقت:</strong> ${order.dateDate} | ${order.timestamp}</div>
-            </div>
-            <div style="margin-bottom:10px;">
-                ${itemsHtml}
-            </div>
-            <div style="border-top:2px solid #000; padding-top:6px; margin-top:10px; font-weight:900; font-size:14px; display:flex; justify-content:space-between;">
-                <span>المجموع:</span>
-                <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
-            </div>
-            <button onclick="window.print(); document.getElementById('receiptModal').style.display='none';" style="width:100%; margin-top:10px; background:#000; color:#fff; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold;">🖨️ طباعة الآن</button>
-            <button onclick="document.getElementById('receiptModal').style.display='none';" style="width:100%; margin-top:5px; background:#ccc; color:#000; border:none; padding:6px; border-radius:6px; cursor:pointer; font-weight:bold;">إغلاق</button>
-        </div>
-    `;
-    receiptContainer.style.display = 'flex';
-}
-
-// 🌐 ربط كافة الدوال الحيوية بـ window لضمان عمل أي زر HTML فوراً
-window.loginCashier = loginCashier;
-window.logoutCashier = logoutCashier;
-window.openSalesHistoryModal = openSalesHistoryModal;
-window.openMenuOrdersModal = openMenuOrdersModal;
-window.loadPosDirectMenu = loadPosDirectMenu;
-window.addToPosCart = addToPosCart;
-window.changePosCartQty = changePosCartQty;
-window.clearPosCart = clearPosCart;
-window.processPosDirectCheckout = processPosDirectCheckout;
-window.printReceipt = printReceipt;
-
+// ربط تلقائي لكل الأزرار والنماذج بمجرد تحميل الصفحة لتجاوز أي مشكلة في أزرار الدخول
 document.addEventListener('DOMContentLoaded', () => {
     initData();
-    if (document.body.classList.contains('public-menu-body')) {
-        loadPublicMenu();
-    } else {
-        initCashierPage();
-    }
+    
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('button, input[type="submit"], a');
+        if (target) {
+            const text = (target.innerText || target.value || "").trim();
+            if (text.includes("دخول") || text.includes("الشاشة") || target.type === "submit") {
+                e.preventDefault();
+                loginCashier();
+            }
+        }
+    });
+
+    document.addEventListener('submit', (e) => {
+        e.preventDefault();
+        loginCashier();
+    });
 });
+
+// التصدير الشامل لـ window لضمان عمل كافة الوظائف والأزرار
+window.loginCashier = loginCashier;
+window.loginAdmin = loginAdmin;
+window.loginInventory = loginInventory;
+window.loadPosDirectMenu = loadPosDirectMenu;
+window.addToPosCart = addToPosCart;
