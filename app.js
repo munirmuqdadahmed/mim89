@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.5 ULTIMATE STABLE)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.6 GLOBAL WINDOW EXPORT)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -206,7 +206,7 @@ function filterCategory(catId, btnElement) {
     });
 }
 
-// 5️⃣ POS CASHIER TERMINAL & BULLETPROOF LOGIN ENGINE
+// 5️⃣ POS CASHIER TERMINAL & BULLETPROOF LOGIC
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -218,7 +218,7 @@ function initCashierPage() {
     bindTopActionButtons();
 }
 
-// دالة تسجيل دخول مرنة جداً (تقبل أي إدخال أو زر 123 وتفتح الواجهة فوراً)
+// دالة تسجيل الدخول (تدخل فوراً عند كتابة 123 أو الضغط على أي زر دخول)
 function loginCashier() {
     const authOverlay = document.getElementById('authOverlay') || document.querySelector('.auth-overlay') || document.querySelector('[id*="auth"]');
     const cashierMain = document.getElementById('cashierMainApp') || document.querySelector('.main-app') || document.querySelector('[id*="Main"]');
@@ -226,7 +226,6 @@ function loginCashier() {
     if (authOverlay) authOverlay.style.display = 'none';
     if (cashierMain) cashierMain.style.display = 'block';
 
-    // إخفاء أي شاشة تسجيل دخول عامة
     document.querySelectorAll('div, section').forEach(el => {
         if (el.id && (el.id.toLowerCase().includes('auth') || el.id.toLowerCase().includes('login'))) {
             el.style.display = 'none';
@@ -241,18 +240,12 @@ function loginCashier() {
     bindTopActionButtons();
 }
 
-function loginAdmin() { loginCashier(); }
-function loginInventory() { loginCashier(); }
-window.loginAdmin = loginAdmin;
-window.loginInventory = loginInventory;
-window.loginCashier = loginCashier;
-
 function logoutCashier() { location.reload(); }
 
-// ربط الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج، أزرار الدخول)
+// ربط الأزرار العلوية برمجياً لضمان استجابتها الفورية
 function bindTopActionButtons() {
     document.querySelectorAll('button').forEach(btn => {
-        const text = btn.innerText || "";
+        const text = (btn.innerText || "").trim();
         if (text.includes("دخول") || text.includes("الشاشة")) {
             btn.onclick = (e) => { e.preventDefault(); loginCashier(); };
         } else if (text.includes("خروج")) {
@@ -453,9 +446,9 @@ function renderPosCart() {
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
-    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName').value.trim()) || "زبون مباشر";
-    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone').value.trim()) || "-";
-    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress').value.trim()) || "-";
+    const custName = (document.getElementById('posCustName') && document.getElementById('posCustName'].value.trim()) || "زبون مباشر";
+    const custPhone = (document.getElementById('posCustPhone') && document.getElementById('posCustPhone'].value.trim()) || "-";
+    const custAddress = (document.getElementById('posCustAddress') && document.getElementById('posCustAddress'].value.trim()) || "-";
 
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
@@ -479,7 +472,7 @@ function processPosDirectCheckout() {
     clearPosCart();
 }
 
-// 🖨️ الطباعة الحقيقية
+// 🖨️ طباعة الفاتورة الفعالة
 function printReceipt(order) {
     let receiptContainer = document.getElementById('receiptModal');
     if (!receiptContainer) {
@@ -523,6 +516,18 @@ function printReceipt(order) {
     `;
     receiptContainer.style.display = 'flex';
 }
+
+// 🌐 ربط كافة الدوال الحيوية بـ window لضمان عمل أي زر HTML فوراً
+window.loginCashier = loginCashier;
+window.logoutCashier = logoutCashier;
+window.openSalesHistoryModal = openSalesHistoryModal;
+window.openMenuOrdersModal = openMenuOrdersModal;
+window.loadPosDirectMenu = loadPosDirectMenu;
+window.addToPosCart = addToPosCart;
+window.changePosCartQty = changePosCartQty;
+window.clearPosCart = clearPosCart;
+window.processPosDirectCheckout = processPosDirectCheckout;
+window.printReceipt = printReceipt;
 
 document.addEventListener('DOMContentLoaded', () => {
     initData();
