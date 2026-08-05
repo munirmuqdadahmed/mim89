@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete System Engine
-   (Public Menu + POS + CRM + Live Caller ID)
+   (Full Menu + POS + CRM + Live Caller ID)
    ========================================== */
 
 // 1️⃣ تهيئة Firebase
@@ -23,42 +23,226 @@ try {
     console.log("Firebase Init Error:", e);
 }
 
-// 2️⃣ البيانات الافتراضية للسيستم
+// 2️⃣ البيانات الكاملة للمينيو الأصلي (MIM89 FAST FOOD)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     cashiers: [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }],
     categories: [
-        { id: 1, name: "وجبات الشاورما الدجاج" },
-        { id: 2, name: "الوجبات المقرمشة" },
-        { id: 3, name: "المقبلات والمشروبات" }
+        { id: 1, name: "بركر اللحم" },
+        { id: 2, name: "بركر الدجاج" },
+        { id: 3, name: "قسم الشاورما" },
+        { id: 4, name: "قسم الكنتاكي" },
+        { id: 5, name: "قسم الريزو" },
+        { id: 6, name: "الفنكر والمقرمشات" },
+        { id: 7, name: "قسم المقبلات" },
+        { id: 8, name: "قسم الإضافات" },
+        { id: 9, name: "قسم المشروبات" }
     ],
     items: [
+        // --- 🍔 1. قسم بركر اللحم ---
         {
-            id: 101, categoryId: 1, name: "شاورما دجاج مميزة", price: 5000,
-            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
-            ingredients: "خبز صاج، شرائح دجاج طازجة، صلصة ثومية، مخلل، بطاطس"
+            id: 101, categoryId: 1, name: "بركر كلاسيك", price: 5000,
+            image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500",
+            ingredients: "قطعة لحم مشوية على الفحم، خس، طماطم، بصل، مخلل، وصوص خاص"
         },
         {
-            id: 102, categoryId: 2, name: "وجبة دجاج مقرمش (كريسبي)", price: 6500,
+            id: 102, categoryId: 1, name: "بركر الجبن", price: 6000,
+            image: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=500",
+            ingredients: "قطعة لحم مشوية، جبنة شيدر، خس، طماطم، بصل، مخلل، وصوص خاص"
+        },
+        {
+            id: 103, categoryId: 1, name: "دبل تشيز بركر", price: 8000,
+            image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500",
+            ingredients: "شريحتان لحم مشويتان، جبنة شيدر، خس، طماطم، بصل، مخلل، وصوص خاص"
+        },
+        {
+            id: 104, categoryId: 1, name: "بركر 89 الخاص (لحم)", price: 7500,
+            image: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=500",
+            ingredients: "شريحة لحم مشوية، صوص 89 الخاص، جبن، بصل، مخلل، وجبنة موزاريلا مقرمشة"
+        },
+
+        // --- 🍗 2. قسم بركر الدجاج ---
+        {
+            id: 201, categoryId: 2, name: "تشيكن فيليه", price: 5500,
+            image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500",
+            ingredients: "قطعات دجاج مقرمشة، خس، جبنة شيدر، وصوص خاص"
+        },
+        {
+            id: 202, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000,
             image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500",
-            ingredients: "قطع دجاج مقرمشة، بطاطس، صلصة ثوم، خبز طازج"
+            ingredients: "3 قطع ستريبس دجاج، صوص 89 الخاص، جبنة، مخلل، وجبنة موزاريلا مقرمشة"
+        },
+
+        // --- 🌯 3. قسم الشاورما ---
+        {
+            id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000,
+            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
+            ingredients: "دجاج شاورما، مخلل، بطاطا، ثوم، وصوص خاص"
         },
         {
-            id: 201, categoryId: 3, name: "بطاطس مقلية ذهبية", price: 2000,
+            id: 302, categoryId: 3, name: "شاورما صاج دبل", price: 4500,
+            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
+            ingredients: "دجاج شاورما كمية مضاعفة، مخلل، بطاطا، ثوم، وصوص خاص"
+        },
+        {
+            id: 303, categoryId: 3, name: "شاورما صاج سوبر", price: 5500,
+            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
+            ingredients: "شاورما دجاج بحجم سوبر كبير مع البطاطس والمخلل والصلصة"
+        },
+        {
+            id: 304, categoryId: 3, name: "شاورما 89 الخاص", price: 5000,
+            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
+            ingredients: "دجاج شاورما، بطاطا، مخلل، صوص 89 الخاص، وتتبيلة 89 المميزة"
+        },
+        {
+            id: 305, categoryId: 3, name: "شاورما عربي", price: 6000,
+            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
+            ingredients: "وجبة شاورما عربي مقطعة مع البطاطا المقلية وصلصة الثومية والمخلل"
+        },
+        {
+            id: 306, categoryId: 3, name: "وجبة شاورما", price: 5500,
+            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
+            ingredients: "وجبة شاورما دجاج مع البطاطا والمقبلات والخبز"
+        },
+        {
+            id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500,
+            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
+            ingredients: "وجبة شاورما دبل دجاج مع بطاطا وفيرة ومقبلات مشكلة"
+        },
+        {
+            id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000,
+            image: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=500",
+            ingredients: "250 غرام شاورما دجاج صافي مع الخبز والصلصات الثومية والمخلل"
+        },
+        {
+            id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000,
+            image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500",
+            ingredients: "500 غرام شاورما دجاج صافي عائلي مع الخبز والصلصات والمخلل"
+        },
+
+        // --- 🍗 4. قسم الكنتاكي ---
+        {
+            id: 401, categoryId: 4, name: "كنتاكي قطعتين", price: 4500,
+            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
+            ingredients: "قطعتان دجاج مقرمشتان بتتبيلة خاصة مع الصوص"
+        },
+        {
+            id: 402, categoryId: 4, name: "كنتاكي 4 قطع", price: 8000,
+            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
+            ingredients: "4 قطع دجاج مقرمشة بتتبيلة خاصة مقرمشة"
+        },
+        {
+            id: 403, categoryId: 4, name: "كنتاكي 6 قطع", price: 11000,
+            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
+            ingredients: "6 قطع دجاج مقرمشة عائلية بتتبيلة مميزة"
+        },
+        {
+            id: 404, categoryId: 4, name: "وجبة كنتاكي", price: 6000,
+            image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=500",
+            ingredients: "قطعتان دجاج مقرمشتان + بطاطا مقلية + مشروب غازي"
+        },
+
+        // --- 🍚 5. قسم الريزو ---
+        {
+            id: 501, categoryId: 5, name: "ريزو كلاسيك", price: 4000,
+            image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500",
+            ingredients: "أرز مبهر مع قطع دجاج وصوص خاص"
+        },
+        {
+            id: 502, categoryId: 5, name: "ريزو 89 الخاص", price: 5500,
+            image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500",
+            ingredients: "أرز بنكهة خاصة، قطع دجاج، صوص 89 الخاص، وجبنة شيدر مذابة"
+        },
+
+        // --- 🍟 6. قسم الفنكر والمقرمشات ---
+        {
+            id: 601, categoryId: 6, name: "فنكر كلاسيك", price: 2000,
             image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
-            ingredients: "بطاطس ذهبية مقرمشة مع البهارات الخاصة"
+            ingredients: "قطع بطاطا مقرمشة تقدم مع الصوص الخاص"
         },
         {
-            id: 301, categoryId: 3, name: "عصير برتقال طبيعي", price: 2500,
-            image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=500",
-            ingredients: "عصير برتقال طبيعي طازج 100%"
+            id: 602, categoryId: 6, name: "فنكر سبايسي", price: 2500,
+            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
+            ingredients: "بطاطا مقرمشة مبهرة بالنكهة الحارة السحرية"
+        },
+        {
+            id: 603, categoryId: 6, name: "فنكر جبنة", price: 3000,
+            image: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=500",
+            ingredients: "بطاطا مقرمشة مغطاة بصلصة الجبنة الشيدر الغنية"
+        },
+        {
+            id: 604, categoryId: 6, name: "فنكر 89 الخاص", price: 3500,
+            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
+            ingredients: "قطع دجاج وبطاطا مقرمشة تقدم مع صوص 89 الخاص"
+        },
+
+        // --- 🧀 7. قسم المقبلات ---
+        {
+            id: 701, categoryId: 7, name: "أصابع موزاريلا", price: 3500,
+            image: "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=500",
+            ingredients: "أصابع جبنة موزاريلا مقرمشة وساخنة"
+        },
+        {
+            id: 702, categoryId: 7, name: "حلقات بصل", price: 2500,
+            image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500",
+            ingredients: "حلقات بصل ذهبية مقرمشة مع صوص للتغنيس"
+        },
+        {
+            id: 703, categoryId: 7, name: "بطاطا", price: 2000,
+            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
+            ingredients: "طبق بطاطا مقلية ذهبية مقرمشة"
+        },
+
+        // --- ➕ 8. قسم الإضافات ---
+        {
+            id: 801, categoryId: 8, name: "بطاطا إضافية", price: 1500,
+            image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500",
+            ingredients: "إضافة علبة بطاطا مقرمشة"
+        },
+        {
+            id: 802, categoryId: 8, name: "صوص إضافي", price: 500,
+            image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=500",
+            ingredients: "إضافة علبة صوص 89 الخاص أو الثومية"
+        },
+        {
+            id: 803, categoryId: 8, name: "هالابينو إضافي", price: 500,
+            image: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?w=500",
+            ingredients: "إضافة قطع فلفل هالابينو حار"
+        },
+        {
+            id: 804, categoryId: 8, name: "جبنة إضافية", price: 1000,
+            image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=500",
+            ingredients: "إضافة شريحة / صوص جبن مذاب"
+        },
+
+        // --- 🥤 9. قسم المشروبات ---
+        {
+            id: 901, categoryId: 9, name: "بيبسي", price: 1000,
+            image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500",
+            ingredients: "مشروب غازي بيبسي بارد 330 مل"
+        },
+        {
+            id: 902, categoryId: 9, name: "سفن أب", price: 1000,
+            image: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=500",
+            ingredients: "مشروب غازي سفن أب بارد 330 مل"
+        },
+        {
+            id: 903, categoryId: 9, name: "ميرندا", price: 1000,
+            image: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=500",
+            ingredients: "مشروب غازي ميرندا برتقال بارد 330 مل"
+        },
+        {
+            id: 904, categoryId: 9, name: "ماء نقي", price: 500,
+            image: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500",
+            ingredients: "قنينة ماء معدني نقي بارد"
         }
     ]
 };
 
 function initData() {
-    if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-    if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+    // تحديث البيانات بقائمة الوجبات الجديدة الشاملة
+    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
@@ -136,7 +320,7 @@ function listenToIncomingCalls() {
               if (change.type === "added") {
                   const callData = change.doc.data();
                   const now = Date.now();
-                  if (now - callData.timestamp < 30000) { // تنبيه إذا كان الاتصال حديثاً (آخر 30 ثانية)
+                  if (now - callData.timestamp < 30000) {
                       triggerIncomingCallPopup(callData.phone, callData.source);
                   }
               }
@@ -467,7 +651,7 @@ function loginCashier() {
         document.getElementById('cashierMainApp').style.display = 'block';
         document.getElementById('activeCashierName').innerText = "الكاشير الحالي: " + user.name;
         loadPosDirectMenu('all');
-        listenToIncomingCalls(); // تشغيل استماع الاتصالات فور الدخول
+        listenToIncomingCalls();
     } else {
         document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
     }
