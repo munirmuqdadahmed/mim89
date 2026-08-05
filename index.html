@@ -2,173 +2,394 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-</head>
-<body class="public-menu-body">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIM89 FAST FOOD - قائمة الطعام</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    <!-- Header / الهيدر الرئيسي -->
-    <header class="main-header">
-        <div class="brand-badge">MIM89</div>
-        <h1 class="brand-title">FAST FOOD</h1>
-        <p class="brand-subtitle">أشهى وجبات الدجاج السريعة بأعلى جودة</p>
-        
-        <!-- شريط البحث السريع -->
-        <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="publicSearchInput" oninput="filterPublicMenu()" placeholder="ابحث عن وجبتك المفضلة...">
-        </div>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* الهيدر */
+        header {
+            background-color: #1a1a1a;
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 2px solid #ff9800;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-logo {
+            background-color: #ff9800;
+            color: #000;
+            font-weight: 900;
+            font-size: 1.1rem;
+            padding: 3px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .brand-subtitle {
+            font-size: 0.8rem;
+            color: #ff9800;
+            margin-top: 2px;
+        }
+
+        /* التصنيفات والبحث */
+        .controls-container {
+            padding: 15px 20px 5px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 18px;
+            border-radius: 25px;
+            border: 1px solid #333;
+            background-color: #1e1e1e;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 12px;
+        }
+
+        .categories-tab {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
+        }
+
+        .category-btn {
+            background-color: #262626;
+            color: #ccc;
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+
+        .category-btn.active {
+            background-color: #ff9800;
+            color: #000;
+            font-weight: bold;
+            border-color: #ff9800;
+        }
+
+        /* تصميم قسم الوجبات */
+        .section-title {
+            font-size: 1.2rem;
+            padding: 15px 20px 5px;
+            color: #ff9800;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            padding: 10px 20px;
+        }
+
+        /* كارت الوجبة */
+        .food-card {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #2d2d2d;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .food-card img {
+            width: 100%;
+            height: 125px;
+            object-fit: cover;
+        }
+
+        .food-info {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .food-name {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .food-desc {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 10px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .food-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .food-price {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #ff9800;
+        }
+
+        .add-btn {
+            background-color: #ff9800;
+            color: #000;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* شريط السلة السفلي المباشر للكاشير */
+        .cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ff9800;
+            color: #000;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        .cart-badge {
+            background-color: #000;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-logo">MIM89</div>
+        <div class="brand-title">FAST FOOD</div>
+        <div class="brand-subtitle">🔥 الطعم اللي ما يتكرر - مشوي على الفحم 🔥</div>
     </header>
 
-    <!-- الأقسام -->
-    <nav class="categories-nav">
-        <div class="categories-container" id="categoriesNav"></div>
-    </nav>
-
-    <!-- منطقة عرض الوجبات -->
-    <main class="menu-container">
-        <div id="menuSections"></div>
-    </main>
-
-    <!-- شريط التنقل السفلي -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="scrollToTop()">
-            <i class="fa-solid fa-house"></i>
-            <span>الرئيسية</span>
-        </button>
-
-        <div class="cart-btn-wrapper">
-            <button class="cart-main-btn" onclick="openCartModal()">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span id="cartBadgeCount" class="cart-badge">0</span>
-            </button>
-        </div>
-
-        <button class="nav-item" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-ellipsis"></i>
-            <span>المزيد</span>
-        </button>
-    </nav>
-
-    <!-- 1. نافذة السلة وإتمام الطلب -->
-    <div id="cartModal" class="modal">
-        <div class="modal-content modal-lg">
-            <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-basket-shopping"></i> سلة الشراء وإتمام الطلب</h2>
-            
-            <div class="cart-modal-body">
-                <div id="cartItemsContainer" class="cart-items-wrapper"></div>
-                
-                <div class="order-form-section">
-                    <h3><i class="fa-solid fa-user-pen"></i> معلومات إرسال الطلب</h3>
-                    
-                    <div class="form-group">
-                        <label>نوع الطلب:</label>
-                        <select id="orderTypeSelect" class="gold-input" onchange="toggleDeliveryFields()">
-                            <option value="delivery">توصيل منزلي</option>
-                            <option value="takeaway">استلام من المطعم (سفري)</option>
-                            <option value="dine_in">تناول داخل المطعم</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>الاسم الكامل:</label>
-                        <input type="text" id="custName" class="gold-input" placeholder="أدخل اسمك الكريم">
-                    </div>
-
-                    <div class="form-group">
-                        <label>رقم الهاتف:</label>
-                        <input type="tel" id="custPhone" class="gold-input" placeholder="07XXXXXXXXX">
-                    </div>
-
-                    <div id="deliveryFieldsGroup">
-                        <div class="form-group">
-                            <label>المنطقة / الحي:</label>
-                            <input type="text" id="custArea" class="gold-input" oninput="calculateDeliveryCost()" placeholder="مثال: القاهرة، البنوك، الأعظمية...">
-                        </div>
-                        <div class="form-group">
-                            <label>العنوان التفصيلي / أقرب نقطة دالة:</label>
-                            <input type="text" id="custAddress" class="gold-input" placeholder="اسم الشارع، المحلة، أو رقم الدار">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>ملاحظات الطلب:</label>
-                        <textarea id="orderNotes" class="gold-input" placeholder="مثال: بدون مخلل، زيادة ثومية..."></textarea>
-                    </div>
-
-                    <div class="checkout-summary">
-                        <div class="summary-line">
-                            <span>مجموع الوجبات:</span>
-                            <span id="subtotalPrice">0 د.ع</span>
-                        </div>
-                        <div class="summary-line" id="deliveryFeeLine">
-                            <span>كلفة التوصيل:</span>
-                            <span id="deliveryFeePrice">0 د.ع</span>
-                        </div>
-                        <hr class="gold-hr">
-                        <div class="summary-line total-line">
-                            <span>المجموع الكلي:</span>
-                            <span id="finalTotalPrice">0 د.ع</span>
-                        </div>
-                    </div>
-
-                    <button class="gold-btn btn-block" onclick="submitOrderToCashier()">
-                        <i class="fa-solid fa-paper-plane"></i> إرسال الطلب للكاشير
-                    </button>
-                </div>
-            </div>
+    <div class="controls-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ابحث عن وجبتك المفضلة..." oninput="filterMenu()">
+        <div class="categories-tab" id="categoriesTab">
+            <button class="category-btn active" onclick="filterCategory('all', this)">الكل</button>
+            <button class="category-btn" onclick="filterCategory('shawarma', this)">قسم الشاورما</button>
+            <button class="category-btn" onclick="filterCategory('burger', this)">قسم البركر</button>
+            <button class="category-btn" onclick="filterCategory('fried_chicken', this)">قسم الكنتاكي</button>
+            <button class="category-btn" onclick="filterCategory('rizo', this)">قسم الريزو</button>
+            <button class="category-btn" onclick="filterCategory('fries', this)">الفنكر والمقبلات</button>
+            <button class="category-btn" onclick="filterCategory('drinks', this)">المشروبات</button>
         </div>
     </div>
 
-    <!-- 2. نافذة المزيد -->
-    <div id="moreModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('moreModal')">&times;</span>
-            <h2 class="modal-gold-title"><i class="fa-solid fa-bars-staggered"></i> قائمة الخيارات والمزيد</h2>
-            
-            <h3 class="sub-heading"><i class="fa-solid fa-list"></i> تصفح الأقسام السريع:</h3>
-            <div id="moreCategoriesList" class="more-cats-grid"></div>
-            
-            <hr class="gold-hr">
-            
-            <h3 class="sub-heading"><i class="fa-solid fa-headset"></i> اتصل بنا وتواصل معنا:</h3>
-            <div class="contact-links-list">
-                <a href="tel:07800000000" class="contact-item-btn"><i class="fa-solid fa-phone"></i> الاتصال المباشر: 07800000000</a>
-                <a href="https://wa.me/9647800000000" target="_blank" class="contact-item-btn whatsapp"><i class="fa-brands fa-whatsapp"></i> مراسلة الواتساب</a>
-                <a href="https://instagram.com" target="_blank" class="contact-item-btn instagram"><i class="fa-brands fa-instagram"></i> الإنستغرام</a>
-                <a href="https://facebook.com" target="_blank" class="contact-item-btn facebook"><i class="fa-brands fa-facebook"></i> الفيس بوك</a>
-                <a href="https://maps.google.com" target="_blank" class="contact-item-btn location"><i class="fa-solid fa-location-dot"></i> موقع المطعم على الخريطة</a>
-            </div>
+    <!-- حاوي الوجبات الديناميكي -->
+    <div id="menuContainer"></div>
 
-            <hr class="gold-hr">
-
-            <h3 class="sub-heading"><i class="fa-solid fa-comment-dots"></i> أرسل ملاحظة للمطعم:</h3>
-            <div class="form-group">
-                <textarea id="feedbackMsg" class="gold-input" placeholder="اكتب اقتراحك أو ملاحظتك هنا..."></textarea>
-            </div>
-            <button class="gold-btn btn-block" onclick="sendRestaurantFeedback()">إرسال الملاحظة</button>
-        </div>
+    <!-- شريط السلة السفلي -->
+    <div class="cart-bar" onclick="sendToCashier()">
+        <span>🛒 الطلب الحالي (<span id="cartCount" class="cart-badge">0</span>)</span>
+        <span id="cartTotal">0 د.ع ⬅️ إرسال للكاشير</span>
     </div>
 
-    <!-- 3. نافذة تفاصيل الوجبة -->
-    <div id="itemDetailModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('itemDetailModal')">&times;</span>
-            <img id="detailImg" src="" alt="" class="modal-img">
-            <h2 id="detailTitle" class="modal-gold-title"></h2>
-            <p id="detailPrice" class="detail-price"></p>
-            <p id="detailIngredients" class="detail-ingredients"></p>
-            <button id="detailAddBtn" class="gold-btn btn-block"><i class="fa-solid fa-cart-plus"></i> إضافة للسلة</button>
-        </div>
-    </div>
+    <script>
+        // 1. مصفوفة الوجبات المربوطة بالمخزن والإدارة
+        const defaultMenuItems = [
+            // شاورما
+            { id: 101, name: "شاورما صاج عادي", category: "shawarma", price: 3000, desc: "خبز صاج، شاورما دجاج طازجة، ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_100G" },
+            { id: 102, name: "شاورما صاج دبل", category: "shawarma", price: 5000, desc: "خبز صاج مضاعف، دجاج إضافي، ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_200G" },
+            { id: 103, name: "شاورما عربي (وجبة)", category: "shawarma", price: 7000, desc: "تقطيع عربي + بطاطس مقلية + ثومية ومخلل", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_200G" },
+            { id: 104, name: "شاورما 89 الخاص", category: "shawarma", price: 8500, desc: "تتبيلة 89 المميزة، جبنة موزاريلا، بطاطس وصوص خاص", img: "https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=400&q=80", inv_code: "RAW_CHICKEN_250G" },
+            
+            // بركر
+            { id: 201, name: "بركر كلاسيك (لحم)", category: "burger", price: 6000, desc: "شريحة لحم مشوية، خس، طماطم، بصل، مخلل وصوص خاص", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80", inv_code: "BEEF_PATTY_1" },
+            { id: 202, name: "بركر 89 الخاص (لحم)", category: "burger", price: 9500, desc: "شريحة لحم، صوص 89، جبن، بصل وموزاريلا مقرمشة", img: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=400&q=80", inv_code: "BEEF_PATTY_1" },
+            { id: 203, name: "تشيكن فيليه (دجاج)", category: "burger", price: 5500, desc: "قطعة دجاج مقرمشة، خس، جبنة شيدر وصوص خاص", img: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?auto=format&fit=crop&w=400&q=80", inv_code: "CHICKEN_FILLET_1" },
 
-    <script src="app.js"></script>
+            // كنتاكي
+            { id: 301, name: "وجبة كنتاكي (قطعتين)", category: "fried_chicken", price: 6500, desc: "2 قطعة دجاج مقرمش + بطاطس + صوص + خبز", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_2PCS" },
+            { id: 302, name: "وجبة كنتاكي (4 قطع)", category: "fried_chicken", price: 11500, desc: "4 قطع دجاج مقرمش + بطاطس + كول سلو + صوص", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_4PCS" },
+            { id: 303, name: "🔥 بوكس العائلة (Family Box)", category: "fried_chicken", price: 28000, desc: "12 قطعة دجاج مقرمش + بطاطس عائلي + كول سلو + بيبسي", img: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=400&q=80", inv_code: "BROASTER_12PCS" },
+
+            // ريزو
+            { id: 401, name: "ريزو كلاسيك", category: "rizo", price: 5000, desc: "أرز مبهر مع قطع دجاج مقرمشة وصوص خاص", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", inv_code: "RIZO_PORTION" },
+            { id: 402, name: "ريزو 89 الخاص", category: "rizo", price: 6500, desc: "أرز بنكهة خاصة، قطع دجاج، صوص 89 وجبنة مذابة", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80", inv_code: "RIZO_PORTION" },
+
+            // مقبلات ومشروبات
+            { id: 501, name: "فنكر كلاسيك", category: "fries", price: 2500, desc: "بطاطس مقلية مقرمشة مع الصوص الخاص", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=400&q=80", inv_code: "FRIES_BAG" },
+            { id: 601, name: "مشروب غازي", category: "drinks", price: 1000, desc: "بيبسي / سفن أب / ميرندا - علبة باردة", img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80", inv_code: "CAN_PEPSI" }
+        ];
+
+        // قراءة البيانات من الإدارة أو اعتماد الافتراضي
+        let menuItems = JSON.parse(localStorage.getItem('mim89_admin_menu')) || defaultMenuItems;
+        let cart = JSON.parse(localStorage.getItem('mim89_current_cart')) || [];
+
+        let currentCategory = 'all';
+
+        // 2. عرض المنيو
+        function renderMenu() {
+            const container = document.getElementById('menuContainer');
+            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+            container.innerHTML = '';
+
+            // تجميع حسب الأقسام
+            const categories = {
+                'shawarma': '🍴 قسم الشاورما (دجاج)',
+                'burger': '🍔 قسم البركر',
+                'fried_chicken': '🍗 قسم الكنتاكي',
+                'rizo': '🍚 قسم الريزو',
+                'fries': '🍟 الفنكر والمقبلات',
+                'drinks': '🥤 قسم المشروبات'
+            };
+
+            for (let catKey in categories) {
+                if (currentCategory !== 'all' && currentCategory !== catKey) continue;
+
+                const filteredItems = menuItems.filter(item => 
+                    item.category === catKey && 
+                    (item.name.toLowerCase().includes(searchKeyword) || item.desc.toLowerCase().includes(searchKeyword))
+                );
+
+                if (filteredItems.length > 0) {
+                    let sectionHTML = `
+                        <div class="section-title">${categories[catKey]}</div>
+                        <div class="items-grid">
+                    `;
+
+                    filteredItems.forEach(item => {
+                        sectionHTML += `
+                            <div class="food-card">
+                                <img src="${item.img}" alt="${item.name}">
+                                <div class="food-info">
+                                    <div>
+                                        <div class="food-name">${item.name}</div>
+                                        <div class="food-desc">${item.desc}</div>
+                                    </div>
+                                    <div class="food-bottom">
+                                        <span class="food-price">${item.price.toLocaleString()} د.ع</span>
+                                        <button class="add-btn" onclick="addToCart(${item.id})">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    sectionHTML += `</div>`;
+                    container.innerHTML += sectionHTML;
+                }
+            }
+            updateCartUI();
+        }
+
+        // 3. إضافة الوجبة للسلة وتمريرها لنظام الكاشير
+        function addToCart(itemId) {
+            const item = menuItems.find(i => i.id === itemId);
+            const exist = cart.find(c => c.id === itemId);
+
+            if (exist) {
+                exist.qty += 1;
+            } else {
+                cart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    inv_code: item.inv_code,
+                    qty: 1
+                });
+            }
+
+            // حفظ التغيير ليتعرف عليه الكاشير
+            localStorage.setItem('mim89_current_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        // 4. تحديث واجهة السلة
+        function updateCartUI() {
+            const count = cart.reduce((sum, item) => sum + item.qty, 0);
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            document.getElementById('cartCount').innerText = count;
+            document.getElementById('cartTotal').innerText = total.toLocaleString() + ' د.ع ⬅️ فتح في الكاشير';
+        }
+
+        // 5. التصفية حسب الأقسام
+        function filterCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderMenu();
+        }
+
+        function filterMenu() {
+            renderMenu();
+        }
+
+        // 6. التحويل التلقائي لصفحة الكاشير
+        function sendToCashier() {
+            if (cart.length === 0) {
+                alert('السلة فارغة حالياً، أضف بعض الوجبات أولاً!');
+                return;
+            }
+            window.location.href = 'cashier.html';
+        }
+
+        // تشغيل الصفحة
+        renderMenu();
+    </script>
 </body>
 </html>
