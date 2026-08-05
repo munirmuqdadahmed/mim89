@@ -2,7 +2,6 @@
    MIM89 FAST FOOD - Complete Core Engine
    ========================================== */
 
-// 1. الاتصال بـ Firebase بمشروع mim89-ff938
 let db = null;
 try {
     const firebaseConfig = {
@@ -26,7 +25,6 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الافتراضية للنظام (شاورما دجاج ومقرمشات فقط)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     cashiers: [
@@ -77,7 +75,6 @@ const DEFAULT_DATA = {
     ]
 };
 
-// تهيئة البيانات والذاكرة المحلية
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -87,13 +84,14 @@ function initData() {
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     }
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+    if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
 }
 
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
 function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
 /* ==========================================
-   3. المينيو العام وتجربة الزبون (index.html)
+   المينيو العام (index.html)
    ========================================== */
 let cart = [];
 
@@ -284,7 +282,7 @@ function calculateDeliveryCost() {
     let deliveryFee = 0;
     if (orderType === 'delivery') {
         if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
-            deliveryFee = 0; // القاهرة مجاناً
+            deliveryFee = 0;
         } else if (areaInput !== "") {
             const areas = getData('sys_areas');
             const found = areas.find(a => areaInput.includes(a.name));
@@ -303,7 +301,6 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
-/* إرسال الطلب المباشر للسحابة ومزامنة الكاشير */
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -341,7 +338,7 @@ function submitOrderToCashier() {
         deliveryFee: deliveryFee,
         totalAmount: subtotal + deliveryFee,
         status: 'جديد',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
     saveOrderLocally(orderData);
@@ -357,7 +354,6 @@ function submitOrderToCashier() {
                 submitBtn.disabled = false;
             }
         }).catch(err => {
-            console.error("Firebase Error:", err);
             cart = [];
             updateCartBadge();
             closeModal('cartModal');
@@ -392,7 +388,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   4. نقطة البيع بالرمز المباشر (cashier.html)
+   نقطة البيع والأرشيف (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -581,16 +577,64 @@ function processPosDirectCheckout() {
         items: posCart,
         subtotal: subtotal,
         deliveryFee: 0,
-        totalAmount: subtotal
+        totalAmount: subtotal,
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
+    saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
     printReceipt(directOrder);
     clearPosCart();
     document.getElementById('posCustName').value = '';
 }
 
-/* الاستماع اللحظي المستمر لشاشة الطلبات الحية مع التنبيه الصوتي */
+/* حفظ الطلبات المكتملة بالأرشيف */
+function saveCompletedOrder(order) {
+    let completed = getData('sys_completed_orders');
+    completed.unshift(order); // يوضع بالبداية
+    setData('sys_completed_orders', completed);
+}
+
+function openCompletedOrdersModal() {
+    const list = document.getElementById('completedOrdersList');
+    const completed = getData('sys_completed_orders');
+
+    if (!list) return;
+
+    if (completed.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:#888; padding:30px;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
+    } else {
+        list.innerHTML = completed.map(ord => `
+            <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:10px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--gold-primary); margin-bottom:5px;">
+                    <strong>الزبون: ${ord.customerName}</strong>
+                    <span>⏰ ${ord.timestamp || 'سابق'}</span>
+                </div>
+                <div style="font-size:0.8rem; color:#ccc;">
+                    <span>نوع الخدمة: ${ord.area || 'مباشر'}</span> | 
+                    <span>طريقة الدفع: ${ord.paymentMethod || 'كاش'}</span>
+                </div>
+                <div style="font-size:0.8rem; color:#aaa; margin:5px 0;">
+                    الوجبات: ${ord.items.map(i => `${i.name} (${i.qty})`).join(', ')}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px solid #333; padding-top:6px;">
+                    <strong style="color:var(--gold-bright);">${ord.totalAmount.toLocaleString()} د.ع</strong>
+                    <button class="gold-btn" style="padding:4px 10px; font-size:0.8rem;" onclick='reprintCompletedOrder(${JSON.stringify(ord)})'>
+                        🖨️ إعادة طباعة الفاتورة
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    openModal('completedOrdersModal');
+}
+
+function reprintCompletedOrder(order) {
+    closeModal('completedOrdersModal');
+    printReceipt(order);
+}
+
 let knownOrderIds = new Set();
 
 function listenForIncomingOrders() {
@@ -613,7 +657,6 @@ function listenForIncomingOrders() {
                     }
                 });
 
-                // دمج الطلبات المحلية
                 const localOrders = getData('sys_live_orders');
                 localOrders.forEach(ord => {
                     if (!knownOrderIds.has(ord.id)) {
@@ -685,6 +728,7 @@ function fulfillAndPrintOrder(docId, orderId) {
         db.collection("orders").doc(docId).get().then(doc => {
             if (doc.exists) {
                 const order = doc.data();
+                saveCompletedOrder(order);
                 deductInventoryFromRecipe(order.items);
                 db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
                 printReceipt(order);
@@ -703,6 +747,7 @@ function fulfillLocalOrder(orderId) {
     let orders = getData('sys_live_orders');
     const order = orders.find(o => o.id === orderId);
     if (order) {
+        saveCompletedOrder(order);
         deductInventoryFromRecipe(order.items);
         orders = orders.filter(o => o.id !== orderId);
         setData('sys_live_orders', orders);
@@ -751,7 +796,7 @@ function printReceipt(order) {
 }
 
 /* ==========================================
-   5. إدارة المخزن والإدارة العامة
+   إدارة المخزن والإدارة العامة
    ========================================== */
 function initInventoryPage() { initData(); }
 
@@ -1012,7 +1057,6 @@ function updateSystemPasswords() {
     document.getElementById('newInvPass').value = '';
 }
 
-/* الأدوات العامة والتشغيل */
 function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'flex';
