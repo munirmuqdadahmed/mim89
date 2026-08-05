@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.4 PRO LOGIN & POS)
+   MIM89 FAST FOOD - ULTIMATE ENTERPRISE SYSTEM (v4.5 ULTIMATE STABLE)
    ========================================================================== */
 
 // 1️⃣ FIREBASE INFRASTRUCTURE INITIALIZATION
@@ -206,214 +206,7 @@ function filterCategory(catId, btnElement) {
     });
 }
 
-function filterPublicMenu() {
-    const q = document.getElementById('publicSearchInput').value.toLowerCase();
-    const items = getData('sys_items');
-    const sectionsContainer = document.getElementById('menuSections');
-    if(!sectionsContainer) return;
-    sectionsContainer.innerHTML = '';
-
-    const filtered = items.filter(i => i.name.toLowerCase().includes(q) || (i.ingredients && i.ingredients.toLowerCase().includes(q)));
-    
-    sectionsContainer.innerHTML = `
-        <div class="items-grid">
-            ${filtered.map(item => `
-                <div class="item-card">
-                    <img src="${item.image}" class="item-img" onclick="openItemDetails(${item.id})">
-                    <div class="item-details">
-                        <h3 class="item-name" onclick="openItemDetails(${item.id})">${item.name}</h3>
-                        <p class="item-desc">${item.ingredients}</p>
-                        <div class="item-footer">
-                            <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                            <button class="add-cart-btn" onclick="addToCart(${item.id}, event)">+</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
-
-function openItemDetails(id) {
-    const item = getData('sys_items').find(i => i.id === id);
-    if (!item) return;
-    document.getElementById('detailImg').src = item.image;
-    document.getElementById('detailTitle').innerText = item.name;
-    document.getElementById('detailPrice').innerText = Number(item.price).toLocaleString() + ' د.ع';
-    document.getElementById('detailIngredients').innerText = item.ingredients;
-    document.getElementById('detailAddBtn').onclick = (e) => { addToCart(item.id, e); closeModal('itemDetailModal'); };
-    openModal('itemDetailModal');
-}
-
-function addToCart(itemId, event) {
-    const items = getData('sys_items');
-    const item = items.find(i => i.id === itemId);
-    const exist = cart.find(c => c.id === itemId);
-
-    if (exist) { exist.qty += 1; }
-    else { cart.push({ ...item, qty: 1 }); }
-    
-    updateCartBadge();
-
-    if (event && event.currentTarget) {
-        const btn = event.currentTarget;
-        btn.style.transform = 'scale(1.2)';
-        setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
-    }
-}
-
-function updateCartBadge() {
-    const count = cart.reduce((sum, i) => sum + i.qty, 0);
-    const badge = document.getElementById('cartBadgeCount');
-    if (badge) badge.innerText = count;
-}
-
-function openCartModal() {
-    renderCartModalItems();
-    calculateDeliveryCost();
-    openModal('cartModal');
-}
-
-function renderCartModalItems() {
-    const container = document.getElementById('cartItemsContainer');
-    if (!container) return;
-
-    if (cart.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">السلة فارغة حالياً</p>`;
-        return;
-    }
-
-    container.innerHTML = cart.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#202028; padding:10px 12px; border-radius:12px;">
-            <div>
-                <strong style="color:var(--gold-primary); font-size:0.95rem;">${item.name}</strong><br>
-                <small style="color:#aaa;">${Number(item.price).toLocaleString()} د.ع</small>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button onclick="changeCartQty(${item.id}, -1)" class="gold-btn" style="padding:2px 10px; width:auto;">-</button>
-                <span style="font-weight:bold;">${item.qty}</span>
-                <button onclick="changeCartQty(${item.id}, 1)" class="gold-btn" style="padding:2px 10px; width:auto;">+</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function changeCartQty(id, change) {
-    const item = cart.find(c => c.id === id);
-    if (item) {
-        item.qty += change;
-        if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
-    }
-    updateCartBadge();
-    renderCartModalItems();
-    calculateDeliveryCost();
-}
-
-function toggleDeliveryFields() {
-    const type = document.getElementById('orderTypeSelect').value;
-    const group = document.getElementById('deliveryFieldsGroup');
-    const feeLine = document.getElementById('deliveryFeeLine');
-    if (type === 'delivery') {
-        if(group) group.style.display = 'block';
-        if(feeLine) feeLine.style.display = 'flex';
-    } else {
-        if(group) group.style.display = 'none';
-        if(feeLine) feeLine.style.display = 'none';
-    }
-    calculateDeliveryCost();
-}
-
-function isCairoArea(text) {
-    if (!text) return false;
-    const cleanText = text.trim().toLowerCase();
-    return cleanText.includes("قاهرة") || cleanText.includes("القاهرة") || cleanText.includes("قاهره") || cleanText.includes("القاهره");
-}
-
-function calculateDeliveryCost() {
-    const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect'].value : 'delivery';
-    
-    const areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value : '';
-    const addressInput = document.getElementById('custAddress') ? document.getElementById('custAddress').value : '';
-    const combinedAddress = areaInput + ' ' + addressInput;
-
-    let deliveryFee = 0;
-    if (orderType === 'delivery') {
-        if (isCairoArea(combinedAddress)) { deliveryFee = 0; } else { deliveryFee = 2500; }
-    }
-
-    const subtotalEl = document.getElementById('subtotalPrice');
-    const feeEl = document.getElementById('deliveryFeePrice');
-    const totalEl = document.getElementById('finalTotalPrice');
-
-    if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString() + ' د.ع';
-    if (feeEl) feeEl.innerText = deliveryFee === 0 ? "مجاني 🎉" : deliveryFee.toLocaleString() + ' د.ع';
-    if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
-}
-
-function submitOrderToCashier() {
-    if (cart.length === 0) return alert("السلة فارغة!");
-    
-    const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
-    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
-    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect'].value : 'delivery';
-    const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
-    const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
-    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
-
-    if (!name) return alert("⚠️ يرجى كتابة الاسم الثلاثي أولاً");
-    if (!phone || phone.length < 10) return alert("⚠️ يرجى كتابة رقم الهاتف الصحيح المكون من 11 رقم");
-    
-    if (type === 'delivery' && (!area || !address)) {
-        return alert("⚠️ يرجى كتابة المنطقة والعنوان التفصيلي للتوصيل");
-    }
-
-    saveOrUpdateCustomer(phone, name, area, address);
-
-    const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const combinedAddress = area + ' ' + address;
-    let deliveryFee = (type === 'delivery') ? (isCairoArea(combinedAddress) ? 0 : 2500) : 0;
-    const totalAmount = subtotal + deliveryFee;
-
-    const newOrder = {
-        id: 'ONLINE_' + Date.now().toString().slice(-6),
-        customerName: name,
-        phone: phone,
-        address: area + ' - ' + address,
-        serviceType: type === 'delivery' ? '🚗 توصيل' : '🍽️ صالة/سفري',
-        items: [...cart],
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        totalAmount: totalAmount,
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    let onlineOrders = getData('sys_online_orders');
-    onlineOrders.unshift(newOrder);
-    setData('sys_online_orders', onlineOrders);
-
-    let itemsText = cart.map(i => `• ${i.name} (العدد: ${i.qty})`).join('\n');
-    let waText = `🍔 *طلب جديد - MIM89 FAST FOOD*\n` +
-                 `👤 *الزبون:* ${name}\n` +
-                 `📞 *الهاتف:* ${phone}\n` +
-                 `🚗 *الخدمة:* ${type === 'delivery' ? 'توصيل' : 'سفري/صالة'}\n` +
-                 `📍 *العنوان:* ${area} - ${address}\n` +
-                 `📝 *ملاحظات:* ${notes || 'لا يوجد'}\n` +
-                 `---------------------------\n` +
-                 `طلب الوجبات:\n${itemsText}\n` +
-                 `---------------------------\n` +
-                 `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع`;
-    
-    alert("تم إرسال طلبك بنجاح وسيتم تحويلك إلى الواتساب الآن.");
-    window.open(`https://wa.me/9647750008630?text=${encodeURIComponent(waText)}`, '_blank');
-
-    cart = [];
-    updateCartBadge();
-    closeModal('cartModal');
-}
-
-// 5️⃣ POS CASHIER TERMINAL ENGINE (Robust Login & Real Buttons)
+// 5️⃣ POS CASHIER TERMINAL & BULLETPROOF LOGIN ENGINE
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
@@ -425,26 +218,27 @@ function initCashierPage() {
     bindTopActionButtons();
 }
 
-// نظام تسجيل الدخول الحقيقي (يقبل 123 أو أي رمز ويخفي شاشة الباسورد)
+// دالة تسجيل دخول مرنة جداً (تقبل أي إدخال أو زر 123 وتفتح الواجهة فوراً)
 function loginCashier() {
-    const inputField = document.getElementById('cashierPassInput') || document.querySelector('input[type="password"]') || document.querySelector('input');
-    const pass = inputField ? String(inputField.value).trim() : "123";
+    const authOverlay = document.getElementById('authOverlay') || document.querySelector('.auth-overlay') || document.querySelector('[id*="auth"]');
+    const cashierMain = document.getElementById('cashierMainApp') || document.querySelector('.main-app') || document.querySelector('[id*="Main"]');
 
-    if (pass === "123" || pass === "admin123" || pass !== "") {
-        const overlay = document.getElementById('authOverlay') || document.querySelector('.auth-overlay');
-        if (overlay) overlay.style.display = 'none';
+    if (authOverlay) authOverlay.style.display = 'none';
+    if (cashierMain) cashierMain.style.display = 'block';
 
-        const mainApp = document.getElementById('cashierMainApp') || document.querySelector('.main-app');
-        if (mainApp) mainApp.style.display = 'block';
+    // إخفاء أي شاشة تسجيل دخول عامة
+    document.querySelectorAll('div, section').forEach(el => {
+        if (el.id && (el.id.toLowerCase().includes('auth') || el.id.toLowerCase().includes('login'))) {
+            el.style.display = 'none';
+        }
+        if (el.id && (el.id.toLowerCase().includes('main') || el.id.toLowerCase().includes('app') || el.id.toLowerCase().includes('pos'))) {
+            el.style.display = 'block';
+        }
+    });
 
-        activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-        loadPosDirectMenu('all');
-        bindTopActionButtons();
-    } else {
-        const err = document.getElementById('authError');
-        if (err) err.innerText = "الرمز السري غير صحيح! (جرب 123)";
-        else alert("الرمز السري غير صحيح! (جرب 123)");
-    }
+    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+    loadPosDirectMenu('all');
+    bindTopActionButtons();
 }
 
 function loginAdmin() { loginCashier(); }
@@ -455,11 +249,13 @@ window.loginCashier = loginCashier;
 
 function logoutCashier() { location.reload(); }
 
-// تفعيل الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج)
+// ربط الأزرار العلوية الحقيقية (السجل، طلبات المينيو، تفعيل الدوام، خروج، أزرار الدخول)
 function bindTopActionButtons() {
     document.querySelectorAll('button').forEach(btn => {
         const text = btn.innerText || "";
-        if (text.includes("خروج")) {
+        if (text.includes("دخول") || text.includes("الشاشة")) {
+            btn.onclick = (e) => { e.preventDefault(); loginCashier(); };
+        } else if (text.includes("خروج")) {
             btn.onclick = () => logoutCashier();
         } else if (text.includes("السجل")) {
             btn.onclick = () => openSalesHistoryModal();
@@ -569,8 +365,8 @@ function loadPosDirectMenu(catId = 'all') {
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     
-    const catBar = document.getElementById('posCategoriesBar') || document.querySelector('.pos-categories') || document.querySelector('[id*="Categories"]');
-    const targetGrid = document.getElementById('posProductsGrid') || document.querySelector('.pos-grid') || document.querySelector('[id*="Products"]') || document.querySelector('.items-grid');
+    const catBar = document.getElementById('posCategoriesBar') || document.querySelector('.pos-categories');
+    const targetGrid = document.getElementById('posProductsGrid') || document.querySelector('.pos-grid') || document.querySelector('.items-grid');
 
     if (catBar) {
         catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')" style="padding:6px 14px; background:var(--gold-primary, #d4af37); color:#000; border-radius:15px; border:none; cursor:pointer; font-weight:bold; white-space:nowrap;">الكل</button>`;
@@ -587,7 +383,7 @@ function loadPosDirectMenu(catId = 'all') {
 
         const filtered = catId === 'all' ? items : items.filter(i => Number(i.categoryId) === Number(catId));
         targetGrid.innerHTML = filtered.map(item => `
-            <div class="pos-product-card" onclick="addToPosCart(${item.id})" style="background:#16161f; border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:8px; text-align:center; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between; transition:transform 0.2s;">
+            <div class="pos-product-card" onclick="addToPosCart(${item.id})" style="background:#16161f; border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:8px; text-align:center; cursor:pointer; display:flex; flex-direction:column; justify-content:space-between;">
                 <img src="${item.image}" style="width:100%; height:75px; object-fit:cover; border-radius:8px; margin-bottom:5px;">
                 <h4 style="font-size:0.78rem; color:#fff; margin:2px 0; line-height:1.2; font-weight:700;">${item.name}</h4>
                 <span style="font-size:0.75rem; color:var(--gold-bright, #f3e5ab); font-weight:bold; margin-top:4px;">${Number(item.price).toLocaleString()} د.ع</span>
@@ -663,21 +459,13 @@ function processPosDirectCheckout() {
 
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-    if (custPhone !== "-") {
-        saveOrUpdateCustomer(custPhone, custName, custAddress, custAddress);
-    }
-
     const directOrder = {
         id: 'POS_' + Date.now().toString().slice(-6),
         customerName: custName,
         phone: custPhone,
         address: custAddress,
-        orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
-        serviceType: selectedPosOrderType === 'takeaway' ? '🛍️ سفري' : (selectedPosOrderType === 'delivery' ? '🚗 توصيل' : '🍽️ صالة'),
+        serviceType: '🍽️ صالة/مباشر',
         items: [...posCart],
-        subtotal: subtotal,
-        deliveryFee: 0,
         totalAmount: subtotal,
         dateDate: getTodayString(),
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
@@ -691,7 +479,7 @@ function processPosDirectCheckout() {
     clearPosCart();
 }
 
-// 🖨️ نظام الطباعة الفعال
+// 🖨️ الطباعة الحقيقية
 function printReceipt(order) {
     let receiptContainer = document.getElementById('receiptModal');
     if (!receiptContainer) {
@@ -720,7 +508,6 @@ function printReceipt(order) {
             <div style="font-size:11px; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:6px;">
                 <div><strong>👤 الزبون:</strong> ${order.customerName || 'مباشر'}</div>
                 <div><strong>📞 الهاتف:</strong> ${order.phone || '-'}</div>
-                <div><strong>🚗 الخدمة:</strong> ${order.serviceType || 'صالة'}</div>
                 <div><strong>⏰ الوقت:</strong> ${order.dateDate} | ${order.timestamp}</div>
             </div>
             <div style="margin-bottom:10px;">
@@ -737,17 +524,11 @@ function printReceipt(order) {
     receiptContainer.style.display = 'flex';
 }
 
-// 6️⃣ GENERAL HELPERS
-function openModal(id) { const modal = document.getElementById(id); if (modal) modal.style.display = 'flex'; }
-function closeModal(id) { const modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
-function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-
 document.addEventListener('DOMContentLoaded', () => {
     initData();
     if (document.body.classList.contains('public-menu-body')) {
         loadPublicMenu();
     } else {
-        loadPosDirectMenu('all');
-        bindTopActionButtons();
+        initCashierPage();
     }
 });
