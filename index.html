@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
-    <!-- مكتبة الأيقونات FontAwesome -->
+    <title>MIM89 FAST FOOD</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body class="public-menu-body">
 
-    <!-- الهيدر الرئيسي -->
     <header class="main-header">
         <div class="logo-container">
             <h1 class="brand-title">MIM89</h1>
@@ -23,7 +20,6 @@
         <p class="brand-tagline">الطعم اللي ما يتكرر 🔥</p>
     </header>
 
-    <!-- شريط البحث -->
     <div class="search-box-container">
         <div class="search-input-wrapper">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -31,26 +27,17 @@
         </div>
     </div>
 
-    <!-- شريط الأقسام المتقلب -->
     <nav class="categories-nav-wrapper">
         <div id="categoriesNav" class="categories-nav"></div>
     </nav>
 
-    <!-- أقسام المينيو والوجبات -->
     <main id="menuSections" class="container"></main>
 
-    <!-- زر السلة العائم السريع (برمز الشوكة والسكينة 🍴) -->
+    <!-- زر السلة Floating -->
     <button id="floatingCartBtn" class="cart-float-btn" onclick="openCartModal()">
         <i class="fa-solid fa-utensils"></i>
         <span id="cartBadgeCount" class="badge">0</span>
     </button>
-
-    <!-- زر "المزيد" السفلي المنسق -->
-    <div class="bottom-more-bar" style="text-align:center; margin:30px 0 80px 0;">
-        <button class="gold-btn" style="padding:10px 24px; border-radius:25px; font-weight:bold;" onclick="openModal('moreModal')">
-            <i class="fa-solid fa-ellipsis-vertical" style="margin-left:8px;"></i> المزيد من الخيارات
-        </button>
-    </div>
 
     <!-- modal تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal-overlay">
@@ -64,15 +51,13 @@
         </div>
     </div>
 
-    <!-- modal السلة والشراء -->
+    <!-- modal السلة -->
     <div id="cartModal" class="modal-overlay">
         <div class="modal-content">
             <button class="close-modal-btn" onclick="closeModal('cartModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-                <i class="fa-solid fa-utensils"></i> سلة الوجبات
-            </h3>
+            <h3 style="color:var(--gold-primary); margin-bottom:15px;">سلة الوجبات</h3>
             
-            <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:15px;"></div>
+            <div id="cartItemsContainer" style="max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
 
             <div class="form-group" style="margin-bottom:10px;">
                 <label style="font-size:0.85rem; color:#aaa;">نوع الخدمة:</label>
@@ -83,15 +68,14 @@
                 </select>
             </div>
 
-            <!-- بيانات الزبون الإجبارية -->
             <div id="deliveryFieldsGroup">
                 <input type="text" id="custName" placeholder="الاسم الثلاثي *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
                 <input type="tel" id="custPhone" placeholder="رقم الهاتف (11 رقم) *" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
                 <input type="text" id="custArea" placeholder="المنطقة (مثلاً: القاهرة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
-                <input type="text" id="custAddress" placeholder="العنوان التفصيلي (أقرب نقطة دالة) *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
+                <input type="text" id="custAddress" placeholder="العنوان التفصيلي *" oninput="calculateDeliveryCost()" class="form-control" style="width:100%; margin-bottom:8px; padding:10px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px;">
             </div>
 
-            <textarea id="orderNotes" placeholder="ملاحظات إضافية على الطلب..." style="width:100%; height:50px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:12px;"></textarea>
+            <textarea id="orderNotes" placeholder="ملاحظات إضافية..." style="width:100%; height:50px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin-bottom:12px;"></textarea>
 
             <div style="background:#181820; padding:12px; border-radius:10px; margin-bottom:15px; font-size:0.9rem;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -104,7 +88,7 @@
                 </div>
                 <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.05rem; color:var(--gold-primary); border-top:1px solid rgba(255,255,255,0.1); padding-top:6px; margin-top:4px;">
                     <span>المجموع الكلي:</span>
-                    <span id="finalTotalPrice">0 د.ع</span>
+                    <span><strong id="finalTotalPrice">0 د.ع</strong></span>
                 </div>
             </div>
 
@@ -114,22 +98,6 @@
         </div>
     </div>
 
-    <!-- modal المزيد -->
-    <div id="moreModal" class="modal-overlay">
-        <div class="modal-content">
-            <button class="close-modal-btn" onclick="closeModal('moreModal')">&times;</button>
-            <h3 style="color:var(--gold-primary); margin-bottom:15px;">الأقسام والملاحظات</h3>
-            <div id="moreCategoriesList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;"></div>
-            
-            <hr style="border-color:rgba(255,255,255,0.1); margin:15px 0;">
-            
-            <h4>إرسال شكوى أو اقتراح للمطعم:</h4>
-            <textarea id="feedbackMsg" placeholder="اكتب ملاحظتك هنا..." style="width:100%; height:70px; background:#202028; border:1px solid var(--card-border); color:#fff; border-radius:10px; padding:8px; margin:8px 0;"></textarea>
-            <button onclick="sendRestaurantFeedback()" class="gold-btn btn-block">إرسال للمطعم</button>
-        </div>
-    </div>
-
-    <!-- ربط المحرك الرئيسي -->
-    <script src="app.js?v=2.0"></script>
+    <script src="app.js"></script>
 </body>
 </html>
