@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v3.1)
+   MIM89 FAST FOOD - Core Engine (v4.0 Real-time Cloud Sync)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -20,7 +20,7 @@ try {
             firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
-        console.log("تم الاتصال بـ Firebase بنجاح! 🚀");
+        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
     }
 } catch (e) {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
@@ -81,6 +81,9 @@ function initData() {
     }
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
+
+    // تفعيل الاستماع اللحظي للبيانات من Firebase
+    setupCloudRealtimeSync();
 }
 
 function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -94,13 +97,47 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
+/* ⚡ تفعيل المزامنة اللحظية المباشرة للأصناف والأقسام بين كل الأجهزة */
+function setupCloudRealtimeSync() {
+    if (!db) return;
+
+    // 1. مزامنة الأصناف والمينيو فورياً
+    db.collection("menu_items").onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+            let cloudItems = [];
+            snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
+            setData('sys_items', cloudItems);
+            refreshActiveUI();
+        }
+    }, err => console.log("Menu sync fallback:", err));
+
+    // 2. مزامنة الأقسام فورياً
+    db.collection("menu_categories").onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+            let cloudCategories = [];
+            snapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
+            setData('sys_categories', cloudCategories);
+            refreshActiveUI();
+        }
+    }, err => console.log("Category sync fallback:", err));
+}
+
+function refreshActiveUI() {
+    if (document.body.classList.contains('public-menu-body')) {
+        loadPublicMenu();
+    } else if (document.getElementById('posProductsGrid')) {
+        loadPosDirectMenu('all');
+    } else if (document.getElementById('adminItemsTable')) {
+        renderAdminItems();
+    }
+}
+
 /* ==========================================
    3. المينيو العام وتجربة الزبون (index.html)
    ========================================== */
 let cart = [];
 
 function loadPublicMenu() {
-    initData();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     const navContainer = document.getElementById('categoriesNav');
@@ -353,7 +390,7 @@ function submitOrderToCashier() {
 
     saveOrderLocally(orderData);
     if (db) {
-        db.collection("orders").add(orderData).catch(err => console.error("Firebase Sync Error:", err));
+        db.collection("orders").add(orderData).catch(err => console.error("Firebase Order Sync Error:", err));
     }
 
     let typeText = '🚗 توصيل منزل';
@@ -476,7 +513,6 @@ function selectPaymentMethod(btnElement) {
 }
 
 function loadPosDirectMenu(catId = 'all') {
-    initData();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     const catBar = document.getElementById('posCategoriesBar');
@@ -759,21 +795,19 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. مزامنة الطلبات + التنبيه الصوتي المتصل (المستمر)
+   6. مزامنة الطلبات اللحظية والتنبيه المستمر
    ========================================== */
 let knownOrderIds = new Set();
-let continuousAlertTimer = null; // تايمر الجرس المستمر
+let continuousAlertTimer = null;
 
-/* تشغيل جرس التنبيه بشكل متصل ومستمر دون انقطاع */
 function startContinuousAlert() {
-    if (continuousAlertTimer) return; // شغال حالياً
+    if (continuousAlertTimer) return;
     playSingleBeep();
     continuousAlertTimer = setInterval(() => {
         playSingleBeep();
-    }, 1000); // تكرار النغمة كل ثانية واحدة بشكل متصل
+    }, 1000);
 }
 
-/* إيقاف التنبيه الصوتي فور تجهيز جميع الطلبات */
 function stopContinuousAlert() {
     if (continuousAlertTimer) {
         clearInterval(continuousAlertTimer);
@@ -800,67 +834,52 @@ function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
     if (!container) return;
 
-    const syncOrders = () => {
+    const processOrdersList = (ordersList) => {
         let unhandledCount = 0;
+        let html = '';
 
-        const updateUIWithOrders = (ordersList) => {
-            let html = '';
-            ordersList.forEach(ord => {
-                if (ord.status === 'جديد') {
-                    unhandledCount++;
-                    if (!knownOrderIds.has(ord.id)) {
-                        knownOrderIds.add(ord.id);
-                    }
-                    html += generateOrderCardHTML(ord, ord.docId || ord.id);
+        ordersList.forEach(ord => {
+            if (ord.status === 'جديد') {
+                unhandledCount++;
+                if (!knownOrderIds.has(ord.id)) {
+                    knownOrderIds.add(ord.id);
                 }
-            });
-
-            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
-            
-            const badge = document.getElementById('liveOrdersBadge');
-            const alertBanner = document.getElementById('pendingOrdersAlertBanner');
-            const bannerCount = document.getElementById('pendingOrdersBannerCount');
-
-            // 🔔 تحكم التنبيه الصوتي المستمر
-            if (unhandledCount > 0) {
-                if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
-                if (alertBanner) { alertBanner.style.display = 'block'; }
-                if (bannerCount) { bannerCount.innerText = unhandledCount; }
-                
-                // بدء التنبيه المتصل
-                startContinuousAlert();
-            } else {
-                if (badge) { badge.style.display = 'none'; }
-                if (alertBanner) { alertBanner.style.display = 'none'; }
-                
-                // إيقاف التنبيه لأن الطلبات انتهت/تم تجهيزها
-                stopContinuousAlert();
+                html += generateOrderCardHTML(ord, ord.docId || ord.id);
             }
-        };
+        });
 
-        if (db) {
-            db.collection("orders").get().then(snapshot => {
-                let list = [];
-                snapshot.forEach(doc => {
-                    list.push({ ...doc.data(), docId: doc.id });
-                });
-                
-                const localOrders = getData('sys_live_orders');
-                localOrders.forEach(ord => {
-                    if (!list.some(l => l.id === ord.id)) list.push(ord);
-                });
+        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
+        
+        const badge = document.getElementById('liveOrdersBadge');
+        const alertBanner = document.getElementById('pendingOrdersAlertBanner');
+        const bannerCount = document.getElementById('pendingOrdersBannerCount');
 
-                updateUIWithOrders(list);
-            }).catch(() => {
-                updateUIWithOrders(getData('sys_live_orders'));
-            });
+        if (unhandledCount > 0) {
+            if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
+            if (alertBanner) { alertBanner.style.display = 'block'; }
+            if (bannerCount) { bannerCount.innerText = unhandledCount; }
+            startContinuousAlert();
         } else {
-            updateUIWithOrders(getData('sys_live_orders'));
+            if (badge) { badge.style.display = 'none'; }
+            if (alertBanner) { alertBanner.style.display = 'none'; }
+            stopContinuousAlert();
         }
     };
 
-    syncOrders();
-    setInterval(syncOrders, 2500);
+    // الاستماع اللحظي الحقيقي للطلبات أونلاين عبر Firebase
+    if (db) {
+        db.collection("orders").onSnapshot(snapshot => {
+            let list = [];
+            snapshot.forEach(doc => {
+                list.push({ ...doc.data(), docId: doc.id });
+            });
+            processOrdersList(list);
+        }, err => {
+            processOrdersList(getData('sys_live_orders'));
+        });
+    } else {
+        setInterval(() => processOrdersList(getData('sys_live_orders')), 2500);
+    }
 }
 
 function generateOrderCardHTML(ord, docId) {
@@ -1168,6 +1187,7 @@ function renderAdminItems() {
     }).join('');
 }
 
+/* حفظ وتعديل الوجبة مع رفعها اللحظي لـ Firebase */
 function saveItem() {
     const id = document.getElementById('editItemId').value;
     const name = document.getElementById('itemName').value;
@@ -1179,13 +1199,23 @@ function saveItem() {
     if (!name || !price) return alert("أدخل الاسم والسعر");
 
     let items = getData('sys_items');
+    let newItemData = { id: id ? Number(id) : Date.now(), name, price, categoryId, image, ingredients, recipe: [] };
+
     if (id) {
-        items = items.map(i => i.id == id ? { ...i, name, price, categoryId, image, ingredients } : i);
+        items = items.map(i => i.id == id ? { ...i, ...newItemData } : i);
     } else {
-        items.push({ id: Date.now(), name, price, categoryId, image, ingredients, recipe: [] });
+        items.push(newItemData);
     }
 
     setData('sys_items', items);
+
+    // رفع التعديل فوراً للسحابة لتتحدث أجهزة الموبايل والايباد
+    if (db) {
+        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData)
+            .then(() => console.log("Cloud sync item success"))
+            .catch(err => console.error("Cloud sync item error:", err));
+    }
+
     resetItemForm();
     renderAdminItems();
 }
@@ -1216,6 +1246,10 @@ function deleteItem(id) {
     if (confirm("حذف الصنف؟")) {
         let items = getData('sys_items').filter(i => i.id !== id);
         setData('sys_items', items);
+        
+        if (db) {
+            db.collection("menu_items").doc(String(id)).delete();
+        }
         renderAdminItems();
     }
 }
