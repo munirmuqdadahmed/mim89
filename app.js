@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v5.2 Full Integrated)
+   MIM89 FAST FOOD - Core Engine (v5.3 Full Smart POS & Caller ID)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -814,10 +814,24 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. مزامنة الطلبات اللحظية والتنبيه المستمر
+   6. مزامنة الطلبات اللحظية والتنبيه المستمر وكاشف المتصل الذكي
    ========================================== */
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
+
+/* 🔍 دالة فحص وتدقيق رقم المتصل من سجل الزبائن السابقين */
+function getCustomerHistoryByPhone(phone) {
+    if (!phone || phone === 'بدون رقم' || phone === '-') return null;
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (!cleanPhone) return null;
+
+    const completed = getData('sys_completed_orders');
+    return completed.find(o => {
+        if (!o.phone) return false;
+        const oPhone = o.phone.replace(/[^0-9]/g, '');
+        return oPhone && oPhone.includes(cleanPhone) && o.customerName && o.customerName !== 'زبون مباشر';
+    }) || null;
+}
 
 function startContinuousAlert() {
     if (continuousAlertTimer) return;
@@ -847,7 +861,7 @@ function playSingleBeep() {
     } catch (e) {}
 }
 
-/* 📡 استماع فوري ودقيق للطلبات والمكالمات الواردة */
+/* 📡 استماع فوري ودقيق للطلبات والمكالمات الواردة مع كاشف رقم الزبون المسجل */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
     if (!container) return;
@@ -903,26 +917,54 @@ function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
 
+    // 🌟 جلب واستدعاء سجل الزبون المسجل سابقاً
+    const rawPhone = ord.phone || '';
+    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
+
+    const displayName = ord.customerName && ord.customerName !== 'مكالمة' 
+        ? ord.customerName 
+        : (pastCustomer ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
+
+    const displayArea = ord.area || (pastCustomer ? pastCustomer.area : '');
+    const displayAddress = ord.address || (pastCustomer ? pastCustomer.address : '');
+
     return `
-        <div style="background:#222228; border:1px solid var(--gold-primary); padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+        <div style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
-                <strong>📞 ${ord.customerName || 'مكالمة'} (${ord.phone || 'بدون رقم'})</strong>
+                <strong>📞 ${displayName} (${rawPhone || 'بدون رقم'})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            <p style="font-size:0.8rem; color:#ccc; margin-top:2px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address || ''}</p>
-            <p style="font-size:0.8rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب من الاتصال'}</p>
+            ${pastCustomer ? '<span style="background:var(--gold-primary); color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : ''}
+            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
+            <p style="font-size:0.8rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب مكالمة هاتفية'}</p>
             <hr style="border-color:#333; margin:6px 0;">
             <ul style="padding-right:12px; font-size:0.8rem;">
                 ${itemsList.length > 0 
                     ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
-                    : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً من المينيو)</li>'}
+                    : '<li style="color:#aaa;">(طلب هاتف - تواصل مع الزبون واقتطع الوجبات من المينيو)</li>'}
             </ul>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
-                <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
-                <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة</button>
+            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
+                    <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة مباشرة</button>
+                </div>
+                <button class="gold-btn" style="padding:4px 8px; font-size:0.75rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary);" onclick="loadIncomingCallToPos('${docId}', '${ord.id}', '${rawPhone}', '${displayName.replace(/'/g, "\\'")}', '${displayArea.replace(/'/g, "\\'")}', '${displayAddress.replace(/'/g, "\\'")}')">📥 نقل لطلب كاشير مباشر (واختيار الوجبات)</button>
             </div>
         </div>
     `;
+}
+
+/* 📲 نقل بيانات المتصل فورياً لشاشة الكاشير المباشر لاختيار الوجبات أثناء المكالمة */
+function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
+    const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
+    switchCashierTab('tabPosDirect', btnDirect);
+
+    const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
+    const custInput = document.getElementById('posCustName');
+    if (custInput) custInput.value = infoText;
+
+    fulfillAndPrintOrder(docId, orderId);
+    alert(`تم جلب بيانات الزبون (${name}) لشاشة المبيعات بنجاح! اختر الوجبات من القائمة لطباعة الفاتورة.`);
 }
 
 function fulfillAndPrintOrder(docId, orderId) {
