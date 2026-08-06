@@ -260,10 +260,7 @@
             margin-bottom: 4px;
         }
 
-        #<div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])" style="cursor:pointer;">
-    🔔 يوجد <span id="pendingOrdersBannerCount">0</span> طلب إلكتروني / هاتف قيد التجهيز! (اضغط هنا للعرَض والفتح)
-</div>
- {
+        #pendingOrdersAlertBanner {
             display: none;
             background: var(--danger);
             color: #fff;
@@ -348,8 +345,8 @@
 
     <!-- التطبيق الرئيسي للكاشير -->
     <div id="cashierMainApp">
-        <div id="pendingOrdersAlertBanner">
-            🔔 يوجد <span id="pendingOrdersBannerCount">0</span> طلب إلكتروني / هاتف قيد التجهيز!
+        <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])" style="cursor:pointer;">
+            🔔 يوجد <span id="pendingOrdersBannerCount">0</span> طلب إلكتروني / هاتف قيد التجهيز! (اضغط هنا للعرض والفتح)
         </div>
 
         <header class="pos-header">
