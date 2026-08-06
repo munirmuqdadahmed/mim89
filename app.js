@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v5.4 Call Detector & Robust Sync)
+   MIM89 FAST FOOD - Core Engine (v5.5 Smart POS, Call Detector & Validation)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -380,16 +380,22 @@ function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
     const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
-    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
+    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim().replace(/\s+/g, '') : '';
     const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
     const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
     const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
 
-    if (type === 'delivery' && (!name || !phone || !area || !address)) {
-        return alert("يرجى إكمال جميع الحقول المطلوب (الاسم، الهاتف، المنطقة، والعنوان)");
-    } else if (!name || !phone) {
-        return alert("يرجى إدخال الاسم ورقم الهاتف على الأقل");
+    // 🛡️ شرط إجباري: التأكد من أن رقم الهاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07
+    const iraqiPhoneRegex = /^07[3-9]\d{8}$/;
+    if (!phone || !iraqiPhoneRegex.test(phone)) {
+        return alert("❌ يرجى إدخال رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
+    }
+
+    if (type === 'delivery' && (!name || !area || !address)) {
+        return alert("يرجى إكمال جميع الحقول المطلوب (الاسم، المنطقة، والعنوان)");
+    } else if (!name) {
+        return alert("يرجى إدخال الاسم على الأقل");
     }
 
     const submitBtn = document.querySelector('#cartModal .gold-btn');
@@ -527,7 +533,6 @@ function loginCashier() {
 
 function logoutCashier() { location.reload(); }
 
-/* 🔄 إصلاح التبديل بين التبويبات للحفاظ على التنسيق ودون اختفاء الطلبات الواردة */
 function switchCashierTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => {
         t.style.display = 'none';
@@ -814,14 +819,35 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. محرك كاشف المكالمات الواردة الشامل (MacroDroid + Firebase Sync)
+   6. محرك كاشف المكالمات، التنبيهات وإدارة الطلبات الملغاة
    ========================================== */
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
-let audioUnlocked = false;
+let globalAudioCtx = null;
 
-// فك حظر صوت الجرس التلقائي على أجهزة الايباد والايفون عند أول لمسة للشاشة
-document.addEventListener('click', () => { audioUnlocked = true; }, { once: true });
+function unlockIpadAudio() {
+    try {
+        if (!globalAudioCtx) {
+            globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (globalAudioCtx.state === 'suspended') {
+            globalAudioCtx.resume();
+        }
+        const osc = globalAudioCtx.createOscillator();
+        const gain = globalAudioCtx.createGain();
+        gain.gain.value = 0.01;
+        osc.connect(gain);
+        gain.connect(globalAudioCtx.destination);
+        osc.start(0);
+        osc.stop(0.1);
+        alert("🔔 تم تفعيل جرس التنبيهات بنجاح على الايباد!");
+    } catch (e) {
+        console.log("Audio unlock:", e);
+    }
+}
+
+document.addEventListener('touchstart', () => { if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume(); }, { once: true });
+document.addEventListener('click', () => { if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume(); }, { once: true });
 
 function startContinuousAlert() {
     if (continuousAlertTimer) return;
@@ -838,23 +864,24 @@ function stopContinuousAlert() {
 
 function playSingleBeep() {
     try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
+        if (!globalAudioCtx) {
+            globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(950, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        if (globalAudioCtx.state === 'suspended') {
+            globalAudioCtx.resume();
+        }
+        const osc = globalAudioCtx.createOscillator();
+        const gain = globalAudioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, globalAudioCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, globalAudioCtx.currentTime);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(globalAudioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.35);
+        osc.stop(globalAudioCtx.currentTime + 0.3);
     } catch (e) {}
 }
 
-/* 🔍 البحث والتدقيق في قاعدة بيانات الفواتير عن رقم هاتف الزبون المتصل */
 function getCustomerHistoryByPhone(phone) {
     if (!phone || phone === 'بدون رقم' || phone === '-') return null;
     const cleanPhone = String(phone).replace(/[^0-9]/g, '');
@@ -868,7 +895,6 @@ function getCustomerHistoryByPhone(phone) {
     }) || null;
 }
 
-/* 📡 استماع فوري عالي المرونة لجميع الاتصالات القادمة من MacroDroid أو الأونلاين */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
     if (!container) return;
@@ -878,7 +904,6 @@ function listenForIncomingOrders() {
         let html = '';
 
         ordersList.forEach(ord => {
-            // قبول المكالمة حتى لو لم تكن تحمل كلمة 'جديد' صراحة من الموبايل
             const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending' || ord.status === '';
             
             if (isUnhandled) {
@@ -916,7 +941,6 @@ function listenForIncomingOrders() {
             });
             processOrdersList(list);
         }, err => {
-            console.log("الرجوع للنظام المحلي للاستماع:", err);
             processOrdersList(getData('sys_live_orders'));
         });
     } else {
@@ -924,12 +948,10 @@ function listenForIncomingOrders() {
     }
 }
 
-/* 🛡️ توليد بطاقة المتصل الذكية وفحص حسابه المسجل قداماً */
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
 
-    // المرونة في قراءة الحقول المختلفة التي يرسلها MacroDroid
     const rawPhone = ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم';
     const rawName = ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة';
     const pastCustomer = getCustomerHistoryByPhone(rawPhone);
@@ -942,7 +964,7 @@ function generateOrderCardHTML(ord, docId) {
     const displayAddress = ord.address || (pastCustomer ? pastCustomer.address : '');
 
     return `
-        <div style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+        <div id="order_card_${docId || ord.id}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
                 <strong>📞 ${displayName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
@@ -959,15 +981,33 @@ function generateOrderCardHTML(ord, docId) {
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
-                    <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة مباشرة</button>
+                    <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة</button>
                 </div>
-                <button class="gold-btn" style="padding:4px 8px; font-size:0.75rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary);" onclick="loadIncomingCallToPos('${docId}', '${ord.id}', '${rawPhone}', '${displayName.replace(/'/g, "\\'")}', '${displayArea.replace(/'/g, "\\'")}', '${displayAddress.replace(/'/g, "\\'")}')">📥 نقل لطلب كاشير مباشر (واختيار الوجبات)</button>
+                <div style="display:flex; gap:4px;">
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${docId}', '${ord.id}', '${rawPhone}', '${displayName.replace(/'/g, "\\'")}', '${displayArea.replace(/'/g, "\\'")}', '${displayAddress.replace(/'/g, "\\'")}')">📥 نقل لكاشير</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger); color:#fff; flex:1;" onclick="cancelIncomingOrder('${docId}', '${ord.id}')">❌ إلغاء وحذف</button>
+                </div>
             </div>
         </div>
     `;
 }
 
-/* 📲 نقل بيانات المتصل فورياً لشاشة الكاشير المباشر لاختيار الوجبات أثناء المحادثة */
+function cancelIncomingOrder(docId, orderId) {
+    if (confirm("هل أنت متأكد من إلغاء وحذف هذا الطلب (غير الصادق/الملغي)؟")) {
+        if (db) {
+            db.collection("orders").doc(docId).delete().catch(err => console.error("Error deleting order:", err));
+        }
+        let orders = getData('sys_live_orders');
+        orders = orders.filter(o => o.id !== orderId);
+        setData('sys_live_orders', orders);
+        
+        const card = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
+        if (card) card.remove();
+        
+        listenForIncomingOrders();
+    }
+}
+
 function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
@@ -1041,7 +1081,7 @@ function printReceipt(order) {
     
     const items = Array.isArray(order.items) ? order.items : [];
     document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.8rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem;">
             <span>${i.name} (×${i.qty})</span>
             <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
         </div>
@@ -1051,14 +1091,14 @@ function printReceipt(order) {
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
+    document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
     document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
     document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:3px 0;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold;">
             <span>● ${i.name}</span>
-            <span style="font-size:1.1rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
+            <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
         </div>
     `).join('');
 
@@ -1203,7 +1243,7 @@ function savePrinterSettings() {
 
     const settings = { enableIpPrinting, cashierIp, kitchenIp, port };
     setData('sys_printer_settings', settings);
-    alert("تم حفظ إعدادات الطابعات بنجاح! سيقوم النظام بحفظ العناوين للتوصيل الشبكي.");
+    alert("تم حفظ إعدادات الطابعات بنجاح!");
 }
 
 function renderAdminAreas() {
