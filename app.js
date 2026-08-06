@@ -389,7 +389,7 @@ function submitOrderToCashier() {
     // 🛡️ شرط إجباري: التأكد من أن رقم الهاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07
     const iraqiPhoneRegex = /^07[3-9]\d{8}$/;
     if (!phone || !iraqiPhoneRegex.test(phone)) {
-        return alert("❌ يرجى إدخل رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
+        return alert("❌ يرجى إدخال رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
     }
 
     if (type === 'delivery' && (!name || !area || !address)) {
