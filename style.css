@@ -213,6 +213,7 @@ body {
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch !important;
 }
 
 .tab-btn, .category-tab {
@@ -294,8 +295,9 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 10px;
-    max-height: 540px;
-    overflow-y: auto;
+    height: auto !important;
+    max-height: none !important;
+    touch-action: pan-y !important;
 }
 
 .item-card, .pos-product-card {
@@ -350,7 +352,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* 8. شبكة الكاشير والتخطيط التجاوبي */
+/* 8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد والآيفون */
 .pos-responsive-grid {
     display: grid;
     grid-template-columns: 1.8fr 1.2fr;
@@ -363,6 +365,8 @@ body {
     display: flex;
     flex-direction: column;
     padding: 8px;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
 }
 
 .cart-items-list {
@@ -373,6 +377,23 @@ body {
     border-top: 1px dashed #333;
     border-bottom: 1px dashed #333;
     padding: 4px 0;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+}
+
+/* 📱 الخاصية الجوهرية لحل مشكلة تجمد السحب في iOS */
+.pos-main-content, 
+.products-grid, 
+.pos-items-grid,
+.tab-content {
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overflow-y: auto !important;
+}
+
+.pos-main-content {
+    height: calc(100vh - 55px) !important;
+    padding-bottom: 90px !important;
 }
 
 @media (max-width: 850px) {
@@ -437,6 +458,7 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
+    -webkit-overflow-scrolling: touch !important;
 }
 
 .auth-overlay {
