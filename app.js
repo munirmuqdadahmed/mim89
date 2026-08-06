@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v4.0 Real-time Cloud Sync)
+   MIM89 FAST FOOD - Core Engine (v4.5 Full Menu)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الافتراضية للنظام وإعدادات الطابعات
+// 2. البيانات الكاملة الشاملة لجميع أقسام ووجبات MIM89
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     printerSettings: {
@@ -39,10 +39,12 @@ const DEFAULT_DATA = {
         { id: "c1", name: "الكاشير الرئيسي", password: "123" }
     ],
     categories: [
-        { id: 1, name: "قسم الشاورما (دجاج)" },
-        { id: 2, name: "قسم الكنتاكي والريزو" },
-        { id: 3, name: "الفنكر والمقبلات" },
-        { id: 4, name: "قسم الإضافات" }
+        { id: 1, name: "🔥 العروض المميزة" },
+        { id: 2, name: "بركر اللحم والبركر" },
+        { id: 3, name: "قسم الشاورما (دجاج)" },
+        { id: 4, name: "قسم الكنتاكي والريزو" },
+        { id: 5, name: "الفنكر والمقبلات" },
+        { id: 6, name: "قسم الإضافات" }
     ],
     deliveryAreas: [
         { name: "القاهرة", price: 0 },
@@ -54,19 +56,54 @@ const DEFAULT_DATA = {
         { id: 1, name: "صدور دجاج طازجة", quantity: 100, unit: "كغم" },
         { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع" },
         { id: 3, name: "بطاطس", quantity: 150, unit: "كغم" },
-        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة" }
+        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة" },
+        { id: 5, name: "لحم عجل طازج", quantity: 80, unit: "كغم" },
+        { id: 6, name: "خبز بركر", quantity: 100, unit: "قطع" }
     ],
     items: [
-        { id: 101, categoryId: 1, name: "شاورما صاج عادي", price: 2500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج، ثومية، مخلل", recipe: [{ invId: 1, qty: 0.1 }, { invId: 2, qty: 1 }] },
-        { id: 102, categoryId: 1, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس، ثومية، خبز", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
-        { id: 103, categoryId: 1, name: "شاورما صاج دبل", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل، دجاج كمية مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
-        { id: 104, categoryId: 1, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
-        { id: 105, categoryId: 1, name: "شاورما 89 الخاص", price: 8000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة MIM89 الخاصة، جبن، صوصات خاصة", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
-        { id: 201, categoryId: 2, name: "كنتاكي قطعتين", price: 5000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "2 قطعة دجاج مقرمش، بطاطس، خبز، ثومية", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
-        { id: 202, categoryId: 2, name: "ريزو (كلاسيك / كص)", price: 5000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو متبل، قطع شاورما/دجاج", recipe: [{ invId: 1, qty: 0.15 }] },
-        { id: 203, categoryId: 2, name: "كنتاكي 4 قطع", price: 9000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "4 قطع كنتاكي مقرمش، بطاطس، ثومية", recipe: [{ invId: 1, qty: 0.5 }, { invId: 3, qty: 0.2 }] },
-        { id: 301, categoryId: 3, name: "قدح فنكر كلاسيك", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية ذهبية مقرمشة", recipe: [{ invId: 3, qty: 0.2 }] },
-        { id: 302, categoryId: 3, name: "فنكر 89 الخاص", price: 4500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس، جبن شيدر، صوص هالابينو", recipe: [{ invId: 3, qty: 0.25 }] }
+        // 🔥 العروض المميزة
+        { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
+        { id: 102, categoryId: 1, name: "عرض شاورما دبل مكس", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
+
+        // 🍔 قسم البركر
+        { id: 201, categoryId: 2, name: "بركر كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", ingredients: "شريحة لحم طازج، طماطم، خس، صوص خاص", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
+        { id: 202, categoryId: 2, name: "بركر الجبن", price: 6000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحة لحم عجل طازج مع جبن شيدر ذائب", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
+        { id: 203, categoryId: 2, name: "دبل تشيز بركر", price: 8000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحتي لحم طازج مع دبل جبن شيدر", recipe: [{ invId: 5, qty: 0.3 }, { invId: 6, qty: 1 }] },
+        { id: 204, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج مقرمش مع خلطة وجبن 89 الخاص", recipe: [{ invId: 1, qty: 0.2 }, { invId: 6, qty: 1 }] },
+
+        // 🌯 قسم الشاورما (دجاج)
+        { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.1 }, { invId: 2, qty: 1 }] },
+        { id: 302, categoryId: 3, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
+        { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
+        { id: 304, categoryId: 3, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
+        { id: 305, categoryId: 3, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
+        { id: 306, categoryId: 3, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
+        { id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
+        { id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
+        { id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] },
+
+        // 🍗 قسم الكنتاكي والريزو
+        { id: 401, categoryId: 4, name: "كنتاكي قطعتين", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "2 قطعة دجاج مقرمش، بطاطس، ثومية، خبز", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
+        { id: 402, categoryId: 4, name: "ريزو (كلاسيك / كص)", price: 5000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو متبل، قطع شاورما دجاج كص", recipe: [{ invId: 1, qty: 0.15 }] },
+        { id: 403, categoryId: 4, name: "ريزو (جبنة / مشروم)", price: 6000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو مع صوص الجبن والمشروم", recipe: [{ invId: 1, qty: 0.15 }] },
+        { id: 404, categoryId: 4, name: "ريزو 89 الخاص", price: 7500, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو مع قطع دجاج مقرمشة وخلطة 89 الخاصة", recipe: [{ invId: 1, qty: 0.2 }] },
+        { id: 405, categoryId: 4, name: "كنتاكي 4 قطع", price: 8000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "4 قطع كنتاكي مقرمش، بطاطس، خبز، ثومية", recipe: [{ invId: 1, qty: 0.5 }, { invId: 3, qty: 0.2 }] },
+        { id: 406, categoryId: 4, name: "كنتاكي 6 قطع", price: 13000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "6 قطع كنتاكي مقرمش عائلي مع البطاطس", recipe: [{ invId: 1, qty: 0.75 }, { invId: 3, qty: 0.3 }] },
+        { id: 407, categoryId: 4, name: "وجبة كنتاكي كاملة (10 قطع)", price: 20000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "10 قطع كنتاكي عائلي ضخم مع جميع الملحقات", recipe: [{ invId: 1, qty: 1.2 }, { invId: 3, qty: 0.5 }] },
+
+        // 🍟 الفنكر والمقبلات
+        { id: 501, categoryId: 5, name: "أصابع موزاريلا", price: 750, image: "https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=500", ingredients: "أصابع جبن موزاريلا مقلية ذهبية", recipe: [] },
+        { id: 502, categoryId: 5, name: "قدح فنكر سبايسي", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع بهارات سبايسي حارة", recipe: [{ invId: 3, qty: 0.1 }] },
+        { id: 503, categoryId: 5, name: "حلقات بصل (5 قطع)", price: 2000, image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500", ingredients: "5 قطع حلقات بصل مقرمشة", recipe: [] },
+        { id: 504, categoryId: 5, name: "قدح فنكر كلاسيك", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية ذهبية كلاسيكية", recipe: [{ invId: 3, qty: 0.2 }] },
+        { id: 505, categoryId: 5, name: "قدح فنكر (دوريتوس/هالابينو)", price: 3500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع قطع دوريتوس وقطع هالابينو", recipe: [{ invId: 3, qty: 0.2 }] },
+        { id: 506, categoryId: 5, name: "فنكر 89 الخاص", price: 4500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس ذهبية، جبن شيدر، صوص هالابينو، وخلطة 89", recipe: [{ invId: 3, qty: 0.25 }] },
+
+        // ➕ قسم الإضافات
+        { id: 601, categoryId: 6, name: "بطاطا إضافية", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "حصة بطاطا مقلية إضافية", recipe: [{ invId: 3, qty: 0.1 }] },
+        { id: 602, categoryId: 6, name: "صوص خاص", price: 1000, image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=500", ingredients: "علبة صوص MIM89 الخاص", recipe: [] },
+        { id: 603, categoryId: 6, name: "هالابينو", price: 1000, image: "https://images.unsplash.com/photo-1588877323863-718873550e58?w=500", ingredients: "شرائح فلفل هالابينو حار", recipe: [] },
+        { id: 604, categoryId: 6, name: "جبن شيدر", price: 1000, image: "https://images.unsplash.com/photo-1552767059-ce182ead8c1b?w=500", ingredients: "صلصة جبن شيدر ذائبة إضافية", recipe: [] }
     ]
 };
 
@@ -82,7 +119,6 @@ function initData() {
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
 
-    // تفعيل الاستماع اللحظي للبيانات من Firebase
     setupCloudRealtimeSync();
 }
 
@@ -101,7 +137,6 @@ function getTodayString() {
 function setupCloudRealtimeSync() {
     if (!db) return;
 
-    // 1. مزامنة الأصناف والمينيو فورياً
     db.collection("menu_items").onSnapshot(snapshot => {
         if (!snapshot.empty) {
             let cloudItems = [];
@@ -111,7 +146,6 @@ function setupCloudRealtimeSync() {
         }
     }, err => console.log("Menu sync fallback:", err));
 
-    // 2. مزامنة الأقسام فورياً
     db.collection("menu_categories").onSnapshot(snapshot => {
         if (!snapshot.empty) {
             let cloudCategories = [];
@@ -866,7 +900,6 @@ function listenForIncomingOrders() {
         }
     };
 
-    // الاستماع اللحظي الحقيقي للطلبات أونلاين عبر Firebase
     if (db) {
         db.collection("orders").onSnapshot(snapshot => {
             let list = [];
@@ -1187,7 +1220,6 @@ function renderAdminItems() {
     }).join('');
 }
 
-/* حفظ وتعديل الوجبة مع رفعها اللحظي لـ Firebase */
 function saveItem() {
     const id = document.getElementById('editItemId').value;
     const name = document.getElementById('itemName').value;
@@ -1209,7 +1241,6 @@ function saveItem() {
 
     setData('sys_items', items);
 
-    // رفع التعديل فوراً للسحابة لتتحدث أجهزة الموبايل والايباد
     if (db) {
         db.collection("menu_items").doc(String(newItemData.id)).set(newItemData)
             .then(() => console.log("Cloud sync item success"))
