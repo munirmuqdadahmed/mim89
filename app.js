@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v5.5 Smart POS, Call Detector & Validation)
+   MIM89 FAST FOOD - Core Engine (v6.0 Full Master Engine)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الكاملة الشاملة لجميع أقسام ووجبات MIM89
+// 2. البيانات الأساسية الكاملة لمطعم MIM89 (خالية تماماً من الكص والجمص)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     printerSettings: {
@@ -389,7 +389,7 @@ function submitOrderToCashier() {
     // 🛡️ شرط إجباري: التأكد من أن رقم الهاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07
     const iraqiPhoneRegex = /^07[3-9]\d{8}$/;
     if (!phone || !iraqiPhoneRegex.test(phone)) {
-        return alert("❌ يرجى إدخال رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
+        return alert("❌ يرجى إدخل رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
     }
 
     if (type === 'delivery' && (!name || !area || !address)) {
@@ -985,7 +985,7 @@ function generateOrderCardHTML(ord, docId) {
                 </div>
                 <div style="display:flex; gap:4px;">
                     <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${docId}', '${ord.id}', '${rawPhone}', '${displayName.replace(/'/g, "\\'")}', '${displayArea.replace(/'/g, "\\'")}', '${displayAddress.replace(/'/g, "\\'")}')">📥 نقل لكاشير</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger); color:#fff; flex:1;" onclick="cancelIncomingOrder('${docId}', '${ord.id}')">❌ إلغاء وحذف</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger-red); color:#fff; flex:1;" onclick="cancelIncomingOrder('${docId}', '${ord.id}')">❌ إلغاء وحذف</button>
                 </div>
             </div>
         </div>
@@ -1129,6 +1129,23 @@ function sendDirectNetworkPrint(ip, port, target, orderData) {
 /* ==========================================
    7. إدارة المخزن والإدارة العامة (admin & inventory)
    ========================================== */
+let currentUploadedBase64 = "";
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentUploadedBase64 = e.target.result;
+            const preview = document.getElementById('imgPreview');
+            if (preview) preview.src = currentUploadedBase64;
+            const urlInput = document.getElementById('itemImage');
+            if (urlInput) urlInput.value = "";
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 function initInventoryPage() { initData(); }
 
 function loginInventory() {
@@ -1293,7 +1310,7 @@ function renderAdminItems() {
         const cat = categories.find(c => c.id == item.categoryId);
         return `
             <tr>
-                <td><img src="${item.image}" width="40" height="40" style="object-fit:cover; border-radius:4px;"></td>
+                <td><img src="${item.image}" width="40" height="40" style="object-fit:cover; border-radius:4px;" onerror="this.src='https://via.placeholder.com/40'"></td>
                 <td>${item.name}</td>
                 <td>${cat ? cat.name : '-'}</td>
                 <td>${Number(item.price).toLocaleString()} د.ع</td>
@@ -1308,16 +1325,27 @@ function renderAdminItems() {
 
 function saveItem() {
     const id = document.getElementById('editItemId').value;
-    const name = document.getElementById('itemName').value;
+    const name = document.getElementById('itemName').value.trim();
     const price = Number(document.getElementById('itemPrice').value);
     const categoryId = Number(document.getElementById('itemCategory').value);
-    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/300';
-    const ingredients = document.getElementById('itemIngredients').value;
+    const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    if (!name || !price) return alert("أدخل الاسم والسعر");
+    let image = currentUploadedBase64 || document.getElementById('itemImage').value.trim() || 'https://via.placeholder.com/300?text=MIM89';
+
+    if (!name || !price) {
+        return alert("❌ يرجى إدخال اسم الصنف والسعر على الأقل!");
+    }
 
     let items = getData('sys_items');
-    let newItemData = { id: id ? Number(id) : Date.now(), name, price, categoryId, image, ingredients, recipe: [] };
+    let newItemData = { 
+        id: id ? Number(id) : Date.now(), 
+        name, 
+        price, 
+        categoryId, 
+        image, 
+        ingredients, 
+        recipe: [] 
+    };
 
     if (id) {
         items = items.map(i => i.id == id ? { ...i, ...newItemData } : i);
@@ -1335,6 +1363,8 @@ function saveItem() {
 
     resetItemForm();
     renderAdminItems();
+    refreshActiveUI();
+    alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً مع المينيو الإلكتروني والكاشير!");
 }
 
 function editItem(id) {
@@ -1345,9 +1375,21 @@ function editItem(id) {
     document.getElementById('itemName').value = item.name;
     document.getElementById('itemPrice').value = item.price;
     document.getElementById('itemCategory').value = item.categoryId;
-    document.getElementById('itemImage').value = item.image;
-    document.getElementById('itemIngredients').value = item.ingredients;
+    document.getElementById('itemIngredients').value = item.ingredients || '';
+
+    if (item.image && item.image.startsWith('data:image')) {
+        currentUploadedBase64 = item.image;
+        document.getElementById('itemImage').value = '';
+    } else {
+        currentUploadedBase64 = '';
+        document.getElementById('itemImage').value = item.image || '';
+    }
+
+    const preview = document.getElementById('imgPreview');
+    if (preview) preview.src = item.image || 'https://via.placeholder.com/150';
+    
     document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function resetItemForm() {
@@ -1356,11 +1398,19 @@ function resetItemForm() {
     document.getElementById('itemPrice').value = '';
     document.getElementById('itemImage').value = '';
     document.getElementById('itemIngredients').value = '';
+    
+    const fileInput = document.getElementById('itemImgFile');
+    if (fileInput) fileInput.value = '';
+    currentUploadedBase64 = '';
+    
+    const preview = document.getElementById('imgPreview');
+    if (preview) preview.src = 'https://via.placeholder.com/150?text=معاينة+الصورة';
+    
     document.getElementById('itemFormTitle').innerText = "إضافة / تعديل صنف للمينيو";
 }
 
 function deleteItem(id) {
-    if (confirm("حذف الصنف؟")) {
+    if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
         let items = getData('sys_items').filter(i => i.id !== id);
         setData('sys_items', items);
         
@@ -1368,6 +1418,7 @@ function deleteItem(id) {
             db.collection("menu_items").doc(String(id)).delete();
         }
         renderAdminItems();
+        refreshActiveUI();
     }
 }
 
