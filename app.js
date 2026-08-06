@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v3.0)
+   MIM89 FAST FOOD - Core Engine (v3.1)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -305,7 +305,6 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
 }
 
-/* 📲 إرسال الطلب: حفظ للكاشير تلقائياً + فتح الواتساب */
 function submitOrderToCashier() {
     if (cart.length === 0) return alert("السلة فارغة!");
     
@@ -352,13 +351,11 @@ function submitOrderToCashier() {
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
     };
 
-    // 1. إرسال الطلب فوراً للكاشير
     saveOrderLocally(orderData);
     if (db) {
         db.collection("orders").add(orderData).catch(err => console.error("Firebase Sync Error:", err));
     }
 
-    // 2. تجهيز نص الواتساب
     let typeText = '🚗 توصيل منزل';
     if (type === 'takeaway') typeText = '🛍️ سفري من المطعم';
     if (type === 'dine_in') typeText = '🍽️ صالة';
@@ -762,9 +759,42 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. مزامنة الطلبات والطباعة المزدوجة التلقائية
+   6. مزامنة الطلبات + التنبيه الصوتي المتصل (المستمر)
    ========================================== */
 let knownOrderIds = new Set();
+let continuousAlertTimer = null; // تايمر الجرس المستمر
+
+/* تشغيل جرس التنبيه بشكل متصل ومستمر دون انقطاع */
+function startContinuousAlert() {
+    if (continuousAlertTimer) return; // شغال حالياً
+    playSingleBeep();
+    continuousAlertTimer = setInterval(() => {
+        playSingleBeep();
+    }, 1000); // تكرار النغمة كل ثانية واحدة بشكل متصل
+}
+
+/* إيقاف التنبيه الصوتي فور تجهيز جميع الطلبات */
+function stopContinuousAlert() {
+    if (continuousAlertTimer) {
+        clearInterval(continuousAlertTimer);
+        continuousAlertTimer = null;
+    }
+}
+
+function playSingleBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+    } catch (e) {}
+}
 
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
@@ -791,14 +821,20 @@ function listenForIncomingOrders() {
             const alertBanner = document.getElementById('pendingOrdersAlertBanner');
             const bannerCount = document.getElementById('pendingOrdersBannerCount');
 
+            // 🔔 تحكم التنبيه الصوتي المستمر
             if (unhandledCount > 0) {
                 if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
                 if (alertBanner) { alertBanner.style.display = 'block'; }
                 if (bannerCount) { bannerCount.innerText = unhandledCount; }
-                playNewOrderSound();
+                
+                // بدء التنبيه المتصل
+                startContinuousAlert();
             } else {
                 if (badge) { badge.style.display = 'none'; }
                 if (alertBanner) { alertBanner.style.display = 'none'; }
+                
+                // إيقاف التنبيه لأن الطلبات انتهت/تم تجهيزها
+                stopContinuousAlert();
             }
         };
 
@@ -824,19 +860,7 @@ function listenForIncomingOrders() {
     };
 
     syncOrders();
-    setInterval(syncOrders, 3000);
-}
-
-function playNewOrderSound() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        osc.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-    } catch (e) {}
+    setInterval(syncOrders, 2500);
 }
 
 function generateOrderCardHTML(ord, docId) {
@@ -914,7 +938,6 @@ function deductInventoryFromRecipe(items) {
 
 /* 🖨️ نظام الطباعة التلقائية المزدوجة بضغطة واحدة والمعزز بالشبكة (IP) */
 function printReceipt(order) {
-    // 1. وصل الزبون
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
@@ -931,7 +954,6 @@ function printReceipt(order) {
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    // 2. وصل المطبخ
     document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
     document.getElementById('kitchenCustName').innerText = `الزبون / الطاولة: ${order.customerName || 'مباشر'}`;
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
@@ -949,13 +971,11 @@ function printReceipt(order) {
 
     const printerSettings = getData('sys_printer_settings');
 
-    // إذا تم تفعيل الطباعة المباشرة عبر الـ IP مستقبلاً
     if (printerSettings && printerSettings.enableIpPrinting) {
         sendDirectNetworkPrint(printerSettings.cashierIp, printerSettings.port, 'cashier', order);
         sendDirectNetworkPrint(printerSettings.kitchenIp, printerSettings.port, 'kitchen', order);
         setTimeout(() => closeModal('receiptModal'), 300);
     } else {
-        // الطباعة التلقائية عبر متصفح الكاشير بدون شاشات تأكيد (Silent Print)
         setTimeout(() => {
             window.print();
             setTimeout(() => {
@@ -965,7 +985,6 @@ function printReceipt(order) {
     }
 }
 
-/* محاكي الطباعة الشبكية المباشرة عبر IP */
 function sendDirectNetworkPrint(ip, port, target, orderData) {
     console.log(`Sending Raw Print Job to IP: ${ip}:${port} for Target: ${target}`);
 }
@@ -1068,7 +1087,6 @@ function loadAdminTabsData() {
     loadPrinterSettings();
 }
 
-/* حفظ وتحميل إعدادات طابعات الـ IP */
 function loadPrinterSettings() {
     const settings = getData('sys_printer_settings');
     if (!settings) return;
