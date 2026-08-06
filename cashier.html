@@ -12,8 +12,9 @@
 
     <title>MIM89 POS - شاشة الكاشير</title>
     
-    <!-- FontAwesome & Firebase SDKs -->
+    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -161,7 +162,7 @@
             color: var(--gold-bright);
         }
 
-        /* التخطيط وتقليل الفراغات */
+        /* التخطيط والتمرير المطور للايباد والآيفون */
         .pos-container {
             display: grid;
             grid-template-columns: 340px 1fr;
@@ -182,6 +183,8 @@
             flex-direction: column;
             padding: 8px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
         }
 
         .pos-cart-box {
@@ -202,11 +205,18 @@
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
             padding: 4px 0;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
         }
 
+        /* 📱 إصلاح التمرير العمودي للمينيو على جهاز الايباد والآيفون */
         .pos-main-content {
             padding: 10px;
-            overflow-y: auto;
+            height: calc(100vh - 55px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            padding-bottom: 90px !important;
         }
 
         .categories-bar {
@@ -215,6 +225,7 @@
             overflow-x: auto;
             padding-bottom: 6px;
             margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch !important;
         }
 
         .category-tab {
@@ -239,6 +250,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
             gap: 8px;
+            touch-action: pan-y !important;
+            height: auto !important;
+            max-height: none !important;
         }
 
         .pos-product-card {
@@ -296,6 +310,7 @@
             max-width: 420px;
             max-height: 90vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch !important;
         }
 
         .toggle-group {
