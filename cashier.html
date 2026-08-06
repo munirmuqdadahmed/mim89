@@ -260,7 +260,10 @@
             margin-bottom: 4px;
         }
 
-        #pendingOrdersAlertBanner {
+        #<div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])" style="cursor:pointer;">
+    🔔 يوجد <span id="pendingOrdersBannerCount">0</span> طلب إلكتروني / هاتف قيد التجهيز! (اضغط هنا للعرَض والفتح)
+</div>
+ {
             display: none;
             background: var(--danger);
             color: #fff;
