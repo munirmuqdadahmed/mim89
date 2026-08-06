@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v5.3 Full Smart POS & Caller ID)
+   MIM89 FAST FOOD - Core Engine (v5.4 Call Detector & Robust Sync)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -814,24 +814,14 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. مزامنة الطلبات اللحظية والتنبيه المستمر وكاشف المتصل الذكي
+   6. محرك كاشف المكالمات الواردة الشامل (MacroDroid + Firebase Sync)
    ========================================== */
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
+let audioUnlocked = false;
 
-/* 🔍 دالة فحص وتدقيق رقم المتصل من سجل الزبائن السابقين */
-function getCustomerHistoryByPhone(phone) {
-    if (!phone || phone === 'بدون رقم' || phone === '-') return null;
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (!cleanPhone) return null;
-
-    const completed = getData('sys_completed_orders');
-    return completed.find(o => {
-        if (!o.phone) return false;
-        const oPhone = o.phone.replace(/[^0-9]/g, '');
-        return oPhone && oPhone.includes(cleanPhone) && o.customerName && o.customerName !== 'زبون مباشر';
-    }) || null;
-}
+// فك حظر صوت الجرس التلقائي على أجهزة الايباد والايفون عند أول لمسة للشاشة
+document.addEventListener('click', () => { audioUnlocked = true; }, { once: true });
 
 function startContinuousAlert() {
     if (continuousAlertTimer) return;
@@ -849,6 +839,9 @@ function stopContinuousAlert() {
 function playSingleBeep() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
@@ -861,7 +854,21 @@ function playSingleBeep() {
     } catch (e) {}
 }
 
-/* 📡 استماع فوري ودقيق للطلبات والمكالمات الواردة مع كاشف رقم الزبون المسجل */
+/* 🔍 البحث والتدقيق في قاعدة بيانات الفواتير عن رقم هاتف الزبون المتصل */
+function getCustomerHistoryByPhone(phone) {
+    if (!phone || phone === 'بدون رقم' || phone === '-') return null;
+    const cleanPhone = String(phone).replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 5) return null;
+
+    const completed = getData('sys_completed_orders');
+    return completed.find(o => {
+        if (!o.phone) return false;
+        const oPhone = String(o.phone).replace(/[^0-9]/g, '');
+        return oPhone && (oPhone.includes(cleanPhone) || cleanPhone.includes(oPhone)) && o.customerName && o.customerName !== 'زبون مباشر';
+    }) || null;
+}
+
+/* 📡 استماع فوري عالي المرونة لجميع الاتصالات القادمة من MacroDroid أو الأونلاين */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
     if (!container) return;
@@ -871,7 +878,10 @@ function listenForIncomingOrders() {
         let html = '';
 
         ordersList.forEach(ord => {
-            if (ord.status === 'جديد') {
+            // قبول المكالمة حتى لو لم تكن تحمل كلمة 'جديد' صراحة من الموبايل
+            const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending' || ord.status === '';
+            
+            if (isUnhandled) {
                 unhandledCount++;
                 if (!knownOrderIds.has(ord.id)) {
                     knownOrderIds.add(ord.id);
@@ -880,7 +890,7 @@ function listenForIncomingOrders() {
             }
         });
 
-        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات جارية حالياً</p>';
+        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات أو مكالمات جارية حالياً</p>';
         
         const badge = document.getElementById('liveOrdersBadge');
         const alertBanner = document.getElementById('pendingOrdersAlertBanner');
@@ -906,23 +916,26 @@ function listenForIncomingOrders() {
             });
             processOrdersList(list);
         }, err => {
+            console.log("الرجوع للنظام المحلي للاستماع:", err);
             processOrdersList(getData('sys_live_orders'));
         });
     } else {
-        setInterval(() => processOrdersList(getData('sys_live_orders')), 2500);
+        setInterval(() => processOrdersList(getData('sys_live_orders')), 2000);
     }
 }
 
+/* 🛡️ توليد بطاقة المتصل الذكية وفحص حسابه المسجل قداماً */
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
 
-    // 🌟 جلب واستدعاء سجل الزبون المسجل سابقاً
-    const rawPhone = ord.phone || '';
+    // المرونة في قراءة الحقول المختلفة التي يرسلها MacroDroid
+    const rawPhone = ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم';
+    const rawName = ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة';
     const pastCustomer = getCustomerHistoryByPhone(rawPhone);
 
-    const displayName = ord.customerName && ord.customerName !== 'مكالمة' 
-        ? ord.customerName 
+    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
+        ? rawName 
         : (pastCustomer ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
 
     const displayArea = ord.area || (pastCustomer ? pastCustomer.area : '');
@@ -931,17 +944,17 @@ function generateOrderCardHTML(ord, docId) {
     return `
         <div style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
-                <strong>📞 ${displayName} (${rawPhone || 'بدون رقم'})</strong>
+                <strong>📞 ${displayName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            ${pastCustomer ? '<span style="background:var(--gold-primary); color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : ''}
+            ${pastCustomer ? '<span style="background:var(--gold-primary); color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
             <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
-            <p style="font-size:0.8rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب مكالمة هاتفية'}</p>
+            <p style="font-size:0.8rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب من الاتصال الهاتفي'}</p>
             <hr style="border-color:#333; margin:6px 0;">
             <ul style="padding-right:12px; font-size:0.8rem;">
                 ${itemsList.length > 0 
                     ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
-                    : '<li style="color:#aaa;">(طلب هاتف - تواصل مع الزبون واقتطع الوجبات من المينيو)</li>'}
+                    : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً في الفاتورة المباشرة)</li>'}
             </ul>
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -954,7 +967,7 @@ function generateOrderCardHTML(ord, docId) {
     `;
 }
 
-/* 📲 نقل بيانات المتصل فورياً لشاشة الكاشير المباشر لاختيار الوجبات أثناء المكالمة */
+/* 📲 نقل بيانات المتصل فورياً لشاشة الكاشير المباشر لاختيار الوجبات أثناء المحادثة */
 function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
