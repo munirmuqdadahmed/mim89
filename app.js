@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v5.1 Final Fixed)
+   MIM89 FAST FOOD - Core Engine (v5.2 Full Integrated)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -486,7 +486,7 @@ function sendRestaurantFeedback() {
 }
 
 /* ==========================================
-   4. نقطة البيع والأرشيف والكشوفات (cashier.html)
+   4. نقطة البيع POS الأرشيف والكشوفات (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
@@ -514,7 +514,7 @@ function loginCashier() {
         activeCashierUser = user;
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('cashierMainApp').style.display = 'block';
-        document.getElementById('activeCashierName').innerText = "الكاشير الحالي: " + user.name;
+        document.getElementById('activeCashierName').innerText = "الكاشير: " + user.name;
         document.getElementById('authError').innerText = "";
         document.getElementById('cashierPassInput').value = "";
         
@@ -527,13 +527,18 @@ function loginCashier() {
 
 function logoutCashier() { location.reload(); }
 
-/* تعديل التنقل بين التبويبات للحفاظ على التناسق */
+/* 🔄 إصلاح التبديل بين التبويبات للحفاظ على التنسيق ودون اختفاء الطلبات الواردة */
 function switchCashierTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('#cashierMainApp .toggle-group .toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => {
+        t.style.display = 'none';
+    });
     
-    const targetTab = document.getElementById(tabId);
-    if (targetTab) targetTab.style.display = 'block';
+    document.querySelectorAll('.pos-sidebar .toggle-btn').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.style.display = 'flex';
+    }
     if (btn) btn.classList.add('active');
 }
 
@@ -572,23 +577,24 @@ function loadPosDirectMenu(catId = 'all') {
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
 
 function filterPosProducts() {
-    const query = document.getElementById('posSearchInput').value.toLowerCase();
+    const query = document.getElementById('posSearchInput') ? document.getElementById('posSearchInput').value.toLowerCase() : '';
     const items = getData('sys_items');
     const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
     
     const filtered = items.filter(i => i.name.toLowerCase().includes(query));
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.85rem; color:#fff; margin:4px 0 2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.85rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
@@ -626,7 +632,7 @@ function renderPosCart() {
     if (!list) return;
 
     if (posCart.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.85rem; padding:15px;">انقر على الوجبة لإضافتها للفاتورة</p>`;
+        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
         totalEl.innerText = "0 د.ع";
         return;
     }
@@ -636,15 +642,15 @@ function renderPosCart() {
         const itemTotal = item.price * item.qty;
         total += itemTotal;
         return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; background:#1c1c20; padding:6px; border-radius:6px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#1c1c20; padding:4px 6px; border-radius:4px; font-size:0.8rem;">
                 <div>
                     <strong style="color:var(--gold-primary);">${item.name}</strong><br>
                     <small style="color:#aaa;">${Number(item.price).toLocaleString()} × ${item.qty}</small>
                 </div>
-                <div style="display:flex; gap:5px; align-items:center;">
-                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 8px; font-size:0.8rem;">-</button>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">-</button>
                     <span>${item.qty}</span>
-                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 8px; font-size:0.8rem;">+</button>
+                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">+</button>
                 </div>
             </div>
         `;
@@ -668,7 +674,7 @@ function processPosDirectCheckout() {
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش (نقداً)' : '💳 فيزا / ماستركارد',
+        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
         area: typeText,
         address: "-",
         notes: "-",
@@ -707,28 +713,20 @@ function openCompletedOrdersModal() {
     if (!list) return;
 
     if (!completed || completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:30px; font-size:0.95rem;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
+        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px; font-size:0.85rem;">لا توجد فواتير سابقة مطبوعة</p>`;
     } else {
         list.innerHTML = completed.map(ord => {
             const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
             return `
-                <div style="background:#222228; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; color:var(--gold-primary); margin-bottom:6px;">
-                        <strong><i class="fa-solid fa-user"></i> ${ord.customerName || 'زبون'}</strong>
-                        <span style="font-size:0.8rem; color:#aaa;">⏰ ${ord.timestamp || 'سابق'} (${ord.dateDate || ''})</span>
+                <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:8px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--gold-primary);">
+                        <strong>👤 ${ord.customerName || 'زبون'}</strong>
+                        <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
                     </div>
-                    <div style="font-size:0.85rem; color:#ccc; margin-bottom:6px;">
-                        <span>خدمة: ${ord.area || 'صالة'}</span> | 
-                        <span>دفع: ${ord.paymentMethod || 'كاش'}</span>
-                    </div>
-                    <div style="font-size:0.85rem; color:#888; margin-bottom:8px; background:#18181c; padding:6px; border-radius:6px;">
-                        <strong>الوجبات:</strong> ${itemsText}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:8px;">
-                        <strong style="color:var(--gold-bright); font-size:1rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
-                        <button class="gold-btn" style="padding:6px 14px; font-size:0.85rem;" onclick="reprintCompletedOrder('${ord.id}')">
-                            🖨️ إعادة طباعة
-                        </button>
+                    <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
+                        <strong style="color:var(--gold-bright); font-size:0.9rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
+                        <button class="gold-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="reprintCompletedOrder('${ord.id}')">🖨️ إعادة طباعة</button>
                     </div>
                 </div>
             `;
@@ -744,13 +742,11 @@ function reprintCompletedOrder(orderId) {
     if (order) {
         closeModal('completedOrdersModal');
         printReceipt(order);
-    } else {
-        alert("لم يتم العثور على الفاتورة!");
     }
 }
 
 function clearCompletedOrdersHistory() {
-    if (confirm("هل أنت متأكد من مسح جميع الفواتير السابقة من السجل؟")) {
+    if (confirm("مسح جميع الفواتير من السجل؟")) {
         setData('sys_completed_orders', []);
         openCompletedOrdersModal();
     }
@@ -769,26 +765,16 @@ function openDailyReportModal() {
 
 function renderDailyReport(targetDate) {
     const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => {
-        if (o.dateDate) return o.dateDate === targetDate;
-        return targetDate === getTodayString();
-    });
+    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
 
-    let totalSales = 0;
-    let totalCash = 0;
-    let totalVisa = 0;
-    let totalDelivery = 0;
-    let subtotalFood = 0;
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
     let itemsSoldMap = {};
 
     filteredOrders.forEach(ord => {
         const orderTotal = Number(ord.totalAmount || 0);
-        const delivery = Number(ord.deliveryFee || 0);
-        const sub = Number(ord.subtotal || 0);
-
         totalSales += orderTotal;
-        totalDelivery += delivery;
-        subtotalFood += sub;
+        totalDelivery += Number(ord.deliveryFee || 0);
+        subtotalFood += Number(ord.subtotal || 0);
 
         if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
             totalVisa += orderTotal;
@@ -798,17 +784,13 @@ function renderDailyReport(targetDate) {
 
         if (ord.items && Array.isArray(ord.items)) {
             ord.items.forEach(item => {
-                if (itemsSoldMap[item.name]) {
-                    itemsSoldMap[item.name] += item.qty;
-                } else {
-                    itemsSoldMap[item.name] = item.qty;
-                }
+                itemsSoldMap[item.name] = (itemsSoldMap[item.name] || 0) + item.qty;
             });
         }
     });
 
     document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
-    document.getElementById('reportCashierText').innerText = "الكاشير المسؤول: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
+    document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
     document.getElementById('repOrdersCount').innerText = filteredOrders.length;
     document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
@@ -820,10 +802,10 @@ function renderDailyReport(targetDate) {
     const itemNames = Object.keys(itemsSoldMap);
 
     if (itemNames.length === 0) {
-        itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات في هذا التاريخ</p>`;
+        itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات</p>`;
     } else {
         itemsListEl.innerHTML = itemNames.map(name => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:4px 0;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:2px 0;">
                 <span>● ${name}</span>
                 <strong>العدد: ${itemsSoldMap[name]}</strong>
             </div>
@@ -840,9 +822,7 @@ let continuousAlertTimer = null;
 function startContinuousAlert() {
     if (continuousAlertTimer) return;
     playSingleBeep();
-    continuousAlertTimer = setInterval(() => {
-        playSingleBeep();
-    }, 1000);
+    continuousAlertTimer = setInterval(() => playSingleBeep(), 1000);
 }
 
 function stopContinuousAlert() {
@@ -867,6 +847,7 @@ function playSingleBeep() {
     } catch (e) {}
 }
 
+/* 📡 استماع فوري ودقيق للطلبات والمكالمات الواردة */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
     if (!container) return;
@@ -885,7 +866,7 @@ function listenForIncomingOrders() {
             }
         });
 
-        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px;">لا توجد طلبات جارية حالياً</p>';
+        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات جارية حالياً</p>';
         
         const badge = document.getElementById('liveOrdersBadge');
         const alertBanner = document.getElementById('pendingOrdersAlertBanner');
@@ -918,30 +899,27 @@ function listenForIncomingOrders() {
     }
 }
 
-/* 🛡️ دالة إنشاء بطاقة الطلب - محصنة ومحمية من أخطاء المكالمات الهاتفية */
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
-    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) 
-        ? Number(ord.totalAmount).toLocaleString() 
-        : '0';
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
 
     return `
-        <div style="background:#222228; border:1px solid var(--gold-primary); padding:12px; margin-bottom:10px; border-radius:10px;">
-            <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
-                <strong>📞 ${ord.customerName || 'مكالمة واردة'} (${ord.phone || 'بدون رقم'})</strong>
+        <div style="background:#222228; border:1px solid var(--gold-primary); padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
+                <strong>📞 ${ord.customerName || 'مكالمة'} (${ord.phone || 'بدون رقم'})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address || ''}</p>
-            <p style="font-size:0.85rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب تلقائي من الاتصال'}</p>
-            <hr style="border-color:#333; margin:8px 0;">
-            <ul style="padding-right:15px; font-size:0.9rem;">
+            <p style="font-size:0.8rem; color:#ccc; margin-top:2px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address || ''}</p>
+            <p style="font-size:0.8rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب من الاتصال'}</p>
+            <hr style="border-color:#333; margin:6px 0;">
+            <ul style="padding-right:12px; font-size:0.8rem;">
                 ${itemsList.length > 0 
                     ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
                     : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً من المينيو)</li>'}
             </ul>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <strong style="color:var(--gold-bright);">المجموع: ${total} د.ع</strong>
-                <button class="gold-btn" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة الفاتورة</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
+                <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة</button>
             </div>
         </div>
     `;
@@ -1000,7 +978,6 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-/* 🖨️ نظام الطباعة التلقائية المزدوجة بضغطة واحدة ومعزز بالشبكة (IP) */
 function printReceipt(order) {
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
@@ -1009,7 +986,7 @@ function printReceipt(order) {
     
     const items = Array.isArray(order.items) ? order.items : [];
     document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.8rem;">
             <span>${i.name} (×${i.qty})</span>
             <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
         </div>
@@ -1024,9 +1001,9 @@ function printReceipt(order) {
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
     document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:4px 0;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:3px 0;">
             <span>● ${i.name}</span>
-            <span style="font-size:1.2rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
+            <span style="font-size:1.1rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
         </div>
     `).join('');
 
@@ -1045,7 +1022,7 @@ function printReceipt(order) {
             window.print();
             setTimeout(() => {
                 closeModal('receiptModal');
-            }, 500);
+            }, 400);
         }, 200);
     }
 }
@@ -1055,7 +1032,7 @@ function sendDirectNetworkPrint(ip, port, target, orderData) {
 }
 
 /* ==========================================
-   7. إدارة المخزن والإدارة العامة
+   7. إدارة المخزن والإدارة العامة (admin & inventory)
    ========================================== */
 function initInventoryPage() { initData(); }
 
