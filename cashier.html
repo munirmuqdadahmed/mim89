@@ -328,6 +328,20 @@
             margin-top: 2px;
             display: block;
         }
+
+        /* 🖨️ إعدادات الطباعة المستقلة للكاشير والمطبخ */
+        @media print {
+            body * { visibility: hidden; }
+            #receiptModal, #receiptModal * { visibility: visible; }
+            #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: #fff; }
+            
+            .kitchen-copy {
+                page-break-before: always !important;
+                break-before: page !important;
+                margin-top: 20px;
+                padding-top: 15px;
+            }
+        }
     </style>
 </head>
 <body class="cashier-body">
@@ -363,6 +377,11 @@
                     <button onclick="logoutCashier()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
                 </div>
             </div>
+
+            <!-- 🔊 زر فك حظر صوت الجرس للايباد -->
+            <button onclick="unlockIpadAudio()" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">
+                🔊 تفعيل جرس التنبيهات
+            </button>
 
             <span id="activeCashierName" style="color:#aaa; font-size:0.8rem;"></span>
         </header>
@@ -429,6 +448,7 @@
     <!-- نافذة الفاتورة للطباعة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
+            <!-- 1. فاتورة الكاشير المالية -->
             <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
                 <h3 style="font-size:1.1rem; margin:0;">MIM89 FAST FOOD</h3>
                 <small>بغداد - القاهرة / قرب المتنزه</small><br>
@@ -452,14 +472,14 @@
                 شكراً لزيارتكم MIM89! ❤️
             </div>
 
-            <!-- نسخة المطبخ -->
-            <div style="page-break-before: always; margin-top:15px; border-top:2px dashed #000; padding-top:10px;" class="kitchen-copy">
-                <h4 style="text-align:center; font-size:1rem; margin:0;">*** بون المطبخ ***</h4>
-                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.85rem; margin-top:4px;"></div>
-                <div id="kitchenCustName" style="font-size:0.8rem;"></div>
+            <!-- 2. بون المطبخ المخصص المستقل -->
+            <div class="kitchen-copy">
+                <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px;">*** بون المطبخ ***</h4>
+                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.9rem; margin-top:6px;"></div>
+                <div id="kitchenCustName" style="font-size:0.85rem;"></div>
                 <div id="kitchenTimeInfo" style="font-size:0.8rem; margin-bottom:6px;"></div>
-                <div id="kitchenItemsBody" style="font-size:1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                <div id="kitchenNotesInfo" style="font-size:0.8rem; font-weight:bold; margin-top:6px;"></div>
+                <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
+                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; background:#eee; padding:3px;"></div>
             </div>
         </div>
     </div>
@@ -512,7 +532,6 @@
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
 
-        // إغلاق القائمة المنسدلة عند النقر في أي مكان آخر
         window.onclick = function(e) {
             if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
                 const menu = document.getElementById('brandDropdownMenu');
