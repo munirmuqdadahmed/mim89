@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v4.5 Full Menu)
+   MIM89 FAST FOOD - Core Engine (v5.1 Final Fixed)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -527,10 +527,13 @@ function loginCashier() {
 
 function logoutCashier() { location.reload(); }
 
+/* تعديل التنقل بين التبويبات للحفاظ على التناسق */
 function switchCashierTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('#cashierMainApp .toggle-group .toggle-btn').forEach(b => b.classList.remove('active'));
+    
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.style.display = 'block';
     if (btn) btn.classList.add('active');
 }
 
@@ -707,7 +710,7 @@ function openCompletedOrdersModal() {
         list.innerHTML = `<p style="text-align:center; color:#888; padding:30px; font-size:0.95rem;">لا توجد فواتير سابقة مطبوعة حتى الآن</p>`;
     } else {
         list.innerHTML = completed.map(ord => {
-            const itemsText = (ord.items || []).map(i => `${i.name} (×${i.qty})`).join(' ، ');
+            const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
             return `
                 <div style="background:#222228; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; color:var(--gold-primary); margin-bottom:6px;">
@@ -915,21 +918,29 @@ function listenForIncomingOrders() {
     }
 }
 
+/* 🛡️ دالة إنشاء بطاقة الطلب - محصنة ومحمية من أخطاء المكالمات الهاتفية */
 function generateOrderCardHTML(ord, docId) {
+    const itemsList = Array.isArray(ord.items) ? ord.items : [];
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) 
+        ? Number(ord.totalAmount).toLocaleString() 
+        : '0';
+
     return `
         <div style="background:#222228; border:1px solid var(--gold-primary); padding:12px; margin-bottom:10px; border-radius:10px;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
-                <strong>${ord.customerName} (${ord.phone})</strong>
+                <strong>📞 ${ord.customerName || 'مكالمة واردة'} (${ord.phone || 'بدون رقم'})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address}</p>
-            <p style="font-size:0.85rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'لا يوجد'}</p>
+            <p style="font-size:0.85rem; color:#ccc; margin-top:4px;">${ord.area ? 'المنطقة: ' + ord.area : ''} ${ord.address || ''}</p>
+            <p style="font-size:0.85rem; color:#f59e0b;">ملاحظات: ${ord.notes || 'طلب تلقائي من الاتصال'}</p>
             <hr style="border-color:#333; margin:8px 0;">
             <ul style="padding-right:15px; font-size:0.9rem;">
-                ${ord.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join('')}
+                ${itemsList.length > 0 
+                    ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
+                    : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً من المينيو)</li>'}
             </ul>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <strong style="color:var(--gold-bright);">المجموع: ${ord.totalAmount.toLocaleString()} د.ع</strong>
+                <strong style="color:var(--gold-bright);">المجموع: ${total} د.ع</strong>
                 <button class="gold-btn" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة الفاتورة</button>
             </div>
         </div>
@@ -969,6 +980,7 @@ function fulfillLocalOrder(orderId) {
 }
 
 function deductInventoryFromRecipe(items) {
+    if (!Array.isArray(items) || items.length === 0) return;
     let inventory = getData('sys_inventory');
     const allMenuItems = getData('sys_items');
 
@@ -988,14 +1000,15 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-/* 🖨️ نظام الطباعة التلقائية المزدوجة بضغطة واحدة والمعزز بالشبكة (IP) */
+/* 🖨️ نظام الطباعة التلقائية المزدوجة بضغطة واحدة ومعزز بالشبكة (IP) */
 function printReceipt(order) {
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
     document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
     document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
     
-    document.getElementById('receiptItemsBody').innerHTML = (order.items || []).map(i => `
+    const items = Array.isArray(order.items) ? order.items : [];
+    document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
         <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.85rem;">
             <span>${i.name} (×${i.qty})</span>
             <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
@@ -1007,10 +1020,10 @@ function printReceipt(order) {
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
     document.getElementById('kitchenOrderType').innerText = `نوع الطلب: ${order.area || 'صالة'}`;
-    document.getElementById('kitchenCustName').innerText = `الزبون / الطاولة: ${order.customerName || 'مباشر'}`;
+    document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
-    document.getElementById('kitchenItemsBody').innerHTML = (order.items || []).map(i => `
+    document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd; padding:4px 0;">
             <span>● ${i.name}</span>
             <span style="font-size:1.2rem; text-decoration:underline;">[ العدد: ${i.qty} ]</span>
@@ -1127,7 +1140,8 @@ function loginAdmin() {
 function switchAdminTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+    const tab = document.getElementById(tabId);
+    if (tab) tab.classList.add('active');
     if (btn) btn.classList.add('active');
 }
 
