@@ -393,10 +393,16 @@
                 </div>
             </div>
 
-            <!-- 🔊 زر فك حظر صوت الجرس للايباد -->
-            <button onclick="unlockIpadAudio()" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">
-                🔊 تفعيل جرس التنبيهات
-            </button>
+            <!-- 🔄 زر التحديث الأخضر وزر الجرس للايباد -->
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button onclick="globalSystemSync(this)" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#10b981; color:#fff; border:none;">
+                    <i class="fa-solid fa-rotate"></i> تحديث
+                </button>
+
+                <button onclick="unlockIpadAudio()" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">
+                    🔊 تفعيل جرس التنبيهات
+                </button>
+            </div>
 
             <span id="activeCashierName" style="color:#aaa; font-size:0.8rem;"></span>
         </header>
