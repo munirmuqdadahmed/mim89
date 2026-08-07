@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v7.0 Master Engine)
+   MIM89 FAST FOOD - Core Engine (v8.0 Auto-Sync Master Engine)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الأساسية الكاملة لمطعم MIM89 (تشمل الزنجر، السكالوب، الفاهيتا)
+// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً تشمل الزنجر، السكالوب، الفاهيتا)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     printerSettings: {
@@ -120,9 +120,26 @@ const DEFAULT_DATA = {
     ]
 };
 
+// ⚡ دالة تهيئة البيانات التلقائية مع فحص تلقائي لأعداد الأصناف
 function initData() {
+    let currentItems = getData('sys_items');
+
+    // 🚀 إذا كان المينيو يحتوي على أقل من 10 أصناف (بسبب الذاكرة القديمة)، يتم زرع ورفع الـ 32 صنفاً فوراً
+    if (!currentItems || currentItems.length < 10) {
+        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+
+        if (db) {
+            DEFAULT_DATA.items.forEach(item => {
+                db.collection("menu_items").doc(String(item.id)).set(item);
+            });
+            DEFAULT_DATA.categories.forEach(cat => {
+                db.collection("menu_categories").doc(String(cat.id)).set(cat);
+            });
+        }
+    }
+
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-    if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
@@ -154,8 +171,12 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            setData('sys_items', cloudItems);
-            refreshActiveUI();
+            
+            // عدم قفل الأصناف إذا كانت القائمة السحابية فارغة
+            if (cloudItems.length >= 10) {
+                setData('sys_items', cloudItems);
+                refreshActiveUI();
+            }
         }
     }, err => console.log("Menu sync fallback:", err));
 
@@ -163,8 +184,10 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudCategories = [];
             snapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-            setData('sys_categories', cloudCategories);
-            refreshActiveUI();
+            if (cloudCategories.length >= 5) {
+                setData('sys_categories', cloudCategories);
+                refreshActiveUI();
+            }
         }
     }, err => console.log("Category sync fallback:", err));
 }
@@ -1507,23 +1530,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
-/* 🚀 دالة إجبارية لرفع وإعادة ترميم جميع الأصناف الـ 32 على السحابة والجهاز */
-function forceResetAllItems() {
-    if (confirm("هل تريد إعادة تنزيل كافة الأصناف الـ 32 (الزنجر، الفاهيتا، السكالوب، الشاورما) ورفعها للسحابة؟")) {
-        // 1. تحديث الذاكرة المحلية
-        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-
-        // 2. رفع جميع الأصناف فوراً إلى Firebase
-        if (db) {
-            DEFAULT_DATA.items.forEach(item => {
-                db.collection("menu_items").doc(String(item.id)).set(item);
-            });
-            DEFAULT_DATA.categories.forEach(cat => {
-                db.collection("menu_categories").doc(String(cat.id)).set(cat);
-            });
-        }
-        alert("🎉 تم رفع وترميم كافة الأصناف والأقسام (32 صنف) بنجاح!");
-        location.reload();
-    }
-}
