@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Master Core Engine (v10.5)
+   MIM89 FAST FOOD - Core Master Engine (v11.0)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -1080,15 +1080,16 @@ function listenForIncomingOrders() {
             
             // 🔔 إظهار شريط تنبيه عائم في أعلى الشاشة مهما كان التبويب المفتوح
             if (alertBanner && lastIncomingCall) {
-                const phone = lastIncomingCall.phone || 'رقم غير معروف';
-                const name = lastIncomingCall.customerName || 'مكالمة واردة';
-                const docId = lastIncomingCall.docId || lastIncomingCall.id;
+                const phone = String(lastIncomingCall.phone || 'رقم غير معروف');
+                const name = String(lastIncomingCall.customerName || 'مكالمة واردة');
+                const docId = String(lastIncomingCall.docId || lastIncomingCall.id || '');
+                const safeName = name.replace(/'/g, "\\'");
 
                 alertBanner.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px;">
                         <span>📞 <strong>مكالمة واردة جديدة:</strong> ${name} (${phone})</span>
                         <button class="gold-btn btn-sm" style="background:#000; color:#fff; font-size:0.75rem;" 
-                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id}', '${phone}', '${name.replace(/'/g, "\\'")}', '', '')">
+                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id || ''}', '${phone}', '${safeName}', '', '')">
                             📥 نقل لكاشير المبيعات
                         </button>
                     </div>
@@ -1118,23 +1119,31 @@ function listenForIncomingOrders() {
     }
 }
 
+/* 🛡️ دالة توليد بطاقة المكالمة المحصنة برمجياً 100% ضد القيم الفارغة */
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
 
-    const rawPhone = ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم';
-    const rawName = ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة';
+    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
+    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
     const pastCustomer = getCustomerHistoryByPhone(rawPhone);
 
     const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
         ? rawName 
-        : (pastCustomer ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
+        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
 
-    const displayArea = ord.area || (pastCustomer ? pastCustomer.area : '');
-    const displayAddress = ord.address || (pastCustomer ? pastCustomer.address : '');
+    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
+    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
+
+    const safeDocId = String(docId || '');
+    const safeOrderId = String(ord.id || docId || '');
+    const safePhone = String(rawPhone || '');
+    const safeName = String(displayName || '').replace(/'/g, "\\'");
+    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
+    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
 
     return `
-        <div id="order_card_${docId || ord.id}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
                 <strong>📞 ${displayName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
@@ -1151,11 +1160,11 @@ function generateOrderCardHTML(ord, docId) {
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
-                    <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${docId}', '${ord.id}')">تجهيز وطباعة</button>
+                    <button class="gold-btn" style="padding:4px 8px; font-size:0.8rem;" onclick="fulfillAndPrintOrder('${safeDocId}', '${safeOrderId}')">تجهيز وطباعة</button>
                 </div>
                 <div style="display:flex; gap:4px;">
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${docId}', '${ord.id}', '${rawPhone}', '${displayName.replace(/'/g, "\\'")}', '${displayArea.replace(/'/g, "\\'")}', '${displayAddress.replace(/'/g, "\\'")}')">📥 نقل لكاشير</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger-red); color:#fff; flex:1;" onclick="cancelIncomingOrder('${docId}', '${ord.id}')">❌ إلغاء وحذف</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger-red); color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
                 </div>
             </div>
         </div>
