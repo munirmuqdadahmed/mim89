@@ -1507,3 +1507,23 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+/* 🚀 دالة إجبارية لرفع وإعادة ترميم جميع الأصناف الـ 32 على السحابة والجهاز */
+function forceResetAllItems() {
+    if (confirm("هل تريد إعادة تنزيل كافة الأصناف الـ 32 (الزنجر، الفاهيتا، السكالوب، الشاورما) ورفعها للسحابة؟")) {
+        // 1. تحديث الذاكرة المحلية
+        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+
+        // 2. رفع جميع الأصناف فوراً إلى Firebase
+        if (db) {
+            DEFAULT_DATA.items.forEach(item => {
+                db.collection("menu_items").doc(String(item.id)).set(item);
+            });
+            DEFAULT_DATA.categories.forEach(cat => {
+                db.collection("menu_categories").doc(String(cat.id)).set(cat);
+            });
+        }
+        alert("🎉 تم رفع وترميم كافة الأصناف والأقسام (32 صنف) بنجاح!");
+        location.reload();
+    }
+}
