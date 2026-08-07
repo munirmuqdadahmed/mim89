@@ -373,7 +373,7 @@ body {
 }
 
 /* ==========================================
-   8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد والآيفون (Landscape Fix)
+   8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد (Landscape & Fixed Print Fix)
    ========================================== */
 #cashierMainApp {
     height: 100%;
@@ -385,14 +385,14 @@ body {
 
 .pos-container, .pos-responsive-grid {
     display: grid;
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: 360px 1fr;
     gap: 0;
     flex-grow: 1;
     height: calc(100% - 52px);
     overflow: hidden;
 }
 
-/* 📱 قفل تمرير السايدبار الخارجي لمنع اختفاء الأزرار عند العرض */
+/* 📱 قفل السايدبار الخارجي تماماً لمنع اختفاء زر الطباعة في الوضع العرضي */
 .pos-sidebar {
     background: #18181c;
     border-left: 1px solid var(--card-border);
@@ -401,19 +401,19 @@ body {
     padding: 8px;
     height: 100% !important;
     max-height: 100% !important;
-    overflow: hidden !important; /* قفل التمرير الخارجي للسايدبار */
+    overflow: hidden !important; /* قفل التمرير الكلي للسايدبار */
     box-sizing: border-box;
 }
 
-/* العناصر العلوية في السايدبار ثابتة لا تنضغط */
+/* الخيارات العلوية والسفلية تبقى حرة الحجم ولا تنضغط نهائياً */
 .pos-sidebar > *:not(.cart-items-list):not(#posCartList) {
     flex-shrink: 0 !important;
 }
 
-/* 🛒 قائمة الأصناف في السلة هي الوحيدة التي تسحب سكرول داخلي */
+/* 🛒 قائمة الأصناف في السلة هي الوحيدة التي تحصر وتستوعب السكرول */
 .cart-items-list, #posCartList {
     flex: 1 1 auto !important;
-    min-height: 0 !important; /* الخاصية الجوهرية لمنع الدفع خارج الشاشة في سفاري وآيباد */
+    min-height: 0 !important; /* الخاصية السحرية لمنع دفع العناصر للخارج في أجهزة أبل */
     max-height: none !important;
     overflow-y: auto !important;
     margin: 6px 0;
@@ -424,18 +424,7 @@ body {
     overscroll-behavior-y: contain;
 }
 
-/* 🖨️ تثبيت منطقة المجموع الكلي وزر الطباعة دائماً في الأسفل */
-.pos-sidebar > div:last-child, 
-.pos-sidebar > button:last-child,
-.pos-sidebar-footer, 
-#posCheckoutBtnArea {
-    flex-shrink: 0 !important;
-    margin-top: auto !important;
-    background: #18181c;
-    padding-top: 4px;
-}
-
-/* 📱 الخاصية الحسم لمنع تجمد ورش المينيو في iOS Safari */
+/* 📱 التحكم بسلاسة التمرير في شاشة المنتجات */
 .pos-main-content {
     height: 100% !important;
     padding: 12px !important;
