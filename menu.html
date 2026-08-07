@@ -34,11 +34,11 @@
                     <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">إضافة، تعديل، وتصوير وجبات المينيو بلمسة واحدة</p>
                 </div>
                 
-                <!-- أزرار التحكم العلوية شاملة زر الترميم الجديد -->
+                <!-- أزرار التحكم العلوية -->
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <!-- 🔄 زر رفع وإصلاح الـ 32 صنف المباشر -->
-                    <button onclick="forceResetAllItems()" class="gold-btn btn-sm" style="background:#10b981; color:#fff;">
-                        🔄 استرجاع ورفع كافة الأصناف (32 صنف)
+                    <!-- 🔄 زر التحديث والمزامنة الحقيقي بدون مسح التعديلات -->
+                    <button onclick="refreshMenuData()" class="gold-btn btn-sm" style="background:#10b981; color:#fff;">
+                        <i class="fa-solid fa-rotate"></i> تحديث ومزامنة المينيو
                     </button>
 
                     <a href="cashier.html" class="gold-btn btn-sm" style="text-decoration:none;"><i class="fa-solid fa-cash-register"></i> الكاشير</a>
@@ -129,28 +129,44 @@
             }
         }
 
-        /* 🚀 دالة إجبارية لرفع وإعادة ترميم جميع الأصناف الـ 32 على السحابة والجهاز */
-        function forceResetAllItems() {
-            if (confirm("هل تريد إعادة تنزيل كافة الأصناف الـ 32 (الزنجر، الفاهيتا، السكالوب، الشاورما، البركر) ورفعها للسحابة؟")) {
-                if (typeof DEFAULT_DATA !== 'undefined') {
-                    // 1. تحديث الذاكرة المحلية
-                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+        /* 🔄 دالة التحديث والمزامنة الذكية (تحافظ على كل تعديلاتك وإضافاتك المستقبلية) */
+        async function refreshMenuData() {
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
+            btn.disabled = true;
 
-                    // 2. رفع جميع الأصناف فوراً إلى Firebase
-                    if (typeof db !== 'undefined' && db) {
-                        DEFAULT_DATA.items.forEach(item => {
-                            db.collection("menu_items").doc(String(item.id)).set(item);
-                        });
-                        DEFAULT_DATA.categories.forEach(cat => {
-                            db.collection("menu_categories").doc(String(cat.id)).set(cat);
-                        });
+            try {
+                // 1. إعادة جلب البيانات الحديثة من Firebase إذا كانت متوفرة
+                if (typeof db !== 'undefined' && db) {
+                    const snapshot = await db.collection("menu_items").get();
+                    if (!snapshot.empty) {
+                        let cloudItems = [];
+                        snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
+                        setData('sys_items', cloudItems);
                     }
-                    alert("🎉 تم رفع وترميم كافة الأصناف والأقسام (32 صنف) بنجاح!");
-                    location.reload();
-                } else {
-                    alert("خطأ: تعذر الوصول إلى بيانات المينيو الافتراضية في app.js");
+
+                    const catSnapshot = await db.collection("menu_categories").get();
+                    if (!catSnapshot.empty) {
+                        let cloudCategories = [];
+                        catSnapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
+                        setData('sys_categories', cloudCategories);
+                    }
                 }
+
+                // 2. تحديث الشاشة والجدول بالبيانات الأخيرة
+                renderAdminCategories();
+                renderAdminItems();
+
+                if (typeof refreshActiveUI === 'function') refreshActiveUI();
+
+            } catch (error) {
+                console.log("Local sync refresh:", error);
+                renderAdminCategories();
+                renderAdminItems();
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
