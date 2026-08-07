@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete Master Style Sheet
-   (iOS & iPad Safari POS Display Optimized)
+   (iOS & iPad Safari POS Display Optimized - Fixed Version)
    ========================================== */
 
 /* 1. المتغيرات والأساسيات */
@@ -372,7 +372,9 @@ body {
     font-size: 0.75rem;
 }
 
-/* 8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد والآيفون */
+/* ==========================================
+   8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد والآيفون (Landscape Fix)
+   ========================================== */
 #cashierMainApp {
     height: 100%;
     height: 100dvh;
@@ -390,28 +392,47 @@ body {
     overflow: hidden;
 }
 
+/* 📱 قفل تمرير السايدبار الخارجي لمنع اختفاء الأزرار عند العرض */
 .pos-sidebar {
     background: #18181c;
     border-left: 1px solid var(--card-border);
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     padding: 8px;
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: contain;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important; /* قفل التمرير الخارجي للسايدبار */
+    box-sizing: border-box;
 }
 
-.cart-items-list {
-    flex-grow: 1;
-    overflow-y: auto;
-    max-height: calc(100vh - 270px);
+/* العناصر العلوية في السايدبار ثابتة لا تنضغط */
+.pos-sidebar > *:not(.cart-items-list):not(#posCartList) {
+    flex-shrink: 0 !important;
+}
+
+/* 🛒 قائمة الأصناف في السلة هي الوحيدة التي تسحب سكرول داخلي */
+.cart-items-list, #posCartList {
+    flex: 1 1 auto !important;
+    min-height: 0 !important; /* الخاصية الجوهرية لمنع الدفع خارج الشاشة في سفاري وآيباد */
+    max-height: none !important;
+    overflow-y: auto !important;
     margin: 6px 0;
     border-top: 1px dashed #333;
     border-bottom: 1px dashed #333;
     padding: 4px 0;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-y: contain;
+}
+
+/* 🖨️ تثبيت منطقة المجموع الكلي وزر الطباعة دائماً في الأسفل */
+.pos-sidebar > div:last-child, 
+.pos-sidebar > button:last-child,
+.pos-sidebar-footer, 
+#posCheckoutBtnArea {
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+    background: #18181c;
+    padding-top: 4px;
 }
 
 /* 📱 الخاصية الحسم لمنع تجمد ورش المينيو في iOS Safari */
