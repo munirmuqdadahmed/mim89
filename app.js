@@ -1535,3 +1535,46 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+/* 🔄 دالة المزامنة الشاملة لجميع صفحات النظام */
+async function globalSystemSync(btnElement) {
+    let originalText = "";
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
+        btnElement.disabled = true;
+    }
+
+    try {
+        if (typeof db !== 'undefined' && db) {
+            // 1. مزامنة الأصناف من السحابة
+            const itemSnap = await db.collection("menu_items").get();
+            if (!itemSnap.empty) {
+                let cloudItems = [];
+                itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
+                if (cloudItems.length >= 10) setData('sys_items', cloudItems);
+            }
+
+            // 2. مزامنة الأقسام من السحابة
+            const catSnap = await db.collection("menu_categories").get();
+            if (!catSnap.empty) {
+                let cloudCategories = [];
+                catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
+                if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
+            }
+        }
+
+        // 3. تحديث واجهة الصفحة النشطة فوراً
+        if (typeof refreshActiveUI === 'function') refreshActiveUI();
+        if (typeof renderInventoryTable === 'function') renderInventoryTable();
+        if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
+
+    } catch (error) {
+        console.log("Global sync fallback:", error);
+        if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    } finally {
+        if (btnElement) {
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        }
+    }
+}
