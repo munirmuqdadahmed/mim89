@@ -28,12 +28,19 @@
     <div id="menuMainApp" style="display:none;" class="container">
         
         <header class="admin-header">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
                     <span class="brand-badge">MIM89 MENU MANAGER</span>
                     <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">إضافة، تعديل، وتصوير وجبات المينيو بلمسة واحدة</p>
                 </div>
-                <div style="display:flex; gap:8px;">
+                
+                <!-- أزرار التحكم العلوية شاملة زر الترميم الجديد -->
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <!-- 🔄 زر رفع وإصلاح الـ 32 صنف المباشر -->
+                    <button onclick="forceResetAllItems()" class="gold-btn btn-sm" style="background:#10b981; color:#fff;">
+                        🔄 استرجاع ورفع كافة الأصناف (32 صنف)
+                    </button>
+
                     <a href="cashier.html" class="gold-btn btn-sm" style="text-decoration:none;"><i class="fa-solid fa-cash-register"></i> الكاشير</a>
                     <button onclick="location.reload()" class="gold-btn btn-danger btn-sm"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
                 </div>
@@ -46,10 +53,10 @@
             <input type="hidden" id="editItemId">
 
             <label style="font-size:0.8rem; color:#aaa;">اسم الصنف / الوجبة:</label>
-            <input type="text" id="itemName" class="gold-input" placeholder="مثال: عصير برتقال طبيعي">
+            <input type="text" id="itemName" class="gold-input" placeholder="مثال: صاج فاهيتا دجاج">
 
             <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">السعر (بالدينار العراقي):</label>
-            <input type="number" id="itemPrice" class="gold-input" placeholder="مثال: 2500">
+            <input type="number" id="itemPrice" class="gold-input" placeholder="مثال: 5000">
 
             <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">القسم الرئيسي:</label>
             <select id="itemCategory" class="gold-input" style="cursor:pointer;"></select>
@@ -82,7 +89,7 @@
 
         <!-- جدول وتصفح الأصناف المسجلة حالياً -->
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
                 <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-list"></i> الأصناف المسجلة حالياً في المينيو</h4>
                 <input type="text" id="menuSearchInput" class="gold-input" placeholder="🔍 بحث عن صنف..." style="width:200px; margin:0;" onkeyup="filterMenuTable(this.value)">
             </div>
@@ -119,6 +126,31 @@
                 renderAdminItems();
             } else {
                 document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+            }
+        }
+
+        /* 🚀 دالة إجبارية لرفع وإعادة ترميم جميع الأصناف الـ 32 على السحابة والجهاز */
+        function forceResetAllItems() {
+            if (confirm("هل تريد إعادة تنزيل كافة الأصناف الـ 32 (الزنجر، الفاهيتا، السكالوب، الشاورما، البركر) ورفعها للسحابة؟")) {
+                if (typeof DEFAULT_DATA !== 'undefined') {
+                    // 1. تحديث الذاكرة المحلية
+                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+
+                    // 2. رفع جميع الأصناف فوراً إلى Firebase
+                    if (typeof db !== 'undefined' && db) {
+                        DEFAULT_DATA.items.forEach(item => {
+                            db.collection("menu_items").doc(String(item.id)).set(item);
+                        });
+                        DEFAULT_DATA.categories.forEach(cat => {
+                            db.collection("menu_categories").doc(String(cat.id)).set(cat);
+                        });
+                    }
+                    alert("🎉 تم رفع وترميم كافة الأصناف والأقسام (32 صنف) بنجاح!");
+                    location.reload();
+                } else {
+                    alert("خطأ: تعذر الوصول إلى بيانات المينيو الافتراضية في app.js");
+                }
             }
         }
 
