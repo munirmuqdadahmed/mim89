@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v8.0 Auto-Sync Master Engine)
+   MIM89 FAST FOOD - Core Engine (v8.5 Master Engine)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -26,7 +26,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي:", e);
 }
 
-// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً تشمل الزنجر، السكالوب، الفاهيتا)
+// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً)
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", inventory: "inv123" },
     printerSettings: {
@@ -120,22 +120,28 @@ const DEFAULT_DATA = {
     ]
 };
 
-// ⚡ دالة تهيئة البيانات التلقائية مع فحص تلقائي لأعداد الأصناف
+// ⚡ دالة تهيئة البيانات المحصنة بنظام Batch Write لمنع المسح من الفايربيس
 function initData() {
     let currentItems = getData('sys_items');
 
-    // 🚀 إذا كان المينيو يحتوي على أقل من 10 أصناف (بسبب الذاكرة القديمة)، يتم زرع ورفع الـ 32 صنفاً فوراً
+    // إذا كانت الأصناف أقل من 10، يتم رفع الـ 32 صنفاً فوراً بـ Batch واحد لحظر الصنفين القديمين
     if (!currentItems || currentItems.length < 10) {
         localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
         localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
 
         if (db) {
-            DEFAULT_DATA.items.forEach(item => {
-                db.collection("menu_items").doc(String(item.id)).set(item);
-            });
-            DEFAULT_DATA.categories.forEach(cat => {
-                db.collection("menu_categories").doc(String(cat.id)).set(cat);
-            });
+            try {
+                const batch = db.batch();
+                DEFAULT_DATA.items.forEach(item => {
+                    batch.set(db.collection("menu_items").doc(String(item.id)), item);
+                });
+                DEFAULT_DATA.categories.forEach(cat => {
+                    batch.set(db.collection("menu_categories").doc(String(cat.id)), cat);
+                });
+                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بـ 32 صنف بنجاح!")).catch(console.error);
+            } catch (err) {
+                console.error("Batch error:", err);
+            }
         }
     }
 
@@ -163,7 +169,7 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-/* ⚡ تفعيل المزامنة اللحظية المباشرة للأصناف والأقسام بين كل الأجهزة */
+/* ⚡ حماية المزامنة اللحظية: حظر استقبال البيانات من السحابة إذا كانت صنفين فقط */
 function setupCloudRealtimeSync() {
     if (!db) return;
 
@@ -172,7 +178,6 @@ function setupCloudRealtimeSync() {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
             
-            // عدم قفل الأصناف إذا كانت القائمة السحابية فارغة
             if (cloudItems.length >= 10) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
