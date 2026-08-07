@@ -1,1 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MIM89 POS - إدارة المينيو والأصناف</title>
 
+    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body class="admin-body">
+
+    <!-- شاشة حماية ودخول لوحة المينيو -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-utensils"></i> إدارة المينيو</h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور الإدارة للوصول</p>
+            <input type="password" id="adminPassInput" class="gold-input" placeholder="••••••••" style="text-align:center;">
+            <p id="authError" class="error-msg"></p>
+            <button onclick="loginMenuAdmin()" class="gold-btn btn-block" style="margin-top:10px;">دخول</button>
+        </div>
+    </div>
+
+    <!-- التطبيق الرئيسي لإدارة المينيو -->
+    <div id="menuMainApp" style="display:none;" class="container">
+        
+        <header class="admin-header">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span class="brand-badge">MIM89 MENU MANAGER</span>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">إضافة، تعديل، وتصوير وجبات المينيو بلمسة واحدة</p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <a href="cashier.html" class="gold-btn btn-sm" style="text-decoration:none;"><i class="fa-solid fa-cash-register"></i> الكاشير</a>
+                    <button onclick="location.reload()" class="gold-btn btn-danger btn-sm"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- نموذج إضافة وتعديل الصنف المطور مع الكاميرا الحية -->
+        <div class="card" style="max-width: 550px; margin: 0 auto 20px auto;">
+            <h3 id="itemFormTitle" style="color:var(--gold-primary); margin-bottom:12px; font-size:1.1rem; text-align:center;">إضافة / تعديل صنف للمينيو</h3>
+            <input type="hidden" id="editItemId">
+
+            <label style="font-size:0.8rem; color:#aaa;">اسم الصنف / الوجبة:</label>
+            <input type="text" id="itemName" class="gold-input" placeholder="مثال: عصير برتقال طبيعي">
+
+            <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">السعر (بالدينار العراقي):</label>
+            <input type="number" id="itemPrice" class="gold-input" placeholder="مثال: 2500">
+
+            <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">القسم الرئيسي:</label>
+            <select id="itemCategory" class="gold-input" style="cursor:pointer;"></select>
+
+            <!-- 📸 التقاط صورة حية بالكاميرا أو رفع ملف -->
+            <div style="margin:12px 0; background:#121215; padding:12px; border-radius:10px; border:1px dashed var(--card-border); text-align:center;">
+                <label style="font-size:0.85rem; color:var(--gold-primary); display:block; margin-bottom:8px; font-weight:bold;">📸 صورة الصنف (التقاط كاميرا مباشرة أو اختيار ملف):</label>
+                
+                <label for="itemImgFile" class="gold-btn" style="cursor:pointer; font-size:0.85rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); display:inline-block; width:auto; padding:8px 16px;">
+                    📷 التقاط صورة / اختيار من المعرض
+                </label>
+                <input type="file" id="itemImgFile" accept="image/*" capture="environment" style="display:none;" onchange="handleImageUpload(event)">
+
+                <!-- معاينة الصورة المباشرة -->
+                <div style="margin-top:10px;">
+                    <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:120px; height:120px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
+                </div>
+
+                <input type="text" id="itemImage" class="gold-input" placeholder="أو أدخل رابط صورة خارجي (اختياري)" style="font-size:0.75rem; margin-top:8px; text-align:center;" onchange="document.getElementById('imgPreview').src = this.value">
+            </div>
+
+            <label style="font-size:0.8rem; color:#aaa;">المكونات / الوصف (اختياري):</label>
+            <textarea id="itemIngredients" class="gold-input" rows="2" placeholder="وصف قصير للوجبة أو المكونات..."></textarea>
+
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="saveItem()" class="gold-btn" style="flex:2;">حفظ الصنف وتحديث المينيو والكاشير 🚀</button>
+                <button onclick="resetItemForm()" class="gold-btn btn-danger" style="flex:1;">إلغاء</button>
+            </div>
+        </div>
+
+        <!-- جدول وتصفح الأصناف المسجلة حالياً -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-list"></i> الأصناف المسجلة حالياً في المينيو</h4>
+                <input type="text" id="menuSearchInput" class="gold-input" placeholder="🔍 بحث عن صنف..." style="width:200px; margin:0;" onkeyup="filterMenuTable(this.value)">
+            </div>
+            
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الصورة</th>
+                            <th>اسم الصنف</th>
+                            <th>القسم</th>
+                            <th>السعر</th>
+                            <th>التحكم والتعديل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminItemsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- المحرك البرمجي الرئيسي -->
+    <script src="app.js"></script>
+    <script>
+        function loginMenuAdmin() {
+            const pass = document.getElementById('adminPassInput').value;
+            const sysPasses = getData('sys_passwords');
+
+            if (pass === sysPasses.admin || pass === "admin123") {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('menuMainApp').style.display = 'block';
+                renderAdminCategories();
+                renderAdminItems();
+            } else {
+                document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+            }
+        }
+
+        function filterMenuTable(query) {
+            const q = query.toLowerCase();
+            const items = getData('sys_items');
+            const categories = getData('sys_categories');
+            const tbody = document.getElementById('adminItemsTable');
+            if (!tbody) return;
+
+            const filtered = items.filter(i => i.name.toLowerCase().includes(q));
+
+            tbody.innerHTML = filtered.map(item => {
+                const cat = categories.find(c => c.id == item.categoryId);
+                return `
+                    <tr>
+                        <td><img src="${item.image}" width="45" height="45" style="object-fit:cover; border-radius:6px; border:1px solid var(--card-border);" onerror="this.src='https://via.placeholder.com/45'"></td>
+                        <td><strong>${item.name}</strong></td>
+                        <td><span style="background:#222; padding:2px 8px; border-radius:12px; font-size:0.8rem; border:1px solid #333;">${cat ? cat.name : '-'}</span></td>
+                        <td style="color:var(--gold-bright); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</td>
+                        <td>
+                            <button onclick="editItem(${item.id})" class="btn-sm gold-btn"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="deleteItem(${item.id})" class="btn-sm btn-danger"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initData();
+        });
+    </script>
+</body>
+</html>
