@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Master Engine (v9.0)
+   MIM89 FAST FOOD - Master Core Engine (v10.5)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -120,7 +120,7 @@ const DEFAULT_DATA = {
     ]
 };
 
-// ⚡ دالة تهيئة البيانات المحصنة بنظام Batch Write لمنع المسح من الفايربيس
+// ⚡ دالة تهيئة البيانات المحصنة
 function initData() {
     let currentItems = getData('sys_items');
 
@@ -168,7 +168,7 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-/* ⚡ حماية المزامنة اللحظية: حظر استقبال البيانات من السحابة إذا كانت أقل من 10 أصناف */
+/* ⚡ المزامنة اللحظية السحابية */
 function setupCloudRealtimeSync() {
     if (!db) return;
 
@@ -196,27 +196,32 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Category sync fallback:", err));
 }
 
+/* ⚡ إعادة الرسم الفوري لكل مكونات الشاشة دون إعادة تحميل المتصفح */
 function refreshActiveUI() {
     if (document.body.classList.contains('public-menu-body')) {
-        loadPublicMenu();
+        if (typeof loadPublicMenu === 'function') loadPublicMenu();
     } else if (document.getElementById('posProductsGrid')) {
-        loadPosDirectMenu('all');
+        if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+        if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
     } else if (document.getElementById('adminItemsTable')) {
-        renderAdminItems();
+        if (typeof renderAdminItems === 'function') renderAdminItems();
+    } else if (document.getElementById('inventoryTableBody')) {
+        if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
 }
 
-/* 🔄 دالة المزامنة الشاملة لجميع صفحات النظام */
+/* 🔄 دالة المزامنة والتحديث الداخلي الفوري الشامل (لا تعيد تحميل الصفحة) */
 async function globalSystemSync(btnElement) {
     let originalText = "";
     if (btnElement) {
         originalText = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
+        btnElement.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> جاري التحديث...';
         btnElement.disabled = true;
     }
 
     try {
         if (typeof db !== 'undefined' && db) {
+            // 1. جلب أحدث أصناف المينيو من السحابة
             const itemSnap = await db.collection("menu_items").get();
             if (!itemSnap.empty) {
                 let cloudItems = [];
@@ -224,25 +229,46 @@ async function globalSystemSync(btnElement) {
                 if (cloudItems.length >= 10) setData('sys_items', cloudItems);
             }
 
+            // 2. جلب أحدث الأقسام
             const catSnap = await db.collection("menu_categories").get();
             if (!catSnap.empty) {
                 let cloudCategories = [];
                 catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
                 if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
             }
+
+            // 3. جلب أحدث الطلبات والمكالمات
+            const orderSnap = await db.collection("orders").get();
+            if (!orderSnap.empty) {
+                let cloudOrders = [];
+                orderSnap.forEach(doc => cloudOrders.push({ ...doc.data(), docId: doc.id }));
+                setData('sys_live_orders', cloudOrders);
+            }
         }
 
+        // 4. تنفيذ إعادة الرسم الفوري الشامل دون Refresh للمتصفح
         refreshActiveUI();
+        
+        if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+        if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
         if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
 
+        // 5. تحديث نافذة سجل الفواتير المفتوحة إذا كانت معروضة
+        const historyModal = document.getElementById('completedOrdersModal');
+        if (historyModal && historyModal.style.display === 'flex' && typeof openCompletedOrdersModal === 'function') {
+            openCompletedOrdersModal();
+        }
+
     } catch (error) {
-        console.log("Global sync fallback:", error);
+        console.error("Global sync error:", error);
         refreshActiveUI();
     } finally {
         if (btnElement) {
-            btnElement.innerHTML = originalText;
-            btnElement.disabled = false;
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+            }, 500);
         }
     }
 }
@@ -257,11 +283,9 @@ function loadPublicMenu() {
     const items = getData('sys_items');
     const navContainer = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
-    const moreCatsList = document.getElementById('moreCategoriesList');
 
     if (!navContainer || !sectionsContainer) return;
     navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
-    if (moreCatsList) moreCatsList.innerHTML = '';
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
@@ -275,10 +299,6 @@ function loadPublicMenu() {
         btn.innerText = cat.name;
         btn.onclick = () => filterCategory(cat.id, btn);
         navContainer.appendChild(btn);
-
-        if (moreCatsList) {
-            moreCatsList.innerHTML += `<button class="gold-btn" style="font-size:0.85rem;" onclick="closeModal('moreModal'); filterCategory(${cat.id}, null);">${cat.name}</button>`;
-        }
 
         const catItems = items.filter(i => Number(i.categoryId) === Number(cat.id));
         if (catItems.length > 0) {
@@ -561,14 +581,6 @@ function saveOrderLocally(orderData) {
     const orders = getData('sys_live_orders');
     orders.push(orderData);
     setData('sys_live_orders', orders);
-}
-
-function sendRestaurantFeedback() {
-    const msg = document.getElementById('feedbackMsg').value;
-    if (!msg) return alert("اكتب ملاحظتك أولاً");
-    alert("شكراً لك! تم إرسال ملاحظتك لإدارة المطعم.");
-    document.getElementById('feedbackMsg').value = '';
-    closeModal('moreModal');
 }
 
 /* ==========================================
