@@ -344,11 +344,28 @@
             display: block;
         }
 
-        /* 🖨️ إعدادات الطباعة المستقلة للكاشير والمطبخ */
+        /* 🖨️ إعدادات الطباعة المستقلة للكاشير والمطبخ وكشف الحساب */
         @media print {
             body * { visibility: hidden; }
-            #receiptModal, #receiptModal * { visibility: visible; }
-            #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: #fff; }
+            #receiptModal, #receiptModal *, #dailyReportModal, #dailyReportModal * { visibility: visible; }
+            #receiptModal, #dailyReportModal { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                background: #fff !important; 
+                color: #000 !important; 
+            }
+            #dailyReportModal .modal-body {
+                background: #fff !important;
+                color: #000 !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #dailyReportModal div {
+                color: #000 !important;
+            }
+            .no-print { display: none !important; }
             
             .kitchen-copy {
                 page-break-before: always !important;
@@ -466,7 +483,7 @@
         </div>
     </div>
 
-    <!-- نافذة الفاتورة للطباعة -->
+    <!-- نافذة الفاتورة للطباعة والمعاينة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
             <!-- 1. فاتورة الكاشير المالية -->
@@ -502,6 +519,12 @@
                 <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
                 <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; background:#eee; padding:3px;"></div>
             </div>
+
+            <!-- أزرار الإجراءات عند المعاينة والطباعة -->
+            <div style="display:flex; gap:6px; margin-top:15px;" class="no-print">
+                <button onclick="window.print()" class="gold-btn" style="flex:2;">🖨️ طباعة الفاتورة</button>
+                <button onclick="closeModal('receiptModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            </div>
         </div>
     </div>
 
@@ -517,7 +540,7 @@
         </div>
     </div>
 
-    <!-- نافذة تقرير كشف الحساب -->
+    <!-- نافذة تقرير كشف الحساب اليومي -->
     <div id="dailyReportModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -541,7 +564,13 @@
             </div>
 
             <h5 style="color:var(--gold-primary); margin-bottom:6px;">📦 الأصناف المبيعة:</h5>
-            <div id="repItemsSoldList" style="max-height:140px; overflow-y:auto; font-size:0.8rem;"></div>
+            <div id="repItemsSoldList" style="max-height:140px; overflow-y:auto; font-size:0.8rem; margin-bottom:10px;"></div>
+
+            <!-- 🖨️ زر طباعة الكشف اليومي والإغلاق -->
+            <div style="display:flex; gap:8px; margin-top:10px;" class="no-print">
+                <button onclick="window.print()" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة الكشف</button>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            </div>
         </div>
     </div>
 
@@ -557,6 +586,79 @@
             if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
                 const menu = document.getElementById('brandDropdownMenu');
                 if (menu && menu.style.display === 'block') menu.style.display = 'none';
+            }
+        }
+
+        /* 👁️ دالة فتح سجل الفواتير مع خيار المعاينة والطباعة */
+        function openCompletedOrdersModal() {
+            const list = document.getElementById('completedOrdersList');
+            const completed = typeof getData === 'function' ? getData('sys_completed_orders') : JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
+
+            if (!list) return;
+
+            if (!completed || completed.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#888; padding:20px; font-size:0.85rem;">لا توجد فواتير سابقة مطبوعة</p>`;
+            } else {
+                list.innerHTML = completed.map(ord => {
+                    const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
+                    return `
+                        <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:8px; margin-bottom:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--gold-primary);">
+                                <strong>👤 ${ord.customerName || 'زبون'}</strong>
+                                <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
+                            </div>
+                            <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
+                                <strong style="color:var(--gold-bright); font-size:0.9rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
+                                <button class="gold-btn" style="padding:2px 10px; font-size:0.75rem; width:auto;" onclick="previewAndPrintOrder('${ord.id}')">👁️ معاينة وطباعة</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            openModal('completedOrdersModal');
+        }
+
+        /* 🔍 دالة جلب بيانات الفواتير السابقة وتعبئتها في شاشة المعاينة والطباعة */
+        function previewAndPrintOrder(orderId) {
+            const completed = typeof getData === 'function' ? getData('sys_completed_orders') : JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
+            const order = completed.find(o => o.id === orderId);
+            
+            if (order) {
+                closeModal('completedOrdersModal');
+                
+                document.getElementById('receiptCashierName').innerText = "الكاشير: " + (typeof activeCashierUser !== 'undefined' && activeCashierUser ? activeCashierUser.name : "الرئيسي");
+                document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
+                document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
+                document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+                
+                const items = Array.isArray(order.items) ? order.items : [];
+                document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem;">
+                        <span>${i.name} (×${i.qty})</span>
+                        <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
+                document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
+                document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
+
+                document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+                document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
+                document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || ''}`;
+
+                document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold;">
+                        <span>● ${i.name}</span>
+                        <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
+
+                openModal('receiptModal');
             }
         }
 
