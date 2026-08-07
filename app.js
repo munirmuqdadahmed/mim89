@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Engine (v8.5 Master Engine)
+   MIM89 FAST FOOD - Core Master Engine (v9.0)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -124,7 +124,6 @@ const DEFAULT_DATA = {
 function initData() {
     let currentItems = getData('sys_items');
 
-    // إذا كانت الأصناف أقل من 10، يتم رفع الـ 32 صنفاً فوراً بـ Batch واحد لحظر الصنفين القديمين
     if (!currentItems || currentItems.length < 10) {
         localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
         localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
@@ -169,7 +168,7 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-/* ⚡ حماية المزامنة اللحظية: حظر استقبال البيانات من السحابة إذا كانت صنفين فقط */
+/* ⚡ حماية المزامنة اللحظية: حظر استقبال البيانات من السحابة إذا كانت أقل من 10 أصناف */
 function setupCloudRealtimeSync() {
     if (!db) return;
 
@@ -204,6 +203,47 @@ function refreshActiveUI() {
         loadPosDirectMenu('all');
     } else if (document.getElementById('adminItemsTable')) {
         renderAdminItems();
+    }
+}
+
+/* 🔄 دالة المزامنة الشاملة لجميع صفحات النظام */
+async function globalSystemSync(btnElement) {
+    let originalText = "";
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
+        btnElement.disabled = true;
+    }
+
+    try {
+        if (typeof db !== 'undefined' && db) {
+            const itemSnap = await db.collection("menu_items").get();
+            if (!itemSnap.empty) {
+                let cloudItems = [];
+                itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
+                if (cloudItems.length >= 10) setData('sys_items', cloudItems);
+            }
+
+            const catSnap = await db.collection("menu_categories").get();
+            if (!catSnap.empty) {
+                let cloudCategories = [];
+                catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
+                if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
+            }
+        }
+
+        refreshActiveUI();
+        if (typeof renderInventoryTable === 'function') renderInventoryTable();
+        if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
+
+    } catch (error) {
+        console.log("Global sync fallback:", error);
+        refreshActiveUI();
+    } finally {
+        if (btnElement) {
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        }
     }
 }
 
@@ -644,6 +684,61 @@ function filterPosProducts() {
     `).join('');
 }
 
+/* 🔍 دالة البحث السريع برقم الهاتف وجلب بيانات الزبون المسجل */
+function autoSearchCustomerByPhone(phoneInput) {
+    const cleanPhone = phoneInput.replace(/[^0-9]/g, '');
+    const resultsBox = document.getElementById('phoneSearchResults');
+    if (!resultsBox) return;
+
+    if (cleanPhone.length < 4) {
+        resultsBox.style.display = 'none';
+        return;
+    }
+
+    const completed = getData('sys_completed_orders');
+    const matches = completed.filter(o => {
+        if (!o.phone || o.phone === '-' || o.phone === 'بدون رقم') return false;
+        const p = String(o.phone).replace(/[^0-9]/g, '');
+        return p.includes(cleanPhone) && o.customerName && o.customerName !== 'زبون مباشر';
+    });
+
+    const uniqueCustomers = [];
+    const map = new Map();
+    for (const item of matches) {
+        const p = String(item.phone).replace(/[^0-9]/g, '');
+        if(!map.has(p)){
+            map.set(p, true);
+            uniqueCustomers.push(item);
+        }
+    }
+
+    if (uniqueCustomers.length === 0) {
+        resultsBox.innerHTML = '<div style="padding:6px; color:#aaa; font-size:0.8rem;">🆕 زبون جديد (غير مسجل سابقاً)</div>';
+        resultsBox.style.display = 'block';
+        return;
+    }
+
+    resultsBox.innerHTML = uniqueCustomers.slice(0, 3).map(cust => `
+        <div onclick="fillCustomerData('${cust.customerName.replace(/'/g, "\\'")}', '${cust.phone}', '${(cust.area || '').replace(/'/g, "\\'")}', '${(cust.address || '').replace(/'/g, "\\\'")}')" 
+             style="padding:8px; background:#222; border-bottom:1px solid #333; cursor:pointer; border-radius:6px; margin-bottom:4px;">
+            <strong style="color:var(--gold-bright); font-size:0.85rem;">👤 ${cust.customerName}</strong> 
+            <small style="color:#aaa;">(${cust.phone})</small><br>
+            <span style="font-size:0.75rem; color:#ccc;">📍 ${cust.area || ''} ${cust.address ? '- ' + cust.address : ''}</span>
+        </div>
+    `).join('');
+    resultsBox.style.display = 'block';
+}
+
+/* 📥 تعبئة بيانات الزبون المختار بضغطة زر واحدة */
+function fillCustomerData(name, phone, area, address) {
+    const nameInput = document.getElementById('posCustName');
+    if (nameInput) {
+        nameInput.value = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
+    }
+    const resultsBox = document.getElementById('phoneSearchResults');
+    if (resultsBox) resultsBox.style.display = 'none';
+}
+
 function addToPosCart(itemId) {
     const items = getData('sys_items');
     const item = items.find(i => i.id === itemId);
@@ -880,7 +975,7 @@ function unlockIpadAudio() {
         gain.connect(globalAudioCtx.destination);
         osc.start(0);
         osc.stop(0.1);
-        alert("🔔 تم تفعيل جرس التنبيهات بنجاح على الايباد!");
+        alert("🔔 تم تفعيل جرس التنبيهات بنجاح على الجهاز!");
     } catch (e) {
         console.log("Audio unlock:", e);
     }
@@ -935,40 +1030,63 @@ function getCustomerHistoryByPhone(phone) {
     }) || null;
 }
 
+/* 📞 محرك الاستماع المطور للمكالمات والطلبات الواردة مع الشريط العائم */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
-    if (!container) return;
 
     const processOrdersList = (ordersList) => {
         let unhandledCount = 0;
         let html = '';
+        let lastIncomingCall = null;
 
         ordersList.forEach(ord => {
             const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending' || ord.status === '';
             
             if (isUnhandled) {
                 unhandledCount++;
-                if (!knownOrderIds.has(ord.id)) {
-                    knownOrderIds.add(ord.id);
+                const orderKey = ord.docId || ord.id || ('temp_' + Math.random());
+                if (!knownOrderIds.has(orderKey)) {
+                    knownOrderIds.add(orderKey);
                 }
-                html += generateOrderCardHTML(ord, ord.docId || ord.id);
+                html += generateOrderCardHTML(ord, orderKey);
+                lastIncomingCall = ord;
             }
         });
 
-        container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات أو مكالمات جارية حالياً</p>';
+        if (container) {
+            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات أو مكالمات جارية حالياً</p>';
+        }
         
         const badge = document.getElementById('liveOrdersBadge');
         const alertBanner = document.getElementById('pendingOrdersAlertBanner');
-        const bannerCount = document.getElementById('pendingOrdersBannerCount');
 
         if (unhandledCount > 0) {
-            if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
-            if (alertBanner) { alertBanner.style.display = 'block'; }
-            if (bannerCount) { bannerCount.innerText = unhandledCount; }
+            if (badge) { 
+                badge.innerText = unhandledCount; 
+                badge.style.display = 'inline-block'; 
+            }
+            
+            // 🔔 إظهار شريط تنبيه عائم في أعلى الشاشة مهما كان التبويب المفتوح
+            if (alertBanner && lastIncomingCall) {
+                const phone = lastIncomingCall.phone || 'رقم غير معروف';
+                const name = lastIncomingCall.customerName || 'مكالمة واردة';
+                const docId = lastIncomingCall.docId || lastIncomingCall.id;
+
+                alertBanner.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px;">
+                        <span>📞 <strong>مكالمة واردة جديدة:</strong> ${name} (${phone})</span>
+                        <button class="gold-btn btn-sm" style="background:#000; color:#fff; font-size:0.75rem;" 
+                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id}', '${phone}', '${name.replace(/'/g, "\\'")}', '', '')">
+                            📥 نقل لكاشير المبيعات
+                        </button>
+                    </div>
+                `;
+                alertBanner.style.display = 'block';
+            }
             startContinuousAlert();
         } else {
-            if (badge) { badge.style.display = 'none'; }
-            if (alertBanner) { alertBanner.style.display = 'none'; }
+            if (badge) badge.style.display = 'none';
+            if (alertBanner) alertBanner.style.display = 'none';
             stopContinuousAlert();
         }
     };
@@ -977,7 +1095,7 @@ function listenForIncomingOrders() {
         db.collection("orders").onSnapshot(snapshot => {
             let list = [];
             snapshot.forEach(doc => {
-                list.push({ ...doc.data(), docId: doc.id });
+                list.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
             });
             processOrdersList(list);
         }, err => {
@@ -1535,46 +1653,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
-/* 🔄 دالة المزامنة الشاملة لجميع صفحات النظام */
-async function globalSystemSync(btnElement) {
-    let originalText = "";
-    if (btnElement) {
-        originalText = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
-        btnElement.disabled = true;
-    }
-
-    try {
-        if (typeof db !== 'undefined' && db) {
-            // 1. مزامنة الأصناف من السحابة
-            const itemSnap = await db.collection("menu_items").get();
-            if (!itemSnap.empty) {
-                let cloudItems = [];
-                itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 10) setData('sys_items', cloudItems);
-            }
-
-            // 2. مزامنة الأقسام من السحابة
-            const catSnap = await db.collection("menu_categories").get();
-            if (!catSnap.empty) {
-                let cloudCategories = [];
-                catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-                if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
-            }
-        }
-
-        // 3. تحديث واجهة الصفحة النشطة فوراً
-        if (typeof refreshActiveUI === 'function') refreshActiveUI();
-        if (typeof renderInventoryTable === 'function') renderInventoryTable();
-        if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
-
-    } catch (error) {
-        console.log("Global sync fallback:", error);
-        if (typeof refreshActiveUI === 'function') refreshActiveUI();
-    } finally {
-        if (btnElement) {
-            btnElement.innerHTML = originalText;
-            btnElement.disabled = false;
-        }
-    }
-}
