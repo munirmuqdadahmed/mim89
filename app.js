@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v15.5 Interactive & Fixed POS Engine)
-   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة والخصومات الذكية
+   MIM89 FAST FOOD - Master Core Engine (v16.0 Expense & Fixed Costing Engine)
+   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة والصرفيات
    ========================================================================== */
 
 // 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
@@ -48,6 +48,12 @@ const DEFAULT_DATA = {
     },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", password: "123" }
+    ],
+    employees: [
+        { id: "emp_1", name: "أحمد - شيف شاورما" },
+        { id: "emp_2", name: "علي - كاشير ومساعد" },
+        { id: "emp_3", name: "حسين - صالة ونظافة" },
+        { id: "emp_4", name: "مصطفى - دليفري" }
     ],
     drivers: [
         { id: "drv_1", name: "أحمد دليفري", phone: "07700000001" },
@@ -97,7 +103,7 @@ const DEFAULT_DATA = {
         { id: 205, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج مقرمش مع خلطة وجبن 89 الخاص", recipe: [{ invId: 1, qty: 0.2 }, { invId: 6, qty: 1 }] },
 
         // 🌯 قسم الشاورما (دجاج)
-        { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.1 }, { invId: 2, qty: 1 }] },
+        { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
         { id: 302, categoryId: 3, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
         { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
         { id: 304, categoryId: 3, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
@@ -183,9 +189,11 @@ function initData() {
     if (!localStorage.getItem('sys_cashiers') || JSON.parse(localStorage.getItem('sys_cashiers')).length === 0) {
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     }
+    if (!localStorage.getItem('sys_employees')) localStorage.setItem('sys_employees', JSON.stringify(DEFAULT_DATA.employees));
     if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
     if (!localStorage.getItem('sys_quick_kitchen_notes')) localStorage.setItem('sys_quick_kitchen_notes', JSON.stringify(DEFAULT_DATA.quickKitchenNotes));
+    if (!localStorage.getItem('sys_expenses')) localStorage.setItem('sys_expenses', JSON.stringify([]));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
 
     setupCloudRealtimeSync();
@@ -220,6 +228,29 @@ function getTodayString() {
 function getSystemPassword(type) {
     const sysPasses = getData('sys_passwords') || {};
     return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
+}
+
+/* ==========================================================================
+   🧮 محرك حساب كلفة الوجبة المحسّن (يحل مشكلة 0 د.ع بالكامل)
+   ========================================================================== */
+function calculateItemCost(item) {
+    const inventory = getData('sys_inventory');
+    if (!item || !item.recipe || !Array.isArray(item.recipe)) return 0;
+
+    let totalCost = 0;
+
+    item.recipe.forEach(ingredient => {
+        const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
+
+        if (stockItem) {
+            const costPerUnit = stockItem.costPerUnit 
+                || (stockItem.quantity > 0 ? (Number(stockItem.totalPrice) / Number(stockItem.quantity)) : 0);
+
+            totalCost += (costPerUnit * Number(ingredient.qty || 0));
+        }
+    });
+
+    return totalCost;
 }
 
 /* ⚡ المزامنة اللحظية السحابية */
@@ -996,6 +1027,108 @@ function updateDiscountUIState(type, badgeText) {
 }
 
 /* ==========================================================================
+   💸 نظام إدارة الصرفيات والمسحوبات والسُلف (MIM89 Expense Management)
+   ========================================================================== */
+
+function openExpenseManagerModal() {
+    renderEmployeesExpenseDropdown();
+    renderExpensesListTable();
+    openModal('expenseManagerModal');
+}
+
+function renderEmployeesExpenseDropdown() {
+    const employees = getData('sys_employees') || DEFAULT_DATA.employees;
+    const select = document.getElementById('expenseEmployeeSelect');
+    if (!select) return;
+
+    select.innerHTML = `
+        <option value="">-- اختر الموظف (في حال سلفة/راتب) --</option>
+        ${employees.map(e => `<option value="${e.name}">👤 ${e.name}</option>`).join('')}
+    `;
+}
+
+function toggleExpenseTypeFields() {
+    const typeSelect = document.getElementById('expenseTypeSelect');
+    const empSelect = document.getElementById('expenseEmployeeSelect');
+    if (!typeSelect || !empSelect) return;
+
+    if (typeSelect.value === 'salary_advance') {
+        empSelect.style.display = 'block';
+    } else {
+        empSelect.style.display = 'none';
+        empSelect.value = '';
+    }
+}
+
+function addNewExpenseRecord() {
+    const type = document.getElementById('expenseTypeSelect').value;
+    const amount = Number(document.getElementById('expenseAmountInput').value);
+    const empName = document.getElementById('expenseEmployeeSelect').value;
+    const note = document.getElementById('expenseNoteInput').value.trim();
+
+    if (!amount || amount <= 0) return alert("❌ يرجى إدخال مبلغ صحيح للصرفية!");
+    if (type === 'salary_advance' && !empName) return alert("❌ يرجى اختيار اسم الموظف للسلفة / الراتب!");
+
+    let titleText = "";
+    if (type === 'salary_advance') titleText = `سلفة / راتب موظف: (${empName})`;
+    else if (type === 'monthly_fixed') titleText = `مصاريف ثابتة: (${note || 'مولدة / إيجار / نت'})`;
+    else titleText = `صرفيات يومية / نثرية: (${note || 'نظافة / زبالة / مكدي / مسواق'})`;
+
+    const expenseItem = {
+        id: 'EXP_' + Date.now(),
+        type: type,
+        title: titleText,
+        employeeName: empName || '-',
+        amount: amount,
+        note: note || '-',
+        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
+        dateDate: getTodayString(),
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
+        createdTimestamp: Date.now()
+    };
+
+    let expenses = getData('sys_expenses');
+    expenses.unshift(expenseItem);
+    setData('sys_expenses', expenses);
+
+    if (db) {
+        db.collection("expenses").add(expenseItem).catch(err => console.error("Firebase expense sync error:", err));
+    }
+
+    document.getElementById('expenseAmountInput').value = '';
+    document.getElementById('expenseNoteInput').value = '';
+    
+    renderExpensesListTable();
+    alert(`✅ تم تسجيل الصرفية بمبلغ (${amount.toLocaleString()} د.ع) وخصمها من الصندوق بنجاح!`);
+}
+
+function renderExpensesListTable() {
+    const expenses = getData('sys_expenses');
+    const container = document.getElementById('expensesListTable');
+    if (!container) return;
+
+    const todayExpenses = expenses.filter(e => e.dateDate === getTodayString());
+
+    if (todayExpenses.length === 0) {
+        container.innerHTML = `<p style="color:#888; text-align:center; padding:15px;">لا توجد صرفيات مسجلة لهذا اليوم</p>`;
+        return;
+    }
+
+    container.innerHTML = todayExpenses.map(item => `
+        <div style="background:#121214; border:1px solid var(--card-border); padding:8px 10px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
+                <strong>📌 ${item.title}</strong>
+                <strong style="color:var(--danger); font-size:0.95rem;">- ${Number(item.amount).toLocaleString()} د.ع</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:4px;">
+                <span>الملاحظة: ${item.note}</span>
+                <span>⏰ ${item.timestamp} (الكاشير: ${item.cashierName})</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+/* ==========================================================================
    إدارة ومحرر ملاحظات المطبخ السريعة
    ========================================================================== */
 
@@ -1230,9 +1363,13 @@ function openDailyReportModal() {
 
 function renderDailyReport(targetDate) {
     const completed = getData('sys_completed_orders');
+    const expenses = getData('sys_expenses');
+
     const filteredOrders = completed.filter(o => o.dateDate === targetDate);
+    const filteredExpenses = expenses.filter(e => e.dateDate === targetDate);
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
+    let totalExpensesAmt = 0;
     let driverStatsMap = {};
 
     filteredOrders.forEach(ord => {
@@ -1256,6 +1393,12 @@ function renderDailyReport(targetDate) {
         }
     });
 
+    filteredExpenses.forEach(exp => {
+        totalExpensesAmt += Number(exp.amount || 0);
+    });
+
+    const netCashInHand = Math.max(0, totalCash - totalExpensesAmt);
+
     if (document.getElementById('reportDateText')) document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
     if (document.getElementById('reportCashierText')) document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     if (document.getElementById('repTotalSales')) document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
@@ -1264,6 +1407,9 @@ function renderDailyReport(targetDate) {
     if (document.getElementById('repTotalVisa')) document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
     if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
     if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
+
+    if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExpensesAmt.toLocaleString();
+    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = netCashInHand.toLocaleString();
 
     const driverListEl = document.getElementById('repDriversList');
     if (driverListEl) {
@@ -1387,13 +1533,19 @@ function openShiftReportModal() {
     const shiftStartStr = sessionStorage.getItem('shift_start_time') || "بداية الشيفت";
 
     const completed = getData('sys_completed_orders');
-    
+    const expenses = getData('sys_expenses');
+
     const shiftOrders = completed.filter(ord => {
         const orderTs = ord.createdTimestamp || 0;
         return orderTs >= shiftStartTs && (ord.cashierName === activeUser.name || !ord.cashierName);
     });
 
-    let totalCash = 0, totalVisa = 0, grandTotal = 0;
+    const shiftExpenses = expenses.filter(exp => {
+        const expTs = exp.createdTimestamp || 0;
+        return expTs >= shiftStartTs;
+    });
+
+    let totalCash = 0, totalVisa = 0, grandTotal = 0, totalExpAmt = 0;
 
     shiftOrders.forEach(ord => {
         const amt = Number(ord.totalAmount || 0);
@@ -1405,9 +1557,17 @@ function openShiftReportModal() {
         }
     });
 
+    shiftExpenses.forEach(e => {
+        totalExpAmt += Number(e.amount || 0);
+    });
+
+    const netCashInDrawer = Math.max(0, totalCash - totalExpAmt);
+
     if (document.getElementById('shiftCashierName')) document.getElementById('shiftCashierName').innerText = activeUser.name;
     if (document.getElementById('shiftStartTime')) document.getElementById('shiftStartTime').innerText = shiftStartStr;
     if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString();
+    if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExpAmt.toLocaleString();
+    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = netCashInDrawer.toLocaleString();
     if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString();
     if (document.getElementById('shiftOrdersCount')) document.getElementById('shiftOrdersCount').innerText = shiftOrders.length;
     if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = grandTotal.toLocaleString();
@@ -1737,7 +1897,7 @@ function deductInventoryFromRecipe(items) {
         const menuItem = allMenuItems.find(m => m.id === cartItem.id);
         if (menuItem && menuItem.recipe) {
             menuItem.recipe.forEach(ingredient => {
-                const stockItem = inventory.find(inv => inv.id === ingredient.invId);
+                const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
                 if (stockItem) {
                     const totalDeduct = ingredient.qty * cartItem.qty;
                     stockItem.quantity = Math.max(0, stockItem.quantity - totalDeduct);
