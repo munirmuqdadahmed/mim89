@@ -96,7 +96,7 @@
         }
         .gold-btn:active { transform: scale(0.98); }
 
-        /* الهيدر المودرن الجديد والقائمة المنسدلة */
+        /* الهيدر المودرن القائمة المنسدلة */
         #cashierMainApp { display: none; }
 
         .pos-header {
@@ -138,7 +138,7 @@
             border: 1px solid var(--card-border);
             border-radius: 8px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            width: 180px;
+            width: 200px;
             z-index: 200;
             overflow: hidden;
         }
@@ -162,7 +162,7 @@
             color: var(--gold-bright);
         }
 
-        /* التخطيط والتمرير المطور للايباد والآيفون */
+        /* التخطيط والتمرير المطور */
         .pos-container {
             display: grid;
             grid-template-columns: 340px 1fr;
@@ -209,7 +209,6 @@
             touch-action: pan-y !important;
         }
 
-        /* 📱 إصلاح التمرير العمودي للمينيو على جهاز الايباد والآيفون */
         .pos-main-content {
             padding: 10px;
             height: calc(100vh - 55px) !important;
@@ -344,25 +343,21 @@
             display: block;
         }
 
-        /* 🖨️ إعدادات الطباعة المستقلة للكاشير والمطبخ وكشف الحساب */
+        /* 🖨️ إعدادات الطباعة المنفصلة والدقيقة للكشوفات والفواتير */
         @media print {
-            body * { visibility: hidden; }
-            #receiptModal, #receiptModal *, #dailyReportModal, #dailyReportModal * { visibility: visible; }
-            #receiptModal, #dailyReportModal { 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; 
+            body * { visibility: hidden !important; }
+            .printable-active, .printable-active * { visibility: visible !important; }
+            .printable-active { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 100% !important; 
                 background: #fff !important; 
                 color: #000 !important; 
-            }
-            #dailyReportModal .modal-body {
-                background: #fff !important;
-                color: #000 !important;
-                border: none !important;
                 box-shadow: none !important;
+                border: none !important;
             }
-            #dailyReportModal div {
+            .printable-active div, .printable-active span, .printable-active h3, .printable-active h4, .printable-active h5, .printable-active strong, .printable-active small, .printable-active p {
                 color: #000 !important;
             }
             .no-print { display: none !important; }
@@ -396,7 +391,7 @@
         </div>
 
         <header class="pos-header">
-            <!-- قائمة منسدلة أنيقة عند الضغط على MIM89 -->
+            <!-- قائمة منسدلة عند الضغط على MIM89 -->
             <div class="brand-dropdown-container">
                 <button class="brand-btn" onclick="toggleBrandMenu()">
                     <i class="fa-solid fa-cash-register"></i> MIM89 POS
@@ -404,20 +399,21 @@
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير</button>
-                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب</button>
+                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي</button>
+                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
                     <hr style="border-color:#333; margin:2px 0;">
                     <button onclick="logoutCashier()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
                 </div>
             </div>
 
-            <!-- 🔄 زر التحديث الأخضر وزر الجرس للايباد -->
+            <!-- أزرار التحديث والأجراس والأزرار المباشرة -->
             <div style="display:flex; gap:6px; align-items:center;">
                 <button onclick="globalSystemSync(this)" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#10b981; color:#fff; border:none;">
                     <i class="fa-solid fa-rotate"></i> تحديث
                 </button>
 
                 <button onclick="unlockIpadAudio()" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">
-                    🔊 تفعيل جرس التنبيهات
+                    🔊 الجرس
                 </button>
             </div>
 
@@ -442,7 +438,7 @@
                             <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🚗 توصيل</button>
                         </div>
 
-                        <!-- 🛵 القائمة المنسدلة المضافة لاختيار سائق الدليفري والتطبيقات -->
+                        <!-- 🛵 اختيار سائق الدليفري والتطبيقات -->
                         <div id="driverSelectBox" style="display:none; margin: 4px 0 8px 0; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary);">
                             <span class="section-label" style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
                             <select id="posDriverSelect" class="gold-input" style="font-size:0.8rem; text-align:right; cursor:pointer;"></select>
@@ -486,8 +482,10 @@
 
             <!-- المنطقة الرئيسية: اختيار الوجبات والأقسام -->
             <main class="pos-main-content">
-                <div style="margin-bottom:8px;">
-                    <input type="text" id="posSearchInput" class="gold-input" placeholder="🔍 بحث سريع عن وجبة..." oninput="if(typeof filterPosProducts === 'function') filterPosProducts()" style="text-align:right;">
+                <div style="margin-bottom:8px; display:flex; gap:6px;">
+                    <input type="text" id="posSearchInput" class="gold-input" placeholder="🔍 بحث سريع عن وجبة..." oninput="if(typeof filterPosProducts === 'function') filterPosProducts()" style="text-align:right; flex:1;">
+                    <button onclick="openDailyReportModal()" class="gold-btn" style="width:auto; font-size:0.75rem; padding:4px 10px;">📊 كشف الحساب</button>
+                    <button onclick="openItemsReportModal()" class="gold-btn" style="width:auto; font-size:0.75rem; padding:4px 10px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">📦 جرد الوجبات</button>
                 </div>
                 <div id="posCategoriesBar" class="categories-bar"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -497,7 +495,7 @@
 
     <!-- نافذة الفاتورة للطباعة والمعاينة -->
     <div id="receiptModal" class="modal-overlay">
-        <div class="modal-body" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
+        <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
             <!-- 1. فاتورة الكاشير المالية -->
             <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
                 <h3 style="font-size:1.1rem; margin:0;">MIM89 FAST FOOD</h3>
@@ -532,9 +530,8 @@
                 <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; background:#eee; padding:3px;"></div>
             </div>
 
-            <!-- أزرار الإجراءات عند المعاينة والطباعة -->
             <div style="display:flex; gap:6px; margin-top:15px;" class="no-print">
-                <button onclick="window.print()" class="gold-btn" style="flex:2;">🖨️ طباعة الفاتورة</button>
+                <button onclick="printThermalElement('receiptModalBody')" class="gold-btn" style="flex:2;">🖨️ طباعة الفاتورة</button>
                 <button onclick="closeModal('receiptModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
         </div>
@@ -552,42 +549,70 @@
         </div>
     </div>
 
-    <!-- نافذة تقرير كشف الحساب اليومي -->
+    <!-- 📊 1. نافذة كشف الحساب المالي اليومي المستقل (Z-Report Financial Only) -->
     <div id="dailyReportModal" class="modal-overlay">
-        <div class="modal-body">
+        <div class="modal-body" id="dailyReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);">📊 كشف الحساب اليومي</h4>
-                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">X</button>
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</h4>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
             </div>
-            <div style="margin-bottom:8px;">
+            
+            <div style="margin-bottom:8px;" class="no-print">
                 <small style="color:#aaa;">تاريخ الكشف:</small>
                 <input type="date" id="reportDateInput" class="gold-input" onchange="renderDailyReport(this.value)">
             </div>
-            <div id="reportDateText" style="color:#888; font-size:0.8rem; margin-bottom:4px;"></div>
-            <div id="reportCashierText" style="color:#888; font-size:0.8rem; margin-bottom:10px;"></div>
+            <div id="reportDateText" style="color:#aaa; font-size:0.8rem; margin-bottom:4px;"></div>
+            <div id="reportCashierText" style="color:#aaa; font-size:0.8rem; margin-bottom:10px;"></div>
             
-            <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>إجمالي المبيعات:</span><strong style="color:var(--gold-bright);"><span id="repTotalSales">0</span> د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>عدد الفواتير:</span><strong id="repOrdersCount">0</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المبيعات النقدية:</span><strong id="repTotalCash">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>مبيعات الفيزا:</span><strong id="repTotalVisa">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>أجور التوصيل:</span><strong id="repTotalDelivery">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:4px;"><span>صافي الطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
+            <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem; border:1px solid var(--card-border);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>إجمالي المبيعات الكلية:</span><strong style="color:var(--gold-bright);"><span id="repTotalSales">0</span> د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>عدد الفواتير المقبوضة:</span><strong id="repOrdersCount">0</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض نقداً (كاش):</span><strong id="repTotalCash" style="color:#10b981;">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض إلكترونياً (فيزا):</span><strong id="repTotalVisa" style="color:#38bdf8;">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>أجور التوصيل المجمعة:</span><strong id="repTotalDelivery">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:4px; font-weight:bold;"><span>صافي قيمة الوجبات والطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
             </div>
 
-            <!-- 🛵 كشف أداء وحسابات سائقي التوصيل وتطبيقات الدليفري -->
+            <!-- 🛵 كشف سائقي التوصيل وتطبيقات الدليفري -->
             <div style="background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px;">
-                <h5 style="color:var(--gold-primary); font-size:0.85rem; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> كشف سائقي التوصيل والتطبيقات:</h5>
+                <h5 style="color:var(--gold-primary); font-size:0.85rem; margin-bottom:6px;"><i class="fa-solid fa-motorcycle"></i> كشف سائقي التوصيل والتطبيقات:</h5>
                 <div id="repDriversList" style="font-size:0.8rem; color:#ccc;"></div>
             </div>
 
-            <h5 style="color:var(--gold-primary); margin-bottom:6px;">📦 الأصناف المبيعة:</h5>
-            <div id="repItemsSoldList" style="max-height:140px; overflow-y:auto; font-size:0.8rem; margin-bottom:10px;"></div>
-
-            <!-- 🖨️ زر طباعة الكشف اليومي والإغلاق -->
-            <div style="display:flex; gap:8px; margin-top:10px;" class="no-print">
-                <button onclick="window.print()" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة الكشف</button>
+            <!-- 🖨️ أزرار الإجراءات للطباعة المالية المنفصلة -->
+            <div style="display:flex; gap:8px; margin-top:12px;" class="no-print">
+                <button onclick="printThermalElement('dailyReportModalBody')" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة كشف الحساب المالي</button>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📦 2. نافذة جرد الوجبات والأصناف المباعة المستقلة (Items Report Only) -->
+    <div id="itemsReportModal" class="modal-overlay">
+        <div class="modal-body" id="itemsReportModalBody">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات والأصناف المباعة</h4>
+                <button onclick="closeModal('itemsReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
+            </div>
+            
+            <div style="margin-bottom:8px;" class="no-print">
+                <small style="color:#aaa;">تاريخ الكشف:</small>
+                <input type="date" id="itemsReportDateInput" class="gold-input" onchange="renderItemsReport(this.value)">
+            </div>
+            <div id="itemsReportDateText" style="color:#aaa; font-size:0.8rem; margin-bottom:6px;"></div>
+
+            <div style="background:#121214; padding:8px 12px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.85rem; color:#aaa;">مجموع القطع المباعة اليوم:</span>
+                <strong id="repTotalItemsQty" style="color:var(--gold-bright); font-size:1.1rem;">0 قطعة</strong>
+            </div>
+
+            <h5 style="color:var(--gold-primary); margin-bottom:6px; font-size:0.85rem;">📦 تفاصيل الوجبات المباعة اليوم:</h5>
+            <div id="repItemsSoldListDetail" style="max-height:260px; overflow-y:auto; font-size:0.85rem; margin-bottom:10px; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--card-border);"></div>
+
+            <!-- 🖨️ زر طباعة جرد الوجبات المستقل -->
+            <div style="display:flex; gap:8px; margin-top:12px;" class="no-print">
+                <button onclick="printThermalElement('itemsReportModalBody')" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة جرد الوجبات</button>
+                <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
         </div>
     </div>
@@ -605,6 +630,22 @@
                 const menu = document.getElementById('brandDropdownMenu');
                 if (menu && menu.style.display === 'block') menu.style.display = 'none';
             }
+        }
+
+        /* 🖨️ دالة الطباعة الحرارية المحترفة لأي عنصر بشكل دقيق ومستقل */
+        function printThermalElement(elementId) {
+            const target = document.getElementById(elementId);
+            if (!target) return;
+
+            document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
+            target.classList.add('printable-active');
+
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    target.classList.remove('printable-active');
+                }, 300);
+            }, 100);
         }
 
         /* 👁️ دالة فتح سجل الفواتير مع خيار المعاينة والطباعة */
