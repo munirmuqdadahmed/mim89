@@ -25,7 +25,7 @@
         .header-title h1 { color: var(--gold-primary); font-size: 1.6rem; }
 
         /* KPI Cards */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .kpi-card { background: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 10px; text-align: center; }
         .kpi-card h4 { color: #888; font-size: 0.85rem; margin-bottom: 8px; }
         .kpi-card .value { font-size: 1.3rem; font-weight: bold; color: var(--gold-bright); }
@@ -179,7 +179,6 @@
     </div>
 
     <script>
-        // 🔐 الرمز السري الجديد الخاص بمنير
         const OWNER_PIN = "1278900";
 
         function checkSecretPass() {
@@ -205,7 +204,6 @@
             calculateGlobalDashboard();
         }
 
-        /* 1. إدارة رأس المال المستثمر */
         function loadCapitalInvestment() {
             const capital = localStorage.getItem('sys_capital_investment') || 0;
             document.getElementById('capitalInput').value = capital;
@@ -218,7 +216,6 @@
             alert("تم حفظ رأس المال بنجاح!");
         }
 
-        /* 2. إدارة المصاريف الثابتة */
         function renderFixedExpenses() {
             const expenses = getData('sys_fixed_expenses');
             const tbody = document.getElementById('fixedExpensesTableBody');
@@ -253,15 +250,15 @@
             renderFixedExpenses();
         }
 
-        /* 3. احتساب التكاليف والأصناف */
         function getItemCost(item) {
             if (!item.recipe || !Array.isArray(item.recipe)) return 0;
             const inventory = getData('sys_inventory');
             let cost = 0;
             item.recipe.forEach(r => {
                 const inv = inventory.find(i => Number(i.id) === Number(r.invId));
-                if (inv && inv.costPerUnit) {
-                    cost += (Number(r.qty) * Number(inv.costPerUnit));
+                if (inv) {
+                    const unitCost = inv.totalPrice && inv.quantity ? (inv.totalPrice / inv.quantity) : (inv.costPerUnit || 0);
+                    cost += (Number(r.qty) * unitCost);
                 }
             });
             return cost;
@@ -277,7 +274,10 @@
         function loadInventoryDropdown() {
             const inventory = getData('sys_inventory');
             const select = document.getElementById('recipeInvSelect');
-            select.innerHTML = inventory.map(i => `<option value="${i.id}">${i.name} (${i.costPerUnit || 0} د.ع / ${i.unit})</option>`).join('');
+            select.innerHTML = inventory.map(i => {
+                const unitCost = i.totalPrice && i.quantity ? (i.totalPrice / i.quantity) : (i.costPerUnit || 0);
+                return `<option value="${i.id}">${i.name} (${Number(unitCost.toFixed(2)).toLocaleString()} د.ع / ${i.unit})</option>`;
+            }).join('');
         }
 
         function loadItemRecipeBreakdown() {
@@ -296,11 +296,12 @@
             if (item.recipe && item.recipe.length > 0) {
                 recipeHtml = item.recipe.map(r => {
                     const inv = inventory.find(i => Number(i.id) === Number(r.invId));
-                    const invCost = inv ? (inv.costPerUnit || 0) * r.qty : 0;
+                    const unitCost = inv && inv.totalPrice && inv.quantity ? (inv.totalPrice / inv.quantity) : (inv ? (inv.costPerUnit || 0) : 0);
+                    const invCost = unitCost * r.qty;
                     return `
                         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:4px 0;">
                             <span>● ${inv ? inv.name : 'مادة'} (${r.qty} ${inv ? inv.unit : ''})</span>
-                            <strong>${invCost.toLocaleString()} د.ع</strong>
+                            <strong>${Number(invCost.toFixed(2)).toLocaleString()} د.ع</strong>
                         </div>
                     `;
                 }).join('');
@@ -313,8 +314,8 @@
                     ${recipeHtml}
                     <hr style="border-color:#333; margin:10px 0;">
                     <div style="display:flex; justify-content:space-between; color:var(--gold-bright);">
-                        <span>الكلفة: ${cost.toLocaleString()} د.ع</span>
-                        <span>الربح: ${profit.toLocaleString()} د.ع (${margin}%)</span>
+                        <span>الكلفة: ${Number(cost.toFixed(2)).toLocaleString()} د.ع</span>
+                        <span>الربح: ${Number(profit.toFixed(2)).toLocaleString()} د.ع (${margin}%)</span>
                     </div>
                 </div>
             `;
@@ -355,8 +356,8 @@
                     <tr>
                         <td><strong>${item.name}</strong></td>
                         <td>${Number(item.price).toLocaleString()} د.ع</td>
-                        <td style="color:var(--danger);">${cost.toLocaleString()} د.ع</td>
-                        <td style="color:var(--success); font-weight:bold;">${profit.toLocaleString()} د.ع</td>
+                        <td style="color:var(--danger);">${Number(cost.toFixed(2)).toLocaleString()} د.ع</td>
+                        <td style="color:var(--success); font-weight:bold;">${Number(profit.toFixed(2)).toLocaleString()} د.ع</td>
                         <td style="color:var(--gold-bright); font-weight:bold;">${margin}%</td>
                         <td><button class="btn-gold" style="padding:2px 8px; font-size:0.75rem;" onclick="document.getElementById('itemCostSelect').value='${item.id}'; loadItemRecipeBreakdown();">تعديل المكونات</button></td>
                     </tr>
@@ -364,7 +365,6 @@
             }).join('');
         }
 
-        /* 4. المؤشرات الكلية، استرداد رأس المال والأرباح الشهريّة */
         function calculateGlobalDashboard() {
             const completed = getData('sys_completed_orders');
             const expenses = getData('sys_fixed_expenses');
@@ -385,10 +385,8 @@
             const totalFixedExp = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
             const netProfit = totalSales - totalFoodCost - totalFixedExp;
 
-            // حساب المتبقي لسداد رأس المال
             const remainingCapital = Math.max(0, capitalInvestment - netProfit);
 
-            // حساب الوقت المتوقع لسداد رأس المال بالكامل (بالأشهر)
             let paybackText = "غير محدد";
             if (capitalInvestment === 0) {
                 paybackText = "لم يحدد رأس المال";
@@ -402,9 +400,9 @@
             }
 
             document.getElementById('kpiMonthlySales').innerText = totalSales.toLocaleString() + ' د.ع';
-            document.getElementById('kpiFoodCost').innerText = totalFoodCost.toLocaleString() + ' د.ع';
+            document.getElementById('kpiFoodCost').innerText = Number(totalFoodCost.toFixed(2)).toLocaleString() + ' د.ع';
             document.getElementById('kpiFixedExpenses').innerText = totalFixedExp.toLocaleString() + ' د.ع';
-            document.getElementById('kpiNetProfit').innerText = netProfit.toLocaleString() + ' د.ع';
+            document.getElementById('kpiNetProfit').innerText = Number(netProfit.toFixed(2)).toLocaleString() + ' د.ع';
             document.getElementById('kpiRemainingCapital').innerText = remainingCapital.toLocaleString() + ' د.ع';
             document.getElementById('kpiPaybackTime').innerText = paybackText;
         }
