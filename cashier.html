@@ -484,7 +484,7 @@
                             </div>
                         </div>
 
-                        <!-- 📝 قسم ملاحظات المطبخ السريعة التفاعلية مع زر المسح السريع -->
+                        <!-- 📝 قسم ملاحظات المطبخ السريعة مع زر المسح السريع الفعال 100% -->
                         <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
@@ -493,7 +493,8 @@
                             
                             <div style="display:flex; gap:4px; align-items:center;">
                                 <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:6px; margin:0; flex:1;">
-                                <button onclick="clearPosOrderNotes()" title="مسح الملاحظات بالكامل" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; padding:6px 10px; font-weight:bold; font-size:0.85rem; width:auto;">
+                                <!-- زر مسح الملاحظات المباشر المحدث -->
+                                <button type="button" onclick="document.getElementById('posOrderNotesInput').value = ''; if(typeof clearPosOrderNotes === 'function') clearPosOrderNotes();" title="مسح الملاحظات بالكامل" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; padding:6px 12px; font-weight:bold; font-size:1rem; width:auto; cursor:pointer;">
                                     ✕
                                 </button>
                             </div>
@@ -553,7 +554,7 @@
                 </div>
 
                 <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;">
-                    <!-- تعبئة تلقائية من JS -->
+                    <!-- تعبئة تلقائية -->
                 </select>
 
                 <input type="text" id="expenseNoteInput" placeholder="بيان الصرفية (مثال: كارتات / أكياس / سلفة أحمد)" class="gold-input" style="margin-bottom: 8px; font-size: 0.8rem;">
@@ -766,6 +767,14 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
+        // دالة مسح نص الملاحظات لضمان عملها بشكل مستقل
+        function clearPosOrderNotes() {
+            const input = document.getElementById('posOrderNotesInput');
+            if (input) {
+                input.value = '';
+            }
+        }
+
         function toggleBrandMenu() {
             const menu = document.getElementById('brandDropdownMenu');
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
