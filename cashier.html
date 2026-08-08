@@ -402,7 +402,10 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.75rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger); font-weight:bold;"><i class="fa-solid fa-wallet" style="color:var(--danger);"></i> 💸 الصرفيات والسُلف</button>
+                    <!-- 💸 زر الصرفيات والسُلف المضاف داخل البرُدة -->
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger); font-weight:bold;">
+                        <i class="fa-solid fa-wallet" style="color:var(--danger);"></i> 💸 الصرفيات والسُلف
+                    </button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt" style="color:var(--gold-primary);"></i> سجل الفواتير</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line" style="color:#38bdf8;"></i> كشف الحساب المالي</button>
                     <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked" style="color:#f59e0b;"></i> جرد الوجبات المباعة (PDF)</button>
@@ -416,13 +419,8 @@
                 </div>
             </div>
 
-            <!-- زر سريع للصرفيات بجانب اسم الكاشير -->
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button onclick="openExpenseManagerModal()" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:6px 12px; font-size:0.8rem;">
-                    💸 الصرفيات والسُلف
-                </button>
-                <span id="activeCashierName" style="color:#aaa; font-size:0.85rem; font-weight:bold;"></span>
-            </div>
+            <!-- اسم الكاشير الحالي -->
+            <span id="activeCashierName" style="color:#aaa; font-size:0.85rem; font-weight:bold;"></span>
         </header>
 
         <div class="pos-container">
@@ -486,14 +484,13 @@
                             </div>
                         </div>
 
-                        <!-- 📝 قسم ملاحظات المطبخ السريعة + شريط الإدخال المزود بزر المسح المباشر (X) -->
+                        <!-- 📝 قسم ملاحظات المطبخ السريعة التفاعلية مع زر المسح السريع -->
                         <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
                             </span>
                             <div id="quickNotesButtonsContainer" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;"></div>
                             
-                            <!-- شريط الملاحظات مع زر إكس للمسح بضغطة واحدة -->
                             <div style="display:flex; gap:4px; align-items:center;">
                                 <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:6px; margin:0; flex:1;">
                                 <button onclick="clearPosOrderNotes()" title="مسح الملاحظات بالكامل" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; padding:6px 10px; font-weight:bold; font-size:0.85rem; width:auto;">
@@ -535,7 +532,7 @@
         </div>
     </div>
 
-    <!-- 💸 نافذة إدارة الصرفيات والسُلف والنثريات المضافة -->
+    <!-- 💸 نافذة إدارة الصرفيات والسُلف والنثريات -->
     <div id="expenseManagerModal" class="modal-overlay">
         <div class="modal-body" style="max-width: 550px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 12px;">
@@ -556,7 +553,7 @@
                 </div>
 
                 <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;">
-                    <!-- تعبئة تلقائية -->
+                    <!-- تعبئة تلقائية من JS -->
                 </select>
 
                 <input type="text" id="expenseNoteInput" placeholder="بيان الصرفية (مثال: كارتات / أكياس / سلفة أحمد)" class="gold-input" style="margin-bottom: 8px; font-size: 0.8rem;">
@@ -568,7 +565,7 @@
 
             <h5 style="color: var(--gold-primary); margin-bottom: 6px; font-size: 0.85rem;">صرفيات وسُلف اليوم المسجلة:</h5>
             <div id="expensesListTable" style="max-height: 180px; overflow-y: auto;">
-                <!-- كشف الصرفيات -->
+                <!-- جدول الصرفيات -->
             </div>
         </div>
     </div>
