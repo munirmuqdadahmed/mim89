@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v15.0 Interactive Discount Engine)
+   MIM89 FAST FOOD - Master Core Engine (v15.5 Interactive & Fixed POS Engine)
    مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة والخصومات الذكية
    ========================================================================== */
 
@@ -23,7 +23,6 @@ try {
         db = firebase.firestore();
         console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
 
-        // تفعيل حفظ البيانات محلياً للعمل بدون بطء حتى عند انقطاع إنترنت المطعم
         db.enablePersistence({ synchronizeTabs: true }).catch(err => {
             console.log("حالة التخزين المحلي Offline Persistence:", err.code);
         });
@@ -53,6 +52,12 @@ const DEFAULT_DATA = {
     drivers: [
         { id: "drv_1", name: "أحمد دليفري", phone: "07700000001" },
         { id: "drv_2", name: "مصطفى دليفري", phone: "07700000002" }
+    ],
+    quickKitchenNotes: [
+        "بدون ثوم 🧄",
+        "سبايسي 🌶️",
+        "صوص زيادة 🧀",
+        "بدون مخلل 🥒"
     ],
     categories: [
         { id: 1, name: "🔥 العروض المميزة" },
@@ -180,6 +185,7 @@ function initData() {
     }
     if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+    if (!localStorage.getItem('sys_quick_kitchen_notes')) localStorage.setItem('sys_quick_kitchen_notes', JSON.stringify(DEFAULT_DATA.quickKitchenNotes));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
 
     setupCloudRealtimeSync();
@@ -635,18 +641,12 @@ let currentPercentValue = 0;
 
 function initCashierPage() { 
     initData(); 
-    const savedUser = sessionStorage.getItem('active_cashier');
-    if (savedUser) {
-        activeCashierUser = JSON.parse(savedUser);
-        if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
-        if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'block';
-        if (document.getElementById('activeCashierName')) {
-            document.getElementById('activeCashierName').innerText = "الكاشير: " + activeCashierUser.name;
-        }
-        loadPosDirectMenu('all');
-        loadDriversAndAppDropdowns();
-        listenForIncomingOrders();
-    }
+    // إجبار طلب الرمز السري عند التوقف أو إعادة فتح الصفحة
+    sessionStorage.removeItem('active_cashier');
+    if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'flex';
+    if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'none';
+    
+    renderQuickKitchenNotesButtons();
 }
 
 function loginCashier() {
@@ -676,13 +676,17 @@ function loginCashier() {
         
         loadPosDirectMenu('all');
         loadDriversAndAppDropdowns();
+        renderQuickKitchenNotesButtons();
         listenForIncomingOrders();
     } else {
         if (document.getElementById('authError')) document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
     }
 }
 
-function logoutCashier() { location.reload(); }
+function logoutCashier() { 
+    sessionStorage.removeItem('active_cashier');
+    location.reload(); 
+}
 
 function switchCashierTab(tabId, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -859,7 +863,7 @@ function clearPosCart() {
 }
 
 /* ==========================================================================
-   محرك الخصم التفاعلي المطور (MIM89 Smart Discount Engine)
+   محرك الخصم التفاعلي المطور - 3 أزرار أفقية (MIM89 Smart Discount Engine)
    ========================================================================== */
 
 // 1. زر الخصم المجاني (Toggle)
@@ -901,51 +905,39 @@ function togglePercentDiscount() {
     }
 }
 
-// 3. الخصم بالمبلغ (عند الكتابة في الحقل)
-function applyPosAmountDiscount(val) {
-    const amount = Math.max(0, Number(val) || 0);
-    const clearXBtn = document.getElementById('btnClearInputX');
-
-    if (clearXBtn) clearXBtn.style.display = val ? 'block' : 'none';
-
-    if (amount > 0) {
-        activeDiscountType = 'amount';
-        posDiscountAmount = amount;
-        updateDiscountUIState('amount', `💵 خصم ${amount.toLocaleString()} د.ع`);
-    } else if (activeDiscountType === 'amount') {
-        clearAllDiscounts();
-    }
-    renderPosCart();
-}
-
-// 4. مسح النص داخل حقل المبلغ فقط دون تصفير باقي الأزرار
-function clearDiscountInputOnly() {
-    const input = document.getElementById('posDiscountInput');
-    const clearXBtn = document.getElementById('btnClearInputX');
-    if (input) input.value = '';
-    if (clearXBtn) clearXBtn.style.display = 'none';
-
+// 3. زر الخصم بمبلغ مباشر
+function promptAmountDiscount() {
     if (activeDiscountType === 'amount') {
         clearAllDiscounts();
+    } else {
+        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
+
+        const inputAmt = prompt("أدخل قيمة الخصم بالمبلغ (د.ع):", posDiscountAmount || "1000");
+        if (inputAmt === null) return;
+
+        const amt = Math.max(0, Number(inputAmt) || 0);
+        if (amt <= 0) return clearAllDiscounts();
+
+        activeDiscountType = 'amount';
+        posDiscountAmount = amt;
+
+        updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString()} د.ع`);
+        renderPosCart();
     }
 }
 
-// 5. إلغاء وتصفير كافة أنواع الخصوم وإرجاع السعر الطبيعي
+// 4. إلغاء وتصفير كافة أنواع الخصوم بضغطة زر X
 function clearAllDiscounts() {
     activeDiscountType = null;
     posDiscountAmount = 0;
     currentPercentValue = 0;
 
-    const input = document.getElementById('posDiscountInput');
-    const clearXBtn = document.getElementById('btnClearInputX');
-    if (input) input.value = '';
-    if (clearXBtn) clearXBtn.style.display = 'none';
-
     updateDiscountUIState(null, '');
     renderPosCart();
 }
 
-// إعادة حساب الخصم ديناميكياً عند تعديل عناصر السلة
+// إعادة حساب الخصم ديناميكياً عند تعديل العناصر
 function recalculateActiveDiscount() {
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     if (subtotal === 0) {
@@ -960,31 +952,36 @@ function recalculateActiveDiscount() {
     }
 }
 
-// 🎨 تحديث شكل وحالة الأزرار والشارات بصرياً
+// 🎨 تحديث حالة وشكل أزرار الخصومات بصرياً
 function updateDiscountUIState(type, badgeText) {
     const btnFree = document.getElementById('btnFreeDiscount');
     const btnPercent = document.getElementById('btnPercentDiscount');
+    const btnAmount = document.getElementById('btnAmountDiscount');
+    const btnClearX = document.getElementById('btnClearDiscountX');
     const badge = document.getElementById('discountStatusBadge');
 
-    if (btnFree) {
-        btnFree.style.background = '#222228';
-        btnFree.style.borderColor = '#444';
-        btnFree.style.color = '#fff';
-    }
-    if (btnPercent) {
-        btnPercent.style.background = '#222228';
-        btnPercent.style.borderColor = '#444';
-        btnPercent.style.color = '#fff';
-    }
+    [btnFree, btnPercent, btnAmount].forEach(btn => {
+        if (btn) {
+            btn.style.background = '#222228';
+            btn.style.borderColor = '#444';
+            btn.style.color = '#fff';
+        }
+    });
 
     if (type === 'free' && btnFree) {
         btnFree.style.background = '#10b981';
         btnFree.style.borderColor = '#10b981';
-        btnFree.style.color = '#fff';
     } else if (type === 'percent' && btnPercent) {
         btnPercent.style.background = '#3b82f6';
         btnPercent.style.borderColor = '#3b82f6';
-        btnPercent.style.color = '#fff';
+    } else if (type === 'amount' && btnAmount) {
+        btnAmount.style.background = 'var(--gold-primary)';
+        btnAmount.style.borderColor = 'var(--gold-primary)';
+        btnAmount.style.color = '#000';
+    }
+
+    if (btnClearX) {
+        btnClearX.style.display = type ? 'inline-block' : 'none';
     }
 
     if (badge) {
@@ -998,6 +995,22 @@ function updateDiscountUIState(type, badgeText) {
     }
 }
 
+/* ==========================================================================
+   إدارة ومحرر ملاحظات المطبخ السريعة
+   ========================================================================== */
+
+function renderQuickKitchenNotesButtons() {
+    const notes = getData('sys_quick_kitchen_notes') || DEFAULT_DATA.quickKitchenNotes;
+    const container = document.getElementById('quickNotesButtonsContainer');
+    if (!container) return;
+
+    container.innerHTML = notes.map(note => `
+        <button onclick="addQuickNote('${note}')" class="gold-btn btn-sm" style="padding:3px 8px; font-size:0.75rem; background:#222; color:#ccc; border:1px solid #444; width:auto; border-radius:4px;">
+            ${note}
+        </button>
+    `).join('');
+}
+
 function addQuickNote(noteText) {
     const input = document.getElementById('posOrderNotesInput');
     if (!input) return;
@@ -1006,6 +1019,52 @@ function addQuickNote(noteText) {
     } else {
         input.value += ' - ' + noteText;
     }
+}
+
+function openKitchenNotesManagerModal() {
+    renderKitchenNotesTable();
+    openModal('kitchenNotesManagerModal');
+}
+
+function renderKitchenNotesTable() {
+    const notes = getData('sys_quick_kitchen_notes') || DEFAULT_DATA.quickKitchenNotes;
+    const container = document.getElementById('kitchenNotesListTable');
+    if (!container) return;
+
+    if (notes.length === 0) {
+        container.innerHTML = `<p style="color:#888; text-align:center; padding:10px;">لا توجد ملاحظات مسجلة</p>`;
+        return;
+    }
+
+    container.innerHTML = notes.map((note, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#121214; padding:6px 10px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:4px;">
+            <span style="font-size:0.85rem; color:#fff;">● ${note}</span>
+            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:2px 8px; font-size:0.75rem;">حذف</button>
+        </div>
+    `).join('');
+}
+
+function addKitchenNoteItem() {
+    const input = document.getElementById('newKitchenNoteInput');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return alert("أدخل نص الملاحظة أولاً!");
+
+    let notes = getData('sys_quick_kitchen_notes') || DEFAULT_DATA.quickKitchenNotes;
+    notes.push(val);
+    setData('sys_quick_kitchen_notes', notes);
+
+    input.value = '';
+    renderKitchenNotesTable();
+    renderQuickKitchenNotesButtons();
+}
+
+function deleteKitchenNoteItem(index) {
+    let notes = getData('sys_quick_kitchen_notes') || DEFAULT_DATA.quickKitchenNotes;
+    notes.splice(index, 1);
+    setData('sys_quick_kitchen_notes', notes);
+    renderKitchenNotesTable();
+    renderQuickKitchenNotesButtons();
 }
 
 function renderPosCart() {
@@ -1274,6 +1333,52 @@ function renderItemsReport(targetDate) {
             `).join('');
         }
     }
+}
+
+// 📱 تصدير جرد الوجبات إلى PDF والواتساب مباشرة
+function exportItemsReportPDFAndWhatsApp() {
+    const dateInput = document.getElementById('itemsReportDateInput');
+    const targetDate = dateInput ? dateInput.value : getTodayString();
+    
+    const completed = getData('sys_completed_orders');
+    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
+
+    let itemsSoldMap = {};
+    let totalItemsQtyCount = 0;
+
+    filteredOrders.forEach(ord => {
+        if (ord.items && Array.isArray(ord.items)) {
+            ord.items.forEach(item => {
+                const qty = Number(item.qty || 0);
+                const price = Number(item.price || 0);
+                if (!itemsSoldMap[item.name]) {
+                    itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
+                }
+                itemsSoldMap[item.name].qty += qty;
+                itemsSoldMap[item.name].totalPrice += (price * qty);
+                totalItemsQtyCount += qty;
+            });
+        }
+    });
+
+    const itemNames = Object.keys(itemsSoldMap);
+    if (itemNames.length === 0) return alert("لا توجد مبيعات وجبات لتصديرها لهذا اليوم!");
+
+    let waText = `📦 *جرد الوجبات المباعة - MIM89 FAST FOOD* 📦\n`;
+    waText += `----------------------------------\n`;
+    waText += `📅 *التاريخ:* ${targetDate}\n`;
+    waText += `📊 *إجمالي القطع المباعة:* ${totalItemsQtyCount} قطعة\n`;
+    waText += `----------------------------------\n`;
+
+    itemNames.forEach(name => {
+        waText += `• *${name}:* ${itemsSoldMap[name].qty} قطعة (${itemsSoldMap[name].totalPrice.toLocaleString()} د.ع)\n`;
+    });
+
+    waText += `----------------------------------\n`;
+    waText += `تم استخراج هذا التقرير آلياً من نظام الكاشير MIM89.`;
+
+    const myPhone = "9647750008630";
+    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
 }
 
 function openShiftReportModal() {
@@ -1644,6 +1749,7 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
+// 🖨️ طباعة وتجهيز بون الكاشير والمطبخ
 function printReceipt(order) {
     if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + (order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي"));
     if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
