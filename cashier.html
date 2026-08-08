@@ -402,6 +402,7 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.75rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger); font-weight:bold;"><i class="fa-solid fa-wallet" style="color:var(--danger);"></i> 💸 الصرفيات والسُلف</button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt" style="color:var(--gold-primary);"></i> سجل الفواتير</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line" style="color:#38bdf8;"></i> كشف الحساب المالي</button>
                     <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked" style="color:#f59e0b;"></i> جرد الوجبات المباعة (PDF)</button>
@@ -415,8 +416,13 @@
                 </div>
             </div>
 
-            <!-- اسم الكاشير الحالي -->
-            <span id="activeCashierName" style="color:#aaa; font-size:0.85rem; font-weight:bold;"></span>
+            <!-- زر سريع للصرفيات بجانب اسم الكاشير -->
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button onclick="openExpenseManagerModal()" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:6px 12px; font-size:0.8rem;">
+                    💸 الصرفيات والسُلف
+                </button>
+                <span id="activeCashierName" style="color:#aaa; font-size:0.85rem; font-weight:bold;"></span>
+            </div>
         </header>
 
         <div class="pos-container">
@@ -522,6 +528,44 @@
         </div>
     </div>
 
+    <!-- 💸 نافذة إدارة الصرفيات والسُلف والنثريات المضافة -->
+    <div id="expenseManagerModal" class="modal-overlay">
+        <div class="modal-body" style="max-width: 550px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 12px;">
+                <h4 style="color: var(--gold-primary); margin: 0;"><i class="fa-solid fa-wallet"></i> إدارة الصرفيات والسُلف</h4>
+                <button onclick="closeModal('expenseManagerModal')" class="gold-btn no-print" style="width: auto; padding: 2px 8px;">✕</button>
+            </div>
+
+            <!-- نموذج تسجيل صرفية جديدة -->
+            <div style="background: #121214; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--card-border);">
+                <h5 style="color: #fff; margin-top: 0; margin-bottom: 8px; font-size: 0.85rem;">تسجيل مصاريف / سلفة جديدة</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                    <select id="expenseTypeSelect" class="gold-input" style="font-size: 0.8rem;" onchange="toggleExpenseTypeFields()">
+                        <option value="daily_expenses">💸 مصاريف يومية / نثرية</option>
+                        <option value="salary_advance">👤 سلفة / راتب موظف</option>
+                        <option value="monthly_fixed">🏢 مصاريف ثابتة (مولدة/إيجار)</option>
+                    </select>
+                    <input type="number" id="expenseAmountInput" placeholder="المبلغ (د.ع)" class="gold-input" style="font-size: 0.8rem;">
+                </div>
+
+                <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;">
+                    <!-- تعبئة تلقائية -->
+                </select>
+
+                <input type="text" id="expenseNoteInput" placeholder="بيان الصرفية (مثال: كارتات / أكياس / سلفة أحمد)" class="gold-input" style="margin-bottom: 8px; font-size: 0.8rem;">
+
+                <button onclick="addNewExpenseRecord()" class="gold-btn" style="width: 100%; background: var(--gold-primary); color: #000; font-weight: bold; padding: 8px;">
+                    💾 حفظ وخصم من الصندوق
+                </button>
+            </div>
+
+            <h5 style="color: var(--gold-primary); margin-bottom: 6px; font-size: 0.85rem;">صرفيات وسُلف اليوم المسجلة:</h5>
+            <div id="expensesListTable" style="max-height: 180px; overflow-y: auto;">
+                <!-- كشف الصرفيات -->
+            </div>
+        </div>
+    </div>
+
     <!-- نافذة الفاتورة للطباعة والمعاينة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
@@ -599,7 +643,9 @@
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض نقداً (كاش):</span><strong id="repTotalCash" style="color:#10b981;">0 د.ع</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض إلكترونياً (فيزا):</span><strong id="repTotalVisa" style="color:#38bdf8;">0 د.ع</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>أجور التوصيل المجمعة:</span><strong id="repTotalDelivery">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:4px; font-weight:bold;"><span>صافي قيمة الوجبات والطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--danger);"><span>إجمالي الصرفيات والسُلف:</span><strong id="repTotalExpenses">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:4px; font-weight:bold; color:var(--gold-bright);"><span>صافي الكاش المتبقي بالصندوق:</span><strong id="repNetCashBox">0 د.ع</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px; font-weight:bold;"><span>صافي قيمة الوجبات والطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
             </div>
 
             <!-- 🛵 كشف سائقي التوصيل والتطبيقات -->
@@ -661,8 +707,16 @@
 
             <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem; border:1px solid var(--gold-primary);">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span>المبلغ الكاش الواجب بالصندوق:</span>
-                    <strong style="color:#10b981; font-size:1.1rem;"><span id="shiftTotalCash">0</span> د.ع</strong>
+                    <span>إجمالي الكاش المقبوض:</span>
+                    <strong style="color:#10b981;"><span id="shiftTotalCash">0</span> د.ع</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--danger);">
+                    <span>خصم الصرفيات والسُلف:</span>
+                    <strong id="shiftTotalExpenses">0 د.ع</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-top:1px dashed #444; padding-top:4px; font-weight:bold; color:var(--gold-bright);">
+                    <span>صافي الكاش الواجب بالصندوق:</span>
+                    <strong id="shiftNetDrawerCash" style="font-size:1.1rem;">0 د.ع</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <span>مبيعات الفيزا (الإلكتروني):</span>
