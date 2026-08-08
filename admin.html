@@ -3,13 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 POS - لوحة التحكم والإدارة</title>
+    <title>MIM89 POS - لوحة التحكم والإدارة المتقدمة</title>
 
     <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        .gold-input-inline {
+            background: #121215;
+            border: 1px solid var(--card-border, #333);
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 0.85rem;
+        }
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary, #d4af37);
+            outline: none;
+            background: #000;
+        }
+    </style>
 </head>
 <body class="admin-body">
 
@@ -31,10 +47,9 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
                     <span class="brand-badge">MIM89 ADMIN</span>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">إدارة المينيو، الطابعات، الأسعار، والكاشيرية</p>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px;">إدارة المينيو، الطابعات المتعددة، الدليفري، والحماية</p>
                 </div>
                 
-                <!-- 🔗 أزرار التنسيق والتنقل السريع بين أقسام نظام MIM89 -->
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                     <a href="costing.html" target="_blank" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">
                         <i class="fa-solid fa-vault"></i> الخزينة والتكاليف
@@ -53,39 +68,38 @@
         <!-- تبويبات التحكم -->
         <div class="admin-tabs">
             <button class="tab-btn active" onclick="switchAdminTab('tabMenuControl', this)"><i class="fa-solid fa-utensils"></i> الأصناف والمينيو</button>
-            <button class="tab-btn" onclick="switchAdminTab('tabAreasControl', this)"><i class="fa-solid fa-motorcycle"></i> مناطق التوصيل</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabDriversControl', this)"><i class="fa-solid fa-motorcycle"></i> الدليفري والتطبيقات</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabAreasControl', this)"><i class="fa-solid fa-map-location-dot"></i> مناطق التوصيل</button>
             <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
             <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
-            <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-lock"></i> الحماية وكلمات المرور</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية والكلمات السرية</button>
         </div>
 
-        <!-- 1. تبويب إدارة الأصناف والمينيو (مطور بالتصوير المباشر) -->
+        <!-- 1. تبويب إدارة الأصناف والمينيو -->
         <div id="tabMenuControl" class="tab-content active" style="margin-top:15px;">
             <div class="card" style="max-width: 550px; margin: 0 auto 20px auto;">
-                <h3 id="itemFormTitle" style="color:var(--gold-primary); margin-bottom:12px; font-size:1.1rem; text-align:center;">إضافة / تعديل صنف للمينيو</h3>
+                <h3 id="itemFormTitle" style="color:var(--gold-primary); margin-bottom:12px; font-size:1.1rem; text-align:center;">إضافة / تعديل صنف جديد</h3>
                 <input type="hidden" id="editItemId">
 
                 <label style="font-size:0.8rem; color:#aaa;">اسم الصنف:</label>
-                <input type="text" id="itemName" class="gold-input" placeholder="مثال: عصير برتقال طبيعي">
+                <input type="text" id="itemName" class="gold-input" placeholder="مثال: بركر كلاسيك">
 
                 <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">السعر (بالدينار):</label>
-                <input type="number" id="itemPrice" class="gold-input" placeholder="مثال: 2500">
+                <input type="number" id="itemPrice" class="gold-input" placeholder="مثال: 5000">
 
                 <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">القسم الرئيسي:</label>
                 <select id="itemCategory" class="gold-input" style="cursor:pointer;"></select>
 
-                <!-- 📸 قسم رفع وتصوير الصورة المباشر -->
                 <div style="margin:12px 0; background:#121215; padding:12px; border-radius:10px; border:1px dashed var(--card-border); text-align:center;">
-                    <label style="font-size:0.85rem; color:var(--gold-primary); display:block; margin-bottom:8px; font-weight:bold;">📸 صورة الصنف (التقاط كاميرا حية أو اختيار صورة):</label>
+                    <label style="font-size:0.85rem; color:var(--gold-primary); display:block; margin-bottom:8px; font-weight:bold;">📸 صورة الصنف:</label>
                     
                     <label for="itemImgFile" class="gold-btn" style="cursor:pointer; font-size:0.85rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); display:inline-block; width:auto; padding:8px 16px;">
-                        📷 التقاط صورة بالكاميرا / رفع ملف
+                        📷 التقاط صورة / اختيار من الاستوديو
                     </label>
                     <input type="file" id="itemImgFile" accept="image/*" capture="environment" style="display:none;" onchange="handleImageUpload(event)">
 
-                    <!-- معاينة الصورة المباشرة -->
                     <div style="margin-top:10px;">
-                        <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:110px; height:110px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
+                        <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
                     </div>
 
                     <input type="text" id="itemImage" class="gold-input" placeholder="أو أدخل رابط صورة خارجي (اختياري)" style="font-size:0.75rem; margin-top:8px; text-align:center;" onchange="document.getElementById('imgPreview').src = this.value">
@@ -100,17 +114,20 @@
                 </div>
             </div>
 
-            <!-- جدول الأصناف المسجلة -->
+            <!-- جدول الأصناف المطور (تعديل مباشر من الخانات) -->
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📦 الأصناف المسجلة حالياً</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-pen-to-square"></i> الأصناف (اضغط وتعدّل مباشرةً من الجدول)</h4>
+                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتم الحفظ فور التعديل</span>
+                </div>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>الصورة</th>
-                                <th>الاسم</th>
+                                <th>اسم الصنف (اضغط للتعديل)</th>
                                 <th>القسم</th>
-                                <th>السعر</th>
+                                <th>السعر د.ع (اضغط للتعديل)</th>
                                 <th>التحكم</th>
                             </tr>
                         </thead>
@@ -120,17 +137,44 @@
             </div>
         </div>
 
-        <!-- 2. تبويب مناطق التوصيل وأجور النقل -->
+        <!-- 2. تبويب إدارة سائقي الدليفري والتطبيقات -->
+        <div id="tabDriversControl" class="tab-content" style="margin-top:15px;">
+            <div class="card" style="max-width:550px; margin:0 auto 20px auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-motorcycle"></i> إضافة سائق دليفري للمطعم</h4>
+                <input type="text" id="driverNameInput" class="gold-input" placeholder="اسم السائق (مثال: أحمد الدليفري)">
+                <input type="text" id="driverPhoneInput" class="gold-input" placeholder="رقم الهاتف (اختياري)" style="margin-top:8px;">
+                <button onclick="saveDeliveryDriver()" class="gold-btn btn-block" style="margin-top:10px;">حفظ السائق</button>
+            </div>
+
+            <div class="card">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">🛵 سائقو التوصيل المسجلون لدى المطعم</h4>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم السائق</th>
+                                <th>رقم الهاتف</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminDriversTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. تبويب مناطق التوصيل والربط الذكي -->
         <div id="tabAreasControl" class="tab-content" style="margin-top:15px;">
             <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
                 <h4 style="color:var(--gold-primary); margin-bottom:10px;">📍 إضافة منطقة توصيل جديدة</h4>
-                <input type="text" id="areaNameInput" class="gold-input" placeholder="اسم المنطقة (مثال: البنوك)">
+                <input type="text" id="areaNameInput" class="gold-input" placeholder="اسم المنطقة (مثال: القاهرة)">
                 <input type="number" id="areaPriceInput" class="gold-input" placeholder="أجور التوصيل (0 مجاني / 3000)">
                 <button onclick="saveDeliveryArea()" class="gold-btn btn-block" style="margin-top:10px;">حفظ المنطقة</button>
             </div>
 
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📜 قائمة المناطق المضافة</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📜 قائمة المناطق المضافة (المعالجة الذكية للأسماء مفعلة)</h4>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
@@ -147,31 +191,34 @@
             </div>
         </div>
 
-        <!-- 3. تبويب إعدادات الطابعات الحرارية -->
+        <!-- 4. تبويب إعدادات الطابعات الحرارية (كاشير + مطبخ 1 + مطبخ 2) -->
         <div id="tabPrintersControl" class="tab-content" style="margin-top:15px;">
             <div class="card" style="max-width:550px; margin:0 auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-print"></i> ربط طابعات الشبكة الحرارية (IP)</h4>
-                <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">قم بتفعيل الطباعة المباشرة عبر IP وتحديد عنوان كل طابعة فصلية.</p>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-print"></i> ربط طابعات الشبكة الحرارية (3 طابعات)</h4>
+                <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">قم بتفعيل الطباعة المباشرة وتحديد IP كل طابعة قسم داخل المطعم.</p>
 
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; background:#121215; padding:10px; border-radius:8px;">
                     <input type="checkbox" id="enableIpPrinting" style="width:20px; height:20px; accent-color:var(--gold-primary);">
                     <label for="enableIpPrinting" style="font-weight:bold; cursor:pointer;">تفعيل الطباعة المباشرة عبر الشبكة (IP Printing)</label>
                 </div>
 
-                <label style="font-size:0.8rem; color:#aaa;">IP طابعة الكاشير (المالية):</label>
+                <label style="font-size:0.8rem; color:#aaa;">IP طابعة الكاشير (الفاتورة المالية):</label>
                 <input type="text" id="cashierPrinterIp" class="gold-input" placeholder="192.168.1.100">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ (البون):</label>
-                <input type="text" id="kitchenPrinterIp" class="gold-input" placeholder="192.168.1.101">
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 1 (قسم الشاورما والوجبات):</label>
+                <input type="text" id="kitchenPrinter1Ip" class="gold-input" placeholder="192.168.1.101">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 2 (قسم البركر والكنتاكي):</label>
+                <input type="text" id="kitchenPrinter2Ip" class="gold-input" placeholder="192.168.1.102">
 
                 <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">منفذ الطباعة (Port):</label>
                 <input type="text" id="printerPort" class="gold-input" placeholder="9100">
 
-                <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ إعدادات الطابعات</button>
+                <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ إعدادات جميع الطابعات</button>
             </div>
         </div>
 
-        <!-- 4. تبويب الكاشيرية -->
+        <!-- 5. تبويب الكاشيرية -->
         <div id="tabCashiersControl" class="tab-content" style="margin-top:15px;">
             <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
                 <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة حساب كاشير جديد</h4>
@@ -198,18 +245,24 @@
             </div>
         </div>
 
-        <!-- 5. تبويب الحماية وكلمات المرور -->
+        <!-- 6. تبويب الحماية وكلمات المرور لكل صفحة -->
         <div id="tabSecurityControl" class="tab-content" style="margin-top:15px;">
             <div class="card" style="max-width:500px; margin:0 auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">تغيير كلمات مرور النظام</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> تخصيص كلمات المرور لكل صفحة ونظام</h4>
                 
-                <label style="font-size:0.8rem; color:#aaa;">كلمة مرور الأدمن الجديدة:</label>
-                <input type="password" id="newAdminPass" class="gold-input" placeholder="أدخل كلمة مرور جديدة للـ Admin">
+                <label style="font-size:0.8rem; color:#aaa;">1️⃣ كلمة مرور لوحة الأدمن (Admin):</label>
+                <input type="password" id="newAdminPass" class="gold-input" placeholder="كلمة السر الحالية أو الجديدة">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">كلمة مرور المخزن الجديدة:</label>
-                <input type="password" id="newInvPass" class="gold-input" placeholder="أدخل كلمة مرور جديدة للمخزن">
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">2️⃣ كلمة مرور الخزينة المالية والتكاليف (Costing):</label>
+                <input type="password" id="newCostingPass" class="gold-input" placeholder="الرمز السري للشفافية المالية">
 
-                <button onclick="updateSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث كلمات المرور</button>
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">3️⃣ كلمة مرور المخزن للجرد (Inventory):</label>
+                <input type="password" id="newInvPass" class="gold-input" placeholder="كلمة سر صفحة الجرد والمخزن">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">4️⃣ كلمة مرور الكاشير (Cashier):</label>
+                <input type="password" id="newCashierPass" class="gold-input" placeholder="كلمة سر دخول شاشة المبيعات">
+
+                <button onclick="updateAllSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث وتأمين كافة كلمات المرور 🔒</button>
             </div>
         </div>
 
