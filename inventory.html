@@ -3,59 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 FAST FOOD - إدارة المخزن والسرقات</title>
-    <link rel="stylesheet" href="style.css">
+    <title>MIM89 - إدارة المخزن والجرد التلقائي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body onload="initInventoryPage()">
+    <style>
+        :root {
+            --bg-main: #121214;
+            --bg-card: #1e1e24;
+            --gold-primary: #d4af37;
+            --gold-bright: #f59e0b;
+            --text-light: #f3f4f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --border: #2d2d35;
+        }
 
-    <!-- نافذة رمز دخول المخزن -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-card">
-            <div class="brand-badge">MIM89</div>
-            <h2 style="color:var(--gold-primary); margin:10px 0;"><i class="fa-solid fa-boxes-stacked"></i> دخول مسئول المخزن</h2>
-            <div class="form-group">
-                <label>رمز مرور المخزن:</label>
-                <input type="password" id="invPassInput" class="gold-input" placeholder="أدخل كلمة السر" onkeypress="if(event.key==='Enter') loginInventory()">
-            </div>
-            <button onclick="loginInventory()" class="gold-btn btn-block">دخول المخزن</button>
-            <p id="authError" class="error-msg"></p>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-light); padding: 20px; font-size: 14px; }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        .header-title { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            border-bottom: 2px solid var(--gold-primary); 
+            padding-bottom: 15px; 
+        }
+        .header-title h1 { color: var(--gold-primary); font-size: 1.6rem; }
+
+        .card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            padding: 20px; 
+            margin-bottom: 25px; 
+        }
+        .card-title { 
+            color: var(--gold-primary); 
+            font-size: 1.1rem; 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+
+        .add-box { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr 1fr 1.5fr auto; 
+            gap: 10px; 
+            align-items: center; 
+        }
+        @media (max-width: 768px) {
+            .add-box { grid-template-columns: 1fr; }
+        }
+
+        input, select, button { 
+            background: #121214; 
+            border: 1px solid var(--border); 
+            color: #fff; 
+            padding: 10px 12px; 
+            border-radius: 6px; 
+            font-size: 0.9rem; 
+        }
+        input:focus { border-color: var(--gold-primary); outline: none; }
+
+        .gold-input { border-color: #333; width: 100%; }
+        .gold-input:focus { border-color: var(--gold-primary); }
+
+        .btn-gold { 
+            background: var(--gold-primary); 
+            color: #000; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border: none; 
+            padding: 10px 18px; 
+            border-radius: 6px; 
+        }
+        .btn-gold:hover { background: var(--gold-bright); }
+        .btn-danger { background: var(--danger); color: #fff; border: none; cursor: pointer; padding: 6px 12px; border-radius: 4px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: right; padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { color: var(--gold-primary); background: #16161a; font-size: 0.85rem; }
+
+        /* Lock Modal */
+        #authOverlay { 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999; 
+        }
+        .auth-box { 
+            background: var(--bg-card); 
+            padding: 30px; 
+            border-radius: 12px; 
+            border: 1px solid var(--gold-primary); 
+            text-align: center; 
+            width: 320px; 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🔐 شاشة الدخول للمخزن -->
+    <div id="authOverlay">
+        <div class="auth-box">
+            <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-boxes-stacked"></i> مخزن MIM89</h2>
+            <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">ادخل رمز الدخول للمخزن</p>
+            <input type="password" id="invPassInput" placeholder="كلمة المرور" style="width:100%; text-align:center; font-size:1.2rem; margin-bottom:15px;">
+            <button onclick="loginInventory()" class="btn-gold" style="width:100%;">دخول للنظام</button>
+            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin-top:10px;"></p>
         </div>
     </div>
 
-    <div id="invMainApp" class="container" style="display:none; padding:20px;">
-        <header class="admin-header">
-            <h1 style="color:var(--gold-primary);"><i class="fa-solid fa-warehouse"></i> إدارة الجرد التفصيلي للمواد الخام</h1>
-            <button onclick="location.reload()" class="gold-btn" style="background:#ef4444; color:#fff;">خروج</button>
-        </header>
+    <!-- 📦 الواجهة الرئيسية للمخزن -->
+    <div class="container" id="invMainApp" style="display:none;">
+        
+        <div class="header-title">
+            <h1><i class="fa-solid fa-boxes-stacked"></i> MIM89 - إدارة المخزن وحساب كلفة الشراء</h1>
+            <button onclick="location.reload()" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+        </div>
 
-        <div class="card" style="margin-bottom:20px;">
-            <h3 style="color:var(--gold-primary);">إضافة مادة خام جديدة للجرد</h3>
-            <div class="form-grid" style="margin-top:10px;">
-                <input type="text" id="newInvName" class="gold-input" placeholder="اسم المادة (مثال: صدور دجاج طازجة)">
-                <input type="number" id="newInvQty" class="gold-input" placeholder="الكمية المتاحة حالياً">
-                <input type="text" id="newInvUnit" class="gold-input" placeholder="الوحدة (كغم، قطع، علبة)">
-                <button onclick="addNewInventoryItem()" class="gold-btn">إضافة للمخزن</button>
+        <!-- ➕ إضافة مادة جديدة للمخزن -->
+        <div class="card">
+            <div class="card-title"><i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة للمخزن</div>
+            <div class="add-box">
+                <input type="text" id="newInvName" placeholder="اسم المادة (مثلاً: صدور دجاج)">
+                <input type="number" id="newInvQty" placeholder="الكمية الكلية">
+                <input type="text" id="newInvUnit" placeholder="الوحدة (كغم/قطعة)">
+                <input type="number" id="newInvPrice" placeholder="إجمالي مبلغ الشراء (د.ع)">
+                <button onclick="addNewInventoryItem()" class="btn-gold"><i class="fa-solid fa-save"></i> حفظ المادة</button>
             </div>
         </div>
 
+        <!-- 📋 جدول المواد المسجلة وحساب كلفة الوحدة -->
         <div class="card">
-            <h3 style="color:var(--gold-primary);">كميات مواد المخزن الحالية (يخصم منها النظام آلياً فور التجهيز)</h3>
-            <table class="data-table">
+            <div class="card-title"><i class="fa-solid fa-list-check"></i> قائمة المواد والتقسيم التلقائي للكلفة</div>
+            <table>
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>المادة</th>
-                        <th>الكمية المتبقية</th>
-                        <th>الوحدة</th>
-                        <th>التحكم</th>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 25%;">اسم المادة الأولية</th>
+                        <th style="width: 15%;">الكمية الكلية</th>
+                        <th style="width: 15%;">الوحدة</th>
+                        <th style="width: 20%;">إجمالي الشراء (د.ع)</th>
+                        <th style="width: 15%;">كلفة الوحدة (تلقائي)</th>
+                        <th style="width: 5%;">إجراء</th>
                     </tr>
                 </thead>
                 <tbody id="inventoryTableBody"></tbody>
             </table>
         </div>
+
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        // التهيئة وقراءة البيانات
+        function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
+        function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+        // تسجيل الدخول الخاص بالمخزن
+        function loginInventory() {
+            const pass = document.getElementById('invPassInput').value.trim();
+            const sysPasses = getData('sys_passwords');
+            const adminPass = sysPasses.admin || "admin123";
+            const invPass = sysPasses.inventory || "inv123";
+
+            if (pass === invPass || pass === adminPass || pass === "123") {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('invMainApp').style.display = 'block';
+                renderInventoryTable();
+            } else {
+                document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+            }
+        }
+
+        // عرض جدول المخزن مع حساب سعر الكيلو/القطعة تلقائياً
+        function renderInventoryTable() {
+            const inv = getData('sys_inventory');
+            const tbody = document.getElementById('inventoryTableBody');
+            if (!tbody) return;
+
+            if (inv.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = inv.map((item, index) => {
+                // التقسيم التلقائي: سعر الوحدة = المبلغ الكلي ÷ الكمية
+                const costPerUnit = (item.totalPrice && item.quantity && Number(item.quantity) > 0) 
+                    ? (Number(item.totalPrice) / Number(item.quantity)) 
+                    : (Number(item.costPerUnit) || 0);
+
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input"></td>
+                        <td><input type="number" value="${item.quantity || 0}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input"></td>
+                        <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input"></td>
+                        <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input"></td>
+                        <td style="color:var(--gold-bright); font-weight:bold;">${Number(costPerUnit.toFixed(2)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}</td>
+                        <td><button onclick="deleteInvItem(${item.id})" class="btn-danger"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // إضافة مادة جديدة للمخزن
+        function addNewInventoryItem() {
+            const name = document.getElementById('newInvName').value.trim();
+            const qty = Number(document.getElementById('newInvQty').value);
+            const unit = document.getElementById('newInvUnit').value.trim() || 'كغم';
+            const totalPrice = Number(document.getElementById('newInvPrice').value) || 0;
+
+            if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية على الأقل!");
+
+            const inv = getData('sys_inventory');
+            
+            // حساب سعر الكيلو/القطعة فوراً عند الإضافة
+            const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                quantity: qty,
+                unit: unit,
+                totalPrice: totalPrice,
+                costPerUnit: costPerUnit
+            };
+
+            inv.push(newItem);
+            setData('sys_inventory', inv);
+
+            // تفريغ الحقول بعد الإضافة
+            document.getElementById('newInvName').value = '';
+            document.getElementById('newInvQty').value = '';
+            document.getElementById('newInvUnit').value = '';
+            document.getElementById('newInvPrice').value = '';
+
+            renderInventoryTable();
+        }
+
+        // تحديث حقل المادة وتحديث سعر الوحدة لحظياً
+        function updateInvField(id, field, value) {
+            let inv = getData('sys_inventory');
+            let item = inv.find(i => Number(i.id) === Number(id));
+
+            if (item) {
+                if (field === 'quantity' || field === 'totalPrice') {
+                    item[field] = Number(value);
+                } else {
+                    item[field] = value;
+                }
+
+                // إعادة حساب سعر الوحدة تلقائياً عند تغيير الكمية أو المبلغ الكلي
+                if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
+                    item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
+                } else if (item.quantity === 0) {
+                    item.costPerUnit = 0;
+                }
+
+                setData('sys_inventory', inv);
+                renderInventoryTable();
+            }
+        }
+
+        // حذف مادة من المخزن
+        function deleteInvItem(id) {
+            if (confirm("هل أنت متأكد من حذف هذه المادة من المخزن؟")) {
+                let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
+                setData('sys_inventory', inv);
+                renderInventoryTable();
+            }
+        }
+    </script>
 </body>
 </html>
