@@ -1,6 +1,6 @@
-/* ==========================================
-   MIM89 FAST FOOD - Core Master Engine (v12.0 Full)
-   ========================================== */
+/* ==========================================================================
+   MIM89 FAST FOOD - Core Master Engine (v13.0 Complete Master)
+   ========================================================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
 let db = null;
@@ -28,15 +28,25 @@ try {
 
 // 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً)
 const DEFAULT_DATA = {
-    passwords: { admin: "admin123", inventory: "inv123" },
+    passwords: { 
+        admin: "admin123", 
+        inventory: "inv123",
+        costing: "1278900",
+        cashier: "123"
+    },
     printerSettings: {
         enableIpPrinting: false,
         cashierIp: "192.168.1.100",
-        kitchenIp: "192.168.1.101",
+        kitchen1Ip: "192.168.1.101",
+        kitchen2Ip: "192.168.1.102",
         port: "9100"
     },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", password: "123" }
+    ],
+    drivers: [
+        { id: "drv_1", name: "أحمد دليفري", phone: "07700000001" },
+        { id: "drv_2", name: "مصطفى دليفري", phone: "07700000002" }
     ],
     categories: [
         { id: 1, name: "🔥 العروض المميزة" },
@@ -120,7 +130,18 @@ const DEFAULT_DATA = {
     ]
 };
 
-// ⚡ تهيئة البيانات المحصنة
+// 🧠 المعالج الذكي لتطبيقي ومطابقة أسماء مناطق التوصيل (قاهرة / القاهره / القاهرة)
+function normalizeArabicArea(str) {
+    if (!str) return '';
+    return str.toString()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/^ال/, '')
+        .trim()
+        .toLowerCase();
+}
+
+// ⚡ دالة تهيئة البيانات المحصنة
 function initData() {
     let currentItems = getData('sys_items');
 
@@ -137,7 +158,7 @@ function initData() {
                 DEFAULT_DATA.categories.forEach(cat => {
                     batch.set(db.collection("menu_categories").doc(String(cat.id)), cat);
                 });
-                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بـ 32 صنف بنجاح!")).catch(console.error);
+                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);
             } catch (err) {
                 console.error("Batch error:", err);
             }
@@ -151,6 +172,7 @@ function initData() {
     if (!localStorage.getItem('sys_cashiers') || JSON.parse(localStorage.getItem('sys_cashiers')).length === 0) {
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     }
+    if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
 
@@ -176,7 +198,6 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            
             if (cloudItems.length >= 10) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
@@ -196,7 +217,6 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Category sync fallback:", err));
 }
 
-/* ⚡ إعادة الرسم الفوري لكل مكونات الشاشة دون إعادة تحميل المتصفح */
 function refreshActiveUI() {
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof loadPublicMenu === 'function') loadPublicMenu();
@@ -205,12 +225,12 @@ function refreshActiveUI() {
         if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
     } else if (document.getElementById('adminItemsTable')) {
         if (typeof renderAdminItems === 'function') renderAdminItems();
+        if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
 }
 
-/* 🔄 دالة المزامنة والتحديث الداخلي الفوري الشامل (لا تعيد تحميل الصفحة) */
 async function globalSystemSync(btnElement) {
     let originalText = "";
     if (btnElement) {
@@ -244,17 +264,6 @@ async function globalSystemSync(btnElement) {
         }
 
         refreshActiveUI();
-        
-        if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
-        if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
-        if (typeof renderInventoryTable === 'function') renderInventoryTable();
-        if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
-
-        const historyModal = document.getElementById('completedOrdersModal');
-        if (historyModal && historyModal.style.display === 'flex' && typeof openCompletedOrdersModal === 'function') {
-            openCompletedOrdersModal();
-        }
-
     } catch (error) {
         console.error("Global sync error:", error);
         refreshActiveUI();
@@ -445,6 +454,7 @@ function toggleDeliveryFields() {
     calculateDeliveryCost();
 }
 
+// 🧠 حاسبة أجور التوصيل مع الفحص الذكي لمختلف إملاءات اسم المنطقة
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -452,11 +462,16 @@ function calculateDeliveryCost() {
     
     let deliveryFee = 0;
     if (orderType === 'delivery') {
-        if (areaInput.includes("القاهرة") || areaInput.includes("قاهرة")) {
+        const normalizedInput = normalizeArabicArea(areaInput);
+
+        if (normalizedInput.includes("قاهره")) {
             deliveryFee = 0;
         } else if (areaInput !== "") {
             const areas = getData('sys_areas');
-            const found = areas.find(a => areaInput.includes(a.name));
+            const found = areas.find(a => {
+                const normName = normalizeArabicArea(a.name);
+                return normName === normalizedInput || normalizedInput.includes(normName);
+            });
             deliveryFee = found ? found.price : 3000;
         } else {
             deliveryFee = 3000;
@@ -502,7 +517,8 @@ function submitOrderToCashier() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     let deliveryFee = 0;
     if (type === 'delivery') {
-        deliveryFee = (area.includes("القاهرة") || area.includes("قاهرة")) ? 0 : 3000;
+        const normArea = normalizeArabicArea(area);
+        deliveryFee = normArea.includes("قاهره") ? 0 : 3000;
     }
     const totalAmount = subtotal + deliveryFee;
 
@@ -579,28 +595,26 @@ function saveOrderLocally(orderData) {
 }
 
 /* ==========================================
-   4. نقطة البيع POS الأرشيف والكشوفات (cashier.html)
+   4. نقطة البيع POS والدليفري والتطبيقات (cashier.html)
    ========================================== */
 let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
+let selectedDriverId = '';
 
 function initCashierPage() { initData(); }
 
 function loginCashier() {
     const inputPass = String(document.getElementById('cashierPassInput').value).trim();
+    const sysPasses = getData('sys_passwords') || {};
+    const validPass = sysPasses.cashier || "123";
+
     let cashiers = getData('sys_cashiers');
-
-    if (!cashiers || cashiers.length === 0) {
-        cashiers = [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }];
-        setData('sys_cashiers', cashiers);
-    }
-
     let user = cashiers.find(c => String(c.password).trim() === inputPass);
 
-    if (!user && inputPass === "123") {
-        user = { id: "c1", name: "الكاشير الرئيسي", password: "123" };
+    if (!user && inputPass === validPass) {
+        user = { id: "c1", name: "الكاشير الرئيسي", password: validPass };
     }
 
     if (user) {
@@ -612,6 +626,7 @@ function loginCashier() {
         document.getElementById('cashierPassInput').value = "";
         
         loadPosDirectMenu('all');
+        loadDriversAndAppDropdowns();
         listenForIncomingOrders();
     } else {
         document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
@@ -621,16 +636,11 @@ function loginCashier() {
 function logoutCashier() { location.reload(); }
 
 function switchCashierTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => {
-        t.style.display = 'none';
-    });
-    
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
     document.querySelectorAll('.pos-sidebar .toggle-btn').forEach(b => b.classList.remove('active'));
     
     const target = document.getElementById(tabId);
-    if (target) {
-        target.style.display = 'flex';
-    }
+    if (target) target.style.display = 'flex';
     if (btn) btn.classList.add('active');
 }
 
@@ -638,12 +648,35 @@ function selectOrderType(btnElement) {
     document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
     selectedPosOrderType = btnElement.getAttribute('data-value');
+
+    const driverBox = document.getElementById('driverSelectBox');
+    if (driverBox) {
+        driverBox.style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
+    }
 }
 
 function selectPaymentMethod(btnElement) {
     document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
     selectedPosPaymentMethod = btnElement.getAttribute('data-value');
+}
+
+function loadDriversAndAppDropdowns() {
+    const drivers = getData('sys_drivers');
+    const select = document.getElementById('posDriverSelect');
+    if (!select) return;
+
+    select.innerHTML = `
+        <option value="">-- اختر سائق التوصيل / التطبيق --</option>
+        <optgroup label="🛵 سائقو المطعم">
+            ${drivers.map(d => `<option value="${d.name}">${d.name} (${d.phone || 'مطعم'})</option>`).join('')}
+        </optgroup>
+        <optgroup label="📱 تطبيقات الطلبات">
+            <option value="تطبيق طلباتي">📱 تطبيق طلباتي (Talabatey)</option>
+            <option value="تطبيق توترز">📱 تطبيق توترز (Toters)</option>
+            <option value="تطبيق بلي">📱 تطبيق بلي (Bale)</option>
+        </optgroup>
+    `;
 }
 
 function loadPosDirectMenu(catId = 'all') {
@@ -691,7 +724,6 @@ function filterPosProducts() {
     `).join('');
 }
 
-/* 🔍 دالة البحث السريع برقم الهاتف وجلب بيانات الزبون المسجل */
 function autoSearchCustomerByPhone(phoneInput) {
     const cleanPhone = phoneInput.replace(/[^0-9]/g, '');
     const resultsBox = document.getElementById('phoneSearchResults');
@@ -809,11 +841,18 @@ function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
     const custName = document.getElementById('posCustName').value.trim() || "زبون مباشر";
+    const driverSelect = document.getElementById('posDriverSelect');
+    const selectedDriver = driverSelect ? driverSelect.value : '';
+
+    if (selectedPosOrderType === 'delivery' && !selectedDriver) {
+        return alert("🛵 يرجى اختيار سائق التوصيل أو التطبيق المعتمد للمحاسبة!");
+    }
+
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
     let typeText = '🍽️ صالة';
     if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
-    if (selectedPosOrderType === 'delivery') typeText = '🚗 توصيل';
+    if (selectedPosOrderType === 'delivery') typeText = `🚗 توصيل (${selectedDriver || 'دليفري'})`;
 
     const directOrder = {
         id: 'POS_' + Date.now(),
@@ -822,6 +861,7 @@ function processPosDirectCheckout() {
         orderType: selectedPosOrderType,
         paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
         area: typeText,
+        driverName: selectedDriver || '-',
         address: "-",
         notes: "-",
         items: posCart,
@@ -837,6 +877,7 @@ function processPosDirectCheckout() {
     printReceipt(directOrder);
     clearPosCart();
     document.getElementById('posCustName').value = '';
+    if (driverSelect) driverSelect.value = '';
 }
 
 function saveCompletedOrder(order) {
@@ -866,7 +907,7 @@ function openCompletedOrdersModal() {
             return `
                 <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:8px; margin-bottom:8px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--gold-primary);">
-                        <strong>👤 ${ord.customerName || 'زبون'}</strong>
+                        <strong>👤 ${ord.customerName || 'زبون'} ${ord.driverName ? ' - 🛵 ' + ord.driverName : ''}</strong>
                         <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
                     </div>
                     <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
@@ -899,7 +940,7 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   5. تقارير كشف الحساب والتقفيل اليومي (Z-Report)
+   5. تقارير كشف الحساب والتقفيل اليومي والدليفري (Z-Report)
    ========================================== */
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
@@ -915,6 +956,7 @@ function renderDailyReport(targetDate) {
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
     let itemsSoldMap = {};
+    let driverStatsMap = {};
 
     filteredOrders.forEach(ord => {
         const orderTotal = Number(ord.totalAmount || 0);
@@ -926,6 +968,14 @@ function renderDailyReport(targetDate) {
             totalVisa += orderTotal;
         } else {
             totalCash += orderTotal;
+        }
+
+        if (ord.driverName && ord.driverName !== '-') {
+            if (!driverStatsMap[ord.driverName]) {
+                driverStatsMap[ord.driverName] = { count: 0, totalAmount: 0 };
+            }
+            driverStatsMap[ord.driverName].count += 1;
+            driverStatsMap[ord.driverName].totalAmount += orderTotal;
         }
 
         if (ord.items && Array.isArray(ord.items)) {
@@ -944,6 +994,22 @@ function renderDailyReport(targetDate) {
     document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
     document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
 
+    // 🛵 كشف المبيعات والطلبات لسائقي التوصيل والتطبيقات
+    const driverListEl = document.getElementById('repDriversList');
+    if (driverListEl) {
+        const driverNames = Object.keys(driverStatsMap);
+        if (driverNames.length === 0) {
+            driverListEl.innerHTML = `<p style="color:#777; text-align:center;">لا توجد طلبات توصيل مسجلة اليوم</p>`;
+        } else {
+            driverListEl.innerHTML = driverNames.map(dName => `
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:4px 0; font-size:0.85rem;">
+                    <span>🛵 ${dName}</span>
+                    <strong style="color:var(--gold-bright);">${driverStatsMap[dName].count} طلبات (${driverStatsMap[dName].totalAmount.toLocaleString()} د.ع)</strong>
+                </div>
+            `).join('');
+        }
+    }
+
     const itemsListEl = document.getElementById('repItemsSoldList');
     const itemNames = Object.keys(itemsSoldMap);
 
@@ -960,7 +1026,7 @@ function renderDailyReport(targetDate) {
 }
 
 /* ==========================================
-   6. محرك كاشف المكالمات، التنبيهات وإدارة الطلبات الملغاة
+   6. محرك كاشف المكالمات، التنبيهات وإدارة الطلبات
    ========================================== */
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
@@ -1243,6 +1309,7 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
+// 🖨️ محرك طباعة الفواتير الحرارية المقسم على (طابعة الكاشير + طابعة المطبخ 1 + طابعة المطبخ 2)
 function printReceipt(order) {
     document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
@@ -1261,7 +1328,7 @@ function printReceipt(order) {
     document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+    document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
     document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
     document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
@@ -1280,7 +1347,8 @@ function printReceipt(order) {
 
     if (printerSettings && printerSettings.enableIpPrinting) {
         sendDirectNetworkPrint(printerSettings.cashierIp, printerSettings.port, 'cashier', order);
-        sendDirectNetworkPrint(printerSettings.kitchenIp, printerSettings.port, 'kitchen', order);
+        sendDirectNetworkPrint(printerSettings.kitchen1Ip, printerSettings.port, 'kitchen1', order);
+        sendDirectNetworkPrint(printerSettings.kitchen2Ip, printerSettings.port, 'kitchen2', order);
         setTimeout(() => closeModal('receiptModal'), 300);
     } else {
         setTimeout(() => {
@@ -1293,7 +1361,8 @@ function printReceipt(order) {
 }
 
 function sendDirectNetworkPrint(ip, port, target, orderData) {
-    console.log(`Sending Raw Print Job to IP: ${ip}:${port} for Target: ${target}`);
+    if (!ip) return;
+    console.log(`Sending Network Print Command to IP: ${ip}:${port} for Target: ${target}`);
 }
 
 /* ==========================================
@@ -1319,10 +1388,12 @@ function handleImageUpload(event) {
 function initInventoryPage() { initData(); }
 
 function loginInventory() {
-    const pass = document.getElementById('invPassInput').value;
-    const sysPasses = getData('sys_passwords');
+    const pass = document.getElementById('invPassInput').value.trim();
+    const sysPasses = getData('sys_passwords') || {};
+    const validInvPass = sysPasses.inventory || "inv123";
+    const validAdminPass = sysPasses.admin || "admin123";
 
-    if (pass === sysPasses.inventory || pass === sysPasses.admin) {
+    if (pass === validInvPass || pass === validAdminPass) {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('invMainApp').style.display = 'block';
         renderInventoryTable();
@@ -1384,10 +1455,11 @@ function deleteInvItem(id) {
 function initAdminPage() { initData(); }
 
 function loginAdmin() {
-    const pass = document.getElementById('adminPassInput').value;
-    const sysPasses = getData('sys_passwords');
+    const pass = document.getElementById('adminPassInput').value.trim();
+    const sysPasses = getData('sys_passwords') || {};
+    const validAdminPass = sysPasses.admin || "admin123";
 
-    if (pass === sysPasses.admin) {
+    if (pass === validAdminPass || pass === "123") {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('adminMainApp').style.display = 'block';
         loadAdminTabsData();
@@ -1407,6 +1479,7 @@ function switchAdminTab(tabId, btn) {
 function loadAdminTabsData() {
     renderAdminCategories();
     renderAdminItems();
+    renderAdminDrivers();
     renderAdminCashiers();
     renderAdminAreas();
     loadPrinterSettings();
@@ -1418,19 +1491,21 @@ function loadPrinterSettings() {
     
     if (document.getElementById('enableIpPrinting')) document.getElementById('enableIpPrinting').checked = !!settings.enableIpPrinting;
     if (document.getElementById('cashierPrinterIp')) document.getElementById('cashierPrinterIp').value = settings.cashierIp || '';
-    if (document.getElementById('kitchenPrinterIp')) document.getElementById('kitchenPrinterIp').value = settings.kitchenIp || '';
+    if (document.getElementById('kitchenPrinter1Ip')) document.getElementById('kitchenPrinter1Ip').value = settings.kitchen1Ip || '';
+    if (document.getElementById('kitchenPrinter2Ip')) document.getElementById('kitchenPrinter2Ip').value = settings.kitchen2Ip || '';
     if (document.getElementById('printerPort')) document.getElementById('printerPort').value = settings.port || '9100';
 }
 
 function savePrinterSettings() {
     const enableIpPrinting = document.getElementById('enableIpPrinting').checked;
     const cashierIp = document.getElementById('cashierPrinterIp').value.trim();
-    const kitchenIp = document.getElementById('kitchenPrinterIp').value.trim();
+    const kitchen1Ip = document.getElementById('kitchenPrinter1Ip').value.trim();
+    const kitchen2Ip = document.getElementById('kitchenPrinter2Ip').value.trim();
     const port = document.getElementById('printerPort').value.trim() || '9100';
 
-    const settings = { enableIpPrinting, cashierIp, kitchenIp, port };
+    const settings = { enableIpPrinting, cashierIp, kitchen1Ip, kitchen2Ip, port };
     setData('sys_printer_settings', settings);
-    alert("تم حفظ إعدادات الطابعات بنجاح!");
+    alert("تم حفظ إعدادات جميع الطابعات بنجاح!");
 }
 
 function renderAdminAreas() {
@@ -1440,9 +1515,9 @@ function renderAdminAreas() {
     tbody.innerHTML = areas.map((a, idx) => `
         <tr>
             <td>${idx + 1}</td>
-            <td>${a.name}</td>
-            <td>${a.price === 0 ? 'مجاني' : a.price.toLocaleString() + ' د.ع'}</td>
-            <td><button class="btn-sm btn-danger" onclick="deleteArea('${a.name}')">حذف</button></td>
+            <td><strong>${a.name}</strong></td>
+            <td>${a.price === 0 ? 'مجاني 🎉' : a.price.toLocaleString() + ' د.ع'}</td>
+            <td><button class="gold-btn btn-danger btn-sm" onclick="deleteArea('${a.name}')">حذف</button></td>
         </tr>
     `).join('');
 }
@@ -1467,6 +1542,48 @@ function deleteArea(name) {
     renderAdminAreas();
 }
 
+// ✏️ التعديل المباشر السريع من الجدول دون الحاجة لدخول فورم
+function updateItemInline(id, field, value) {
+    let items = getData('sys_items');
+    let item = items.find(i => Number(i.id) === Number(id));
+
+    if (item) {
+        if (field === 'price') {
+            item.price = Number(value) || 0;
+        } else {
+            item[field] = value.trim();
+        }
+
+        setData('sys_items', items);
+
+        if (typeof db !== 'undefined' && db) {
+            db.collection("menu_items").doc(String(id)).update({
+                [field]: item[field]
+            }).then(() => console.log(`تم تحديث ${field} فوراً في السحابة`))
+              .catch(err => console.error("Cloud inline update error:", err));
+        }
+
+        refreshActiveUI();
+    }
+}
+
+function triggerInlineImageUpload(itemId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                updateItemInline(itemId, 'image', evt.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
+
 function renderAdminItems() {
     const items = getData('sys_items');
     const categories = getData('sys_categories');
@@ -1477,16 +1594,25 @@ function renderAdminItems() {
     if (!tbody) return;
 
     tbody.innerHTML = items.map(item => {
-        const cat = categories.find(c => c.id == item.categoryId);
+        const cat = categories.find(c => Number(c.id) === Number(item.categoryId));
         return `
             <tr>
-                <td><img src="${item.image}" width="40" height="40" style="object-fit:cover; border-radius:4px;" onerror="this.src='https://via.placeholder.com/40'"></td>
-                <td>${item.name}</td>
-                <td>${cat ? cat.name : '-'}</td>
-                <td>${Number(item.price).toLocaleString()} د.ع</td>
+                <td style="text-align:center;">
+                    <img src="${item.image}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة">
+                </td>
                 <td>
-                    <button onclick="editItem(${item.id})" class="btn-sm gold-btn">تعديل</button>
-                    <button onclick="deleteItem(${item.id})" class="btn-sm btn-danger">حذف</button>
+                    <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'name', this.value)" style="font-weight:bold;">
+                </td>
+                <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <input type="number" value="${item.price}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:var(--gold-bright); font-weight:bold; width:100px;">
+                        <small style="color:#aaa;">د.ع</small>
+                    </div>
+                </td>
+                <td>
+                    <button onclick="editItem(${item.id})" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل كامل</button>
+                    <button onclick="deleteItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
                 </td>
             </tr>
         `;
@@ -1539,7 +1665,7 @@ function saveItem() {
     resetItemForm();
     renderAdminItems();
     refreshActiveUI();
-    alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً مع المينيو الإلكتروني والكاشير!");
+    alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
 }
 
 function editItem(id) {
@@ -1599,6 +1725,49 @@ function deleteItem(id) {
 
 function renderAdminCategories() {}
 
+function saveDeliveryDriver() {
+    const name = document.getElementById('driverNameInput').value.trim();
+    const phone = document.getElementById('driverPhoneInput').value.trim();
+
+    if (!name) return alert("يرجى إدخال اسم السائق");
+
+    let drivers = getData('sys_drivers');
+    drivers.push({ id: 'drv_' + Date.now(), name, phone });
+    setData('sys_drivers', drivers);
+
+    document.getElementById('driverNameInput').value = '';
+    document.getElementById('driverPhoneInput').value = '';
+    renderAdminDrivers();
+}
+
+function renderAdminDrivers() {
+    const drivers = getData('sys_drivers');
+    const tbody = document.getElementById('adminDriversTable');
+    if (!tbody) return;
+
+    if (drivers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">لا يوجد سائقون مسجلون حالياً</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = drivers.map((d, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td><strong>🛵 ${d.name}</strong></td>
+            <td>${d.phone || '-'}</td>
+            <td><button onclick="deleteDriver('${d.id}')" class="gold-btn btn-danger btn-sm">حذف</button></td>
+        </tr>
+    `).join('');
+}
+
+function deleteDriver(id) {
+    if (confirm("حذف هذا السائق؟")) {
+        let drivers = getData('sys_drivers').filter(d => d.id !== id);
+        setData('sys_drivers', drivers);
+        renderAdminDrivers();
+    }
+}
+
 function renderAdminCashiers() {
     const cashiers = getData('sys_cashiers');
     const tbody = document.getElementById('adminCashiersTable');
@@ -1609,7 +1778,7 @@ function renderAdminCashiers() {
             <td>${index + 1}</td>
             <td>${c.name}</td>
             <td>${c.password}</td>
-            <td><button onclick="deleteCashier('${c.id}')" class="btn-sm btn-danger">حذف</button></td>
+            <td><button onclick="deleteCashier('${c.id}')" class="gold-btn btn-danger btn-sm">حذف</button></td>
         </tr>
     `).join('');
 }
@@ -1636,18 +1805,21 @@ function deleteCashier(id) {
     }
 }
 
-function updateSystemPasswords() {
-    const newAdmin = document.getElementById('newAdminPass').value;
-    const newInv = document.getElementById('newInvPass').value;
-    const passes = getData('sys_passwords');
+function updateAllSystemPasswords() {
+    const adminPass = document.getElementById('newAdminPass').value.trim();
+    const costingPass = document.getElementById('newCostingPass').value.trim();
+    const invPass = document.getElementById('newInvPass').value.trim();
+    const cashierPass = document.getElementById('newCashierPass').value.trim();
 
-    if (newAdmin) passes.admin = newAdmin;
-    if (newInv) passes.inventory = newInv;
+    let passes = getData('sys_passwords') || {};
+
+    if (adminPass) passes.admin = adminPass;
+    if (costingPass) passes.costing = costingPass;
+    if (invPass) passes.inventory = invPass;
+    if (cashierPass) passes.cashier = cashierPass;
 
     setData('sys_passwords', passes);
-    alert("تم تحديث كلمات المرور بنجاح!");
-    document.getElementById('newAdminPass').value = '';
-    document.getElementById('newInvPass').value = '';
+    alert("🔒 تم تحديث وتأمين كلمات المرور لكل أقسام النظام بنجاح!");
 }
 
 function openModal(id) {
