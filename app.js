@@ -1842,3 +1842,116 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+/* ==========================================================================
+   تحديثات MIM89 - الخصم والطلبات المجانية والنسخ الاحتياطي والتصدير
+   ========================================================================== */
+
+// 1. تفعيل وضع العمل بدون إنترنت لضمان عدم البطء
+if (db) {
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+        console.log("Offline persistence status:", err.code);
+    });
+}
+
+// 2. متغيرات ودوال الخصم والطلب المجاني
+let posDiscountAmount = 0;
+
+function applyPosDiscount(val) {
+    posDiscountAmount = Math.max(0, Number(val) || 0);
+    renderPosCart();
+}
+
+function setOrderAsFree() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    posDiscountAmount = subtotal;
+    const input = document.getElementById('posDiscountInput');
+    if (input) input.value = subtotal;
+    renderPosCart();
+}
+
+// 3. تحديث دالة عرض سلة الكاشير لحساب الخصم والمجاني
+function renderPosCart() {
+    const list = document.getElementById('posCartList');
+    const totalEl = document.getElementById('posTotalAmount');
+    if (!list) return;
+
+    if (posCart.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
+        if (totalEl) totalEl.innerText = "0 د.ع";
+        posDiscountAmount = 0;
+        const input = document.getElementById('posDiscountInput');
+        if (input) input.value = '';
+        return;
+    }
+
+    let subtotal = 0;
+    list.innerHTML = posCart.map(item => {
+        const itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#1c1c20; padding:4px 6px; border-radius:4px; font-size:0.8rem;">
+                <div>
+                    <strong style="color:var(--gold-primary);">${item.name}</strong><br>
+                    <small style="color:#aaa;">${Number(item.price).toLocaleString()} × ${item.qty}</small>
+                </div>
+                <div style="display:flex; gap:4px; align-items:center;">
+                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">-</button>
+                    <span>${item.qty}</span>
+                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">+</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
+    if (totalEl) {
+        if (posDiscountAmount > 0) {
+            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.9rem; margin-left:6px;">${subtotal.toLocaleString()}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString() + ' د.ع'}`;
+        } else {
+            totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
+        }
+    }
+}
+
+// 4. تصدير كافة بيانات النظام بملف نسخ احتياطي شامل للواتساب
+function exportFullSystemBackup() {
+    const backupData = {
+        systemName: "MIM89 FAST FOOD POS",
+        exportDate: new Date().toLocaleString('ar-IQ'),
+        menuCategories: getData('sys_categories'),
+        menuItems: getData('sys_items'),
+        inventoryStock: getData('sys_inventory'),
+        deliveryDrivers: getData('sys_drivers'),
+        deliveryAreas: getData('sys_areas'),
+        completedSalesOrders: getData('sys_completed_orders')
+    };
+
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MIM89_Full_System_Backup_${getTodayString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // تجهيز ملخص نصي لإرساله للواتساب
+    const completed = getData('sys_completed_orders');
+    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
+    const todayTotal = todayOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+
+    let waText = `📂 *نسخة احتياطية لنظام MIM89* 📂\n`;
+    waText += `----------------------------------\n`;
+    waText += `📅 *التاريخ:* ${new Date().toLocaleDateString('ar-IQ')}\n`;
+    waText += `🍔 *عدد أصناف المينيو:* ${backupData.menuItems.length}\n`;
+    waText += `📦 *مواد المخزن والجرد:* ${backupData.inventoryStock.length}\n`;
+    waText += `💰 *مبيعات اليوم:* ${todayTotal.toLocaleString()} د.ع (${todayOrders.length} فاتورة)\n`;
+    waText += `----------------------------------\n`;
+    waText += `تم تحميل ملف البيانات الشامل للجهاز بنجاح.`;
+
+    const myPhone = "9647750008630";
+    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
+}
