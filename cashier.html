@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-title" content="MIM89 POS">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <title>MIM89 POS - شاشة الكاشير</title>
+    <title>MIM89 POS - شاشة الكاشير ونقطة البيع</title>
     
     <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -96,7 +96,7 @@
         }
         .gold-btn:active { transform: scale(0.98); }
 
-        /* الهيدر المودرن القائمة المنسدلة */
+        /* الهيدر المودرن والقائمة المنسدلة */
         #cashierMainApp { display: none; }
 
         .pos-header {
@@ -138,7 +138,7 @@
             border: 1px solid var(--card-border);
             border-radius: 8px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            width: 200px;
+            width: 210px;
             z-index: 200;
             overflow: hidden;
         }
@@ -162,7 +162,7 @@
             color: var(--gold-bright);
         }
 
-        /* التخطيط والتمرير المطور */
+        /* التخطيط والتمرير المطور للايباد والآيفون */
         .pos-container {
             display: grid;
             grid-template-columns: 340px 1fr;
@@ -200,7 +200,7 @@
         .cart-items-list {
             flex-grow: 1;
             overflow-y: auto;
-            max-height: calc(100vh - 270px);
+            max-height: calc(100vh - 320px);
             margin: 6px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
@@ -451,8 +451,17 @@
                         </div>
 
                         <div style="position:relative; margin: 4px 0;">
-                            <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الطاولة..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
+                            <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الخدمة..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
                             <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:8px; display:none; z-index:100; max-height:180px; overflow-y:auto; padding:6px; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
+                        </div>
+
+                        <!-- 🏷️ قسم الخصم والطلب المجاني -->
+                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span style="font-size:0.75rem; color:#aaa;">قيمة الخصم (د.ع):</span>
+                                <button onclick="setOrderAsFree()" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#10b981; color:#fff; width:auto;">🎁 مجاني (100%)</button>
+                            </div>
+                            <input type="number" id="posDiscountInput" class="gold-input" placeholder="0 د.ع" oninput="applyPosDiscount(this.value)" style="font-size:0.85rem; text-align:center; padding:4px;">
                         </div>
 
                         <div id="posCartList" class="cart-items-list">
@@ -542,10 +551,10 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:var(--gold-primary);">📜 سجل الفواتير</h4>
-                <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="width:auto; padding:2px 8px;">X</button>
+                <button onclick="closeModal('completedOrdersModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
             </div>
             <div id="completedOrdersList"></div>
-            <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:10px;">مسح السجل</button>
+            <button onclick="clearCompletedOrdersHistory()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:10px;">مسح السجل</button>
         </div>
     </div>
 
