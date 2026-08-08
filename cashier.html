@@ -442,13 +442,22 @@
                             <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🚗 توصيل</button>
                         </div>
 
+                        <!-- 🛵 القائمة المنسدلة المضافة لاختيار سائق الدليفري والتطبيقات -->
+                        <div id="driverSelectBox" style="display:none; margin: 4px 0 8px 0; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary);">
+                            <span class="section-label" style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
+                            <select id="posDriverSelect" class="gold-input" style="font-size:0.8rem; text-align:right; cursor:pointer;"></select>
+                        </div>
+
                         <span class="section-label">طريقة الدفع:</span>
                         <div class="toggle-group" id="posPaymentGroup">
                             <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
                             <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا</button>
                         </div>
 
-                        <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الطاولة (اختياري)">
+                        <div style="position:relative; margin: 4px 0;">
+                            <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الطاولة..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
+                            <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:8px; display:none; z-index:100; max-height:180px; overflow-y:auto; padding:6px; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
+                        </div>
 
                         <div id="posCartList" class="cart-items-list">
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
@@ -477,6 +486,9 @@
 
             <!-- المنطقة الرئيسية: اختيار الوجبات والأقسام -->
             <main class="pos-main-content">
+                <div style="margin-bottom:8px;">
+                    <input type="text" id="posSearchInput" class="gold-input" placeholder="🔍 بحث سريع عن وجبة..." oninput="if(typeof filterPosProducts === 'function') filterPosProducts()" style="text-align:right;">
+                </div>
                 <div id="posCategoriesBar" class="categories-bar"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
@@ -563,6 +575,12 @@
                 <div style="display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:4px;"><span>صافي الطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
             </div>
 
+            <!-- 🛵 كشف أداء وحسابات سائقي التوصيل وتطبيقات الدليفري -->
+            <div style="background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px;">
+                <h5 style="color:var(--gold-primary); font-size:0.85rem; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> كشف سائقي التوصيل والتطبيقات:</h5>
+                <div id="repDriversList" style="font-size:0.8rem; color:#ccc;"></div>
+            </div>
+
             <h5 style="color:var(--gold-primary); margin-bottom:6px;">📦 الأصناف المبيعة:</h5>
             <div id="repItemsSoldList" style="max-height:140px; overflow-y:auto; font-size:0.8rem; margin-bottom:10px;"></div>
 
@@ -604,7 +622,7 @@
                     return `
                         <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:8px; margin-bottom:8px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--gold-primary);">
-                                <strong>👤 ${ord.customerName || 'زبون'}</strong>
+                                <strong>👤 ${ord.customerName || 'زبون'} ${ord.driverName ? ' - 🛵 ' + ord.driverName : ''}</strong>
                                 <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
                             </div>
                             <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
@@ -631,7 +649,7 @@
                 document.getElementById('receiptCashierName').innerText = "الكاشير: " + (typeof activeCashierUser !== 'undefined' && activeCashierUser ? activeCashierUser.name : "الرئيسي");
                 document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
                 document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-                document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+                document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
                 
                 const items = Array.isArray(order.items) ? order.items : [];
                 document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
@@ -645,7 +663,7 @@
                 document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
                 document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-                document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+                document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
                 document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
                 document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || ''}`;
 
