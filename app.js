@@ -1,5 +1,5 @@
 /* ==========================================
-   MIM89 FAST FOOD - Core Master Engine (v11.0)
+   MIM89 FAST FOOD - Core Master Engine (v12.0 Full)
    ========================================== */
 
 // 1. الاتصال بـ Firebase بمشروع mim89-ff938
@@ -54,14 +54,14 @@ const DEFAULT_DATA = {
         { name: "الشعب", price: 2500 }
     ],
     inventory: [
-        { id: 1, name: "صدور دجاج طازجة", quantity: 100, unit: "كغم" },
-        { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع" },
-        { id: 3, name: "بطاطس", quantity: 150, unit: "كغم" },
-        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة" },
-        { id: 5, name: "لحم عجل طازج", quantity: 80, unit: "كغم" },
-        { id: 6, name: "خبز بركر", quantity: 100, unit: "قطع" },
-        { id: 7, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم" },
-        { id: 8, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم" }
+        { id: 1, name: "صدور دجاج طازجة", quantity: 100, unit: "كغم", totalPrice: 500000, costPerUnit: 5000 },
+        { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع", totalPrice: 40000, costPerUnit: 200 },
+        { id: 3, name: "بطاطس", quantity: 150, unit: "كغم", totalPrice: 150000, costPerUnit: 1000 },
+        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة", totalPrice: 30000, costPerUnit: 1000 },
+        { id: 5, name: "لحم عجل طازج", quantity: 80, unit: "كغم", totalPrice: 640000, costPerUnit: 8000 },
+        { id: 6, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 },
+        { id: 7, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
+        { id: 8, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
     ],
     items: [
         // 🔥 العروض المميزة
@@ -120,7 +120,7 @@ const DEFAULT_DATA = {
     ]
 };
 
-// ⚡ دالة تهيئة البيانات المحصنة
+// ⚡ تهيئة البيانات المحصنة
 function initData() {
     let currentItems = getData('sys_items');
 
@@ -221,7 +221,6 @@ async function globalSystemSync(btnElement) {
 
     try {
         if (typeof db !== 'undefined' && db) {
-            // 1. جلب أحدث أصناف المينيو من السحابة
             const itemSnap = await db.collection("menu_items").get();
             if (!itemSnap.empty) {
                 let cloudItems = [];
@@ -229,7 +228,6 @@ async function globalSystemSync(btnElement) {
                 if (cloudItems.length >= 10) setData('sys_items', cloudItems);
             }
 
-            // 2. جلب أحدث الأقسام
             const catSnap = await db.collection("menu_categories").get();
             if (!catSnap.empty) {
                 let cloudCategories = [];
@@ -237,7 +235,6 @@ async function globalSystemSync(btnElement) {
                 if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
             }
 
-            // 3. جلب أحدث الطلبات والمكالمات
             const orderSnap = await db.collection("orders").get();
             if (!orderSnap.empty) {
                 let cloudOrders = [];
@@ -246,7 +243,6 @@ async function globalSystemSync(btnElement) {
             }
         }
 
-        // 4. تنفيذ إعادة الرسم الفوري الشامل دون Refresh للمتصفح
         refreshActiveUI();
         
         if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
@@ -254,7 +250,6 @@ async function globalSystemSync(btnElement) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
         if (typeof loadAdminTabsData === 'function') loadAdminTabsData();
 
-        // 5. تحديث نافذة سجل الفواتير المفتوحة إذا كانت معروضة
         const historyModal = document.getElementById('completedOrdersModal');
         if (historyModal && historyModal.style.display === 'flex' && typeof openCompletedOrdersModal === 'function') {
             openCompletedOrdersModal();
@@ -741,7 +736,6 @@ function autoSearchCustomerByPhone(phoneInput) {
     resultsBox.style.display = 'block';
 }
 
-/* 📥 تعبئة بيانات الزبون المختار بضغطة زر واحدة */
 function fillCustomerData(name, phone, area, address) {
     const nameInput = document.getElementById('posCustName');
     if (nameInput) {
@@ -1042,7 +1036,6 @@ function getCustomerHistoryByPhone(phone) {
     }) || null;
 }
 
-/* 📞 محرك الاستماع المطور للمكالمات والطلبات الواردة مع الشريط العائم */
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
 
@@ -1078,7 +1071,6 @@ function listenForIncomingOrders() {
                 badge.style.display = 'inline-block'; 
             }
             
-            // 🔔 إظهار شريط تنبيه عائم في أعلى الشاشة مهما كان التبويب المفتوح
             if (alertBanner && lastIncomingCall) {
                 const phone = String(lastIncomingCall.phone || 'رقم غير معروف');
                 const name = String(lastIncomingCall.customerName || 'مكالمة واردة');
@@ -1119,7 +1111,6 @@ function listenForIncomingOrders() {
     }
 }
 
-/* 🛡️ دالة توليد بطاقة المكالمة المحصنة برمجياً 100% ضد القيم الفارغة */
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
@@ -1509,7 +1500,12 @@ function saveItem() {
     const categoryId = Number(document.getElementById('itemCategory').value);
     const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    let image = currentUploadedBase64 || document.getElementById('itemImage').value.trim() || 'https://via.placeholder.com/300?text=MIM89';
+    let existingItem = id ? getData('sys_items').find(i => Number(i.id) === Number(id)) : null;
+
+    let image = currentUploadedBase64 
+        || (document.getElementById('itemImage') ? document.getElementById('itemImage').value.trim() : '')
+        || (existingItem ? existingItem.image : '') 
+        || 'https://via.placeholder.com/300?text=MIM89';
 
     if (!name || !price) {
         return alert("❌ يرجى إدخال اسم الصنف والسعر على الأقل!");
@@ -1518,12 +1514,12 @@ function saveItem() {
     let items = getData('sys_items');
     let newItemData = { 
         id: id ? Number(id) : Date.now(), 
-        name, 
-        price, 
-        categoryId, 
-        image, 
-        ingredients, 
-        recipe: [] 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients, 
+        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : [] 
     };
 
     if (id) {
@@ -1558,10 +1554,10 @@ function editItem(id) {
 
     if (item.image && item.image.startsWith('data:image')) {
         currentUploadedBase64 = item.image;
-        document.getElementById('itemImage').value = '';
+        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
     } else {
         currentUploadedBase64 = '';
-        document.getElementById('itemImage').value = item.image || '';
+        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = item.image || '';
     }
 
     const preview = document.getElementById('imgPreview');
@@ -1575,7 +1571,7 @@ function resetItemForm() {
     document.getElementById('editItemId').value = '';
     document.getElementById('itemName').value = '';
     document.getElementById('itemPrice').value = '';
-    document.getElementById('itemImage').value = '';
+    if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
     document.getElementById('itemIngredients').value = '';
     
     const fileInput = document.getElementById('itemImgFile');
