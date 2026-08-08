@@ -143,17 +143,16 @@
 
         <!-- 📋 جدول المواد المسجلة وحساب كلفة الوحدة -->
         <div class="card">
-            <div class="card-title"><i class="fa-solid fa-list-check"></i> قائمة المواد والتقسيم التلقائي للكلفة</div>
+            <div class="card-title"><i class="fa-solid fa-list-check"></i> قائمة المواد والتقسيم التلقائي للكلفة (تعديل مباشر)</div>
             <table>
                 <thead>
                     <tr>
                         <th style="width: 5%;">#</th>
-                        <th style="width: 25%;">اسم المادة الأولية</th>
+                        <th style="width: 30%;">اسم المادة الأولية</th>
                         <th style="width: 15%;">الكمية الكلية</th>
                         <th style="width: 15%;">الوحدة</th>
                         <th style="width: 20%;">إجمالي الشراء (د.ع)</th>
                         <th style="width: 15%;">كلفة الوحدة (تلقائي)</th>
-                        <th style="width: 5%;">إجراء</th>
                     </tr>
                 </thead>
                 <tbody id="inventoryTableBody"></tbody>
@@ -183,14 +182,14 @@
             }
         }
 
-        // عرض جدول المخزن مع حساب سعر الكيلو/القطعة تلقائياً
+        // عرض جدول المخزن مع امكانية التعديل المباشر وبدون زر حذف
         function renderInventoryTable() {
             const inv = getData('sys_inventory');
             const tbody = document.getElementById('inventoryTableBody');
             if (!tbody) return;
 
             if (inv.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
                 return;
             }
 
@@ -208,7 +207,6 @@
                         <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input"></td>
                         <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input"></td>
                         <td style="color:var(--gold-bright); font-weight:bold;">${Number(costPerUnit.toFixed(2)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}</td>
-                        <td><button onclick="deleteInvItem(${item.id})" class="btn-danger"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             }).join('');
@@ -268,15 +266,6 @@
                     item.costPerUnit = 0;
                 }
 
-                setData('sys_inventory', inv);
-                renderInventoryTable();
-            }
-        }
-
-        // حذف مادة من المخزن
-        function deleteInvItem(id) {
-            if (confirm("هل أنت متأكد من حذف هذه المادة من المخزن؟")) {
-                let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
                 setData('sys_inventory', inv);
                 renderInventoryTable();
             }
