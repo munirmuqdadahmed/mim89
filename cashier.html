@@ -165,7 +165,7 @@
         /* التخطيط والتمرير المطور للايباد والآيفون */
         .pos-container {
             display: grid;
-            grid-template-columns: 340px 1fr;
+            grid-template-columns: 350px 1fr;
             height: calc(100vh - 48px);
         }
 
@@ -200,7 +200,7 @@
         .cart-items-list {
             flex-grow: 1;
             overflow-y: auto;
-            max-height: calc(100vh - 320px);
+            max-height: calc(100vh - 380px);
             margin: 6px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
@@ -401,13 +401,18 @@
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي</button>
                     <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
+                    <button onclick="openShiftReportModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</button>
                     <hr style="border-color:#333; margin:2px 0;">
-                    <button onclick="logoutCashier()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> خروج وتسليم</button>
                 </div>
             </div>
 
             <!-- أزرار التحديث والأجراس والأزرار المباشرة -->
             <div style="display:flex; gap:6px; align-items:center;">
+                <button onclick="openShiftReportModal()" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#3b82f6; color:#fff; border:none;">
+                    🔒 تقفيل الشيفت
+                </button>
+
                 <button onclick="globalSystemSync(this)" class="gold-btn" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#10b981; color:#fff; border:none;">
                     <i class="fa-solid fa-rotate"></i> تحديث
                 </button>
@@ -451,7 +456,7 @@
                         </div>
 
                         <div style="position:relative; margin: 4px 0;">
-                            <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الخدمة..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
+                            <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الهاتف..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
                             <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:8px; display:none; z-index:100; max-height:180px; overflow-y:auto; padding:6px; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
                         </div>
 
@@ -462,6 +467,20 @@
                                 <button onclick="setOrderAsFree()" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#10b981; color:#fff; width:auto;">🎁 مجاني (100%)</button>
                             </div>
                             <input type="number" id="posDiscountInput" class="gold-input" placeholder="0 د.ع" oninput="applyPosDiscount(this.value)" style="font-size:0.85rem; text-align:center; padding:4px;">
+                        </div>
+
+                        <!-- 📝 قسم ملاحظات المطبخ السريعة -->
+                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
+                            <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
+                                <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
+                            </span>
+                            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;">
+                                <button onclick="addQuickNote('بدون ثوم 🧄')" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#222; color:#ccc; border:1px solid #444; width:auto;">بدون ثوم</button>
+                                <button onclick="addQuickNote('سبايسي 🌶️')" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#222; color:#ccc; border:1px solid #444; width:auto;">سبايسي 🌶️</button>
+                                <button onclick="addQuickNote('صوص زيادة 🧀')" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#222; color:#ccc; border:1px solid #444; width:auto;">صوص زيادة</button>
+                                <button onclick="addQuickNote('بدون مخلل 🥒')" class="gold-btn btn-sm" style="padding:2px 6px; font-size:0.7rem; background:#222; color:#ccc; border:1px solid #444; width:auto;">بدون مخلل</button>
+                            </div>
+                            <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:4px;">
                         </div>
 
                         <div id="posCartList" class="cart-items-list">
@@ -622,6 +641,46 @@
             <div style="display:flex; gap:8px; margin-top:12px;" class="no-print">
                 <button onclick="printThermalElement('itemsReportModalBody')" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة جرد الوجبات</button>
                 <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔒 3. نافذة تقفيل الشيفت وتصفير الصندوق للكاشير الصباحي/المسائي -->
+    <div id="shiftReportModal" class="modal-overlay">
+        <div class="modal-body" id="shiftReportModalBody">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت (تسليم الصندوق)</h4>
+                <button onclick="closeModal('shiftReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
+            </div>
+            
+            <div style="font-size:0.85rem; color:#aaa; margin-bottom:10px; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--card-border);">
+                <div style="margin-bottom:4px;">الكاشير المسؤول: <strong id="shiftCashierName" style="color:var(--gold-bright);">-</strong></div>
+                <div>وقت بداية الشيفت: <span id="shiftStartTime" style="color:#fff;">-</span></div>
+            </div>
+
+            <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem; border:1px solid var(--gold-primary);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span>المبلغ الكاش الواجب بالصندوق:</span>
+                    <strong style="color:#10b981; font-size:1.1rem;"><span id="shiftTotalCash">0</span> د.ع</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span>مبيعات الفيزا (الإلكتروني):</span>
+                    <strong id="shiftTotalVisa" style="color:#38bdf8;">0 د.ع</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <span>عدد فواتير الشيفت:</span>
+                    <strong id="shiftOrdersCount" style="color:#fff;">0</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:6px; margin-top:4px; font-weight:bold;">
+                    <span>إجمالي مبيعات الشيفت:</span>
+                    <strong id="shiftGrandTotal" style="color:var(--gold-bright);">0 د.ع</strong>
+                </div>
+            </div>
+
+            <!-- 🖨️ أزرار إجراءات تقفيل الشيفت -->
+            <div style="display:flex; gap:8px; margin-top:12px;" class="no-print">
+                <button onclick="printThermalElement('shiftReportModalBody')" class="gold-btn" style="flex:2; background:#10b981; color:#fff;">🖨️ طباعة بون الشيفت</button>
+                <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">تسليم وخروج 🔓</button>
             </div>
         </div>
     </div>
