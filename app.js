@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v14.0 Ultimate Complete Engine)
-   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة
+   MIM89 FAST FOOD - Master Core Engine (v15.0 Interactive Discount Engine)
+   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة والخصومات الذكية
    ========================================================================== */
 
 // 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
@@ -136,7 +136,7 @@ const DEFAULT_DATA = {
     ]
 };
 
-// المعالج الذكي لمطابقة أسماء مناطق التوصيل (قاهرة / القاهره / القاهرة)
+// المعالج الذكي لمطابقة أسماء مناطق التوصيل
 function normalizeArabicArea(str) {
     if (!str) return '';
     return str.toString()
@@ -480,7 +480,6 @@ function toggleDeliveryFields() {
     calculateDeliveryCost();
 }
 
-// حاسبة أجور التوصيل الذكية
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -629,7 +628,10 @@ let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
 let selectedDriverId = '';
+
+let activeDiscountType = null; // 'free', 'percent', 'amount', null
 let posDiscountAmount = 0;
+let currentPercentValue = 0;
 
 function initCashierPage() { 
     initData(); 
@@ -834,6 +836,7 @@ function addToPosCart(itemId) {
     } else {
         posCart.push({ ...item, qty: 1 });
     }
+    recalculateActiveDiscount();
     renderPosCart();
 }
 
@@ -843,30 +846,156 @@ function changePosCartQty(id, change) {
         item.qty += change;
         if (item.qty <= 0) posCart = posCart.filter(c => c.id !== id);
     }
+    recalculateActiveDiscount();
     renderPosCart();
 }
 
 function clearPosCart() {
     posCart = [];
-    posDiscountAmount = 0;
-    const discountInput = document.getElementById('posDiscountInput');
-    if (discountInput) discountInput.value = '';
+    clearAllDiscounts();
     const notesInput = document.getElementById('posOrderNotesInput');
     if (notesInput) notesInput.value = '';
     renderPosCart();
 }
 
-function applyPosDiscount(val) {
-    posDiscountAmount = Math.max(0, Number(val) || 0);
+/* ==========================================================================
+   محرك الخصم التفاعلي المطور (MIM89 Smart Discount Engine)
+   ========================================================================== */
+
+// 1. زر الخصم المجاني (Toggle)
+function toggleFreeDiscount() {
+    if (activeDiscountType === 'free') {
+        clearAllDiscounts();
+    } else {
+        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
+
+        activeDiscountType = 'free';
+        posDiscountAmount = subtotal;
+        
+        updateDiscountUIState('free', '🎉 طلب مجاني (100%)');
+        renderPosCart();
+    }
+}
+
+// 2. زر الخصم بالنسبة المئوية (Toggle)
+function togglePercentDiscount() {
+    if (activeDiscountType === 'percent') {
+        clearAllDiscounts();
+    } else {
+        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
+
+        const inputPercent = prompt("أدخل نسبة الخصم المئوية (مثال: 20 أو 50):", currentPercentValue || "50");
+        if (inputPercent === null) return;
+
+        const pVal = Math.min(100, Math.max(1, Number(inputPercent) || 0));
+        if (pVal <= 0) return clearAllDiscounts();
+
+        currentPercentValue = pVal;
+        activeDiscountType = 'percent';
+        posDiscountAmount = (subtotal * pVal) / 100;
+
+        updateDiscountUIState('percent', `🏷️ خصم ${pVal}%`);
+        renderPosCart();
+    }
+}
+
+// 3. الخصم بالمبلغ (عند الكتابة في الحقل)
+function applyPosAmountDiscount(val) {
+    const amount = Math.max(0, Number(val) || 0);
+    const clearXBtn = document.getElementById('btnClearInputX');
+
+    if (clearXBtn) clearXBtn.style.display = val ? 'block' : 'none';
+
+    if (amount > 0) {
+        activeDiscountType = 'amount';
+        posDiscountAmount = amount;
+        updateDiscountUIState('amount', `💵 خصم ${amount.toLocaleString()} د.ع`);
+    } else if (activeDiscountType === 'amount') {
+        clearAllDiscounts();
+    }
     renderPosCart();
 }
 
-function setOrderAsFree() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    posDiscountAmount = subtotal;
+// 4. مسح النص داخل حقل المبلغ فقط دون تصفير باقي الأزرار
+function clearDiscountInputOnly() {
     const input = document.getElementById('posDiscountInput');
-    if (input) input.value = subtotal;
+    const clearXBtn = document.getElementById('btnClearInputX');
+    if (input) input.value = '';
+    if (clearXBtn) clearXBtn.style.display = 'none';
+
+    if (activeDiscountType === 'amount') {
+        clearAllDiscounts();
+    }
+}
+
+// 5. إلغاء وتصفير كافة أنواع الخصوم وإرجاع السعر الطبيعي
+function clearAllDiscounts() {
+    activeDiscountType = null;
+    posDiscountAmount = 0;
+    currentPercentValue = 0;
+
+    const input = document.getElementById('posDiscountInput');
+    const clearXBtn = document.getElementById('btnClearInputX');
+    if (input) input.value = '';
+    if (clearXBtn) clearXBtn.style.display = 'none';
+
+    updateDiscountUIState(null, '');
     renderPosCart();
+}
+
+// إعادة حساب الخصم ديناميكياً عند تعديل عناصر السلة
+function recalculateActiveDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    if (subtotal === 0) {
+        clearAllDiscounts();
+        return;
+    }
+
+    if (activeDiscountType === 'free') {
+        posDiscountAmount = subtotal;
+    } else if (activeDiscountType === 'percent') {
+        posDiscountAmount = (subtotal * currentPercentValue) / 100;
+    }
+}
+
+// 🎨 تحديث شكل وحالة الأزرار والشارات بصرياً
+function updateDiscountUIState(type, badgeText) {
+    const btnFree = document.getElementById('btnFreeDiscount');
+    const btnPercent = document.getElementById('btnPercentDiscount');
+    const badge = document.getElementById('discountStatusBadge');
+
+    if (btnFree) {
+        btnFree.style.background = '#222228';
+        btnFree.style.borderColor = '#444';
+        btnFree.style.color = '#fff';
+    }
+    if (btnPercent) {
+        btnPercent.style.background = '#222228';
+        btnPercent.style.borderColor = '#444';
+        btnPercent.style.color = '#fff';
+    }
+
+    if (type === 'free' && btnFree) {
+        btnFree.style.background = '#10b981';
+        btnFree.style.borderColor = '#10b981';
+        btnFree.style.color = '#fff';
+    } else if (type === 'percent' && btnPercent) {
+        btnPercent.style.background = '#3b82f6';
+        btnPercent.style.borderColor = '#3b82f6';
+        btnPercent.style.color = '#fff';
+    }
+
+    if (badge) {
+        if (badgeText) {
+            badge.innerText = badgeText;
+            badge.style.display = 'inline-block';
+            badge.style.color = type === 'free' ? '#10b981' : (type === 'percent' ? '#38bdf8' : 'var(--gold-bright)');
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 }
 
 function addQuickNote(noteText) {
@@ -887,7 +1016,6 @@ function renderPosCart() {
     if (posCart.length === 0) {
         list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
         if (totalEl) totalEl.innerText = "0 د.ع";
-        posDiscountAmount = 0;
         return;
     }
 
@@ -1033,7 +1161,6 @@ function clearCompletedOrdersHistory() {
    5. تقارير كشف الحساب المالي اليومي وجرد الوجبات وتقفيل الشيفتات
    ========================================== */
 
-// 📊 1. كشف الحساب المالي اليومي (مالي + سائقين فقط)
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
     const today = getTodayString();
@@ -1079,7 +1206,6 @@ function renderDailyReport(targetDate) {
     if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
     if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
 
-    // 🛵 كشف المبيعات والطلبات لسائقي التوصيل والتطبيقات
     const driverListEl = document.getElementById('repDriversList');
     if (driverListEl) {
         const driverNames = Object.keys(driverStatsMap);
@@ -1096,7 +1222,6 @@ function renderDailyReport(targetDate) {
     }
 }
 
-// 📦 2. جرد الوجبات والأصناف المباعة المستقل
 function openItemsReportModal() {
     const dateInput = document.getElementById('itemsReportDateInput');
     const today = getTodayString();
@@ -1151,7 +1276,6 @@ function renderItemsReport(targetDate) {
     }
 }
 
-// 🔒 3. تقرير تقفيل الشيفت الصباحي/المسائي وتصفير الصندوق
 function openShiftReportModal() {
     const activeUser = activeCashierUser || JSON.parse(sessionStorage.getItem('active_cashier') || '{"name":"الرئيسي"}');
     const shiftStartTs = Number(sessionStorage.getItem('shift_start_timestamp') || 0);
@@ -1195,7 +1319,6 @@ function confirmCloseShiftAndLogout() {
     }
 }
 
-// 📂 4. تصدير كافة بيانات النظام بملف نسخ احتياطي للواتساب
 function exportFullSystemBackup() {
     const backupData = {
         systemName: "MIM89 FAST FOOD POS",
@@ -1521,7 +1644,6 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-// 🖨️ محرك طباعة الفواتير الحرارية المقسم على (طابعة الكاشير + طابعة المطبخ 1 + طابعة المطبخ 2)
 function printReceipt(order) {
     if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + (order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي"));
     if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
@@ -1756,7 +1878,6 @@ function deleteArea(name) {
     renderAdminAreas();
 }
 
-// ✏️ التعديل المباشر السريع من الجدول بدون دخول فورم
 function updateItemInline(id, field, value) {
     let items = getData('sys_items');
     let item = items.find(i => Number(i.id) === Number(id));
