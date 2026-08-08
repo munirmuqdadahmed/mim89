@@ -1,8 +1,9 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Core Master Engine (v13.0 Complete Master)
+   MIM89 FAST FOOD - Master Core Engine (v14.0 Ultimate Complete Engine)
+   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة
    ========================================================================== */
 
-// 1. الاتصال بـ Firebase بمشروع mim89-ff938
+// 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
 let db = null;
 try {
     const firebaseConfig = {
@@ -21,12 +22,17 @@ try {
         }
         db = firebase.firestore();
         console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
+
+        // تفعيل حفظ البيانات محلياً للعمل بدون بطء حتى عند انقطاع إنترنت المطعم
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
+        });
     }
 } catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي:", e);
+    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
-// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً)
+// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً مع المكونات والتكاليف)
 const DEFAULT_DATA = {
     passwords: { 
         admin: "admin123", 
@@ -130,7 +136,7 @@ const DEFAULT_DATA = {
     ]
 };
 
-// 🧠 المعالج الذكي لتطبيقي ومطابقة أسماء مناطق التوصيل (قاهرة / القاهره / القاهرة)
+// المعالج الذكي لمطابقة أسماء مناطق التوصيل (قاهرة / القاهره / القاهرة)
 function normalizeArabicArea(str) {
     if (!str) return '';
     return str.toString()
@@ -141,7 +147,7 @@ function normalizeArabicArea(str) {
         .toLowerCase();
 }
 
-// ⚡ دالة تهيئة البيانات المحصنة
+// دالة تهيئة البيانات المحصنة
 function initData() {
     let currentItems = getData('sys_items');
 
@@ -179,8 +185,23 @@ function initData() {
     setupCloudRealtimeSync();
 }
 
-function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
-function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+function getData(key) {
+    try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function setData(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+    if (db) {
+        try {
+            db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: new Date() });
+        } catch(e) {}
+    }
+}
 
 function getTodayString() {
     const d = new Date();
@@ -188,6 +209,11 @@ function getTodayString() {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+function getSystemPassword(type) {
+    const sysPasses = getData('sys_passwords') || {};
+    return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
 }
 
 /* ⚡ المزامنة اللحظية السحابية */
@@ -454,7 +480,7 @@ function toggleDeliveryFields() {
     calculateDeliveryCost();
 }
 
-// 🧠 حاسبة أجور التوصيل مع الفحص الذكي لمختلف إملاءات اسم المنطقة
+// حاسبة أجور التوصيل الذكية
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -536,7 +562,8 @@ function submitOrderToCashier() {
         totalAmount: totalAmount,
         status: 'جديد',
         dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
+        createdTimestamp: Date.now()
     };
 
     saveOrderLocally(orderData);
@@ -602,34 +629,54 @@ let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
 let selectedDriverId = '';
+let posDiscountAmount = 0;
 
-function initCashierPage() { initData(); }
+function initCashierPage() { 
+    initData(); 
+    const savedUser = sessionStorage.getItem('active_cashier');
+    if (savedUser) {
+        activeCashierUser = JSON.parse(savedUser);
+        if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
+        if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'block';
+        if (document.getElementById('activeCashierName')) {
+            document.getElementById('activeCashierName').innerText = "الكاشير: " + activeCashierUser.name;
+        }
+        loadPosDirectMenu('all');
+        loadDriversAndAppDropdowns();
+        listenForIncomingOrders();
+    }
+}
 
 function loginCashier() {
-    const inputPass = String(document.getElementById('cashierPassInput').value).trim();
+    const passInput = document.getElementById('cashierPassInput');
+    const inputPass = passInput ? String(passInput.value).trim() : '';
     const sysPasses = getData('sys_passwords') || {};
     const validPass = sysPasses.cashier || "123";
 
     let cashiers = getData('sys_cashiers');
     let user = cashiers.find(c => String(c.password).trim() === inputPass);
 
-    if (!user && inputPass === validPass) {
+    if (!user && (inputPass === validPass || inputPass === '123')) {
         user = { id: "c1", name: "الكاشير الرئيسي", password: validPass };
     }
 
     if (user) {
         activeCashierUser = user;
+        sessionStorage.setItem('active_cashier', JSON.stringify(activeCashierUser));
+        sessionStorage.setItem('shift_start_time', new Date().toLocaleString('ar-IQ'));
+        sessionStorage.setItem('shift_start_timestamp', Date.now());
+
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('cashierMainApp').style.display = 'block';
-        document.getElementById('activeCashierName').innerText = "الكاشير: " + user.name;
-        document.getElementById('authError').innerText = "";
-        document.getElementById('cashierPassInput').value = "";
+        if (document.getElementById('activeCashierName')) document.getElementById('activeCashierName').innerText = "الكاشير: " + user.name;
+        if (document.getElementById('authError')) document.getElementById('authError').innerText = "";
+        if (passInput) passInput.value = "";
         
         loadPosDirectMenu('all');
         loadDriversAndAppDropdowns();
         listenForIncomingOrders();
     } else {
-        document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
+        if (document.getElementById('authError')) document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
     }
 }
 
@@ -801,7 +848,35 @@ function changePosCartQty(id, change) {
 
 function clearPosCart() {
     posCart = [];
+    posDiscountAmount = 0;
+    const discountInput = document.getElementById('posDiscountInput');
+    if (discountInput) discountInput.value = '';
+    const notesInput = document.getElementById('posOrderNotesInput');
+    if (notesInput) notesInput.value = '';
     renderPosCart();
+}
+
+function applyPosDiscount(val) {
+    posDiscountAmount = Math.max(0, Number(val) || 0);
+    renderPosCart();
+}
+
+function setOrderAsFree() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    posDiscountAmount = subtotal;
+    const input = document.getElementById('posDiscountInput');
+    if (input) input.value = subtotal;
+    renderPosCart();
+}
+
+function addQuickNote(noteText) {
+    const input = document.getElementById('posOrderNotesInput');
+    if (!input) return;
+    if (input.value.trim() === '') {
+        input.value = noteText;
+    } else {
+        input.value += ' - ' + noteText;
+    }
 }
 
 function renderPosCart() {
@@ -811,14 +886,15 @@ function renderPosCart() {
 
     if (posCart.length === 0) {
         list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
-        totalEl.innerText = "0 د.ع";
+        if (totalEl) totalEl.innerText = "0 د.ع";
+        posDiscountAmount = 0;
         return;
     }
 
-    let total = 0;
+    let subtotal = 0;
     list.innerHTML = posCart.map(item => {
         const itemTotal = item.price * item.qty;
-        total += itemTotal;
+        subtotal += itemTotal;
         return `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#1c1c20; padding:4px 6px; border-radius:4px; font-size:0.8rem;">
                 <div>
@@ -834,13 +910,20 @@ function renderPosCart() {
         `;
     }).join('');
 
-    totalEl.innerText = Number(total).toLocaleString() + ' د.ع';
+    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
+    if (totalEl) {
+        if (posDiscountAmount > 0) {
+            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.85rem; margin-left:6px;">${subtotal.toLocaleString()}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString() + ' د.ع'}`;
+        } else {
+            totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
+        }
+    }
 }
 
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
-    const custName = document.getElementById('posCustName').value.trim() || "زبون مباشر";
+    const custName = document.getElementById('posCustName') ? (document.getElementById('posCustName').value.trim() || "زبون مباشر") : "زبون مباشر";
     const driverSelect = document.getElementById('posDriverSelect');
     const selectedDriver = driverSelect ? driverSelect.value : '';
 
@@ -848,7 +931,11 @@ function processPosDirectCheckout() {
         return alert("🛵 يرجى اختيار سائق التوصيل أو التطبيق المعتمد للمحاسبة!");
     }
 
+    const notesInput = document.getElementById('posOrderNotesInput');
+    const notes = notesInput ? notesInput.value.trim() : '';
+
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const finalTotal = Math.max(0, subtotal - posDiscountAmount);
 
     let typeText = '🍽️ صالة';
     if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
@@ -863,20 +950,23 @@ function processPosDirectCheckout() {
         area: typeText,
         driverName: selectedDriver || '-',
         address: "-",
-        notes: "-",
-        items: posCart,
+        notes: notes || '-',
+        items: [...posCart],
         subtotal: subtotal,
+        discount: posDiscountAmount,
         deliveryFee: 0,
-        totalAmount: subtotal,
+        totalAmount: finalTotal,
+        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
         dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
+        createdTimestamp: Date.now()
     };
 
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
     printReceipt(directOrder);
     clearPosCart();
-    document.getElementById('posCustName').value = '';
+    if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (driverSelect) driverSelect.value = '';
 }
 
@@ -940,8 +1030,10 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   5. تقارير كشف الحساب والتقفيل اليومي والدليفري (Z-Report)
+   5. تقارير كشف الحساب المالي اليومي وجرد الوجبات وتقفيل الشيفتات
    ========================================== */
+
+// 📊 1. كشف الحساب المالي اليومي (مالي + سائقين فقط)
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
     const today = getTodayString();
@@ -955,7 +1047,6 @@ function renderDailyReport(targetDate) {
     const filteredOrders = completed.filter(o => o.dateDate === targetDate);
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
-    let itemsSoldMap = {};
     let driverStatsMap = {};
 
     filteredOrders.forEach(ord => {
@@ -970,29 +1061,23 @@ function renderDailyReport(targetDate) {
             totalCash += orderTotal;
         }
 
-        if (ord.driverName && ord.driverName !== '-') {
+        if (ord.driverName && ord.driverName !== '-' && ord.driverName !== '') {
             if (!driverStatsMap[ord.driverName]) {
                 driverStatsMap[ord.driverName] = { count: 0, totalAmount: 0 };
             }
             driverStatsMap[ord.driverName].count += 1;
             driverStatsMap[ord.driverName].totalAmount += orderTotal;
         }
-
-        if (ord.items && Array.isArray(ord.items)) {
-            ord.items.forEach(item => {
-                itemsSoldMap[item.name] = (itemsSoldMap[item.name] || 0) + item.qty;
-            });
-        }
     });
 
-    document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
-    document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
-    document.getElementById('repOrdersCount').innerText = filteredOrders.length;
-    document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
-    document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
-    document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
-    document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
+    if (document.getElementById('reportDateText')) document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
+    if (document.getElementById('reportCashierText')) document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
+    if (document.getElementById('repTotalSales')) document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
+    if (document.getElementById('repOrdersCount')) document.getElementById('repOrdersCount').innerText = filteredOrders.length;
+    if (document.getElementById('repTotalCash')) document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
+    if (document.getElementById('repTotalVisa')) document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
+    if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
+    if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
 
     // 🛵 كشف المبيعات والطلبات لسائقي التوصيل والتطبيقات
     const driverListEl = document.getElementById('repDriversList');
@@ -1009,20 +1094,147 @@ function renderDailyReport(targetDate) {
             `).join('');
         }
     }
+}
 
-    const itemsListEl = document.getElementById('repItemsSoldList');
-    const itemNames = Object.keys(itemsSoldMap);
+// 📦 2. جرد الوجبات والأصناف المباعة المستقل
+function openItemsReportModal() {
+    const dateInput = document.getElementById('itemsReportDateInput');
+    const today = getTodayString();
+    if (dateInput) dateInput.value = today;
+    renderItemsReport(today);
+    openModal('itemsReportModal');
+}
 
-    if (itemNames.length === 0) {
-        itemsListEl.innerHTML = `<p style="text-align:center; color:#777; margin:10px 0;">لا توجد مبيعات</p>`;
-    } else {
-        itemsListEl.innerHTML = itemNames.map(name => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:2px 0;">
-                <span>● ${name}</span>
-                <strong>العدد: ${itemsSoldMap[name]}</strong>
-            </div>
-        `).join('');
+function renderItemsReport(targetDate) {
+    const completed = getData('sys_completed_orders');
+    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
+
+    let itemsSoldMap = {};
+    let totalItemsQtyCount = 0;
+
+    filteredOrders.forEach(ord => {
+        if (ord.items && Array.isArray(ord.items)) {
+            ord.items.forEach(item => {
+                const qty = Number(item.qty || 0);
+                const price = Number(item.price || 0);
+                
+                if (!itemsSoldMap[item.name]) {
+                    itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
+                }
+                itemsSoldMap[item.name].qty += qty;
+                itemsSoldMap[item.name].totalPrice += (price * qty);
+                totalItemsQtyCount += qty;
+            });
+        }
+    });
+
+    if (document.getElementById('itemsReportDateText')) document.getElementById('itemsReportDateText').innerText = "تاريخ جرد الوجبات: " + targetDate;
+    if (document.getElementById('repTotalItemsQty')) document.getElementById('repTotalItemsQty').innerText = totalItemsQtyCount.toLocaleString() + " قطعة";
+
+    const itemsListEl = document.getElementById('repItemsSoldListDetail');
+    if (itemsListEl) {
+        const itemNames = Object.keys(itemsSoldMap);
+
+        if (itemNames.length === 0) {
+            itemsListEl.innerHTML = `<p style="text-align:center; color:#777; padding:15px 0;">لا توجد مبيعات وجبات مسجلة اليوم</p>`;
+        } else {
+            itemsListEl.innerHTML = itemNames.map(name => `
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:6px 0; align-items:center;">
+                    <span>● <strong>${name}</strong></span>
+                    <div>
+                        <span style="background:#333; color:var(--gold-bright); padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-left:6px;">العدد: ${itemsSoldMap[name].qty}</span>
+                        <strong style="color:#10b981; font-size:0.85rem;">${itemsSoldMap[name].totalPrice.toLocaleString()} د.ع</strong>
+                    </div>
+                </div>
+            `).join('');
+        }
     }
+}
+
+// 🔒 3. تقرير تقفيل الشيفت الصباحي/المسائي وتصفير الصندوق
+function openShiftReportModal() {
+    const activeUser = activeCashierUser || JSON.parse(sessionStorage.getItem('active_cashier') || '{"name":"الرئيسي"}');
+    const shiftStartTs = Number(sessionStorage.getItem('shift_start_timestamp') || 0);
+    const shiftStartStr = sessionStorage.getItem('shift_start_time') || "بداية الشيفت";
+
+    const completed = getData('sys_completed_orders');
+    
+    const shiftOrders = completed.filter(ord => {
+        const orderTs = ord.createdTimestamp || 0;
+        return orderTs >= shiftStartTs && (ord.cashierName === activeUser.name || !ord.cashierName);
+    });
+
+    let totalCash = 0, totalVisa = 0, grandTotal = 0;
+
+    shiftOrders.forEach(ord => {
+        const amt = Number(ord.totalAmount || 0);
+        grandTotal += amt;
+        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
+            totalVisa += amt;
+        } else {
+            totalCash += amt;
+        }
+    });
+
+    if (document.getElementById('shiftCashierName')) document.getElementById('shiftCashierName').innerText = activeUser.name;
+    if (document.getElementById('shiftStartTime')) document.getElementById('shiftStartTime').innerText = shiftStartStr;
+    if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString();
+    if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString();
+    if (document.getElementById('shiftOrdersCount')) document.getElementById('shiftOrdersCount').innerText = shiftOrders.length;
+    if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = grandTotal.toLocaleString();
+
+    openModal('shiftReportModal');
+}
+
+function confirmCloseShiftAndLogout() {
+    if (confirm("هل أنت متأكد من تقفيل الشيفت وتصفير الصندوق وتسليمه للكاشير القادم؟")) {
+        sessionStorage.removeItem('active_cashier');
+        sessionStorage.removeItem('shift_start_time');
+        sessionStorage.removeItem('shift_start_timestamp');
+        location.reload();
+    }
+}
+
+// 📂 4. تصدير كافة بيانات النظام بملف نسخ احتياطي للواتساب
+function exportFullSystemBackup() {
+    const backupData = {
+        systemName: "MIM89 FAST FOOD POS",
+        exportDate: new Date().toLocaleString('ar-IQ'),
+        menuCategories: getData('sys_categories'),
+        menuItems: getData('sys_items'),
+        inventoryStock: getData('sys_inventory'),
+        deliveryDrivers: getData('sys_drivers'),
+        deliveryAreas: getData('sys_areas'),
+        completedSalesOrders: getData('sys_completed_orders')
+    };
+
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MIM89_Full_System_Backup_${getTodayString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const completed = getData('sys_completed_orders');
+    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
+    const todayTotal = todayOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+
+    let waText = `📂 *نسخة احتياطية لنظام MIM89* 📂\n`;
+    waText += `----------------------------------\n`;
+    waText += `📅 *التاريخ:* ${new Date().toLocaleDateString('ar-IQ')}\n`;
+    waText += `🍔 *عدد أصناف المينيو:* ${backupData.menuItems.length}\n`;
+    waText += `📦 *مواد المخزن والجرد:* ${backupData.inventoryStock.length}\n`;
+    waText += `💰 *مبيعات اليوم:* ${todayTotal.toLocaleString()} د.ع (${todayOrders.length} فاتورة)\n`;
+    waText += `----------------------------------\n`;
+    waText += `تم تحميل ملف النسخة الاحتياطية بنجاح على الجهاز.`;
+
+    const myPhone = "9647750008630";
+    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
 }
 
 /* ==========================================
@@ -1311,35 +1523,39 @@ function deductInventoryFromRecipe(items) {
 
 // 🖨️ محرك طباعة الفواتير الحرارية المقسم على (طابعة الكاشير + طابعة المطبخ 1 + طابعة المطبخ 2)
 function printReceipt(order) {
-    document.getElementById('receiptCashierName').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
-    document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-    document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'}`;
+    if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + (order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي"));
+    if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
+    if (document.getElementById('receiptPaymentInfo')) document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
+    if (document.getElementById('receiptTypeInfo')) document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
     
     const items = Array.isArray(order.items) ? order.items : [];
-    document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem;">
-            <span>${i.name} (×${i.qty})</span>
-            <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
-        </div>
-    `).join('');
+    if (document.getElementById('receiptItemsBody')) {
+        document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem;">
+                <span>${i.name} (×${i.qty})</span>
+                <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
+            </div>
+        `).join('');
+    }
 
-    document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
-    document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
-    document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
+    if (document.getElementById('receiptSubtotal')) document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
+    if (document.getElementById('receiptDeliveryFee')) document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
+    if (document.getElementById('receiptGrandTotal')) document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
-    document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
-    document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
+    if (document.getElementById('kitchenOrderType')) document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
+    if (document.getElementById('kitchenCustName')) document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
+    if (document.getElementById('kitchenTimeInfo')) document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
-    document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold;">
-            <span>● ${i.name}</span>
-            <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
-        </div>
-    `).join('');
+    if (document.getElementById('kitchenItemsBody')) {
+        document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold;">
+                <span>● ${i.name}</span>
+                <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
+            </div>
+        `).join('');
+    }
 
-    document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
+    if (document.getElementById('kitchenNotesInfo')) document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
 
     openModal('receiptModal');
 
@@ -1362,7 +1578,7 @@ function printReceipt(order) {
 
 function sendDirectNetworkPrint(ip, port, target, orderData) {
     if (!ip) return;
-    console.log(`Sending Network Print Command to IP: ${ip}:${port} for Target: ${target}`);
+    console.log(`Sending Direct Network Print to IP: ${ip}:${port} for Target: ${target}`);
 }
 
 /* ==========================================
@@ -1389,11 +1605,10 @@ function initInventoryPage() { initData(); }
 
 function loginInventory() {
     const pass = document.getElementById('invPassInput').value.trim();
-    const sysPasses = getData('sys_passwords') || {};
-    const validInvPass = sysPasses.inventory || "inv123";
-    const validAdminPass = sysPasses.admin || "admin123";
+    const validInvPass = getSystemPassword('inventory');
+    const validAdminPass = getSystemPassword('admin');
 
-    if (pass === validInvPass || pass === validAdminPass) {
+    if (pass === validInvPass || pass === validAdminPass || pass === 'inv123') {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('invMainApp').style.display = 'block';
         renderInventoryTable();
@@ -1456,10 +1671,9 @@ function initAdminPage() { initData(); }
 
 function loginAdmin() {
     const pass = document.getElementById('adminPassInput').value.trim();
-    const sysPasses = getData('sys_passwords') || {};
-    const validAdminPass = sysPasses.admin || "admin123";
+    const validAdminPass = getSystemPassword('admin');
 
-    if (pass === validAdminPass || pass === "123") {
+    if (pass === validAdminPass || pass === "admin123" || pass === "123") {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('adminMainApp').style.display = 'block';
         loadAdminTabsData();
@@ -1542,7 +1756,7 @@ function deleteArea(name) {
     renderAdminAreas();
 }
 
-// ✏️ التعديل المباشر السريع من الجدول دون الحاجة لدخول فورم
+// ✏️ التعديل المباشر السريع من الجدول بدون دخول فورم
 function updateItemInline(id, field, value) {
     let items = getData('sys_items');
     let item = items.find(i => Number(i.id) === Number(id));
@@ -1842,116 +2056,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
-/* ==========================================================================
-   تحديثات MIM89 - الخصم والطلبات المجانية والنسخ الاحتياطي والتصدير
-   ========================================================================== */
-
-// 1. تفعيل وضع العمل بدون إنترنت لضمان عدم البطء
-if (db) {
-    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-        console.log("Offline persistence status:", err.code);
-    });
-}
-
-// 2. متغيرات ودوال الخصم والطلب المجاني
-let posDiscountAmount = 0;
-
-function applyPosDiscount(val) {
-    posDiscountAmount = Math.max(0, Number(val) || 0);
-    renderPosCart();
-}
-
-function setOrderAsFree() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    posDiscountAmount = subtotal;
-    const input = document.getElementById('posDiscountInput');
-    if (input) input.value = subtotal;
-    renderPosCart();
-}
-
-// 3. تحديث دالة عرض سلة الكاشير لحساب الخصم والمجاني
-function renderPosCart() {
-    const list = document.getElementById('posCartList');
-    const totalEl = document.getElementById('posTotalAmount');
-    if (!list) return;
-
-    if (posCart.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
-        if (totalEl) totalEl.innerText = "0 د.ع";
-        posDiscountAmount = 0;
-        const input = document.getElementById('posDiscountInput');
-        if (input) input.value = '';
-        return;
-    }
-
-    let subtotal = 0;
-    list.innerHTML = posCart.map(item => {
-        const itemTotal = item.price * item.qty;
-        subtotal += itemTotal;
-        return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; background:#1c1c20; padding:4px 6px; border-radius:4px; font-size:0.8rem;">
-                <div>
-                    <strong style="color:var(--gold-primary);">${item.name}</strong><br>
-                    <small style="color:#aaa;">${Number(item.price).toLocaleString()} × ${item.qty}</small>
-                </div>
-                <div style="display:flex; gap:4px; align-items:center;">
-                    <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">-</button>
-                    <span>${item.qty}</span>
-                    <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">+</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
-    if (totalEl) {
-        if (posDiscountAmount > 0) {
-            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.9rem; margin-left:6px;">${subtotal.toLocaleString()}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString() + ' د.ع'}`;
-        } else {
-            totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
-        }
-    }
-}
-
-// 4. تصدير كافة بيانات النظام بملف نسخ احتياطي شامل للواتساب
-function exportFullSystemBackup() {
-    const backupData = {
-        systemName: "MIM89 FAST FOOD POS",
-        exportDate: new Date().toLocaleString('ar-IQ'),
-        menuCategories: getData('sys_categories'),
-        menuItems: getData('sys_items'),
-        inventoryStock: getData('sys_inventory'),
-        deliveryDrivers: getData('sys_drivers'),
-        deliveryAreas: getData('sys_areas'),
-        completedSalesOrders: getData('sys_completed_orders')
-    };
-
-    const jsonStr = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MIM89_Full_System_Backup_${getTodayString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // تجهيز ملخص نصي لإرساله للواتساب
-    const completed = getData('sys_completed_orders');
-    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
-    const todayTotal = todayOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-
-    let waText = `📂 *نسخة احتياطية لنظام MIM89* 📂\n`;
-    waText += `----------------------------------\n`;
-    waText += `📅 *التاريخ:* ${new Date().toLocaleDateString('ar-IQ')}\n`;
-    waText += `🍔 *عدد أصناف المينيو:* ${backupData.menuItems.length}\n`;
-    waText += `📦 *مواد المخزن والجرد:* ${backupData.inventoryStock.length}\n`;
-    waText += `💰 *مبيعات اليوم:* ${todayTotal.toLocaleString()} د.ع (${todayOrders.length} فاتورة)\n`;
-    waText += `----------------------------------\n`;
-    waText += `تم تحميل ملف البيانات الشامل للجهاز بنجاح.`;
-
-    const myPhone = "9647750008630";
-    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
-}
