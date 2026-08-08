@@ -486,13 +486,20 @@
                             </div>
                         </div>
 
-                        <!-- 📝 قسم ملاحظات المطبخ السريعة التفاعلية -->
+                        <!-- 📝 قسم ملاحظات المطبخ السريعة + شريط الإدخال المزود بزر المسح المباشر (X) -->
                         <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
                             </span>
                             <div id="quickNotesButtonsContainer" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;"></div>
-                            <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:4px;">
+                            
+                            <!-- شريط الملاحظات مع زر إكس للمسح بضغطة واحدة -->
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:6px; margin:0; flex:1;">
+                                <button onclick="clearPosOrderNotes()" title="مسح الملاحظات بالكامل" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; padding:6px 10px; font-weight:bold; font-size:0.85rem; width:auto;">
+                                    ✕
+                                </button>
+                            </div>
                         </div>
 
                         <div id="posCartList" class="cart-items-list">
@@ -622,7 +629,7 @@
         </div>
     </div>
 
-    <!-- 📊 1. نافذة كشف الحساب المالي اليومي (مع زر معاينة مخصص + طباعة) -->
+    <!-- 📊 1. نافذة كشف الحساب المالي اليومي -->
     <div id="dailyReportModal" class="modal-overlay">
         <div class="modal-body" id="dailyReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -662,7 +669,7 @@
         </div>
     </div>
 
-    <!-- 📦 2. نافذة جرد الوجبات المباعة (تحويل للتصدير PDF/واتساب مع معاينة) -->
+    <!-- 📦 2. نافذة جرد الوجبات المباعة -->
     <div id="itemsReportModal" class="modal-overlay">
         <div class="modal-body" id="itemsReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -692,7 +699,7 @@
         </div>
     </div>
 
-    <!-- 🔒 3. نافذة تقفيل الشيفت وتصفير الصندوق (مع زر معاينة) -->
+    <!-- 🔒 3. نافذة تقفيل الشيفت وتصفير الصندوق -->
     <div id="shiftReportModal" class="modal-overlay">
         <div class="modal-body" id="shiftReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
