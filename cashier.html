@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- إعدادات الشاشة الكاملة للايباد والآيفون -->
+    <!-- إعدادات الشاشة الكاملة للأجهزة اللوحية والـ POS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 POS">
@@ -354,7 +354,7 @@
             flex-shrink: 0;
         }
 
-        /* 🖨️ إعدادات الطباعة الحرارية الصارمة والمحددة بـ 72mm لمنع قص الحروف والقص الآلي */
+        /* 🖨️ إعدادات الطباعة الحرارية الصارمة والمحددة بـ 72mm */
         @media print {
             @page {
                 size: 80mm auto;
@@ -404,16 +404,6 @@
             .no-print { 
                 display: none !important; 
             }
-
-            /* قص آلي وفصل تام بين وصل الكاشير وبون المطبخ */
-            .kitchen-copy {
-                page-break-before: always !important;
-                break-before: page !important;
-                display: block !important;
-                margin-top: 15px !important;
-                padding-top: 10px !important;
-                clear: both !important;
-            }
         }
     </style>
 </head>
@@ -437,7 +427,7 @@
         </div>
 
         <header class="pos-header">
-            <!-- 🔽 البرُدة المنسدلة الشاملة لكل أدوات التحكم -->
+            <!-- البرُدة المنسدلة الشاملة لكل أدوات التحكم -->
             <div class="brand-dropdown-container">
                 <button class="brand-btn" onclick="toggleBrandMenu()">
                     <i class="fa-solid fa-cash-register"></i> MIM89 POS
@@ -611,9 +601,7 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-         📄 نافذة الفاتورة المخصصة للطباعة الكاشير + المطبخ (محدثة ومضبوطة بـ 72mm)
-         ========================================================================== -->
+    <!-- 📄 نافذة الفاتورة المخصصة للطباعة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -643,8 +631,8 @@
                 </div>
             </div>
 
-            <!-- 2. بون المطبخ المخصص المستقل مع فاصل القص الآلي -->
-            <div class="kitchen-copy" style="color:#000;">
+            <!-- 2. بون المطبخ المخصص المستقل -->
+            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
                 <div id="kitchenCustName" style="font-size:0.85rem;"></div>
@@ -812,18 +800,9 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
-        // دالة إرسال إشارة طباعة فارغة وخفيفة جداً لإجبار الدرج على الفتح من البرُدة
+        // دالة فتح الدرج
         function openCashDrawer() {
-            const drawerWindow = window.open('', '_blank', 'width=100,height=100');
-            if (drawerWindow) {
-                drawerWindow.document.write('<html><head><style>@page{margin:0;size:80mm 10mm;}</style></head><body></body></html>');
-                drawerWindow.document.close();
-                drawerWindow.focus();
-                drawerWindow.print();
-                drawerWindow.close();
-            } else {
-                window.print();
-            }
+            window.print();
         }
 
         function clearPosOrderNotes() {
@@ -845,19 +824,55 @@
             }
         }
 
+        /* ==========================================================================
+           🖨️ دالة الطباعة المزدوجة والمحدثة لإجبار الطابعة على قص وصل المطبخ منفرداً
+           ========================================================================== */
         function printThermalElement(elementId) {
-            const target = document.getElementById(elementId);
-            if (!target) return;
+            const cashierPart = document.getElementById('cashierReceiptPart');
+            const kitchenPart = document.getElementById('kitchenReceiptPart');
 
-            document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
-            target.classList.add('printable-active');
+            // إذا كان أمر الطباعة للفاتورة الرئيسية (كاشير + مطبخ)
+            if (elementId === 'receiptModalBody' && cashierPart && kitchenPart) {
+                
+                // 1️⃣ إظهار الكاشير فقط وإخفاء المطبخ وطباعته ليتم قصه آلياً
+                cashierPart.style.display = 'block';
+                kitchenPart.style.display = 'none';
 
-            setTimeout(() => {
-                window.print();
+                document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
+                cashierPart.classList.add('printable-active');
+
+                window.print(); // الأمر الأول: نطبع وصل الكاشير وتقصه الطابعة فوراً
+
+                // 2️⃣ بعد نصف ثانية: إظهار المطبخ وإخفاء الكاشير وطباعته ليتم قصه منفرداً
                 setTimeout(() => {
-                    target.classList.remove('printable-active');
-                }, 500);
-            }, 200);
+                    cashierPart.style.display = 'none';
+                    kitchenPart.style.display = 'block';
+
+                    cashierPart.classList.remove('printable-active');
+                    kitchenPart.classList.add('printable-active');
+
+                    window.print(); // الأمر الثاني: نطبع وصل المطبخ وتقصه الطابعة قصاً ثانياً
+
+                    // إعادة الوضع الطبيعي للمعاينة على الشاشة
+                    setTimeout(() => {
+                        cashierPart.style.display = 'block';
+                        kitchenPart.style.display = 'block';
+                        cashierPart.classList.remove('printable-active');
+                        kitchenPart.classList.remove('printable-active');
+                    }, 300);
+                }, 600);
+
+            } else {
+                // للتقارير والأوامر الأخرى
+                const target = document.getElementById(elementId);
+                if (!target) return;
+                document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
+                target.classList.add('printable-active');
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => target.classList.remove('printable-active'), 500);
+                }, 200);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
