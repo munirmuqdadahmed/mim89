@@ -672,7 +672,6 @@ let currentPercentValue = 0;
 
 function initCashierPage() { 
     initData(); 
-    // إجبار طلب الرمز السري عند التوقف أو إعادة فتح الصفحة
     sessionStorage.removeItem('active_cashier');
     if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'flex';
     if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'none';
@@ -897,7 +896,6 @@ function clearPosCart() {
    محرك الخصم التفاعلي المطور - 3 أزرار أفقية (MIM89 Smart Discount Engine)
    ========================================================================== */
 
-// 1. زر الخصم المجاني (Toggle)
 function toggleFreeDiscount() {
     if (activeDiscountType === 'free') {
         clearAllDiscounts();
@@ -913,7 +911,6 @@ function toggleFreeDiscount() {
     }
 }
 
-// 2. زر الخصم بالنسبة المئوية (Toggle)
 function togglePercentDiscount() {
     if (activeDiscountType === 'percent') {
         clearAllDiscounts();
@@ -936,7 +933,6 @@ function togglePercentDiscount() {
     }
 }
 
-// 3. زر الخصم بمبلغ مباشر
 function promptAmountDiscount() {
     if (activeDiscountType === 'amount') {
         clearAllDiscounts();
@@ -958,7 +954,6 @@ function promptAmountDiscount() {
     }
 }
 
-// 4. إلغاء وتصفير كافة أنواع الخصوم بضغطة زر X
 function clearAllDiscounts() {
     activeDiscountType = null;
     posDiscountAmount = 0;
@@ -968,7 +963,6 @@ function clearAllDiscounts() {
     renderPosCart();
 }
 
-// إعادة حساب الخصم ديناميكياً عند تعديل العناصر
 function recalculateActiveDiscount() {
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     if (subtotal === 0) {
@@ -983,7 +977,6 @@ function recalculateActiveDiscount() {
     }
 }
 
-// 🎨 تحديث حالة وشكل أزرار الخصومات بصرياً
 function updateDiscountUIState(type, badgeText) {
     const btnFree = document.getElementById('btnFreeDiscount');
     const btnPercent = document.getElementById('btnPercentDiscount');
@@ -1481,7 +1474,6 @@ function renderItemsReport(targetDate) {
     }
 }
 
-// 📱 تصدير جرد الوجبات إلى PDF والواتساب مباشرة
 function exportItemsReportPDFAndWhatsApp() {
     const dateInput = document.getElementById('itemsReportDateInput');
     const targetDate = dateInput ? dateInput.value : getTodayString();
@@ -1919,7 +1911,7 @@ function printReceipt(order) {
     const items = Array.isArray(order.items) ? order.items : [];
     if (document.getElementById('receiptItemsBody')) {
         document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
-            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem; color:#000;">
                 <span>${i.name} (×${i.qty})</span>
                 <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
             </div>
@@ -1936,7 +1928,7 @@ function printReceipt(order) {
 
     if (document.getElementById('kitchenItemsBody')) {
         document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold; color:#000;">
                 <span>● ${i.name}</span>
                 <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
             </div>
@@ -1956,10 +1948,14 @@ function printReceipt(order) {
         setTimeout(() => closeModal('receiptModal'), 300);
     } else {
         setTimeout(() => {
-            window.print();
+            if (typeof printThermalElement === 'function') {
+                printThermalElement('receiptModalBody');
+            } else {
+                window.print();
+            }
             setTimeout(() => {
                 closeModal('receiptModal');
-            }, 400);
+            }, 600);
         }, 200);
     }
 }
