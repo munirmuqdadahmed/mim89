@@ -43,6 +43,7 @@
             color: var(--text-main);
             overflow-x: hidden;
             user-select: none;
+            height: 100vh;
         }
 
         /* شاشة تسجيل الدخول */
@@ -97,7 +98,7 @@
         .gold-btn:active { transform: scale(0.98); }
 
         /* الهيدر المودرن والبرُدة المنسدلة الشاملة */
-        #cashierMainApp { display: none; }
+        #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
 
         .pos-header {
             background: var(--card-bg);
@@ -109,6 +110,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            flex-shrink: 0;
         }
 
         .brand-dropdown-container {
@@ -164,17 +166,19 @@
             color: var(--gold-bright);
         }
 
-        /* التخطيط والتمرير المطور للايباد والآيفون */
+        /* التخطيط والتمرير المطور للايباد والآيفون وشاشات الـ POS */
         .pos-container {
             display: grid;
             grid-template-columns: 360px 1fr;
             height: calc(100vh - 52px);
+            overflow: hidden;
         }
 
         @media (max-width: 900px) {
             .pos-container {
                 grid-template-columns: 1fr;
                 height: auto;
+                overflow: auto;
             }
         }
 
@@ -184,9 +188,8 @@
             display: flex;
             flex-direction: column;
             padding: 8px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
+            height: 100%;
+            overflow: hidden !important; /* منع التمرير على مستوى الشريط الجانبي بالكامل */
         }
 
         .pos-cart-box {
@@ -194,15 +197,18 @@
             border-radius: 8px;
             padding: 8px;
             border: 1px solid var(--card-border);
-            flex-grow: 1;
+            flex: 1;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            overflow: hidden !important;
         }
 
+        /* قائمة أصناف السلة التفاعلية المحصورة بالتمرير الداخلي فقط */
         .cart-items-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            max-height: calc(100vh - 400px);
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            min-height: 80px;
             margin: 6px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
@@ -214,7 +220,7 @@
         /* مساحة العرض الكبرى للوجبات والأقسام */
         .pos-main-content {
             padding: 10px;
-            height: calc(100vh - 55px) !important;
+            height: 100% !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch !important;
             touch-action: pan-y !important;
@@ -286,6 +292,7 @@
             font-weight: bold;
             font-size: 0.85rem;
             animation: pulse 1s infinite alternate;
+            flex-shrink: 0;
         }
 
         @keyframes pulse {
@@ -320,6 +327,7 @@
             display: flex;
             gap: 4px;
             margin-bottom: 4px;
+            flex-shrink: 0;
         }
 
         .toggle-btn {
@@ -345,6 +353,7 @@
             color: #888;
             margin-top: 2px;
             display: block;
+            flex-shrink: 0;
         }
 
         /* 🖨️ إعدادات الطباعة الحرارية */
@@ -432,7 +441,7 @@
                 </div>
 
                 <!-- تبويب البيع المباشر -->
-                <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex-grow:1;">
+                <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
                     <div class="pos-cart-box">
                         <span class="section-label">نوع الخدمة:</span>
                         <div class="toggle-group" id="posOrderTypeGroup">
@@ -442,7 +451,7 @@
                         </div>
 
                         <!-- 🛵 اختيار سائق الدليفري والتطبيقات -->
-                        <div id="driverSelectBox" style="display:none; margin: 4px 0 8px 0; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary);">
+                        <div id="driverSelectBox" style="display:none; margin: 4px 0 8px 0; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
                             <span class="section-label" style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
                             <select id="posDriverSelect" class="gold-input" style="font-size:0.8rem; text-align:right; cursor:pointer;"></select>
                         </div>
@@ -453,13 +462,13 @@
                             <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا</button>
                         </div>
 
-                        <div style="position:relative; margin: 4px 0;">
+                        <div style="position:relative; margin: 4px 0; flex-shrink:0;">
                             <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right;" placeholder="اسم الزبون / الهاتف..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
                             <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:8px; display:none; z-index:100; max-height:180px; overflow-y:auto; padding:6px; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
                         </div>
 
-                        <!-- 🏷️ قسم الخصومات المطور ذو 3 أزرار أفقية ذكية (MIM89 POS) -->
-                        <div style="background:#121215; padding:8px; border-radius:8px; border:1px solid var(--card-border); margin: 6px 0;">
+                        <!-- 🏷️ قسم الخصومات المطور -->
+                        <div style="background:#121215; padding:8px; border-radius:8px; border:1px solid var(--card-border); margin: 6px 0; flex-shrink:0;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold;">
                                     <i class="fa-solid fa-percent"></i> إدارة الخصومات:
@@ -467,7 +476,6 @@
                                 <span id="discountStatusBadge" style="font-size:0.7rem; color:#aaa; font-weight:bold; display:none;"></span>
                             </div>
 
-                            <!-- 3 أزرار خصم أفقية مدمجة مع زر الـ X للإلغاء المباشر -->
                             <div style="display:flex; gap:4px; align-items:center;">
                                 <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn btn-sm" style="padding:6px 2px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">
                                     🎁 مجاني
@@ -484,8 +492,8 @@
                             </div>
                         </div>
 
-                        <!-- 📝 قسم ملاحظات المطبخ السريعة مع زر المسح السريع الفعال 100% -->
-                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0;">
+                        <!-- 📝 قسم ملاحظات المطبخ السريعة -->
+                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0; flex-shrink:0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
                             </span>
@@ -493,17 +501,18 @@
                             
                             <div style="display:flex; gap:4px; align-items:center;">
                                 <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:6px; margin:0; flex:1;">
-                                <!-- زر مسح الملاحظات المباشر المحدث -->
                                 <button type="button" onclick="document.getElementById('posOrderNotesInput').value = ''; if(typeof clearPosOrderNotes === 'function') clearPosOrderNotes();" title="مسح الملاحظات بالكامل" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; padding:6px 12px; font-weight:bold; font-size:1rem; width:auto; cursor:pointer;">
                                     ✕
                                 </button>
                             </div>
                         </div>
 
+                        <!-- 🛒 قائمة أصناف السلة التفاعلية (هي الوحيدة التي تسحب للتمرير) -->
                         <div id="posCartList" class="cart-items-list">
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
+                        <!-- 🔒 قسم الطباعة والمجموع الكلي (ثابت في أسفل القائمة ولا يختفي أبدًا) -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -660,7 +669,7 @@
             </div>
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
-                <button onclick="alert('👁️ يمكنك معاينة ومراجعة جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">👁️ معاينة فقط</button>
+                <button onclick="alert('👁️ يمكنك معاينة ومراجع جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">👁️ معاينة فقط</button>
                 <button onclick="printThermalElement('dailyReportModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">🖨️ طباعة</button>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
@@ -767,7 +776,6 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
-        // دالة مسح نص الملاحظات لضمان عملها بشكل مستقل
         function clearPosOrderNotes() {
             const input = document.getElementById('posOrderNotesInput');
             if (input) {
