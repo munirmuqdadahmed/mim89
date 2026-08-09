@@ -204,7 +204,6 @@
             overflow: hidden !important;
         }
 
-        /* قائمة أصناف السلة التفاعلية المحصورة بالتمرير الداخلي فقط */
         .cart-items-list {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
@@ -217,7 +216,6 @@
             touch-action: pan-y !important;
         }
 
-        /* مساحة العرض الكبرى للوجبات والأقسام */
         .pos-main-content {
             padding: 10px;
             height: 100% !important;
@@ -356,7 +354,7 @@
             flex-shrink: 0;
         }
 
-        /* 🖨️ إعدادات الطباعة الحرارية الصارمة لإلغاء المربعات السوداء تماماً */
+        /* 🖨️ إعدادات الطباعة الحرارية الصارمة */
         @media print {
             body * { 
                 visibility: hidden !important; 
@@ -422,7 +420,10 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.75rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <!-- 💸 زر الصرفيات والسُلف المضاف داخل البرُدة -->
+                    <!-- 🔓 زر فتح الدرج المضاف حديثاً -->
+                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright); font-weight:bold;">
+                        <i class="fa-solid fa-key" style="color:var(--gold-bright);"></i> 🔓 فتح الدرج / الصندوق
+                    </button>
                     <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger); font-weight:bold;">
                         <i class="fa-solid fa-wallet" style="color:var(--danger);"></i> 💸 الصرفيات والسُلف
                     </button>
@@ -518,12 +519,12 @@
                             </div>
                         </div>
 
-                        <!-- 🛒 قائمة أصناف السلة التفاعلية (تتحرك بالتمرير) -->
+                        <!-- 🛒 قائمة أصناف السلة التفاعلية -->
                         <div id="posCartList" class="cart-items-list">
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔒 قسم الطباعة والمجموع الكلي (ثابت في الأسفل) -->
+                        <!-- 🔒 قسم الطباعة والمجموع الكلي -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -561,7 +562,6 @@
                 <button onclick="closeModal('expenseManagerModal')" class="gold-btn no-print" style="width: auto; padding: 2px 8px;">✕</button>
             </div>
 
-            <!-- نموذج تسجيل صرفية جديدة -->
             <div style="background: #121214; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--card-border);">
                 <h5 style="color: #fff; margin-top: 0; margin-bottom: 8px; font-size: 0.85rem;">تسجيل مصاريف / سلفة جديدة</h5>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
@@ -573,9 +573,7 @@
                     <input type="number" id="expenseAmountInput" placeholder="المبلغ (د.ع)" class="gold-input" style="font-size: 0.8rem;">
                 </div>
 
-                <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;">
-                    <!-- تعبئة تلقائية -->
-                </select>
+                <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;"></select>
 
                 <input type="text" id="expenseNoteInput" placeholder="بيان الصرفية (مثال: كارتات / أكياس / سلفة أحمد)" class="gold-input" style="margin-bottom: 8px; font-size: 0.8rem;">
 
@@ -585,16 +583,13 @@
             </div>
 
             <h5 style="color: var(--gold-primary); margin-bottom: 6px; font-size: 0.85rem;">صرفيات وسُلف اليوم المسجلة:</h5>
-            <div id="expensesListTable" style="max-height: 180px; overflow-y: auto;">
-                <!-- جدول الصرفيات -->
-            </div>
+            <div id="expensesListTable" style="max-height: 180px; overflow-y: auto;"></div>
         </div>
     </div>
 
     <!-- نافذة الفاتورة للطباعة والمعاينة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
-            <!-- 1. فاتورة الكاشير المالية -->
             <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
                 <h3 style="font-size:1.1rem; margin:0; color:#000;">MIM89 FAST FOOD</h3>
                 <small style="color:#000;">بغداد - القاهرة / قرب المتنزه</small><br>
@@ -618,7 +613,7 @@
                 شكراً لزيارتكم MIM89! ❤️
             </div>
 
-            <!-- 2. بون المطبخ المخصص المستقل -->
+            <!-- بون المطبخ المخصص المستقل -->
             <div class="kitchen-copy" style="color:#000;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.9rem; margin-top:6px;"></div>
@@ -787,6 +782,20 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
+        // دالة إرسال إشارة طباعة فارغة وخفيفة جداً لإجبار الدرج على الفتح من البرُدة
+        function openCashDrawer() {
+            const drawerWindow = window.open('', '_blank', 'width=100,height=100');
+            if (drawerWindow) {
+                drawerWindow.document.write('<html><head><style>@page{margin:0;size:80mm 10mm;}</style></head><body></body></html>');
+                drawerWindow.document.close();
+                drawerWindow.focus();
+                drawerWindow.print();
+                drawerWindow.close();
+            } else {
+                window.print();
+            }
+        }
+
         function clearPosOrderNotes() {
             const input = document.getElementById('posOrderNotesInput');
             if (input) {
