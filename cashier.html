@@ -189,7 +189,7 @@
             flex-direction: column;
             padding: 8px;
             height: 100%;
-            overflow: hidden !important; /* منع التمرير على مستوى الشريط الجانبي بالكامل */
+            overflow: hidden !important;
         }
 
         .pos-cart-box {
@@ -356,25 +356,36 @@
             flex-shrink: 0;
         }
 
-        /* 🖨️ إعدادات الطباعة الحرارية */
+        /* 🖨️ إعدادات الطباعة الحرارية الصارمة لإلغاء المربعات السوداء تماماً */
         @media print {
-            body * { visibility: hidden !important; }
-            .printable-active, .printable-active * { visibility: visible !important; }
+            body * { 
+                visibility: hidden !important; 
+                background: transparent !important;
+            }
+            .printable-active, 
+            .printable-active * { 
+                visibility: visible !important; 
+                background: #ffffff !important; 
+                color: #000000 !important; 
+                text-shadow: none !important;
+                box-shadow: none !important;
+                border-color: #000000 !important;
+            }
             .printable-active { 
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 100% !important; 
-                background: #fff !important; 
-                color: #000 !important; 
-                box-shadow: none !important;
-                border: none !important;
+                max-width: 80mm !important; 
+                margin: 0 !important; 
+                padding: 5px !important; 
+                display: block !important;
+                font-size: 13px !important;
+                font-family: monospace !important;
             }
-            .printable-active div, .printable-active span, .printable-active h3, .printable-active h4, .printable-active h5, .printable-active strong, .printable-active small, .printable-active p {
-                color: #000 !important;
+            .no-print { 
+                display: none !important; 
             }
-            .no-print { display: none !important; }
-            
             .kitchen-copy {
                 page-break-before: always !important;
                 break-before: page !important;
@@ -507,12 +518,12 @@
                             </div>
                         </div>
 
-                        <!-- 🛒 قائمة أصناف السلة التفاعلية (هي الوحيدة التي تسحب للتمرير) -->
+                        <!-- 🛒 قائمة أصناف السلة التفاعلية (تتحرك بالتمرير) -->
                         <div id="posCartList" class="cart-items-list">
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔒 قسم الطباعة والمجموع الكلي (ثابت في أسفل القائمة ولا يختفي أبدًا) -->
+                        <!-- 🔒 قسم الطباعة والمجموع الكلي (ثابت في الأسفل) -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -585,36 +596,36 @@
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:monospace; width:280px; padding:10px; border-radius:0;">
             <!-- 1. فاتورة الكاشير المالية -->
             <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
-                <h3 style="font-size:1.1rem; margin:0;">MIM89 FAST FOOD</h3>
-                <small>بغداد - القاهرة / قرب المتنزه</small><br>
-                <small>هاتف: 07750008630</small><br>
-                <small id="receiptCashierName">الكاشير: الرئيسي</small>
+                <h3 style="font-size:1.1rem; margin:0; color:#000;">MIM89 FAST FOOD</h3>
+                <small style="color:#000;">بغداد - القاهرة / قرب المتنزه</small><br>
+                <small style="color:#000;">هاتف: 07750008630</small><br>
+                <small id="receiptCashierName" style="color:#000;">الكاشير: الرئيسي</small>
             </div>
-            <div style="font-size:0.75rem; margin-bottom:6px;">
+            <div style="font-size:0.75rem; margin-bottom:6px; color:#000;">
                 <div id="receiptCustInfo">الزبون: مباشر</div>
                 <div id="receiptPaymentInfo">طريقة الدفع: كاش</div>
                 <div id="receiptTypeInfo">نوع الخدمة: صالة</div>
             </div>
-            <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px;">
+            <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
                 <div id="receiptItemsBody"></div>
             </div>
-            <div style="font-size:0.8rem; text-align:left; font-weight:bold;">
+            <div style="font-size:0.8rem; text-align:left; font-weight:bold; color:#000;">
                 <div>المجموع الفرعي: <span id="receiptSubtotal">0 د.ع</span></div>
                 <div>أجور التوصيل: <span id="receiptDeliveryFee">0 د.ع</span></div>
                 <div style="font-size:0.95rem; border-top:1px solid #000; padding-top:4px; margin-top:4px;">المجموع الكلي: <span id="receiptGrandTotal">0 د.ع</span></div>
             </div>
-            <div style="text-align:center; margin-top:8px; border-top:1px dashed #000; padding-top:4px; font-size:0.7rem;">
+            <div style="text-align:center; margin-top:8px; border-top:1px dashed #000; padding-top:4px; font-size:0.7rem; color:#000;">
                 شكراً لزيارتكم MIM89! ❤️
             </div>
 
             <!-- 2. بون المطبخ المخصص المستقل -->
-            <div class="kitchen-copy">
-                <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px;">*** بون المطبخ ***</h4>
+            <div class="kitchen-copy" style="color:#000;">
+                <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.9rem; margin-top:6px;"></div>
                 <div id="kitchenCustName" style="font-size:0.85rem;"></div>
                 <div id="kitchenTimeInfo" style="font-size:0.8rem; margin-bottom:6px;"></div>
                 <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; background:#eee; padding:3px;"></div>
+                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; background:#eee; padding:3px; color:#000;"></div>
             </div>
 
             <div style="display:flex; gap:6px; margin-top:15px;" class="no-print">
@@ -669,7 +680,7 @@
             </div>
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
-                <button onclick="alert('👁️ يمكنك معاينة ومراجع جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">👁️ معاينة فقط</button>
+                <button onclick="alert('👁️ يمكنك معاينة ومراجعة جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">👁️ معاينة فقط</button>
                 <button onclick="printThermalElement('dailyReportModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">🖨️ طباعة</button>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
@@ -806,8 +817,8 @@
                 window.print();
                 setTimeout(() => {
                     target.classList.remove('printable-active');
-                }, 300);
-            }, 100);
+                }, 500);
+            }, 200);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
