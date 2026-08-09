@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- إعدادات الشاشة الكاملة للأجهزة اللوحية والـ POS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 POS">
@@ -12,7 +11,6 @@
 
     <title>MIM89 POS - شاشة الكاشير ونقطة البيع</title>
     
-    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -97,7 +95,6 @@
         }
         .gold-btn:active { transform: scale(0.98); }
 
-        /* الهيدر المودرن والبرُدة المنسدلة الشاملة */
         #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
 
         .pos-header {
@@ -113,9 +110,7 @@
             flex-shrink: 0;
         }
 
-        .brand-dropdown-container {
-            position: relative;
-        }
+        .brand-dropdown-container { position: relative; }
 
         .brand-btn {
             background: rgba(245, 158, 11, 0.15);
@@ -166,7 +161,6 @@
             color: var(--gold-bright);
         }
 
-        /* التخطيط والتمرير المطور للايباد والآيفون وشاشات الـ POS */
         .pos-container {
             display: grid;
             grid-template-columns: 360px 1fr;
@@ -354,7 +348,7 @@
             flex-shrink: 0;
         }
 
-        /* 🖨️ إعدادات الطباعة الحرارية الصارمة والمحددة بـ 72mm */
+        /* 🖨️ تنسيقات الطباعة الحرارية المستقرة */
         @media print {
             @page {
                 size: 80mm auto;
@@ -366,22 +360,17 @@
                 padding: 0 !important;
                 background: #fff !important;
                 color: #000 !important;
-                width: 100% !important;
             }
 
             body * { 
                 visibility: hidden !important; 
-                background: transparent !important;
             }
 
             .printable-active, 
             .printable-active * { 
                 visibility: visible !important; 
-                background: #ffffff !important; 
                 color: #000000 !important; 
-                text-shadow: none !important;
-                box-shadow: none !important;
-                border-color: #000000 !important;
+                background: #ffffff !important;
             }
 
             .printable-active { 
@@ -391,14 +380,20 @@
                 width: 72mm !important; 
                 max-width: 72mm !important; 
                 margin: 0 auto !important; 
-                padding: 2mm 3mm !important; 
+                padding: 2mm !important; 
                 box-sizing: border-box !important;
                 direction: rtl !important;
                 text-align: right !important;
-                font-size: 12px !important;
-                font-family: 'Tahoma', 'Arial', monospace !important;
-                color: #000000 !important;
+                font-size: 11px !important;
+                font-family: 'Tahoma', sans-serif !important;
+            }
+
+            .kitchen-copy {
+                page-break-before: always !important;
+                break-before: page !important;
                 display: block !important;
+                margin-top: 5mm !important;
+                padding-top: 5mm !important;
             }
 
             .no-print { 
@@ -427,14 +422,12 @@
         </div>
 
         <header class="pos-header">
-            <!-- البرُدة المنسدلة الشاملة لكل أدوات التحكم -->
             <div class="brand-dropdown-container">
                 <button class="brand-btn" onclick="toggleBrandMenu()">
                     <i class="fa-solid fa-cash-register"></i> MIM89 POS
                     <i class="fa-solid fa-chevron-down" style="font-size:0.75rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <!-- زر فتح الدرج -->
                     <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright); font-weight:bold;">
                         <i class="fa-solid fa-key" style="color:var(--gold-bright);"></i> فتح الدرج / الصندوق
                     </button>
@@ -454,19 +447,16 @@
                 </div>
             </div>
 
-            <!-- اسم الكاشير الحالي -->
             <span id="activeCashierName" style="color:#aaa; font-size:0.85rem; font-weight:bold;"></span>
         </header>
 
         <div class="pos-container">
-            <!-- الشريط الجانبي: سلة الفاتورة المباشرة والطلبات الواردة -->
             <aside class="pos-sidebar">
                 <div class="toggle-group" style="margin-bottom:8px;">
                     <button class="toggle-btn active" onclick="switchCashierTab('tabPosDirect', this)">بيع مباشر</button>
                     <button class="toggle-btn" onclick="switchCashierTab('tabOnlineOrders', this)">الطلبات الواردة <span id="liveOrdersBadge" style="background:var(--danger); color:#fff; border-radius:50%; padding:1px 5px; font-size:0.7rem; display:none;">0</span></button>
                 </div>
 
-                <!-- تبويب البيع المباشر -->
                 <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
                     <div class="pos-cart-box">
                         <span class="section-label">نوع الخدمة:</span>
@@ -476,7 +466,6 @@
                             <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">توصيل</button>
                         </div>
 
-                        <!-- اختيار سائق الدليفري والتطبيقات -->
                         <div id="driverSelectBox" style="display:none; margin: 4px 0 8px 0; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
                             <span class="section-label" style="color:var(--gold-bright); font-weight:bold; margin-bottom:4px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
                             <select id="posDriverSelect" class="gold-input" style="font-size:0.8rem; text-align:right; cursor:pointer;"></select>
@@ -493,7 +482,6 @@
                             <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:8px; display:none; z-index:100; max-height:180px; overflow-y:auto; padding:6px; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
                         </div>
 
-                        <!-- قسم الخصومات المطور -->
                         <div style="background:#121215; padding:8px; border-radius:8px; border:1px solid var(--card-border); margin: 6px 0; flex-shrink:0;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                                 <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold;">
@@ -518,7 +506,6 @@
                             </div>
                         </div>
 
-                        <!-- قسم ملاحظات المطبخ السريعة -->
                         <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0; flex-shrink:0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
@@ -533,12 +520,10 @@
                             </div>
                         </div>
 
-                        <!-- قائمة أصناف السلة التفاعلية -->
                         <div id="posCartList" class="cart-items-list">
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- قسم الطباعة والمجموع الكلي -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -552,7 +537,6 @@
                     </div>
                 </div>
 
-                <!-- تبويب الطلبات الواردة من الهاتف أو المينيو -->
                 <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto;">
                     <div id="liveOrdersContainer">
                         <p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات جارية حالياً</p>
@@ -560,7 +544,6 @@
                 </div>
             </aside>
 
-            <!-- المنطقة الرئيسية المفتوحة لمستعرض الوجبات والأقسام -->
             <main class="pos-main-content">
                 <div id="posCategoriesBar" class="categories-bar"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -568,7 +551,7 @@
         </div>
     </div>
 
-    <!-- نافذة إدارة الصرفيات والسُلف والنثريات -->
+    <!-- نافذة إدارة الصرفيات والسُلف -->
     <div id="expenseManagerModal" class="modal-overlay">
         <div class="modal-body" style="max-width: 550px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 12px;">
@@ -601,7 +584,7 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة المخصصة للطباعة -->
+    <!-- 📄 نافذة الفاتورة الحرارية الموحدة للمعاينة والطباعة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -631,8 +614,8 @@
                 </div>
             </div>
 
-            <!-- 2. بون المطبخ المخصص المستقل -->
-            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000;">
+            <!-- 2. بون المطبخ المستقل -->
+            <div id="kitchenReceiptPart" class="kitchen-copy">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
                 <div id="kitchenCustName" style="font-size:0.85rem;"></div>
@@ -648,7 +631,7 @@
         </div>
     </div>
 
-    <!-- نافذة سجل الفواتير السابقة -->
+    <!-- باقي المودالات -->
     <div id="completedOrdersModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -660,7 +643,6 @@
         </div>
     </div>
 
-    <!-- 📊 1. نافذة كشف الحساب المالي اليومي -->
     <div id="dailyReportModal" class="modal-overlay">
         <div class="modal-body" id="dailyReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -686,7 +668,6 @@
                 <div style="display:flex; justify-content:space-between; margin-top:4px; font-weight:bold;"><span>صافي قيمة الوجبات والطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
             </div>
 
-            <!-- كشف سائقي التوصيل والتطبيقات -->
             <div style="background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px;">
                 <h5 style="color:var(--gold-primary); font-size:0.85rem; margin-bottom:6px;"><i class="fa-solid fa-motorcycle"></i> كشف سائقي التوصيل والتطبيقات:</h5>
                 <div id="repDriversList" style="font-size:0.8rem; color:#ccc;"></div>
@@ -700,7 +681,6 @@
         </div>
     </div>
 
-    <!-- 📦 2. نافذة جرد الوجبات المباعة -->
     <div id="itemsReportModal" class="modal-overlay">
         <div class="modal-body" id="itemsReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -730,7 +710,6 @@
         </div>
     </div>
 
-    <!-- 🔒 3. نافذة تقفيل الشيفت وتصفير الصندوق -->
     <div id="shiftReportModal" class="modal-overlay">
         <div class="modal-body" id="shiftReportModalBody">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -778,7 +757,6 @@
         </div>
     </div>
 
-    <!-- ✏️ 4. نافذة تعديل وإدارة ملاحظات المطبخ السريعة -->
     <div id="kitchenNotesManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -800,7 +778,6 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
-        // دالة فتح الدرج
         function openCashDrawer() {
             window.print();
         }
@@ -824,55 +801,20 @@
             }
         }
 
-        /* ==========================================================================
-           🖨️ دالة الطباعة المزدوجة والمحدثة لإجبار الطابعة على قص وصل المطبخ منفرداً
-           ========================================================================== */
+        /* 🖨️ دالة طباعة واحدة نظيفة ومباشرة تضمن خروج الوصل واستقرار الطابعة */
         function printThermalElement(elementId) {
-            const cashierPart = document.getElementById('cashierReceiptPart');
-            const kitchenPart = document.getElementById('kitchenReceiptPart');
+            const target = document.getElementById(elementId);
+            if (!target) return;
 
-            // إذا كان أمر الطباعة للفاتورة الرئيسية (كاشير + مطبخ)
-            if (elementId === 'receiptModalBody' && cashierPart && kitchenPart) {
-                
-                // 1️⃣ إظهار الكاشير فقط وإخفاء المطبخ وطباعته ليتم قصه آلياً
-                cashierPart.style.display = 'block';
-                kitchenPart.style.display = 'none';
+            document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
+            target.classList.add('printable-active');
 
-                document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
-                cashierPart.classList.add('printable-active');
-
-                window.print(); // الأمر الأول: نطبع وصل الكاشير وتقصه الطابعة فوراً
-
-                // 2️⃣ بعد نصف ثانية: إظهار المطبخ وإخفاء الكاشير وطباعته ليتم قصه منفرداً
+            setTimeout(() => {
+                window.print();
                 setTimeout(() => {
-                    cashierPart.style.display = 'none';
-                    kitchenPart.style.display = 'block';
-
-                    cashierPart.classList.remove('printable-active');
-                    kitchenPart.classList.add('printable-active');
-
-                    window.print(); // الأمر الثاني: نطبع وصل المطبخ وتقصه الطابعة قصاً ثانياً
-
-                    // إعادة الوضع الطبيعي للمعاينة على الشاشة
-                    setTimeout(() => {
-                        cashierPart.style.display = 'block';
-                        kitchenPart.style.display = 'block';
-                        cashierPart.classList.remove('printable-active');
-                        kitchenPart.classList.remove('printable-active');
-                    }, 300);
-                }, 600);
-
-            } else {
-                // للتقارير والأوامر الأخرى
-                const target = document.getElementById(elementId);
-                if (!target) return;
-                document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
-                target.classList.add('printable-active');
-                setTimeout(() => {
-                    window.print();
-                    setTimeout(() => target.classList.remove('printable-active'), 500);
-                }, 200);
-            }
+                    target.classList.remove('printable-active');
+                }, 400);
+            }, 100);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
