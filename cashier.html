@@ -11,6 +11,7 @@
 
     <title>MIM89 POS - شاشة الكاشير ونقطة البيع</title>
     
+    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -348,7 +349,7 @@
             flex-shrink: 0;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية المستقرة */
+        /* 🖨️ تنسيقات الطباعة الحرارية المخصصة */
         @media print {
             @page {
                 size: 80mm auto;
@@ -386,14 +387,6 @@
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
-            }
-
-            .kitchen-copy {
-                page-break-before: always !important;
-                break-before: page !important;
-                display: block !important;
-                margin-top: 5mm !important;
-                padding-top: 5mm !important;
             }
 
             .no-print { 
@@ -584,7 +577,7 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة الحرارية الموحدة للمعاينة والطباعة -->
+    <!-- 📄 نافذة الفاتورة الحرارية الموحدة للمعاينة والطباعة (مع أزرار الفصل والتغليق الآلي) -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -615,7 +608,7 @@
             </div>
 
             <!-- 2. بون المطبخ المستقل -->
-            <div id="kitchenReceiptPart" class="kitchen-copy">
+            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px solid #000; padding-top:10px;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
                 <div id="kitchenCustName" style="font-size:0.85rem;"></div>
@@ -624,8 +617,10 @@
                 <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; border:1px solid #000; padding:3px; color:#000;"></div>
             </div>
 
-            <div style="display:flex; gap:6px; margin-top:15px;" class="no-print">
-                <button onclick="printThermalElement('receiptModalBody')" class="gold-btn" style="flex:2;">طباعة الفاتورة</button>
+            <!-- 🔘 أزرار الطباعة المنفصلة (لا تظهر بالطباعة) -->
+            <div style="display:flex; gap:6px; margin-top:15px; flex-wrap:wrap;" class="no-print">
+                <button onclick="printCustomerReceiptOnly()" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة للزبون</button>
+                <button onclick="printKitchenReceiptOnly()" class="gold-btn" style="flex:1; background:#f59e0b; color:#000;">طباعة للمطبخ</button>
                 <button onclick="closeModal('receiptModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
         </div>
@@ -778,6 +773,8 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
+        let modalAutoCloseTimer = null;
+
         function openCashDrawer() {
             window.print();
         }
@@ -801,7 +798,52 @@
             }
         }
 
-        /* 🖨️ دالة طباعة واحدة نظيفة ومباشرة تضمن خروج الوصل واستقرار الطابعة */
+        // 1️⃣ دالة طباعة للزبون فقط
+        function printCustomerReceiptOnly() {
+            const cashierPart = document.getElementById('cashierReceiptPart');
+            const kitchenPart = document.getElementById('kitchenReceiptPart');
+            
+            if (cashierPart && kitchenPart) {
+                cashierPart.style.display = 'block';
+                kitchenPart.style.display = 'none';
+                
+                printThermalElement('receiptModalBody');
+                startModalAutoCloseTimer();
+            }
+        }
+
+        // 2️⃣ دالة طباعة للمطبخ فقط
+        function printKitchenReceiptOnly() {
+            const cashierPart = document.getElementById('cashierReceiptPart');
+            const kitchenPart = document.getElementById('kitchenReceiptPart');
+            
+            if (cashierPart && kitchenPart) {
+                cashierPart.style.display = 'none';
+                kitchenPart.style.display = 'block';
+                
+                printThermalElement('receiptModalBody');
+                startModalAutoCloseTimer();
+            }
+        }
+
+        // ⏱️ دالة إغلاق النافذة تلقائياً بعد 5 ثواني
+        function startModalAutoCloseTimer() {
+            if (modalAutoCloseTimer) clearTimeout(modalAutoCloseTimer);
+            
+            modalAutoCloseTimer = setTimeout(() => {
+                const cashierPart = document.getElementById('cashierReceiptPart');
+                const kitchenPart = document.getElementById('kitchenReceiptPart');
+                
+                closeModal('receiptModal');
+                
+                // إعادة العرض الطبيعي للمعاينة القادمة
+                if (cashierPart && kitchenPart) {
+                    cashierPart.style.display = 'block';
+                    kitchenPart.style.display = 'block';
+                }
+            }, 5000); // 5000 ملي ثانية = 5 ثواني
+        }
+
         function printThermalElement(elementId) {
             const target = document.getElementById(elementId);
             if (!target) return;
