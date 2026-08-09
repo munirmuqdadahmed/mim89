@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v16.0 Expense & Fixed Costing Engine)
-   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً والأنظمة المتقدمة والصرفيات
+   MIM89 FAST FOOD - Master Core Engine (v17.0 Direct Kiosk Printing & Auto-Split)
+   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
    ========================================================================== */
 
 // 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
@@ -1901,7 +1901,7 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-// 🖨️ طباعة وتجهيز بون الكاشير والمطبخ
+// 🖨️ طباعة وتجهيز بون الكاشير والمطبخ (محدث للطباعة المباشرة والتنظيف)
 function printReceipt(order) {
     if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + (order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي"));
     if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
@@ -1947,6 +1947,7 @@ function printReceipt(order) {
         sendDirectNetworkPrint(printerSettings.kitchen2Ip, printerSettings.port, 'kitchen2', order);
         setTimeout(() => closeModal('receiptModal'), 300);
     } else {
+        // طباعة صامتة فورية
         setTimeout(() => {
             if (typeof printThermalElement === 'function') {
                 printThermalElement('receiptModalBody');
@@ -1955,8 +1956,8 @@ function printReceipt(order) {
             }
             setTimeout(() => {
                 closeModal('receiptModal');
-            }, 600);
-        }, 200);
+            }, 500);
+        }, 150);
     }
 }
 
