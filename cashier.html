@@ -517,15 +517,16 @@
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔘 زر واحد شامل بضغطة واحدة يطبع الوصل + المطبخ أوتوماتيكياً -->
+                        <!-- 🔘 أزرار الطباعة والتحكم المباشرة والشريعة -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             <div style="display:flex; gap:4px;">
-                                <button class="gold-btn" onclick="executeAutoFullCheckoutProcess()" style="flex:2; padding: 12px; font-size: 1rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">طباعة الفاتورة والدرج</button>
-                                <button class="gold-btn" onclick="clearPosCart()" style="flex:1; background:var(--danger); color:#fff;">إلغاء</button>
+                                <button class="gold-btn" onclick="printReceiptForCustomer()" style="flex:1.2; padding: 12px 4px; font-size: 0.9rem; background:#10b981; color:#fff;">وصل الزبون</button>
+                                <button class="gold-btn" onclick="printReceiptForKitchen()" style="flex:1.2; padding: 12px 4px; font-size: 0.9rem; background:#f59e0b; color:#000;">بون المطبخ</button>
+                                <button class="gold-btn" onclick="clearPosCart()" style="flex:0.8; padding: 12px 4px; font-size: 0.9rem; background:var(--danger); color:#fff;">إلغاء</button>
                             </div>
                         </div>
                     </div>
@@ -578,7 +579,7 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة الحرارية الخفية للطباعة -->
+    <!-- 📄 نافذة الفاتورة الحرارية الخفية المخصصة للطباعة -->
     <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -790,44 +791,39 @@
             }
         }
 
-        // 🚀 دالة التنفيذ الآلي الشامل بضغطة واحدة فقط
-        function executeAutoFullCheckoutProcess() {
+        // 🟢 1. طباعة وصل الزبون فقط + حفظ وتفريغ السلة
+        function printReceiptForCustomer() {
             const cashierPart = document.getElementById('cashierReceiptPart');
             const kitchenPart = document.getElementById('kitchenReceiptPart');
 
-            // 1️⃣ الخطوة الأولى: طباعة وصل الكاشير للزبون وفتح الصندوق
             if (cashierPart && kitchenPart) {
                 cashierPart.style.display = 'block';
                 kitchenPart.style.display = 'none';
             }
 
-            printThermalElement('receiptModalBody'); // يرسل الأمر للكاشير والدرج
+            printThermalElement('receiptModalBody');
 
-            // 2️⃣ الخطوة الثانية (تتم تلقائياً بعد نصف ثانية): طباعة بون المطبخ
+            // حفظ الطلب وتفرغ السلة فوراً
             setTimeout(() => {
-                if (cashierPart && kitchenPart) {
-                    cashierPart.style.display = 'none';
-                    kitchenPart.style.display = 'block';
+                if (typeof processPosDirectCheckout === 'function') {
+                    processPosDirectCheckout();
+                } else if (typeof clearPosCart === 'function') {
+                    clearPosCart();
                 }
+            }, 300);
+        }
 
-                printThermalElement('receiptModalBody'); // يرسل أمر المطبخ تلقائياً
+        // 🟧 2. طباعة بون المطبخ فقط (بدون تفرغ السلة ليتسنى لك طباعة وصل الزبون بعدها إذا أردت)
+        function printReceiptForKitchen() {
+            const cashierPart = document.getElementById('cashierReceiptPart');
+            const kitchenPart = document.getElementById('kitchenReceiptPart');
 
-                // 3️⃣ الخطوة الثالثة: حفظ الطلب وتصفير السلة للزبون التالي
-                setTimeout(() => {
-                    if (typeof processPosDirectCheckout === 'function') {
-                        processPosDirectCheckout();
-                    } else if (typeof clearPosCart === 'function') {
-                        clearPosCart();
-                    }
+            if (cashierPart && kitchenPart) {
+                cashierPart.style.display = 'none';
+                kitchenPart.style.display = 'block';
+            }
 
-                    // إعادة وضع العرض الافتراضي
-                    if (cashierPart && kitchenPart) {
-                        cashierPart.style.display = 'block';
-                        kitchenPart.style.display = 'block';
-                    }
-                }, 500);
-
-            }, 600);
+            printThermalElement('receiptModalBody');
         }
 
         function printThermalElement(elementId) {
@@ -841,6 +837,14 @@
                 window.print();
                 setTimeout(() => {
                     target.classList.remove('printable-active');
+                    
+                    // إعادة إظهار المودال بالكامل للطباعات التالية
+                    const cashierPart = document.getElementById('cashierReceiptPart');
+                    const kitchenPart = document.getElementById('kitchenReceiptPart');
+                    if (cashierPart && kitchenPart) {
+                        cashierPart.style.display = 'block';
+                        kitchenPart.style.display = 'block';
+                    }
                 }, 300);
             }, 50);
         }
