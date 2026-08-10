@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v17.0 Direct Kiosk Printing & Auto-Split)
+   MIM89 FAST FOOD - Master Core Engine (v18.0 Full Production Ready)
    مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
    ========================================================================== */
 
@@ -231,7 +231,7 @@ function getSystemPassword(type) {
 }
 
 /* ==========================================================================
-   🧮 محرك حساب كلفة الوجبة المحسّن (يحل مشكلة 0 د.ع بالكامل)
+   🧮 محرك حساب كلفة الوجبة المحسّن
    ========================================================================== */
 function calculateItemCost(item) {
     const inventory = getData('sys_inventory');
@@ -409,6 +409,7 @@ function filterPublicMenu() {
     const q = document.getElementById('publicSearchInput').value.toLowerCase();
     const items = getData('sys_items');
     const sectionsContainer = document.getElementById('menuSections');
+    if (!sectionsContainer) return;
     sectionsContainer.innerHTML = '';
 
     const filtered = items.filter(i => i.name.toLowerCase().includes(q) || (i.ingredients && i.ingredients.toLowerCase().includes(q)));
@@ -433,7 +434,7 @@ function filterPublicMenu() {
 }
 
 function openItemDetails(id) {
-    const item = getData('sys_items').find(i => i.id === id);
+    const item = getData('sys_items').find(i => Number(i.id) === Number(id));
     if (!item) return;
     document.getElementById('detailImg').src = item.image;
     document.getElementById('detailTitle').innerText = item.name;
@@ -445,8 +446,8 @@ function openItemDetails(id) {
 
 function addToCart(itemId) {
     const items = getData('sys_items');
-    const item = items.find(i => i.id === itemId);
-    const exist = cart.find(c => c.id === itemId);
+    const item = items.find(i => Number(i.id) === Number(itemId));
+    const exist = cart.find(c => Number(c.id) === Number(itemId));
 
     if (exist) {
         exist.qty += 1;
@@ -493,10 +494,10 @@ function renderCartModalItems() {
 }
 
 function changeCartQty(id, change) {
-    const item = cart.find(c => c.id === id);
+    const item = cart.find(c => Number(c.id) === Number(id));
     if (item) {
         item.qty += change;
-        if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+        if (item.qty <= 0) cart = cart.filter(c => Number(c.id) !== Number(id));
     }
     updateCartBadge();
     renderCartModalItems();
@@ -504,7 +505,8 @@ function changeCartQty(id, change) {
 }
 
 function toggleDeliveryFields() {
-    const type = document.getElementById('orderTypeSelect').value;
+    const typeSelect = document.getElementById('orderTypeSelect');
+    const type = typeSelect ? typeSelect.value : 'delivery';
     const group = document.getElementById('deliveryFieldsGroup');
     const feeLine = document.getElementById('deliveryFeeLine');
     if (type === 'delivery') {
@@ -664,9 +666,8 @@ let activeCashierUser = null;
 let posCart = [];
 let selectedPosOrderType = 'dine_in';
 let selectedPosPaymentMethod = 'cash';
-let selectedDriverId = '';
 
-let activeDiscountType = null; // 'free', 'percent', 'amount', null
+let activeDiscountType = null;
 let posDiscountAmount = 0;
 let currentPercentValue = 0;
 
@@ -808,7 +809,7 @@ function filterPosProducts() {
 }
 
 function autoSearchCustomerByPhone(phoneInput) {
-    const cleanPhone = phoneInput.replace(/[^0-9]/g, '');
+    const cleanPhone = String(phoneInput || '').replace(/[^0-9]/g, '');
     const resultsBox = document.getElementById('phoneSearchResults');
     if (!resultsBox) return;
 
@@ -862,8 +863,8 @@ function fillCustomerData(name, phone, area, address) {
 
 function addToPosCart(itemId) {
     const items = getData('sys_items');
-    const item = items.find(i => i.id === itemId);
-    const exist = posCart.find(c => c.id === itemId);
+    const item = items.find(i => Number(i.id) === Number(itemId));
+    const exist = posCart.find(c => Number(c.id) === Number(itemId));
 
     if (exist) {
         exist.qty += 1;
@@ -875,10 +876,10 @@ function addToPosCart(itemId) {
 }
 
 function changePosCartQty(id, change) {
-    const item = posCart.find(c => c.id === id);
+    const item = posCart.find(c => Number(c.id) === Number(id));
     if (item) {
         item.qty += change;
-        if (item.qty <= 0) posCart = posCart.filter(c => c.id !== id);
+        if (item.qty <= 0) posCart = posCart.filter(c => Number(c.id) !== Number(id));
     }
     recalculateActiveDiscount();
     renderPosCart();
@@ -891,10 +892,6 @@ function clearPosCart() {
     if (notesInput) notesInput.value = '';
     renderPosCart();
 }
-
-/* ==========================================================================
-   محرك الخصم التفاعلي المطور - 3 أزرار أفقية (MIM89 Smart Discount Engine)
-   ========================================================================== */
 
 function toggleFreeDiscount() {
     if (activeDiscountType === 'free') {
@@ -1254,8 +1251,11 @@ function processPosDirectCheckout() {
     if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
     if (selectedPosOrderType === 'delivery') typeText = `🚗 توصيل (${selectedDriver || 'دليفري'})`;
 
+    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '101';
+
     const directOrder = {
         id: 'POS_' + Date.now(),
+        orderNum: orderSeq,
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
@@ -1277,7 +1277,7 @@ function processPosDirectCheckout() {
 
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
-    printReceipt(directOrder);
+    printReceipt(directOrder, false); // تجهيز الفاتورة بدون إطلاق نافذة طباعة مكررة
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (driverSelect) driverSelect.value = '';
@@ -1331,7 +1331,7 @@ function reprintCompletedOrder(orderId) {
     const order = completed.find(o => o.id === orderId);
     if (order) {
         closeModal('completedOrdersModal');
-        printReceipt(order);
+        printReceipt(order, true);
     }
 }
 
@@ -1856,7 +1856,7 @@ function fulfillAndPrintOrder(docId, orderId) {
                 saveCompletedOrder(order);
                 deductInventoryFromRecipe(order.items);
                 db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
-                printReceipt(order);
+                printReceipt(order, true);
             } else {
                 fulfillLocalOrder(orderId);
             }
@@ -1876,7 +1876,7 @@ function fulfillLocalOrder(orderId) {
         deductInventoryFromRecipe(order.items);
         orders = orders.filter(o => o.id !== orderId);
         setData('sys_live_orders', orders);
-        printReceipt(order);
+        printReceipt(order, true);
     }
 }
 
@@ -1886,13 +1886,13 @@ function deductInventoryFromRecipe(items) {
     const allMenuItems = getData('sys_items');
 
     items.forEach(cartItem => {
-        const menuItem = allMenuItems.find(m => m.id === cartItem.id);
+        const menuItem = allMenuItems.find(m => Number(m.id) === Number(cartItem.id));
         if (menuItem && menuItem.recipe) {
             menuItem.recipe.forEach(ingredient => {
                 const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
                 if (stockItem) {
-                    const totalDeduct = ingredient.qty * cartItem.qty;
-                    stockItem.quantity = Math.max(0, stockItem.quantity - totalDeduct);
+                    const totalDeduct = (Number(ingredient.qty) || 0) * (Number(cartItem.qty) || 1);
+                    stockItem.quantity = Math.max(0, Number(stockItem.quantity) - totalDeduct);
                 }
             });
         }
@@ -1901,19 +1901,31 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-// 🖨️ طباعة وتجهيز بون الكاشير والمطبخ (محدث للطباعة المباشرة والتنظيف)
-function printReceipt(order) {
-    if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + (order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي"));
-    if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${order.customerName || 'زبون مباشر'}`;
-    if (document.getElementById('receiptPaymentInfo')) document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${order.paymentMethod || '💵 كاش'}`;
-    if (document.getElementById('receiptTypeInfo')) document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
+// 🖨️ دالة تجهيز بيانات الفاتورة الموحدة للزبون والمطبخ بدون تكرار
+function printReceipt(order, shouldTriggerWindowPrint = false) {
+    const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
+    const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
+    const custName = order.customerName || 'زبون مباشر';
+    const payMethod = order.paymentMethod || '💵 كاش';
+    const serviceType = order.area || 'صالة';
+    const driverSuffix = order.driverName && order.driverName !== '-' ? ` - 🛵 ${order.driverName}` : '';
+    const dateTime = order.dateDate && order.timestamp ? `${order.dateDate} - ${order.timestamp}` : `${getTodayString()} - ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
+
+    // 1️⃣ تعبئة حقول وصل الكاشير والزبون
+    if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + cashierName;
+    if (document.getElementById('receiptOrderNum')) document.getElementById('receiptOrderNum').innerText = `رقم الطلب: #${orderNum}`;
+    if (document.getElementById('receiptOrderNumBig')) document.getElementById('receiptOrderNumBig').innerText = `#${orderNum}`;
+    if (document.getElementById('receiptDateTime')) document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateTime}`;
+    if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
+    if (document.getElementById('receiptPaymentInfo')) document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${payMethod}`;
+    if (document.getElementById('receiptTypeInfo')) document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${serviceType}${driverSuffix}`;
     
     const items = Array.isArray(order.items) ? order.items : [];
     if (document.getElementById('receiptItemsBody')) {
         document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
             <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem; color:#000;">
                 <span>${i.name} (×${i.qty})</span>
-                <span>${(i.price * i.qty).toLocaleString()} د.ع</span>
+                <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
             </div>
         `).join('');
     }
@@ -1922,9 +1934,12 @@ function printReceipt(order) {
     if (document.getElementById('receiptDeliveryFee')) document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     if (document.getElementById('receiptGrandTotal')) document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    if (document.getElementById('kitchenOrderType')) document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${order.area || 'صالة'} ${order.driverName ? '- 🛵 ' + order.driverName : ''}`;
-    if (document.getElementById('kitchenCustName')) document.getElementById('kitchenCustName').innerText = `الزبون / الاتصال: ${order.customerName || 'مباشر'} (${order.phone || ''})`;
-    if (document.getElementById('kitchenTimeInfo')) document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${order.timestamp || new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
+    // 2️⃣ تعبئة حقول بون المطبخ المدمج
+    if (document.getElementById('kitchenOrderNum')) document.getElementById('kitchenOrderNum').innerText = `رقم الطلب: #${orderNum}`;
+    if (document.getElementById('kitchenOrderNumBig')) document.getElementById('kitchenOrderNumBig').innerText = `#${orderNum}`;
+    if (document.getElementById('kitchenOrderType')) document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${serviceType}${driverSuffix}`;
+    if (document.getElementById('kitchenCustName')) document.getElementById('kitchenCustName').innerText = `الزبون: ${custName} ${order.phone && order.phone !== '-' ? '(' + order.phone + ')' : ''}`;
+    if (document.getElementById('kitchenTimeInfo')) document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${dateTime}`;
 
     if (document.getElementById('kitchenItemsBody')) {
         document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
@@ -1935,7 +1950,15 @@ function printReceipt(order) {
         `).join('');
     }
 
-    if (document.getElementById('kitchenNotesInfo')) document.getElementById('kitchenNotesInfo').innerText = `ملاحظات الطلب: ${order.notes || 'لا يوجد'}`;
+    const notesBox = document.getElementById('kitchenNotesInfo');
+    if (notesBox) {
+        if (order.notes && order.notes !== '-' && order.notes !== 'لا يوجد') {
+            notesBox.innerText = `ملاحظات الطلب: ${order.notes}`;
+            notesBox.style.display = 'block';
+        } else {
+            notesBox.style.display = 'none';
+        }
+    }
 
     openModal('receiptModal');
 
@@ -1946,17 +1969,10 @@ function printReceipt(order) {
         sendDirectNetworkPrint(printerSettings.kitchen1Ip, printerSettings.port, 'kitchen1', order);
         sendDirectNetworkPrint(printerSettings.kitchen2Ip, printerSettings.port, 'kitchen2', order);
         setTimeout(() => closeModal('receiptModal'), 300);
-    } else {
-        // طباعة صامتة فورية
+    } else if (shouldTriggerWindowPrint) {
         setTimeout(() => {
-            if (typeof printThermalElement === 'function') {
-                printThermalElement('receiptModalBody');
-            } else {
-                window.print();
-            }
-            setTimeout(() => {
-                closeModal('receiptModal');
-            }, 500);
+            window.print();
+            setTimeout(() => { closeModal('receiptModal'); }, 500);
         }, 150);
     }
 }
@@ -2037,7 +2053,7 @@ function addNewInventoryItem() {
 
 function updateInvField(id, field, value) {
     const inv = getData('sys_inventory');
-    const item = inv.find(i => i.id === id);
+    const item = inv.find(i => Number(i.id) === Number(id));
     if (item) {
         item[field] = field === 'quantity' ? Number(value) : value;
         setData('sys_inventory', inv);
@@ -2046,7 +2062,7 @@ function updateInvField(id, field, value) {
 
 function deleteInvItem(id) {
     if (confirm("حذف هذه المادة من الجرد؟")) {
-        let inv = getData('sys_inventory').filter(i => i.id !== id);
+        let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
         setData('sys_inventory', inv);
         renderInventoryTable();
     }
@@ -2247,7 +2263,7 @@ function saveItem() {
     };
 
     if (id) {
-        items = items.map(i => i.id == id ? { ...i, ...newItemData } : i);
+        items = items.map(i => Number(i.id) === Number(id) ? { ...i, ...newItemData } : i);
     } else {
         items.push(newItemData);
     }
@@ -2267,7 +2283,7 @@ function saveItem() {
 }
 
 function editItem(id) {
-    const item = getData('sys_items').find(i => i.id === id);
+    const item = getData('sys_items').find(i => Number(i.id) === Number(id));
     if (!item) return;
 
     document.getElementById('editItemId').value = item.id;
@@ -2310,7 +2326,7 @@ function resetItemForm() {
 
 function deleteItem(id) {
     if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
-        let items = getData('sys_items').filter(i => i.id !== id);
+        let items = getData('sys_items').filter(i => Number(i.id) !== Number(id));
         setData('sys_items', items);
         
         if (db) {
@@ -2360,7 +2376,7 @@ function renderAdminDrivers() {
 
 function deleteDriver(id) {
     if (confirm("حذف هذا السائق؟")) {
-        let drivers = getData('sys_drivers').filter(d => d.id !== id);
+        let drivers = getData('sys_drivers').filter(d => String(d.id) !== String(id));
         setData('sys_drivers', drivers);
         renderAdminDrivers();
     }
@@ -2397,7 +2413,7 @@ function saveCashier() {
 
 function deleteCashier(id) {
     if (confirm("حذف الكاشير؟")) {
-        let cashiers = getData('sys_cashiers').filter(c => c.id !== id);
+        let cashiers = getData('sys_cashiers').filter(c => String(c.id) !== String(id));
         setData('sys_cashiers', cashiers);
         renderAdminCashiers();
     }
