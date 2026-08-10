@@ -366,9 +366,9 @@
             color: #000;
         }
 
-        /* 🖨️ منطقة الطباعة الحرارية المخفية نهائياً من الشاشة والظاهرة في الورق فقط */
+        /* 🖨️ منطقة الطباعة الحرارية المخفية تماماً من الشاشة والظاهرة في الورق المطبوع فقط */
         #hiddenThermalPrintArea {
-            display: none;
+            display: none !important;
         }
 
         @media print {
@@ -571,7 +571,7 @@
         </div>
     </div>
 
-    <!-- 📄 عنصر الطباعة الحراري المباشر (مخفي من الشاشة ويظهر بالطباعة فقط) -->
+    <!-- 📄 عنصر الطباعة الحراري المباشر (مخفي نهائياً عن الشاشة ويظهر في الورقة المطبوعة فقط) -->
     <div id="hiddenThermalPrintArea">
         <!-- 1️⃣ وصل الزبون / الكاشير -->
         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
@@ -811,7 +811,7 @@
             }
         }
 
-        // 🎯 الدالة الفورية للطباعة المباشرة بدون أي نوافذ معاينة عائمة
+        // 🎯 الدالة الفورية للطباعة المباشرة بدون أي شاشات أو نوافذ منبثقة
         function safeCheckAndPrint() {
             if (isPrintingInProgress) return;
 
@@ -898,7 +898,7 @@
                 itemsKitchenHtml = `<div style="font-size:1rem; font-weight:bold; padding:4px 0; color:#000;">• طلب وجبات طعام</div>`;
             }
 
-            // 4️⃣ تعبئة بيانات الطباعة المباشرة
+            // 4️⃣ تعبئة بيانات الطباعة
             document.getElementById('receiptOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
             document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
@@ -922,7 +922,7 @@
                 kNotesBox.style.display = 'none';
             }
 
-            // 5️⃣ تنفيذ إرسال أمر الطباعة وتصفير الشاشة فوراً
+            // 5️⃣ إرسال أمر الطباعة المباشر وتصفير الشاشة فوراً
             setTimeout(() => {
                 window.print();
 
