@@ -366,7 +366,11 @@
             color: #000;
         }
 
-        /* 🖨️ قواعد الطباعة الحرارية للفصل التام بين الكاشير والمطبخ */
+        /* 🖨️ منطقة الطباعة الحرارية المخفية نهائياً من الشاشة والظاهرة في الورق فقط */
+        #hiddenThermalPrintArea {
+            display: none;
+        }
+
         @media print {
             @page {
                 size: 80mm auto;
@@ -386,88 +390,27 @@
                 visibility: hidden !important; 
             }
 
-            /* 1️⃣ وضع طباعة وصل الكاشير والزبون فقط */
-            body.print-cashier-mode #cashierReceiptPart,
-            body.print-cashier-mode #cashierReceiptPart * {
-                visibility: visible !important;
-                color: #000000 !important;
+            #hiddenThermalPrintArea, 
+            #hiddenThermalPrintArea * { 
+                visibility: visible !important; 
+                color: #000000 !important; 
                 background: #ffffff !important;
             }
 
-            body.print-cashier-mode #cashierReceiptPart {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 72mm !important;
-                max-width: 72mm !important;
-                margin: 0 !important;
-                padding: 2mm !important;
+            #hiddenThermalPrintArea { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 72mm !important; 
+                max-width: 72mm !important; 
+                margin: 0 !important; 
+                padding: 2mm !important; 
                 box-sizing: border-box !important;
                 direction: rtl !important;
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
                 display: block !important;
-            }
-
-            body.print-cashier-mode #kitchenReceiptPart {
-                display: none !important;
-            }
-
-            /* 2️⃣ وضع طباعة بون المطبخ فقط */
-            body.print-kitchen-mode #kitchenReceiptPart,
-            body.print-kitchen-mode #kitchenReceiptPart * {
-                visibility: visible !important;
-                color: #000000 !important;
-                background: #ffffff !important;
-            }
-
-            body.print-kitchen-mode #kitchenReceiptPart {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 72mm !important;
-                max-width: 72mm !important;
-                margin: 0 !important;
-                padding: 2mm !important;
-                box-sizing: border-box !important;
-                direction: rtl !important;
-                text-align: right !important;
-                font-size: 11px !important;
-                font-family: 'Tahoma', sans-serif !important;
-                display: block !important;
-            }
-
-            body.print-kitchen-mode #cashierReceiptPart {
-                display: none !important;
-            }
-
-            /* 3️⃣ الوضع المزدوج الافتراضي (عند عدم تحديد نمط) */
-            body:not(.print-cashier-mode):not(.print-kitchen-mode) #receiptModalBody,
-            body:not(.print-cashier-mode):not(.print-kitchen-mode) #receiptModalBody * {
-                visibility: visible !important;
-                color: #000000 !important;
-                background: #ffffff !important;
-            }
-
-            body:not(.print-cashier-mode):not(.print-kitchen-mode) #receiptModalBody {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 72mm !important;
-                max-width: 72mm !important;
-                margin: 0 !important;
-                padding: 2mm !important;
-                box-sizing: border-box !important;
-                direction: rtl !important;
-                text-align: right !important;
-                font-size: 11px !important;
-                font-family: 'Tahoma', sans-serif !important;
-                display: block !important;
-            }
-
-            .no-print { 
-                display: none !important; 
             }
         }
     </style>
@@ -628,89 +571,61 @@
         </div>
     </div>
 
-    <!-- 📄 1. نافذة الفاتورة الحرارية المنفصلة والمجهزة للطباعة المباشرة والمستقلة -->
-    <div id="receiptModal" class="modal-overlay" onclick="if(event.target===this) forceCloseReceiptModal();">
-        <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:6px; position:relative;">
+    <!-- 📄 عنصر الطباعة الحراري المباشر (مخفي من الشاشة ويظهر بالطباعة فقط) -->
+    <div id="hiddenThermalPrintArea">
+        <!-- 1️⃣ وصل الزبون / الكاشير -->
+        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
+            <h3 style="font-size:1.2rem; margin:0; color:#000; font-weight:bold;">MIM89 FAST FOOD</h3>
+            <small style="color:#000; font-size:0.85rem; font-weight:bold;">بغداد - القاهرة</small><br>
+            <small style="color:#000; font-size:0.85rem; font-weight:bold;">هاتف: 07750008630 - 07850008630</small>
+        </div>
+
+        <div style="text-align:center; margin: 6px 0; border:2px solid #000; padding:4px; border-radius:6px; background:#fff;">
+            <div style="font-size:0.8rem; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
+            <div id="receiptOrderNumBig" style="font-size:1.8rem; font-weight:900; color:#000; line-height:1.1;">#----</div>
+        </div>
+
+        <div style="font-size:0.8rem; margin-bottom:6px; color:#000; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px;">
+            <div id="receiptCashierName" style="font-size:0.8rem; color:#000;">الكاشير: الرئيسي</div>
+            <div id="receiptDateTime" style="font-size:0.75rem; color:#000; margin-bottom:2px;">التاريخ والوقت: --/--/---- --:--</div>
+            <div id="receiptCustInfo">الزبون: مباشر</div>
+            <div id="receiptPaymentInfo">طريقة الدفع: كاش</div>
+            <div id="receiptTypeInfo">نوع الخدمة: صالة</div>
+        </div>
+
+        <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
+            <div id="receiptItemsBody"></div>
+        </div>
+
+        <div style="font-size:0.85rem; color:#000;">
+            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span id="receiptSubtotal" style="font-weight:bold;">0 د.ع</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span id="receiptDeliveryFee" style="font-weight:bold;">0 د.ع</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px; margin-top:4px;"><span>المجموع الكلي:</span> <span id="receiptGrandTotal">0 د.ع</span></div>
+        </div>
+
+        <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.8rem; font-weight:bold; color:#000;">
+            شكراً لزيارتكم MIM89
+        </div>
+
+        <!-- ✂️ خط قص الفاتورة للمطبخ -->
+        <div style="margin: 20px 0 10px 0; text-align: center; border-bottom: 2px dashed #000; position: relative;">
+            <span style="background: #fff; padding: 0 6px; font-weight: bold; font-size: 0.75rem; position: relative; top: 8px; color:#000;">✂️ اقص الفاتورة هنا للمطبخ ✂️</span>
+        </div>
+
+        <!-- 2️⃣ بون المطبخ والتجهيز المدمج -->
+        <div style="margin-top:12px; color:#000; padding-top:4px; display:block; background:#fff;">
+            <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
+                <h4 style="font-size:1.1rem; margin:0; font-weight:bold;">*** بون المطبخ والتجهيز ***</h4>
+                <div id="kitchenOrderNumBig" style="font-size:1.8rem; font-weight:900; margin-top:2px;">#----</div>
+            </div>
             
-            <!-- 🔴 أزرار خيارات الطباعة المباشرة للتحكم بطابعة الكاشير وطابعة المطبخ -->
-            <div class="no-print" style="margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
-                <div style="display:flex; gap:4px;">
-                    <button onclick="printCashierReceiptOnly()" class="gold-btn" style="background:#3b82f6; color:#fff; padding:8px; font-size:0.8rem; font-weight:bold; flex:1;">
-                        🖨️ طباعة للكاشير
-                    </button>
-                    <button onclick="printKitchenTicketOnly()" class="gold-btn" style="background:#10b981; color:#fff; padding:8px; font-size:0.8rem; font-weight:bold; flex:1;">
-                        👨‍🍳 طباعة للمطبخ
-                    </button>
-                </div>
-                <button onclick="forceCloseReceiptModal()" class="gold-btn" style="background:#ef4444; color:#fff; padding:8px; font-size:0.85rem; font-weight:bold; border-radius:6px;">
-                    ✕ إغلاق والعودة للكاشير (طلب جديد)
-                </button>
-            </div>
-
-            <!-- 1️⃣ وصل الزبون / الكاشير -->
-            <div id="cashierReceiptPart" style="background:#fff; padding-bottom:6px;">
-                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
-                    <h3 style="font-size:1.2rem; margin:0; color:#000; font-weight:bold;">MIM89 FAST FOOD</h3>
-                    <small style="color:#000; font-size:0.85rem; font-weight:bold;">بغداد - القاهرة</small><br>
-                    <small style="color:#000; font-size:0.85rem; font-weight:bold;">هاتف: 07750008630 - 07850008630</small>
-                </div>
-
-                <!-- 🌟 مربع رقم الطلب المخصص للزبون -->
-                <div style="text-align:center; margin: 6px 0; border:2px solid #000; padding:4px; border-radius:6px; background:#fff;">
-                    <div style="font-size:0.8rem; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
-                    <div id="receiptOrderNumBig" style="font-size:1.8rem; font-weight:900; color:#000; line-height:1.1;">#----</div>
-                </div>
-
-                <div style="font-size:0.8rem; margin-bottom:6px; color:#000; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px;">
-                    <div id="receiptCashierName" style="font-size:0.8rem; color:#000;">الكاشير: الرئيسي</div>
-                    <div id="receiptDateTime" style="font-size:0.75rem; color:#000; margin-bottom:2px;">التاريخ والوقت: --/--/---- --:--</div>
-                    <div id="receiptCustInfo">الزبون: مباشر</div>
-                    <div id="receiptPaymentInfo">طريقة الدفع: كاش</div>
-                    <div id="receiptTypeInfo">نوع الخدمة: صالة</div>
-                </div>
-
-                <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
-                    <div id="receiptItemsBody"></div>
-                </div>
-
-                <div style="font-size:0.85rem; color:#000;">
-                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span id="receiptSubtotal" style="font-weight:bold;">0 د.ع</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span id="receiptDeliveryFee" style="font-weight:bold;">0 د.ع</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px; margin-top:4px;"><span>المجموع الكلي:</span> <span id="receiptGrandTotal">0 د.ع</span></div>
-                </div>
-
-                <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.8rem; font-weight:bold; color:#000;">
-                    شكراً لزيارتكم MIM89
-                </div>
-            </div>
-
-            <!-- ✂️ خط فصل وقص الفاتورة للمطبخ (للشاشة والطباعة المزدوجة) -->
-            <div class="no-print" style="margin: 15px 0 10px 0; text-align: center; border-bottom: 2px dashed #000; position: relative;">
-                <span style="background: #fff; padding: 0 6px; font-weight: bold; font-size: 0.75rem; position: relative; top: 8px; color:#000;">✂️ بون المطبخ والتجهيز أسفله ✂️</span>
-            </div>
-
-            <!-- 2️⃣ بون المطبخ والتجهيز المنفصل -->
-            <div id="kitchenReceiptPart" style="margin-top:12px; color:#000; padding-top:4px; display:block; background:#fff;">
-                <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
-                    <h4 style="font-size:1.1rem; margin:0; font-weight:bold;">*** بون المطبخ والتجهيز ***</h4>
-                    <div id="kitchenOrderNumBig" style="font-size:1.8rem; font-weight:900; margin-top:2px;">#----</div>
-                </div>
-                
-                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem;"></div>
-                <div id="kitchenCustName" style="font-size:0.85rem;"></div>
-                <div id="kitchenTimeInfo" style="font-size:0.75rem; margin-bottom:4px;"></div>
-                
-                <div id="kitchenItemsBody" style="font-size:1.05rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                
-                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:6px; border:1px solid #000; padding:4px; color:#000; display:none;"></div>
-            </div>
-
-            <!-- 🔴 زر إغلاق سفلي إضافي -->
-            <div class="no-print" style="margin-top:15px; text-align:center;">
-                <button onclick="forceCloseReceiptModal()" class="gold-btn" style="background:#ef4444; color:#fff; padding:10px; font-weight:bold;">
-                    ✕ إغلاق ودخول فاتورة جديدة
-                </button>
-            </div>
+            <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem;"></div>
+            <div id="kitchenCustName" style="font-size:0.85rem;"></div>
+            <div id="kitchenTimeInfo" style="font-size:0.75rem; margin-bottom:4px;"></div>
+            
+            <div id="kitchenItemsBody" style="font-size:1.05rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
+            
+            <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:6px; border:1px solid #000; padding:4px; color:#000; display:none;"></div>
         </div>
     </div>
 
@@ -873,15 +788,6 @@
             window.print();
         }
 
-        function forceCloseReceiptModal() {
-            closeModal('receiptModal');
-            document.body.classList.remove('print-cashier-mode', 'print-kitchen-mode');
-            if (typeof clearPosCart === 'function') {
-                clearPosCart();
-            }
-            isPrintingInProgress = false;
-        }
-
         function addQuickNoteToInput(text) {
             const input = document.getElementById('posOrderNotesInput');
             if (input) {
@@ -905,31 +811,7 @@
             }
         }
 
-        // 🖨️ طباعة وصل الكاشير والزبون فقط (يطبع الجزء العلوي المخصص للكاشير)
-        function printCashierReceiptOnly() {
-            document.body.classList.remove('print-kitchen-mode');
-            document.body.classList.add('print-cashier-mode');
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => {
-                    document.body.classList.remove('print-cashier-mode');
-                }, 500);
-            }, 100);
-        }
-
-        // 👨‍🍳 طباعة بون المطبخ والتجهيز فقط (يطبع الجزء السفلي المخصص للمطبخ)
-        function printKitchenTicketOnly() {
-            document.body.classList.remove('print-cashier-mode');
-            document.body.classList.add('print-kitchen-mode');
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => {
-                    document.body.classList.remove('print-kitchen-mode');
-                }, 500);
-            }, 100);
-        }
-
-        // 🎯 الدالة الحاسمـة لإعداد الفاتورة وفتح نافذة خيارات الطباعة
+        // 🎯 الدالة الفورية للطباعة المباشرة بدون أي نوافذ معاينة عائمة
         function safeCheckAndPrint() {
             if (isPrintingInProgress) return;
 
@@ -1016,7 +898,7 @@
                 itemsKitchenHtml = `<div style="font-size:1rem; font-weight:bold; padding:4px 0; color:#000;">• طلب وجبات طعام</div>`;
             }
 
-            // 4️⃣ تعبئة رقم الطلب الضخم والفاتورة
+            // 4️⃣ تعبئة بيانات الطباعة المباشرة
             document.getElementById('receiptOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
             document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
@@ -1026,7 +908,6 @@
             document.getElementById('receiptSubtotal').innerText = `${totalValue.toLocaleString()} د.ع`;
             document.getElementById('receiptGrandTotal').innerText = `${totalValue.toLocaleString()} د.ع`;
 
-            // تعبئة بون المطبخ
             document.getElementById('kitchenOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${serviceType}`;
             document.getElementById('kitchenCustName').innerText = `اسم الزبون: ${custName}`;
@@ -1041,13 +922,21 @@
                 kNotesBox.style.display = 'none';
             }
 
-            // فتح شاشة المعاينة والخيارات
-            openModal('receiptModal');
+            // 5️⃣ تنفيذ إرسال أمر الطباعة وتصفير الشاشة فوراً
+            setTimeout(() => {
+                window.print();
 
-            // 5️⃣ حفظ العملية في الـ Firebase والدورة التلقائية
-            if (typeof processPosDirectCheckout === 'function') {
-                processPosDirectCheckout();
-            }
+                setTimeout(() => {
+                    if (typeof processPosDirectCheckout === 'function') {
+                        processPosDirectCheckout();
+                    } else if (typeof clearPosCart === 'function') {
+                        clearPosCart();
+                    }
+
+                    if (notesInput) notesInput.value = '';
+                    isPrintingInProgress = false;
+                }, 300);
+            }, 100);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
