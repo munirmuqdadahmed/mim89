@@ -1247,11 +1247,11 @@ function processPosDirectCheckout() {
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const finalTotal = Math.max(0, subtotal - posDiscountAmount);
 
-    let typeText = '🍽️ صالة';
-    if (selectedPosOrderType === 'takeaway') typeText = '🛍️ سفري';
-    if (selectedPosOrderType === 'delivery') typeText = `🚗 توصيل (${selectedDriver || 'دليفري'})`;
+    let typeText = 'صالة';
+    if (selectedPosOrderType === 'takeaway') typeText = 'سفري';
+    if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
 
-    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '101';
+    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '1';
 
     const directOrder = {
         id: 'POS_' + Date.now(),
@@ -1259,7 +1259,7 @@ function processPosDirectCheckout() {
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? '💵 كاش' : '💳 فيزا',
+        paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
         area: typeText,
         driverName: selectedDriver || '-',
         address: "-",
@@ -1277,7 +1277,7 @@ function processPosDirectCheckout() {
 
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
-    printReceipt(directOrder, false); // تجهيز الفاتورة بدون إطلاق نافذة طباعة مكررة
+    printReceipt(directOrder, false);
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (driverSelect) driverSelect.value = '';
@@ -1901,8 +1901,21 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
+// 🖨️ دالة عامة لطباعة التقارير الحرارية والسُلف المفتوحة على الشاشة
+function printCurrentActiveModal() {
+    document.body.classList.add('modal-open-for-print');
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+            document.body.classList.remove('modal-open-for-print');
+        }, 500);
+    }, 100);
+}
+
 // 🖨️ دالة تجهيز بيانات الفاتورة الموحدة للزبون والمطبخ بدون تكرار
 function printReceipt(order, shouldTriggerWindowPrint = false) {
+    document.body.classList.remove('modal-open-for-print');
+
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     const custName = order.customerName || 'زبون مباشر';
@@ -1960,7 +1973,7 @@ function printReceipt(order, shouldTriggerWindowPrint = false) {
         }
     }
 
-    openModal('receiptModal');
+    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
 
     const printerSettings = getData('sys_printer_settings');
 
@@ -1968,11 +1981,9 @@ function printReceipt(order, shouldTriggerWindowPrint = false) {
         sendDirectNetworkPrint(printerSettings.cashierIp, printerSettings.port, 'cashier', order);
         sendDirectNetworkPrint(printerSettings.kitchen1Ip, printerSettings.port, 'kitchen1', order);
         sendDirectNetworkPrint(printerSettings.kitchen2Ip, printerSettings.port, 'kitchen2', order);
-        setTimeout(() => closeModal('receiptModal'), 300);
     } else if (shouldTriggerWindowPrint) {
         setTimeout(() => {
             window.print();
-            setTimeout(() => { closeModal('receiptModal'); }, 500);
         }, 150);
     }
 }
