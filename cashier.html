@@ -11,9 +11,11 @@
 
     <title>MIM89 POS - شاشة الكاشير ونقطة البيع</title>
     
-    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
+    <!-- FontAwesome & Stylesheet -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
@@ -48,8 +50,8 @@
         /* شاشة تسجيل الدخول */
         #authOverlay {
             position: fixed;
-            top:0; left:0; right:0; bottom:0;
-            background: rgba(0,0,0,0.95);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -136,7 +138,7 @@
             border: 1px solid var(--gold-primary);
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            width: 250px;
+            width: 260px;
             z-index: 200;
             overflow: hidden;
         }
@@ -295,7 +297,7 @@
 
         .modal-overlay {
             position: fixed;
-            top:0; left:0; right:0; bottom:0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.85);
             display: none;
             justify-content: center;
@@ -364,7 +366,7 @@
             color: #000;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية للوصول وبون المطبخ مرتبة ومنظمة */
+        /* 🖨️ تنسيقات الطباعة الحرارية للوصول وبون المطبخ المدمج */
         @media print {
             @page {
                 size: 80mm auto;
@@ -405,7 +407,6 @@
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
                 display: block !important;
-                page-break-inside: avoid !important;
             }
 
             .no-print { 
@@ -430,7 +431,7 @@
     <!-- التطبيق الرئيسي للكاشير -->
     <div id="cashierMainApp">
         <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])" style="cursor:pointer;">
-            يوجد <span id="pendingOrdersBannerCount">0</span> طلب إلكتروني / هاتف قيد التجهيز! (اضغط هنا للعرض والفتح)
+            يوجد طلبات جارية قيد التجهيز! (اضغط هنا للعرض والفتح)
         </div>
 
         <header class="pos-header">
@@ -448,7 +449,7 @@
                     </button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt" style="color:var(--gold-primary);"></i> سجل الفواتير</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line" style="color:#38bdf8;"></i> كشف الحساب المالي</button>
-                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked" style="color:#f59e0b;"></i> جرد الوجبات المباعة (PDF)</button>
+                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked" style="color:#f59e0b;"></i> جرد الوجبات المباعة</button>
                     <button onclick="openShiftReportModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-lock" style="color:#3b82f6;"></i> تقفيل الشيفت والصندوق</button>
                     <hr style="border-color:#333; margin:3px 0;">
                     <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square" style="color:#a855f7;"></i> تعديل ملاحظات المطبخ</button>
@@ -542,7 +543,7 @@
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔘 زر الطباعة الذكي والآمن -->
+                        <!-- 🔘 زر الطباعة الموحد الفوري -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -570,235 +571,229 @@
         </div>
     </div>
 
-    <!-- نافذة إدارة الصرفيات والسُلف -->
-    <div id="expenseManagerModal" class="modal-overlay">
-        <div class="modal-body" style="max-width: 550px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; margin-bottom: 12px;">
-                <h4 style="color: var(--gold-primary); margin: 0;"><i class="fa-solid fa-wallet"></i> إدارة الصرفيات والسُلف</h4>
-                <button onclick="closeModal('expenseManagerModal')" class="gold-btn no-print" style="width: auto; padding: 2px 8px;">✕</button>
-            </div>
-
-            <div style="background: #121214; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--card-border);">
-                <h5 style="color: #fff; margin-top: 0; margin-bottom: 8px; font-size: 0.85rem;">تسجيل مصاريف / سلفة جديدة</h5>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-                    <select id="expenseTypeSelect" class="gold-input" style="font-size: 0.8rem;" onchange="toggleExpenseTypeFields()">
-                        <option value="daily_expenses">مصاريف يومية / نثرية</option>
-                        <option value="salary_advance">سلفة / راتب موظف</option>
-                        <option value="monthly_fixed">مصاريف ثابتة (مولدة/إيجار)</option>
-                    </select>
-                    <input type="number" id="expenseAmountInput" placeholder="المبلغ (د.ع)" class="gold-input" style="font-size: 0.8rem;">
-                </div>
-
-                <select id="expenseEmployeeSelect" class="gold-input" style="display: none; margin-bottom: 6px; font-size: 0.8rem;"></select>
-
-                <input type="text" id="expenseNoteInput" placeholder="بيان الصرفية (مثال: كارتات / أكياس / سلفة أحمد)" class="gold-input" style="margin-bottom: 8px; font-size: 0.8rem;">
-
-                <button onclick="addNewExpenseRecord()" class="gold-btn" style="width: 100%; background: var(--gold-primary); color: #000; font-weight: bold; padding: 8px;">
-                    حفظ وخصم من الصندوق
-                </button>
-            </div>
-
-            <h5 style="color: var(--gold-primary); margin-bottom: 6px; font-size: 0.85rem;">صرفيات وسُلف اليوم المسجلة:</h5>
-            <div id="expensesListTable" style="max-height: 180px; overflow-y: auto;"></div>
-        </div>
-    </div>
-
-    <!-- 📄 نافذة الفاتورة الحرارية المدمجة المباشرة -->
-    <div id="receiptModal" class="modal-overlay" style="display:none;">
+    <!-- 📄 1. نافذة الفاتورة الحرارية المدمجة والمكبرة للزبون والمطبخ -->
+    <div id="receiptModal" class="modal-overlay">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
-            <!-- وصل الكاشير والزبون -->
+            <!-- 1️⃣ وصل الزبون -->
             <div id="cashierReceiptPart">
                 <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
                     <h3 style="font-size:1.2rem; margin:0; color:#000; font-weight:bold;">MIM89 FAST FOOD</h3>
                     <small style="color:#000; font-size:0.85rem; font-weight:bold;">بغداد - القاهرة</small><br>
-                    <small style="color:#000; font-size:0.85rem; font-weight:bold;">هاتف: 07750008630 - 07850008630</small><br>
-                    <small id="receiptCashierName" style="color:#000; font-size:0.8rem;">الكاشير: الرئيسي</small>
+                    <small style="color:#000; font-size:0.85rem; font-weight:bold;">هاتف: 07750008630 - 07850008630</small>
                 </div>
+
+                <!-- 🌟 مربع رقم الطلب المخصص للزبون (واضح وضخم) -->
+                <div style="text-align:center; margin: 6px 0; border:2px solid #000; padding:4px; border-radius:6px; background:#fff;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
+                    <div id="receiptOrderNumBig" style="font-size:1.8rem; font-weight:900; color:#000; line-height:1.1;">#----</div>
+                </div>
+
                 <div style="font-size:0.8rem; margin-bottom:6px; color:#000; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px;">
-                    <div id="receiptOrderNum" style="font-size:0.95rem; color:#000; font-weight:bold; margin-bottom:2px;">رقم الطلب: #--</div>
-                    <div id="receiptDateTime" style="font-size:0.75rem; color:#333; margin-bottom:4px;">التاريخ والوقت: --/--/---- --:--</div>
+                    <div id="receiptCashierName" style="font-size:0.8rem; color:#000;">الكاشير: الرئيسي</div>
+                    <div id="receiptDateTime" style="font-size:0.75rem; color:#000; margin-bottom:2px;">التاريخ والوقت: --/--/---- --:--</div>
                     <div id="receiptCustInfo">الزبون: مباشر</div>
                     <div id="receiptPaymentInfo">طريقة الدفع: كاش</div>
                     <div id="receiptTypeInfo">نوع الخدمة: صالة</div>
                 </div>
+
                 <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
                     <div id="receiptItemsBody"></div>
                 </div>
+
                 <div style="font-size:0.85rem; color:#000;">
                     <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span id="receiptSubtotal" style="font-weight:bold;">0 د.ع</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span id="receiptDeliveryFee" style="font-weight:bold;">0 د.ع</span></div>
                     <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px; margin-top:4px;"><span>المجموع الكلي:</span> <span id="receiptGrandTotal">0 د.ع</span></div>
                 </div>
-                <div style="text-align:center; margin-top:8px; border-top:1px dashed #000; padding-top:4px; font-size:0.85rem; font-weight:bold; color:#000;">
-                    شكرا لزيارتكم MIM89
+
+                <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.8rem; font-weight:bold; color:#000;">
+                    شكراً لزيارتكم MIM89
                 </div>
             </div>
 
-            <!-- بون المطبخ المنظم والمدمج -->
-            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px dashed #000; padding-top:8px; display:block;">
-                <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
-                <div id="kitchenOrderNum" style="font-weight:bold; font-size:0.9rem; margin-top:4px;"></div>
-                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.9rem;"></div>
-                <div id="kitchenCustName" style="font-size:0.8rem;"></div>
+            <!-- ✂️ خط فصل وقص الفاتورة للمطبخ -->
+            <div style="margin: 20px 0 10px 0; text-align: center; border-bottom: 2px dashed #000; position: relative;">
+                <span style="background: #fff; padding: 0 6px; font-weight: bold; font-size: 0.75rem; position: relative; top: 8px; color:#000;">✂️ اقص الفاتورة هنا للمطبخ ✂️</span>
+            </div>
+
+            <!-- 2️⃣ بون المطبخ المدمج -->
+            <div id="kitchenReceiptPart" style="margin-top:12px; color:#000; padding-top:4px; display:block;">
+                <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
+                    <h4 style="font-size:1rem; margin:0; font-weight:bold;">*** بون المطبخ ***</h4>
+                    <div id="kitchenOrderNumBig" style="font-size:1.6rem; font-weight:900; margin-top:2px;">#----</div>
+                </div>
+                
+                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem;"></div>
+                <div id="kitchenCustName" style="font-size:0.85rem;"></div>
                 <div id="kitchenTimeInfo" style="font-size:0.75rem; margin-bottom:4px;"></div>
+                
                 <div id="kitchenItemsBody" style="font-size:1.05rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                <div id="kitchenNotesInfo" style="font-size:0.8rem; font-weight:bold; margin-top:6px; border:1px solid #000; padding:3px; color:#000; display:none;"></div>
+                
+                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:6px; border:1px solid #000; padding:4px; color:#000; display:none;"></div>
+            </div>
+
+            <div class="no-print" style="margin-top:15px; text-align:center;">
+                <button onclick="closeModal('receiptModal')" class="gold-btn" style="background:#333; color:#fff;">إغلاق</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة سجل الفواتير -->
+    <!-- 📄 2. نافذة سجل الفواتير المطبوعة -->
     <div id="completedOrdersModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);">سجل الفواتير</h4>
-                <button onclick="closeModal('completedOrdersModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</h4>
+                <button onclick="closeModal('completedOrdersModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
             </div>
             <div id="completedOrdersList"></div>
-            <button onclick="clearCompletedOrdersHistory()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:10px;">مسح السجل</button>
+            <button onclick="clearCompletedOrdersHistory()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:10px;">مسح السجل بالكامل</button>
         </div>
     </div>
 
-    <!-- نافذة التقرير المالي اليومي -->
+    <!-- 📄 3. نافذة إدارة الصرفيات والمسحوبات والسُلف -->
+    <div id="expenseManagerModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:500px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
+                <h4 style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> إدارة الصرفيات والمسحوبات والسُلف</h4>
+                <button onclick="closeModal('expenseManagerModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <label class="section-label">نوع الصرفية:</label>
+                <select id="expenseTypeSelect" class="gold-input" onchange="toggleExpenseTypeFields()" style="font-size:0.85rem; margin-bottom:6px;">
+                    <option value="daily_petty">صرفيات يومية / نثرية (نظافة / زبالة / مسواق)</option>
+                    <option value="salary_advance">سلفة / راتب موظف</option>
+                    <option value="monthly_fixed">مصاريف ثابتة (مولدة / إيجار / نت)</option>
+                </select>
+
+                <select id="expenseEmployeeSelect" class="gold-input" style="display:none; font-size:0.85rem; margin-bottom:6px;"></select>
+
+                <label class="section-label">المبلغ (د.ع):</label>
+                <input type="number" id="expenseAmountInput" class="gold-input" placeholder="أدخل المبلغ بالدينار..." style="font-size:0.9rem; margin-bottom:6px;">
+
+                <label class="section-label">ملاحظات / التفاصيل:</label>
+                <input type="text" id="expenseNoteInput" class="gold-input" placeholder="اكتب تفاصيل الصرفية هنا..." style="font-size:0.85rem; margin-bottom:8px;">
+
+                <button onclick="addNewExpenseRecord()" class="gold-btn" style="background:var(--danger); color:#fff;">تسجيل الصرفية وخصمها من الصندوق</button>
+            </div>
+
+            <h5 style="color:var(--gold-bright); margin-bottom:6px;">صرفيات اليوم المسجلة:</h5>
+            <div id="expensesListTable" style="max-height:200px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- 📄 4. نافذة كشف الحساب المالي اليومي -->
     <div id="dailyReportModal" class="modal-overlay">
-        <div class="modal-body" id="dailyReportModalBody">
+        <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</h4>
-                <button onclick="closeModal('dailyReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
-            </div>
-            
-            <div style="margin-bottom:8px;" class="no-print">
-                <small style="color:#aaa;">تاريخ الكشف:</small>
-                <input type="date" id="reportDateInput" class="gold-input" onchange="renderDailyReport(this.value)">
-            </div>
-            <div id="reportDateText" style="color:#aaa; font-size:0.8rem; margin-bottom:4px;"></div>
-            <div id="reportCashierText" style="color:#aaa; font-size:0.8rem; margin-bottom:10px;"></div>
-            
-            <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem; border:1px solid var(--card-border);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>إجمالي المبيعات الكلية:</span><strong style="color:var(--gold-bright);"><span id="repTotalSales">0</span> د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>عدد الفواتير المقبوضة:</span><strong id="repOrdersCount">0</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض نقداً (كاش):</span><strong id="repTotalCash" style="color:#10b981;">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>المقبوض إلكترونياً (فيزا):</span><strong id="repTotalVisa" style="color:#38bdf8;">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>أجور التوصيل المجمعة:</span><strong id="repTotalDelivery">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--danger);"><span>إجمالي الصرفيات والسُلف:</span><strong id="repTotalExpenses">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:4px; font-weight:bold; color:var(--gold-bright);"><span>صافي الكاش المتبقي بالصندوق:</span><strong id="repNetCashBox">0 د.ع</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-top:4px; font-weight:bold;"><span>صافي قيمة الوجبات والطعام:</span><strong id="repNetFood">0 د.ع</strong></div>
+                <h4 style="color:#38bdf8;"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</h4>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div style="background:#121214; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px;">
-                <h5 style="color:var(--gold-primary); font-size:0.85rem; margin-bottom:6px;"><i class="fa-solid fa-motorcycle"></i> كشف سائقي التوصيل والتطبيقات:</h5>
-                <div id="repDriversList" style="font-size:0.8rem; color:#ccc;"></div>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <input type="date" id="reportDateInput" class="gold-input" style="flex:2;" onchange="renderDailyReport(this.value)">
+                <button onclick="renderDailyReport(document.getElementById('reportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
 
-            <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
-                <button onclick="alert('يمكنك معاينة ومراجعة جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="window.print()" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
-                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            <div style="background:#121215; padding:10px; border-radius:8px; font-size:0.85rem; line-height:1.8;">
+                <div id="reportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center; margin-bottom:6px;"></div>
+                <div id="reportCashierText" style="color:#aaa; text-align:center; margin-bottom:8px;"></div>
+                <hr style="border-color:#333; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="repTotalSales" style="color:var(--gold-primary);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>عدد الفواتير:</span> <strong id="repOrdersCount">0</strong> فاتورة</div>
+                <div style="display:flex; justify-content:space-between;"><span>مبيعات الكاش:</span> <strong id="repTotalCash" style="color:#10b981;">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مبيعات الفيزا:</span> <strong id="repTotalVisa" style="color:#38bdf8;">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <strong id="repTotalDelivery">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>صافي الوجبات:</span> <strong id="repNetFood">0</strong> د.ع</div>
+                <hr style="border-color:#333; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>إجمالي الصرفيات:</span> - <strong id="repTotalExpenses">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:bold; background:#222; padding:6px; border-radius:6px; margin-top:6px;"><span>الصافي الفعلي بالصندوق:</span> <strong id="repNetCashBox" style="color:var(--gold-bright);">0</strong> د.ع</div>
             </div>
+
+            <h5 style="color:var(--gold-primary); margin:10px 0 6px 0;">إحصائيات سائقي التوصيل:</h5>
+            <div id="repDriversList" style="max-height:150px; overflow-y:auto;"></div>
         </div>
     </div>
 
-    <!-- نافذة جرد الوجبات -->
+    <!-- 📄 5. نافذة جرد الوجبات المباعة -->
     <div id="itemsReportModal" class="modal-overlay">
-        <div class="modal-body" id="itemsReportModalBody">
+        <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات والأصناف المباعة</h4>
-                <button onclick="closeModal('itemsReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
-            </div>
-            
-            <div style="margin-bottom:8px;" class="no-print">
-                <small style="color:#aaa;">تاريخ الكشف:</small>
-                <input type="date" id="itemsReportDateInput" class="gold-input" onchange="renderItemsReport(this.value)">
-            </div>
-            <div id="itemsReportDateText" style="color:#aaa; font-size:0.8rem; margin-bottom:6px;"></div>
-
-            <div style="background:#121214; padding:8px 12px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.85rem; color:#aaa;">مجموع القطع المباعة اليوم:</span>
-                <strong id="repTotalItemsQty" style="color:var(--gold-bright); font-size:1.1rem;">0 قطعة</strong>
+                <h4 style="color:#f59e0b;"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</h4>
+                <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <h5 style="color:var(--gold-primary); margin-bottom:6px; font-size:0.85rem;">تفاصيل الوجبات المباعة اليوم:</h5>
-            <div id="repItemsSoldListDetail" style="max-height:260px; overflow-y:auto; font-size:0.85rem; margin-bottom:10px; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--card-border);"></div>
-
-            <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
-                <button onclick="alert('تمت معاينة الجرد بوضوح على الشاشة!')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة</button>
-                <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn" style="flex:2; background:#25d366; color:#fff;">تصدير PDF وواتساب</button>
-                <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
+                <input type="date" id="itemsReportDateInput" class="gold-input" style="flex:2;" onchange="renderItemsReport(this.value)">
+                <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
+
+            <div style="background:#121215; padding:8px; border-radius:8px; margin-bottom:10px; font-size:0.85rem;">
+                <div id="itemsReportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center;"></div>
+                <div style="text-align:center; margin-top:4px;">إجمالي القطع المباعة: <strong id="repTotalItemsQty" style="color:#10b981;">0 قطعة</strong></div>
+            </div>
+
+            <div id="repItemsSoldListDetail" style="max-height:250px; overflow-y:auto; font-size:0.85rem;"></div>
+
+            <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn" style="margin-top:12px; background:#25D366; color:#fff;">
+                <i class="fa-brands fa-whatsapp"></i> إرسال التقرير عبر الواتساب
+            </button>
         </div>
     </div>
 
-    <!-- نافذة تقفيل الشيفت -->
+    <!-- 📄 6. نافذة تقفيل الشيفت والصندوق -->
     <div id="shiftReportModal" class="modal-overlay">
-        <div class="modal-body" id="shiftReportModalBody">
+        <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت (تسليم الصندوق)</h4>
-                <button onclick="closeModal('shiftReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
-            </div>
-            
-            <div style="font-size:0.85rem; color:#aaa; margin-bottom:10px; background:#121214; padding:8px; border-radius:6px; border:1px solid var(--card-border);">
-                <div style="margin-bottom:4px;">الكاشير المسؤول: <strong id="shiftCashierName" style="color:var(--gold-bright);">-</strong></div>
-                <div>وقت بداية الشيفت: <span id="shiftStartTime" style="color:#fff;">-</span></div>
+                <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت والصندوق</h4>
+                <button onclick="closeModal('shiftReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div style="background:#121214; padding:10px; border-radius:6px; margin-bottom:10px; font-size:0.85rem; border:1px solid var(--gold-primary);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span>إجمالي الكاش المقبوض:</span>
-                    <strong style="color:#10b981;"><span id="shiftTotalCash">0</span> د.ع</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--danger);">
-                    <span>خصم الصرفيات والسُلف:</span>
-                    <strong id="shiftTotalExpenses">0 د.ع</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px; border-top:1px dashed #444; padding-top:4px; font-weight:bold; color:var(--gold-bright);">
-                    <span>صافي الكاش الواجب بالصندوق:</span>
-                    <strong id="shiftNetDrawerCash" style="font-size:1.1rem;">0 د.ع</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>مبيعات الفيزا (الإلكتروني):</span>
-                    <strong id="shiftTotalVisa" style="color:#38bdf8;">0 د.ع</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>عدد فواتير الشيفت:</span>
-                    <strong id="shiftOrdersCount" style="color:#fff;">0</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-top:1px dashed #444; padding-top:6px; margin-top:4px; font-weight:bold;">
-                    <span>إجمالي مبيعات الشيفت:</span>
-                    <strong id="shiftGrandTotal" style="color:var(--gold-bright);">0 د.ع</strong>
+            <div style="background:#121215; padding:10px; border-radius:8px; font-size:0.85rem; line-height:1.8;">
+                <div>الكاشير الحالي: <strong id="shiftCashierName" style="color:var(--gold-bright);">الرئيسي</strong></div>
+                <div>وقت بداية الشيفت: <strong id="shiftStartTime" style="color:#aaa;">--:--</strong></div>
+                <hr style="border-color:#333; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between;"><span>عدد الطلبات:</span> <strong id="shiftOrdersCount">0</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="shiftGrandTotal" style="color:var(--gold-primary);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الكاش:</span> <strong id="shiftTotalCash" style="color:#10b981;">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الفيزا:</span> <strong id="shiftTotalVisa" style="color:#38bdf8;">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>خصم الصرفيات والسُلف:</span> - <strong id="shiftTotalExpenses">0</strong> د.ع</div>
+                <hr style="border-color:#333; margin:6px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:bold; background:#222; padding:6px; border-radius:6px; margin-top:6px;">
+                    <span>النقد الواجب تسليمه بالصندوق:</span>
+                    <strong id="shiftNetDrawerCash" style="color:var(--gold-bright);">0</strong> د.ع
                 </div>
             </div>
 
-            <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
-                <button onclick="alert('تمت معاينة حسابات الصندوق والشيفت دون طباعة!')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="window.print()" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
-                <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">تسليم وخروج</button>
-            </div>
+            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:12px;">
+                تأكيد تقفيل الشيفت وتسليم الصندوق 🔒
+            </button>
         </div>
     </div>
 
-    <!-- نافذة تعديل ملاحظات المطبخ -->
+    <!-- 📄 7. نافذة محرر ملاحظات المطبخ السريعة -->
     <div id="kitchenNotesManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-pen-to-square"></i> إدارة ملاحظات المطبخ السريعة</h4>
-                <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">X</button>
+                <h4 style="color:#a855f7;"><i class="fa-solid fa-pen-to-square"></i> محرر ملاحظات المطبخ السريعة</h4>
+                <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
             <div style="display:flex; gap:4px; margin-bottom:10px;">
-                <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة (مثلاً: بدون طماطة)..." style="margin:0; text-align:right;">
-                <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; white-space:nowrap;">إضافة</button>
+                <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة (مثال: بدون بصل)..." style="font-size:0.85rem;">
+                <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:6px 12px;">إضافة</button>
             </div>
 
-            <div id="kitchenNotesListTable" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"></div>
-
-            <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="background:#444; color:#fff;">إغلاق</button>
+            <div id="kitchenNotesListTable" style="max-height:200px; overflow-y:auto;"></div>
         </div>
     </div>
 
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
+        let isPrintingInProgress = false;
+
         function openCashDrawer() {
             window.print();
         }
@@ -826,8 +821,10 @@
             }
         }
 
-        // 🎯 دالة الطباعة المباشرة والمضمونة 100% لتجميع البيانات دون طباعة أوراق فارغة
+        // 🎯 الدالة الحاسمـة للطباعة الفردية والمنظمة (تمنع تكرار فتح نافذة الطباعة)
         function safeCheckAndPrint() {
+            if (isPrintingInProgress) return;
+
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = 0;
             
@@ -840,16 +837,18 @@
                 return;
             }
 
-            // 1️⃣ قراءة وتوليد التاريخ والوقت ورقم الطلب
+            isPrintingInProgress = true;
+
+            // 1️⃣ حساب التاريخ والوقت ورقم الطلب التراكمي
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
             const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            let orderNum = localStorage.getItem('mim89_daily_order_seq');
-            orderNum = orderNum ? (parseInt(orderNum) % 9999) + 1 : 1001;
-            localStorage.setItem('mim89_daily_order_seq', orderNum);
+            let orderSeq = localStorage.getItem('mim89_daily_order_seq');
+            orderSeq = orderSeq ? (parseInt(orderSeq) % 999) + 1 : 101;
+            localStorage.setItem('mim89_daily_order_seq', orderSeq);
 
-            // 2️⃣ قراءة بيانات الزبون والخدمة المحددة
+            // 2️⃣ قراءة بيانات الزبون والخدمة
             const custNameInput = document.getElementById('posCustName');
             const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'مباشر';
 
@@ -868,7 +867,7 @@
             const notesInput = document.getElementById('posOrderNotesInput');
             const notesText = notesInput ? notesInput.value.trim() : '';
 
-            // 3️⃣ تجميع الوجبات من السلة مباشرة وبناء عناصر HTML للوصل والمطبخ
+            // 3️⃣ بناء قائمة الوجبات
             let itemsReceiptHtml = '';
             let itemsKitchenHtml = '';
 
@@ -879,7 +878,6 @@
                 const itemEl = cartItems[i];
                 if (itemEl.innerText.includes('اختر الوجبات')) continue;
 
-                // قراءة السطر أو الاسم والعدد والسعر
                 const textContent = itemEl.innerText;
                 const lines = textContent.split('\n').filter(l => l.trim() !== '');
 
@@ -893,22 +891,25 @@
                 });
 
                 itemsReceiptHtml += `
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:bold; margin:3px 0;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:bold; margin:3px 0; color:#000;">
                         <span>${name} (x${qty})</span>
                         <span>${price}</span>
                     </div>`;
 
                 itemsKitchenHtml += `
-                    <div style="font-size:1rem; font-weight:bold; margin:4px 0;">• ${name} [ العدد: ${qty} ]</div>`;
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold; color:#000;">
+                        <span>● ${name}</span>
+                        <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${qty} ]</span>
+                    </div>`;
             }
 
             if (itemsReceiptHtml === '') {
-                itemsReceiptHtml = `<div style="font-size:0.85rem; font-weight:bold; padding:4px 0;">طلب وجبات طعام</div>`;
-                itemsKitchenHtml = `<div style="font-size:1rem; font-weight:bold; padding:4px 0;">• طلب وجبات طعام</div>`;
+                itemsReceiptHtml = `<div style="font-size:0.85rem; font-weight:bold; padding:4px 0; color:#000;">طلب وجبات طعام</div>`;
+                itemsKitchenHtml = `<div style="font-size:1rem; font-weight:bold; padding:4px 0; color:#000;">• طلب وجبات طعام</div>`;
             }
 
-            // 4️⃣ تعبئة الحقول داخل الفاتورة الحرارية
-            document.getElementById('receiptOrderNum').innerText = `رقم الطلب: #${orderNum}`;
+            // 4️⃣ تعبئة رقم الطلب الضخم والفاتورة
+            document.getElementById('receiptOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
             document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
             document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${payType}`;
@@ -918,7 +919,7 @@
             document.getElementById('receiptGrandTotal').innerText = `${totalValue.toLocaleString()} د.ع`;
 
             // تعبئة بون المطبخ
-            document.getElementById('kitchenOrderNum').innerText = `رقم الطلب للمطبخ: #${orderNum}`;
+            document.getElementById('kitchenOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${serviceType}`;
             document.getElementById('kitchenCustName').innerText = `اسم الزبون: ${custName}`;
             document.getElementById('kitchenTimeInfo').innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
@@ -932,18 +933,28 @@
                 kNotesBox.style.display = 'none';
             }
 
-            // 5️⃣ إرسال أمر الطباعة المباشر
-            window.print();
-
-            // 6️⃣ حفظ الطلب وتصفير السلة بعد إتمام العملية
+            // 5️⃣ الطباعة ومعالجة الفاتورة مع تعطيل التكرار
             setTimeout(() => {
-                if (typeof processPosDirectCheckout === 'function') {
-                    processPosDirectCheckout();
-                } else if (typeof clearPosCart === 'function') {
-                    clearPosCart();
-                }
-                if (notesInput) notesInput.value = '';
-            }, 400);
+                window.print();
+
+                setTimeout(() => {
+                    const originalPrint = window.print;
+                    window.print = function() {}; // تعطيل مؤقت لمنع التكرار من app.js
+
+                    if (typeof processPosDirectCheckout === 'function') {
+                        processPosDirectCheckout();
+                    } else if (typeof clearPosCart === 'function') {
+                        clearPosCart();
+                    }
+
+                    if (notesInput) notesInput.value = '';
+
+                    setTimeout(() => {
+                        window.print = originalPrint; // إعادة تفعيل الطباعة بعد انتهاء العملية
+                        isPrintingInProgress = false;
+                    }, 500);
+                }, 300);
+            }, 100);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
