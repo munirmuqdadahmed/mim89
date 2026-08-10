@@ -629,7 +629,7 @@
                 </div>
             </div>
 
-            <!-- بون المطبخ المستقل -->
+            <!-- بون المطبخ المستقل عبر الشبكة (LAN) -->
             <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px solid #000; padding-top:10px;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
@@ -792,7 +792,8 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
-        const KITCHEN_PRINTER_IP = "192.168.1.200"; 
+        // IP طابعة المطبخ عبر الشبكة (LAN) المحدث حسب ورقة الاختبار
+        const KITCHEN_PRINTER_IP = "192.168.123.100"; 
 
         function openCashDrawer() {
             window.print();
