@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.0 Full Production Ready)
+   MIM89 FAST FOOD - Master Core Engine (v18.2 Full Print Production Edition)
    مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
    ========================================================================== */
 
@@ -1108,7 +1108,7 @@ function renderExpensesListTable() {
         <div style="background:#121214; border:1px solid var(--card-border); padding:8px 10px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
                 <strong>📌 ${item.title}</strong>
-                <strong style="color:var(--danger); font-size:0.95rem;">- ${Number(item.amount).toLocaleString()} د.ع</strong>
+                <strong style="color:var(--danger-red); font-size:0.95rem;">- ${Number(item.amount).toLocaleString()} د.ع</strong>
             </div>
             <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:4px;">
                 <span>الملاحظة: ${item.note}</span>
@@ -1162,7 +1162,7 @@ function renderKitchenNotesTable() {
     container.innerHTML = notes.map((note, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:#121214; padding:6px 10px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:4px;">
             <span style="font-size:0.85rem; color:#fff;">● ${note}</span>
-            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:2px 8px; font-size:0.75rem;">حذف</button>
+            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger-red); color:#fff; width:auto; padding:2px 8px; font-size:0.75rem;">حذف</button>
         </div>
     `).join('');
 }
@@ -1252,6 +1252,7 @@ function processPosDirectCheckout() {
     if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
 
     let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '1';
+    localStorage.setItem('mim89_daily_order_seq', String(Number(orderSeq) + 1));
 
     const directOrder = {
         id: 'POS_' + Date.now(),
@@ -1277,7 +1278,7 @@ function processPosDirectCheckout() {
 
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
-    printReceipt(directOrder, false);
+    printReceipt(directOrder, true);
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (driverSelect) driverSelect.value = '';
@@ -1901,7 +1902,7 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-// 🖨️ دالة عامة لطباعة التقارير الحرارية والسُلف المفتوحة على الشاشة
+// 🖨️ دالة طباعة التقارير الحرارية المفتوحة
 function printCurrentActiveModal() {
     document.body.classList.add('modal-open-for-print');
     setTimeout(() => {
@@ -1912,9 +1913,13 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// 🖨️ دالة تجهيز بيانات الفاتورة الموحدة للزبون والمطبخ بدون تكرار
-function printReceipt(order, shouldTriggerWindowPrint = false) {
+// 🖨️ دالة تجهيز وطباعة الفاتورة والوصل الحراري المباشر
+function printReceipt(order, shouldTriggerWindowPrint = true) {
+    // 1️⃣ إغلاق كافة النوافذ المنبثقة للتقارير فوراً قبل إطلاق الطباعة
     document.body.classList.remove('modal-open-for-print');
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.style.display = 'none';
+    });
 
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
@@ -1924,9 +1929,8 @@ function printReceipt(order, shouldTriggerWindowPrint = false) {
     const driverSuffix = order.driverName && order.driverName !== '-' ? ` - 🛵 ${order.driverName}` : '';
     const dateTime = order.dateDate && order.timestamp ? `${order.dateDate} - ${order.timestamp}` : `${getTodayString()} - ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
 
-    // 1️⃣ تعبئة حقول وصل الكاشير والزبون
+    // 2️⃣ تعبئة وصل الزبون والكاشير
     if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + cashierName;
-    if (document.getElementById('receiptOrderNum')) document.getElementById('receiptOrderNum').innerText = `رقم الطلب: #${orderNum}`;
     if (document.getElementById('receiptOrderNumBig')) document.getElementById('receiptOrderNumBig').innerText = `#${orderNum}`;
     if (document.getElementById('receiptDateTime')) document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateTime}`;
     if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
@@ -1947,8 +1951,7 @@ function printReceipt(order, shouldTriggerWindowPrint = false) {
     if (document.getElementById('receiptDeliveryFee')) document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
     if (document.getElementById('receiptGrandTotal')) document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
 
-    // 2️⃣ تعبئة حقول بون المطبخ المدمج
-    if (document.getElementById('kitchenOrderNum')) document.getElementById('kitchenOrderNum').innerText = `رقم الطلب: #${orderNum}`;
+    // 3️⃣ تعبئة بون المطبخ المدمج
     if (document.getElementById('kitchenOrderNumBig')) document.getElementById('kitchenOrderNumBig').innerText = `#${orderNum}`;
     if (document.getElementById('kitchenOrderType')) document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${serviceType}${driverSuffix}`;
     if (document.getElementById('kitchenCustName')) document.getElementById('kitchenCustName').innerText = `الزبون: ${custName} ${order.phone && order.phone !== '-' ? '(' + order.phone + ')' : ''}`;
@@ -1973,24 +1976,12 @@ function printReceipt(order, shouldTriggerWindowPrint = false) {
         }
     }
 
-    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-
-    const printerSettings = getData('sys_printer_settings');
-
-    if (printerSettings && printerSettings.enableIpPrinting) {
-        sendDirectNetworkPrint(printerSettings.cashierIp, printerSettings.port, 'cashier', order);
-        sendDirectNetworkPrint(printerSettings.kitchen1Ip, printerSettings.port, 'kitchen1', order);
-        sendDirectNetworkPrint(printerSettings.kitchen2Ip, printerSettings.port, 'kitchen2', order);
-    } else if (shouldTriggerWindowPrint) {
+    // 4️⃣ استدعاء نافذة الطباعة الحرارية فوراً
+    if (shouldTriggerWindowPrint) {
         setTimeout(() => {
             window.print();
         }, 150);
     }
-}
-
-function sendDirectNetworkPrint(ip, port, target, orderData) {
-    if (!ip) return;
-    console.log(`Sending Direct Network Print to IP: ${ip}:${port} for Target: ${target}`);
 }
 
 /* ==========================================
