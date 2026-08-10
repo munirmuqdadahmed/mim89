@@ -364,7 +364,7 @@
             color: #000;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية المدمجة للزبون والمطبخ */
+        /* 🖨️ تنسيقات الطباعة الحرارية للوصول وبون المطبخ مرتبة ومنظمة */
         @media print {
             @page {
                 size: 80mm auto;
@@ -602,7 +602,7 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة الحرارية المدمجة المحدثة فوراً -->
+    <!-- 📄 نافذة الفاتورة الحرارية المدمجة مع رقم الطلب والتاريخ والوقت -->
     <div id="receiptModal" class="modal-overlay" style="display:none;">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -614,12 +614,14 @@
                     <small style="color:#000; font-size:0.85rem; font-weight:bold;">هاتف: 07750008630 - 07850008630</small><br>
                     <small id="receiptCashierName" style="color:#000; font-size:0.8rem;">الكاشير: الرئيسي</small>
                 </div>
-                <div style="font-size:0.8rem; margin-bottom:6px; color:#000; font-weight:bold;">
+                <div style="font-size:0.8rem; margin-bottom:6px; color:#000; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px;">
+                    <div id="receiptOrderNum" style="font-size:0.95rem; color:#000; font-weight:bold; margin-bottom:2px;">رقم الطلب: #--</div>
+                    <div id="receiptDateTime" style="font-size:0.75rem; color:#333; margin-bottom:4px;">التاريخ والوقت: --/--/---- --:--</div>
                     <div id="receiptCustInfo">الزبون: مباشر</div>
                     <div id="receiptPaymentInfo">طريقة الدفع: كاش</div>
                     <div id="receiptTypeInfo">نوع الخدمة: صالة</div>
                 </div>
-                <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
+                <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
                     <div id="receiptItemsBody"></div>
                 </div>
                 <div style="font-size:0.85rem; color:#000;">
@@ -632,14 +634,15 @@
                 </div>
             </div>
 
-            <!-- بون المطبخ المدمج تحت وصل الزبون ليطبع فوراً معه -->
-            <div id="kitchenReceiptPart" style="margin-top:20px; color:#000; border-top:3px dashed #000; padding-top:12px; display:block;">
+            <!-- بون المطبخ المنظم والمدمج -->
+            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px dashed #000; padding-top:8px; display:block;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
-                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
-                <div id="kitchenCustName" style="font-size:0.85rem;"></div>
-                <div id="kitchenTimeInfo" style="font-size:0.8rem; margin-bottom:6px;"></div>
-                <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; border:1px solid #000; padding:3px; color:#000;"></div>
+                <div id="kitchenOrderNum" style="font-weight:bold; font-size:0.9rem; margin-top:4px;"></div>
+                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.9rem;"></div>
+                <div id="kitchenCustName" style="font-size:0.8rem;"></div>
+                <div id="kitchenTimeInfo" style="font-size:0.75rem; margin-bottom:4px;"></div>
+                <div id="kitchenItemsBody" style="font-size:1.05rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
+                <div id="kitchenNotesInfo" style="font-size:0.8rem; font-weight:bold; margin-top:6px; border:1px solid #000; padding:3px; color:#000;"></div>
             </div>
         </div>
     </div>
@@ -824,7 +827,7 @@
             }
         }
 
-        // 🛡️ فحص صارم يمنع الطباعة تماماً إذا كانت السلة فارغة أو صفرية
+        // 🛡️ فحص صارم يمنع طباعة أي فاتورة فارغة ويضيف رقم الطلب والتاريخ والوقت تلقائياً
         function safeCheckAndPrint() {
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = 0;
@@ -838,10 +841,13 @@
                 return;
             }
 
+            // توليد وتحديث رقم الطلب، التاريخ والوقت الحالي
+            updateReceiptHeaderInfo();
+
             // تنظيف أي تكرار محتمل في اسم التوصيل
             fixDeliveryNameDuplication();
 
-            // إعطاء مهلة قصيرة جداً (100 ميلي ثانية) لضمان تحديث بيانات الوصل والمطبخ بالكامل قبل فتح نافذة الطباعة
+            // مهلة بسيطة لضمان تحديث الـ DOM بالكامل ثم طباعة الفاتورة صحيحة 100%
             setTimeout(() => {
                 window.print();
                 
@@ -854,6 +860,26 @@
                     }
                 }, 300);
             }, 100);
+        }
+
+        function updateReceiptHeaderInfo() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            // توليد رقم طلب عشوائي أو تسلسلي يعتمد على الثواني والدقائق
+            const orderNum = Math.floor(1000 + Math.random() * 9000);
+
+            // تحديث وصل الكاشير
+            const ordNumEl = document.getElementById('receiptOrderNum');
+            if (ordNumEl) ordNumEl.innerText = `رقم الطلب: #${orderNum}`;
+
+            const dtEl = document.getElementById('receiptDateTime');
+            if (dtEl) dtEl.innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
+
+            // تحديث بون المطبخ
+            const kOrdNum = document.getElementById('kitchenOrderNum');
+            if (kOrdNum) kOrdNum.innerText = `رقم الطلب: #${orderNum}`;
         }
 
         function fixDeliveryNameDuplication() {
