@@ -364,7 +364,7 @@
             color: #000;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية الخاصة بالمتصفح */
+        /* 🖨️ تنسيقات الطباعة الحرارية المدمجة للزبون والمطبخ */
         @media print {
             @page {
                 size: 80mm auto;
@@ -602,7 +602,7 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة الحرارية للطباعة المباشرة -->
+    <!-- 📄 نافذة الفاتورة الحرارية المدمجة المحدثة فوراً -->
     <div id="receiptModal" class="modal-overlay" style="display:none;">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
@@ -632,8 +632,8 @@
                 </div>
             </div>
 
-            <!-- بون المطبخ المستقل للطباعة المباشرة -->
-            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px solid #000; padding-top:10px; display:none;">
+            <!-- بون المطبخ المدمج تحت وصل الزبون ليطبع فوراً معه -->
+            <div id="kitchenReceiptPart" style="margin-top:20px; color:#000; border-top:3px dashed #000; padding-top:12px; display:block;">
                 <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
                 <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
                 <div id="kitchenCustName" style="font-size:0.85rem;"></div>
@@ -689,7 +689,7 @@
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
                 <button onclick="alert('يمكنك معاينة ومراجعة جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="printThermalElement('receiptModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
+                <button onclick="window.print()" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
         </div>
@@ -767,7 +767,7 @@
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
                 <button onclick="alert('تمت معاينة حسابات الصندوق والشيفت دون طباعة!')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="printThermalElement('shiftReportModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
+                <button onclick="window.print()" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
                 <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">تسليم وخروج</button>
             </div>
         </div>
@@ -824,7 +824,7 @@
             }
         }
 
-        // 🛡️ فحص صارم وتنظيف تكرار أسماء التوصيل قبل الطباعة
+        // 🛡️ فحص صارم يمنع الطباعة تماماً إذا كانت السلة فارغة أو صفرية
         function safeCheckAndPrint() {
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = 0;
@@ -838,11 +838,22 @@
                 return;
             }
 
-            // منع تكرار اسم السائق في نوع الخدمة
+            // تنظيف أي تكرار محتمل في اسم التوصيل
             fixDeliveryNameDuplication();
 
-            // تنفيذ طباعة الكاشير وبون المطبخ معاً بضغطة واحدة
-            processFullOneClickCheckout();
+            // إعطاء مهلة قصيرة جداً (100 ميلي ثانية) لضمان تحديث بيانات الوصل والمطبخ بالكامل قبل فتح نافذة الطباعة
+            setTimeout(() => {
+                window.print();
+                
+                // حفظ الطلب وتصفير السلة بعد نجاح الطباعة
+                setTimeout(() => {
+                    if (typeof processPosDirectCheckout === 'function') {
+                        processPosDirectCheckout();
+                    } else if (typeof clearPosCart === 'function') {
+                        clearPosCart();
+                    }
+                }, 300);
+            }, 100);
         }
 
         function fixDeliveryNameDuplication() {
@@ -854,71 +865,6 @@
                     typeInfo.innerText = parts[0];
                 }
             }
-        }
-
-        function processFullOneClickCheckout() {
-            // 1️⃣ إرسال أمر المطبخ عبر الشبكة LAN
-            sendKitchenPrintCommandOverLAN();
-
-            // 2️⃣ إرسال أمر طباعة بون المطبخ مباشرة عبر نافذة مخفية لضمان عمل الطابعة فوراً
-            printKitchenViaHiddenFrame();
-
-            // 3️⃣ طباعة فاتورة الكاشير الأساسية
-            window.print();
-
-            // 4️⃣ تصفير السلة وحفظ الطلب
-            setTimeout(() => {
-                if (typeof processPosDirectCheckout === 'function') {
-                    processPosDirectCheckout();
-                } else if (typeof clearPosCart === 'function') {
-                    clearPosCart();
-                }
-            }, 300);
-        }
-
-        function sendKitchenPrintCommandOverLAN() {
-            if (typeof getKitchenReceiptRawData === 'function') {
-                const rawData = getKitchenReceiptRawData();
-                fetch(`http://${KITCHEN_PRINTER_IP}:9100`, {
-                    method: 'POST',
-                    body: rawData,
-                    mode: 'no-cors'
-                }).catch(err => console.log('Kitchen LAN Print Sent'));
-            }
-        }
-
-        function printKitchenViaHiddenFrame() {
-            const kitchenPart = document.getElementById('kitchenReceiptPart');
-            if (!kitchenPart) return;
-            
-            // إظهار بون المطبخ مؤقتاً في إطار مخفي للطباعة السريعة
-            kitchenPart.style.display = 'block';
-            
-            let iframe = document.getElementById('hiddenKitchenPrinterFrame');
-            if (!iframe) {
-                iframe = document.createElement('iframe');
-                iframe.id = 'hiddenKitchenPrinterFrame';
-                iframe.style.position = 'fixed';
-                iframe.style.right = '0';
-                iframe.style.bottom = '0';
-                iframe.style.width = '0';
-                iframe.style.height = '0';
-                iframe.style.border = '0';
-                document.body.appendChild(iframe);
-            }
-
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write('<html><head><title>Kitchen Print</title><style>body{font-family:Tahoma; direction:rtl; width:72mm; font-size:12px; margin:0; padding:5px;}</style></head><body>');
-            doc.write(kitchenPart.innerHTML);
-            doc.write('</body></html>');
-            doc.close();
-
-            setTimeout(() => {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-                kitchenPart.style.display = 'none';
-            }, 150);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
