@@ -366,11 +366,11 @@
             color: #000;
         }
 
+        /* 🖨️ منطقة الطباعة الحرارية المخفية تماماً من الشاشة والظاهرة في الورق المطبوع فقط */
         #hiddenThermalPrintArea {
-            display: none;
+            display: none !important;
         }
 
-        /* 🖨️ القواعد الذكية الشاملة للطباعة الحرارية (الفواتير + التقارير والسُلف) */
         @media print {
             @page {
                 size: 80mm auto;
@@ -378,80 +378,39 @@
             }
 
             html, body {
-                background: #ffffff !important;
-                color: #000000 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                height: auto !important;
-            }
-
-            /* 1️⃣ إخفاء خلفيات النظام وشاشات الإدخال الأساسية */
-            #authOverlay, 
-            #cashierMainApp, 
-            .no-print, 
-            button, 
-            input, 
-            select {
-                display: none !important;
-            }
-
-            /* 2️⃣ إذا كانت هناك نافذة تقرير مفتوحة على الشاشة (مثل السُلف أو التقرير المالي) */
-            body.modal-open-for-print .modal-overlay {
-                display: block !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 72mm !important;
-                background: #fff !important;
-                padding: 0 !important;
-            }
-
-            body.modal-open-for-print .modal-body {
-                display: block !important;
                 background: #fff !important;
                 color: #000 !important;
-                border: none !important;
-                width: 72mm !important;
-                max-width: 72mm !important;
-                padding: 2mm !important;
-                box-shadow: none !important;
+                height: auto !important;
+                overflow: visible !important;
             }
 
-            body.modal-open-for-print .modal-body * {
-                color: #000000 !important;
+            body * { 
+                visibility: hidden !important; 
+            }
+
+            #hiddenThermalPrintArea, 
+            #hiddenThermalPrintArea * { 
+                visibility: visible !important; 
+                color: #000000 !important; 
                 background: #ffffff !important;
             }
 
-            body.modal-open-for-print #hiddenThermalPrintArea {
-                display: none !important;
-            }
-
-            /* 3️⃣ إذا كانت الطباعة لفاتورة بيع مباشرة (بدون تقرير مفتوح) */
-            body:not(.modal-open-for-print) .modal-overlay {
-                display: none !important;
-            }
-
-            body:not(.modal-open-for-print) #hiddenThermalPrintArea {
-                display: block !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 72mm !important;
-                max-width: 72mm !important;
-                margin: 0 !important;
-                padding: 2mm !important;
+            #hiddenThermalPrintArea { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 72mm !important; 
+                max-width: 72mm !important; 
+                margin: 0 !important; 
+                padding: 2mm !important; 
                 box-sizing: border-box !important;
                 direction: rtl !important;
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
-                color: #000000 !important;
-                background: #ffffff !important;
-            }
-
-            body:not(.modal-open-for-print) #hiddenThermalPrintArea * {
-                color: #000000 !important;
-                background: #ffffff !important;
+                display: block !important;
             }
         }
     </style>
@@ -612,7 +571,7 @@
         </div>
     </div>
 
-    <!-- 📄 عنصر الفاتورة المزدوجة والمستقل بالكامل للطباعة المباشرة -->
+    <!-- 📄 عنصر الطباعة الحراري المباشر (مخفي نهائياً عن الشاشة ويظهر في الورقة المطبوعة فقط) -->
     <div id="hiddenThermalPrintArea">
         <!-- 1️⃣ وصل الزبون / الكاشير -->
         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
@@ -678,8 +637,7 @@
                 <button onclick="closeModal('completedOrdersModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
             </div>
             <div id="completedOrdersList"></div>
-            <button onclick="printCurrentActiveModal()" class="gold-btn no-print" style="margin-top:10px; background:#3b82f6; color:#fff;">🖨️ طباعة سجل الفواتير</button>
-            <button onclick="clearCompletedOrdersHistory()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:6px;">مسح السجل بالكامل</button>
+            <button onclick="clearCompletedOrdersHistory()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:10px;">مسح السجل بالكامل</button>
         </div>
     </div>
 
@@ -688,10 +646,10 @@
         <div class="modal-body" style="max-width:500px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> إدارة الصرفيات والمسحوبات والسُلف</h4>
-                <button onclick="closeModal('expenseManagerModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
+                <button onclick="closeModal('expenseManagerModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div class="no-print" style="background:#121215; padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
+            <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
                 <label class="section-label">نوع الصرفية:</label>
                 <select id="expenseTypeSelect" class="gold-input" onchange="toggleExpenseTypeFields()" style="font-size:0.85rem; margin-bottom:6px;">
                     <option value="daily_petty">صرفيات يومية / نثرية (نظافة / زبالة / مسواق)</option>
@@ -712,8 +670,6 @@
 
             <h5 style="color:var(--gold-bright); margin-bottom:6px;">صرفيات اليوم المسجلة:</h5>
             <div id="expensesListTable" style="max-height:200px; overflow-y:auto;"></div>
-
-            <button onclick="printCurrentActiveModal()" class="gold-btn no-print" style="margin-top:10px; background:#3b82f6; color:#fff;">🖨️ طباعة وصل الصرفيات والسُلف</button>
         </div>
     </div>
 
@@ -722,10 +678,10 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:#38bdf8;"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</h4>
-                <button onclick="closeModal('dailyReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div class="no-print" style="display:flex; gap:6px; margin-bottom:10px;">
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
                 <input type="date" id="reportDateInput" class="gold-input" style="flex:2;" onchange="renderDailyReport(this.value)">
                 <button onclick="renderDailyReport(document.getElementById('reportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
@@ -747,8 +703,6 @@
 
             <h5 style="color:var(--gold-primary); margin:10px 0 6px 0;">إحصائيات سائقي التوصيل:</h5>
             <div id="repDriversList" style="max-height:150px; overflow-y:auto;"></div>
-
-            <button onclick="printCurrentActiveModal()" class="gold-btn no-print" style="margin-top:10px; background:#3b82f6; color:#fff;">🖨️ طباعة كشف الحساب المالي</button>
         </div>
     </div>
 
@@ -757,10 +711,10 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:#f59e0b;"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</h4>
-                <button onclick="closeModal('itemsReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
+                <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div class="no-print" style="display:flex; gap:6px; margin-bottom:10px;">
+            <div style="display:flex; gap:6px; margin-bottom:10px;">
                 <input type="date" id="itemsReportDateInput" class="gold-input" style="flex:2;" onchange="renderItemsReport(this.value)">
                 <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
@@ -772,8 +726,7 @@
 
             <div id="repItemsSoldListDetail" style="max-height:250px; overflow-y:auto; font-size:0.85rem;"></div>
 
-            <button onclick="printCurrentActiveModal()" class="gold-btn no-print" style="margin-top:10px; background:#3b82f6; color:#fff;">🖨️ طباعة جرد الوجبات</button>
-            <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn no-print" style="margin-top:6px; background:#25D366; color:#fff;">
+            <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn" style="margin-top:12px; background:#25D366; color:#fff;">
                 <i class="fa-brands fa-whatsapp"></i> إرسال التقرير عبر الواتساب
             </button>
         </div>
@@ -784,7 +737,7 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت والصندوق</h4>
-                <button onclick="closeModal('shiftReportModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
+                <button onclick="closeModal('shiftReportModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
             <div style="background:#121215; padding:10px; border-radius:8px; font-size:0.85rem; line-height:1.8;">
@@ -803,8 +756,7 @@
                 </div>
             </div>
 
-            <button onclick="printCurrentActiveModal()" class="gold-btn no-print" style="margin-top:10px; background:#3b82f6; color:#fff;">🖨️ طباعة وصل التقفيل الحراري</button>
-            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn no-print" style="background:var(--danger); color:#fff; margin-top:6px;">
+            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:12px;">
                 تأكيد تقفيل الشيفت وتسليم الصندوق 🔒
             </button>
         </div>
@@ -815,10 +767,10 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h4 style="color:#a855f7;"><i class="fa-solid fa-pen-to-square"></i> محرر ملاحظات المطبخ السريعة</h4>
-                <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn no-print" style="width:auto; padding:2px 8px;">✕</button>
+                <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
             </div>
 
-            <div class="no-print" style="display:flex; gap:4px; margin-bottom:10px;">
+            <div style="display:flex; gap:4px; margin-bottom:10px;">
                 <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة (مثال: بدون بصل)..." style="font-size:0.85rem;">
                 <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:6px 12px;">إضافة</button>
             </div>
@@ -859,23 +811,9 @@
             }
         }
 
-        // 🖨️ دالة عامة لطباعة أي تقرير أو كشف حساب أو سُلف مفتوحة حالياً على الشاشة
-        function printCurrentActiveModal() {
-            document.body.classList.add('modal-open-for-print');
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => {
-                    document.body.classList.remove('modal-open-for-print');
-                }, 500);
-            }, 100);
-        }
-
-        // 🎯 الدالة الفورية لإعداد وطباعة وصل المبيعات وبون المطبخ فقط
+        // 🎯 الدالة الفورية للطباعة المباشرة بدون أي شاشات أو نوافذ منبثقة
         function safeCheckAndPrint() {
             if (isPrintingInProgress) return;
-
-            // التأكد من عدم وجود نافذة تقرير مفتوحة على الشاشة
-            document.body.classList.remove('modal-open-for-print');
 
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = 0;
@@ -960,7 +898,7 @@
                 itemsKitchenHtml = `<div style="font-size:1rem; font-weight:bold; padding:4px 0; color:#000;">• طلب وجبات طعام</div>`;
             }
 
-            // 4️⃣ تعبئة بيانات الفاتورة بالكامل
+            // 4️⃣ تعبئة بيانات الطباعة
             document.getElementById('receiptOrderNumBig').innerText = `#${orderSeq}`;
             document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateStr} - ${timeStr}`;
             document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
@@ -984,9 +922,7 @@
                 kNotesBox.style.display = 'none';
             }
 
-            // 5️⃣ إغلاق النوافذ المنبثقة لو كانت مفتوحة وإرسال الأمر المباشر
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-
+            // 5️⃣ إرسال أمر الطباعة المباشر وتصفير الشاشة فوراً
             setTimeout(() => {
                 window.print();
 
