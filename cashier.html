@@ -364,7 +364,7 @@
             color: #000;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية الصارمة لمنع الورق الفارغ */
+        /* 🖨️ تنسيقات الطباعة الحرارية الصارمة لمنع أي أوراق فارغة أو تكرار */
         @media print {
             @page {
                 size: 80mm auto;
@@ -384,14 +384,14 @@
                 visibility: hidden !important; 
             }
 
-            #receiptModalBody.printable-active, 
-            #receiptModalBody.printable-active * { 
+            #receiptModalBody, 
+            #receiptModalBody * { 
                 visibility: visible !important; 
                 color: #000000 !important; 
                 background: #ffffff !important;
             }
 
-            #receiptModalBody.printable-active { 
+            #receiptModalBody { 
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
@@ -517,7 +517,7 @@
                             </div>
                         </div>
 
-                        <!-- 📝 ملاحظات المطبخ السريعة الصريحة والنظيفة -->
+                        <!-- 📝 ملاحظات المطبخ السريعة -->
                         <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 4px 0; flex-shrink:0;">
                             <span style="font-size:0.75rem; color:var(--gold-bright); font-weight:bold; display:block; margin-bottom:4px;">
                                 <i class="fa-solid fa-pen-clip"></i> ملاحظات للمطبخ:
@@ -541,7 +541,7 @@
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔘 زر الطباعة الآمن والذكي -->
+                        <!-- 🔘 زر الطباعة الذكي والآمن -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
@@ -602,8 +602,8 @@
         </div>
     </div>
 
-    <!-- 📄 نافذة الفاتورة الحرارية الخفية للطباعة -->
-    <div id="receiptModal" class="modal-overlay">
+    <!-- 📄 نافذة الفاتورة الحرارية للطباعة المباشرة -->
+    <div id="receiptModal" class="modal-overlay" style="display:none;">
         <div class="modal-body" id="receiptModalBody" style="background:#fff; color:#000; font-family:'Tahoma', sans-serif; width:72mm; padding:8px; border-radius:0;">
             
             <!-- وصل الكاشير والزبون -->
@@ -633,14 +633,7 @@
             </div>
 
             <!-- بون المطبخ المستقل عبر الشبكة (LAN) -->
-            <div id="kitchenReceiptPart" style="margin-top:15px; color:#000; border-top:2px solid #000; padding-top:10px;">
-                <h4 style="text-align:center; font-size:1.1rem; margin:0; border-bottom:1px solid #000; padding-bottom:4px; color:#000; font-weight:bold;">*** بون المطبخ ***</h4>
-                <div id="kitchenOrderType" style="font-weight:bold; font-size:0.95rem; margin-top:6px;"></div>
-                <div id="kitchenCustName" style="font-size:0.85rem;"></div>
-                <div id="kitchenTimeInfo" style="font-size:0.8rem; margin-bottom:6px;"></div>
-                <div id="kitchenItemsBody" style="font-size:1.1rem; font-weight:bold; border-top:1px solid #000; padding-top:4px;"></div>
-                <div id="kitchenNotesInfo" style="font-size:0.85rem; font-weight:bold; margin-top:8px; border:1px solid #000; padding:3px; color:#000;"></div>
-            </div>
+            <div id="kitchenReceiptPart" style="display:none;"></div>
         </div>
     </div>
 
@@ -689,7 +682,7 @@
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
                 <button onclick="alert('يمكنك معاينة ومراجعة جميع الأرقام الموضحة أعلاه بدون طباعة.')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="printThermalElement('dailyReportModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
+                <button onclick="printThermalElement('receiptModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">إغلاق</button>
             </div>
         </div>
@@ -767,7 +760,7 @@
 
             <div style="display:flex; gap:6px; margin-top:12px;" class="no-print">
                 <button onclick="alert('تمت معاينة حسابات الصندوق والشيفت دون طباعة!')" class="gold-btn" style="flex:1; background:#3b82f6; color:#fff;">معاينة فقط</button>
-                <button onclick="printThermalElement('shiftReportModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
+                <button onclick="printThermalElement('receiptModalBody')" class="gold-btn" style="flex:1; background:#10b981; color:#fff;">طباعة</button>
                 <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="flex:1; background:var(--danger); color:#fff;">تسليم وخروج</button>
             </div>
         </div>
@@ -824,48 +817,39 @@
             }
         }
 
-        // 🛡️ فحص ذكي: منع الطباعة والتصفير إذا كانت السلة فارغة
+        // 🛡️ فحص صارم يمنع طباعة السلة الفارغة أو الصفرية ويمنع التكرار
         function safeCheckAndPrint() {
-            const cartItems = document.querySelectorAll('#posCartList .cart-item, #posCartList tr, #posCartList > div');
             const totalElement = document.getElementById('posTotalAmount');
-            
             let totalValue = 0;
+            
             if (totalElement) {
                 totalValue = parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0;
             }
 
             if (totalValue <= 0) {
-                alert('⚠️ السلة فارغة! اختر الوجبات أولاً قبل طباعة الفاتورة.');
+                alert('⚠️ السلة فارغة أو لم يتم اختيار وجبات! يرجى إضافة وجبات أولاً.');
                 return;
             }
 
+            // تنفيذ عملية الطباعة الفورية وإرسال المطبخ
             processFullOneClickCheckout();
         }
 
         function processFullOneClickCheckout() {
-            const cashierPart = document.getElementById('cashierReceiptPart');
-            const kitchenPart = document.getElementById('kitchenReceiptPart');
-
-            if (cashierPart && kitchenPart) {
-                cashierPart.style.display = 'block';
-                kitchenPart.style.display = 'none';
-            }
-
-            printThermalElement('receiptModalBody');
+            // 1️⃣ إرسال أمر المطبخ عبر الشبكة LAN
             sendKitchenPrintCommandOverLAN();
 
+            // 2️⃣ طباعة الفاتورة محلياً وفتح الدرج
+            window.print();
+
+            // 3️⃣ تصفير الحفظ والسلّة بعد نجاح الطلب
             setTimeout(() => {
                 if (typeof processPosDirectCheckout === 'function') {
                     processPosDirectCheckout();
                 } else if (typeof clearPosCart === 'function') {
                     clearPosCart();
                 }
-
-                if (cashierPart && kitchenPart) {
-                    cashierPart.style.display = 'block';
-                    kitchenPart.style.display = 'block';
-                }
-            }, 400);
+            }, 300);
         }
 
         function sendKitchenPrintCommandOverLAN() {
@@ -877,21 +861,6 @@
                     mode: 'no-cors'
                 }).catch(err => console.log('Kitchen LAN Print Sent'));
             }
-        }
-
-        function printThermalElement(elementId) {
-            const target = document.getElementById(elementId);
-            if (!target) return;
-
-            document.querySelectorAll('.printable-active').forEach(e => e.classList.remove('printable-active'));
-            target.classList.add('printable-active');
-
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => {
-                    target.classList.remove('printable-active');
-                }, 300);
-            }, 50);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
