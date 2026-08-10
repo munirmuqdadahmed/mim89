@@ -364,7 +364,7 @@
             color: #000;
         }
 
-        /* 🖨️ تنسيقات الطباعة الحرارية المخصصة */
+        /* 🖨️ تنسيقات الطباعة الحرارية الصارمة لمنع الورق الفارغ */
         @media print {
             @page {
                 size: 80mm auto;
@@ -376,32 +376,35 @@
                 padding: 0 !important;
                 background: #fff !important;
                 color: #000 !important;
+                height: auto !important;
+                overflow: visible !important;
             }
 
             body * { 
                 visibility: hidden !important; 
             }
 
-            .printable-active, 
-            .printable-active * { 
+            #receiptModalBody.printable-active, 
+            #receiptModalBody.printable-active * { 
                 visibility: visible !important; 
                 color: #000000 !important; 
                 background: #ffffff !important;
             }
 
-            .printable-active { 
+            #receiptModalBody.printable-active { 
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 72mm !important; 
                 max-width: 72mm !important; 
-                margin: 0 auto !important; 
+                margin: 0 !important; 
                 padding: 2mm !important; 
                 box-sizing: border-box !important;
                 direction: rtl !important;
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
+                display: block !important;
             }
 
             .no-print { 
@@ -538,14 +541,14 @@
                             <p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>
                         </div>
 
-                        <!-- 🔘 زر الطباعة الشامل والعريض -->
+                        <!-- 🔘 زر الطباعة الآمن والذكي -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink: 0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1rem; font-weight:bold;">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             <div style="display:flex; gap:4px;">
-                                <button class="gold-btn" onclick="processFullOneClickCheckout()" style="flex:2; padding: 12px; font-size: 1.05rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">طباعة الفاتورة 🖨️</button>
+                                <button class="gold-btn" onclick="safeCheckAndPrint()" style="flex:2; padding: 12px; font-size: 1.05rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">طباعة الفاتورة 🖨️</button>
                                 <button class="gold-btn" onclick="clearPosCart()" style="flex:1; background:var(--danger); color:#fff;">إلغاء</button>
                             </div>
                         </div>
@@ -792,7 +795,6 @@
     <!-- المحرك البرمجي الأساسي -->
     <script src="app.js"></script>
     <script>
-        // IP طابعة المطبخ عبر الشبكة (LAN) المحدث حسب ورقة الاختبار
         const KITCHEN_PRINTER_IP = "192.168.123.100"; 
 
         function openCashDrawer() {
@@ -820,6 +822,24 @@
                 const menu = document.getElementById('brandDropdownMenu');
                 if (menu && menu.style.display === 'block') menu.style.display = 'none';
             }
+        }
+
+        // 🛡️ فحص ذكي: منع الطباعة والتصفير إذا كانت السلة فارغة
+        function safeCheckAndPrint() {
+            const cartItems = document.querySelectorAll('#posCartList .cart-item, #posCartList tr, #posCartList > div');
+            const totalElement = document.getElementById('posTotalAmount');
+            
+            let totalValue = 0;
+            if (totalElement) {
+                totalValue = parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0;
+            }
+
+            if (totalValue <= 0) {
+                alert('⚠️ السلة فارغة! اختر الوجبات أولاً قبل طباعة الفاتورة.');
+                return;
+            }
+
+            processFullOneClickCheckout();
         }
 
         function processFullOneClickCheckout() {
