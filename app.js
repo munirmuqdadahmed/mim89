@@ -280,6 +280,7 @@ function refreshActiveUI() {
     }
 }
 
+// دالة التحديث والمزامنة الفورية الفاعلة 100%
 async function globalSystemSync(btnElement) {
     let originalText = "";
     if (btnElement) {
@@ -312,9 +313,11 @@ async function globalSystemSync(btnElement) {
             }
         }
         refreshActiveUI();
+        alert("✅ تم مزامنة وتحديث النظام بنجاح من السحابة!");
     } catch (error) {
         console.error("Global sync error:", error);
         refreshActiveUI();
+        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابة.");
     } finally {
         if (btnElement) {
             setTimeout(() => {
@@ -1860,7 +1863,7 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// دالة الطباعة النظيفة والمحدثة (مدمجة بمطبخ وكاشير لمنع رموز الترويسات)
+// دالة الطباعة النظيفة والمحدثة (منزلية عبر نافذة الويندوز وتجنب ترويسات الشبكة المفسدة)
 function printReceipt(order, shouldTriggerWindowPrint = true) {
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
