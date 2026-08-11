@@ -360,7 +360,7 @@
             font-weight: 700;
         }
 
-        /* 🖨️ التنسيق الحراري المباشر 80mm (الكاشير فقط) */
+        /* 🖨️ التنسيق الحراري المباشر 80mm (الكاشير والمطبخ معاً) */
         #mim89ThermalPrintBox { display: none; }
 
         @media print {
@@ -530,7 +530,7 @@
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             
-                            <!-- ⭐ الزر الرئيس الموحد للطباعة المباشرة وإتمام الطلب -->
+                            <!-- ⭐ الزر الرئيس الموحد للطباعة المباشرة وإتمام الطلب (بدون أي أخطاء شبكية) -->
                             <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 14px; font-size: 1.1rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
                                 <i class="fa-solid fa-print"></i> 🚀 طباعة وإتمام الطلب (المطبخ + الكاشير)
                             </button>
@@ -572,7 +572,7 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية (الكاشير فقط) -->
+    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية (تطبع الكاشير والمطبخ معاً بشكل نظيف) -->
     <div id="mim89ThermalPrintBox"></div>
 
     <!-- 📊 النوافذ المنبثقة -->
@@ -813,7 +813,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الفصل التام: كاشير محلي بالويندوز فقط + مطبخ شبكي خام فقط
+        // ⭐ 🚀 الدالة النظيفة 100% المدمجة (تطبع المطبخ والكاشير معاً بشكل مرتب وبدون ترويسات شبكية مفسدة)
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -826,8 +826,6 @@
             if (totalValue <= 0) {
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
-
-            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ الشبكية
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -847,9 +845,8 @@
             const notesInput = document.getElementById('posOrderNotesInput');
             const notesText = notesInput ? notesInput.value.trim() : '';
 
-            // 1️⃣ استخراج الوجبات وتنسيقها
             let itemsCashierHtml = '';
-            let itemsKitchenText = '';
+            let itemsKitchenHtml = '';
 
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
@@ -867,40 +864,22 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        // للكاشير (HTML للويندوز)
                         itemsCashierHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
 
-                        // للمطبخ (نص خام شبكي)
-                        itemsKitchenText += `- ${name}  [x${qty}]\n`;
+                        itemsKitchenHtml += `
+                            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; margin:2px 0; color:#000;">
+                                <span>- ${name}</span>
+                                <span>[x${qty}]</span>
+                            </div>`;
                     }
                 }
             }
 
-            // 2️⃣ إرسال أمر المطبخ حصراً عبر البورت 9100 للشبكة (بدون أي تأثير على الكاشير)
-            let kitchenPayload = 
-                "\x1B\x40" + 
-                "\x1B\x61\x01" + "*** امر تجهيز مطبخ ***\n" +
-                `طلب رقم: #${orderSeq}\n` +
-                `الخدمة: ${serviceType}\n` +
-                "--------------------------------\n" +
-                "\x1B\x61\x00" +
-                itemsKitchenText +
-                (notesText ? "--------------------------------\nملاحظة: " + notesText + "\n" : "") +
-                "\n\n\n\x1B\x69";
-
-            try {
-                fetch(`http://${kitchenPrinterIp}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: kitchenPayload
-                }).catch(() => {});
-            } catch(e) {}
-
-            // 3️⃣ طباعة فاتورة الكاشير المحلي فقط عبر الويندوز
+            // طباعة الفاتورة الشاملة عبر نافذة النظام نظيفة وخالية من أي رموز
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
@@ -925,6 +904,11 @@
                             ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
                         </div>
 
+                        <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:4px; background:#f5f5f5;">
+                            <div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:2px; text-decoration:underline;">*** أمر تجهيز مطبخ ***</div>
+                            ${itemsKitchenHtml}
+                        </div>
+
                         <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px; color:#000;">
                             ${itemsCashierHtml}
                         </div>
@@ -947,7 +931,6 @@
                 }, 100);
             }
 
-            // 4️⃣ تصفير السلة وزيادة العداد
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
 
             const posCartList = document.getElementById('posCartList');
