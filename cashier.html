@@ -361,7 +361,7 @@
         }
 
         /* ========================================================= */
-        /* 🖨️ قواعد الطباعة الحرارية المباشرة المضبوطة بالكامل */
+        /* 🖨️ ضبط أبعاد طباعة الفواتير بدون تداخل أو اقتطاع */
         /* ========================================================= */
         #mim89ThermalPrintBox {
             display: none;
@@ -527,7 +527,7 @@
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>
                         </div>
 
-                        <!-- 🔘 أزرار الطباعة المعزولة عن التكرار -->
+                        <!-- 🔘 أزرار الطباعة المعزولة كلياً من أية نوافذ زائدة -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1.1rem; font-weight:900;">
                                 <span>المجموع الكلي:</span>
@@ -569,7 +569,7 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية المخصصة للطباعة السريعة -->
+    <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
     <!-- 📊 النوافذ المنبثقة -->
@@ -745,7 +745,7 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي المعزول لمنع الأوامر المزدوجة -->
+    <!-- 🧠 المحرك البرمجي المعزول الذي يحل مشكلة النافذة الثالثة تماماً -->
     <script src="app.js"></script>
     <script>
         function openCashDrawer() { window.print(); }
@@ -811,7 +811,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // 🧾 1. دالة طباعة فاتورة الزبون المعزولة
+        // 🧾 1. دالة طباعة فاتورة الزبون المعزولة كلياً من أي استدعاء مزدوج
         function printCustomerInvoiceDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -908,13 +908,14 @@
 
             printBox.innerHTML = markup;
 
+            // استخدام setTimeout موحد يمنع النافذة المزدوجة والمفاجئة
             setTimeout(() => {
                 window.print();
                 setTimeout(() => { printBox.innerHTML = ''; }, 300);
             }, 100);
         }
 
-        // 🔥 2. دالة طباعة بون المطبخ المعزولة
+        // 🔥 2. دالة طباعة بون المطبخ المعزولة المعالجة
         function printKitchenTicketDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -995,11 +996,16 @@
             setTimeout(() => {
                 window.print();
 
+                // زيادة العداد وتصفير السلة فقط هنا لمنع التكرارات بإنهاء العملية
                 localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
                 
-                if (typeof clearPosCart === 'function') {
-                    clearPosCart();
+                // تنظيف السلة بدون استدعاء دالة checkout من app.js التي كانت تفتح النافذة الثالثة
+                const posCartList = document.getElementById('posCartList');
+                if (posCartList) {
+                    posCartList.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>';
                 }
+                const totalEl = document.getElementById('posTotalAmount');
+                if (totalEl) totalEl.innerText = '0 د.ع';
 
                 const nInput = document.getElementById('posOrderNotesInput');
                 if (nInput) nInput.value = '';
