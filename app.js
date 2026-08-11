@@ -1860,7 +1860,7 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// دالة الطباعة المزدوجة المدمجة (مطبخ شبكي + كاشير محلي)
+// دالة الطباعة النظيفة والمحدثة (مدمجة بمطبخ وكاشير لمنع رموز الترويسات)
 function printReceipt(order, shouldTriggerWindowPrint = true) {
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
@@ -1873,7 +1873,7 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
     const notesText = order.notes && order.notes !== '-' ? order.notes : '';
 
     let itemsCashierHtml = '';
-    let itemsKitchenText = '';
+    let itemsKitchenHtml = '';
 
     items.forEach(i => {
         itemsCashierHtml += `
@@ -1881,36 +1881,19 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
                 <span>${i.name} (×${i.qty})</span>
                 <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
             </div>`;
-        itemsKitchenText += `- ${i.name}  [x${i.qty}]\n`;
+        
+        itemsKitchenHtml += `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:15px; font-weight:900; color:#000;">
+                <span>- ${i.name}</span>
+                <span>[×${i.qty}]</span>
+            </div>`;
     });
 
-    // 1️⃣ إرسال بون المطبخ فوراً عبر الشبكة إلى طابعة المطبخ (192.168.0.200)
-    const kitchenPrinterIp = "192.168.0.200";
-    let kitchenPayload = 
-        "\x1B\x40" + 
-        "\x1B\x61\x01" + "*** امر تجهيز مطبخ ***\n" +
-        `طلب رقم: #${orderNum}\n` +
-        `الخدمة: ${serviceType}${driverSuffix}\n` +
-        "--------------------------------\n" +
-        "\x1B\x61\x00" +
-        itemsKitchenText +
-        (notesText ? "--------------------------------\nملاحظة: " + notesText + "\n" : "") +
-        "\n\n\n\x1B\x69";
-
-    try {
-        fetch(`http://${kitchenPrinterIp}:9100`, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: kitchenPayload
-        }).catch(() => {});
-    } catch(e) {}
-
-    // 2️⃣ طباعة وصل الكاشير محلياً عبر الويندوز
     const thermalMarkup = `
         <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:8px; margin-bottom:8px;">
             <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
             <div style="font-size:12px; font-weight:bold; margin-top:2px; color:#000;">بغداد - القاهرة</div>
-            <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
+            <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630</div>
         </div>
 
         <div style="text-align:center; margin:8px 0; border:2px solid #000; padding:6px; border-radius:6px; background:#fff;">
@@ -1925,6 +1908,11 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
             <div>طريقة الدفع: ${payMethod}</div>
             <div>نوع الخدمة: ${serviceType}${driverSuffix}</div>
             ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
+        </div>
+
+        <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; background:#f9f9f9; padding:6px;">
+            <div style="text-align:center; font-weight:900; font-size:14px; margin-bottom:4px; text-decoration:underline;">*** أمر تجهيز مطبخ ***</div>
+            ${itemsKitchenHtml}
         </div>
 
         <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; color:#000;">
