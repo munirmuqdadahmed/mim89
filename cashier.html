@@ -211,7 +211,6 @@
             position: relative;
         }
 
-        /* 📱 منطقة السلة والقوائم المضغوطة لتناسب الشاشة باللمس دون مسافات كبيرة */
         .cart-scrollable-area {
             flex: 1;
             overflow-y: auto !important;
@@ -554,7 +553,7 @@
                             
                             <!-- ⭐ الزر الرئيس -->
                             <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4); min-height: 38px;">
-                                <i class="fa-solid fa-print"></i> 🚀 طباعة وإتمام الطلب (المطبخ + الكاشير)
+                                <i class="fa-solid fa-print"></i> 🚀 طباعة وإتمام الطلب (فاتورة الكاشير)
                             </button>
 
                             <!-- الأزرار المفصولة -->
@@ -946,7 +945,7 @@
             }
         }
 
-        // 3️⃣ الطباعة الشاملة وإتمام الطلب (مطبخ + كاشير معاً وتصفير السلة)
+        // 3️⃣ الطباعة الشاملة وإتمام الطلب (فاتورة كاشير نظيفة بدون أمر المطبخ المكرر)
         function printMasterAllDirect(event) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             if (typeof posCart === 'undefined' || posCart.length === 0) return alert('⚠️ السلة فارغة!');
@@ -965,11 +964,9 @@
             const finalTotal = getCartFinalTotal();
 
             let itemsCashierHtml = '';
-            let itemsKitchenHtml = '';
             posCart.forEach(i => {
                 const itemTotal = Number(i.price) * Number(i.qty);
                 itemsCashierHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px;"><span>${i.name} (x${i.qty})</span><span>${itemTotal.toLocaleString()} د.ع</span></div>`;
-                itemsKitchenHtml += `<div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; margin:2px 0;"><span>- ${i.name}</span><span>[x${i.qty}]</span></div>`;
             });
 
             const printBox = document.getElementById('mim89ThermalPrintBox');
@@ -989,10 +986,6 @@
                             <div>التاريخ: ${dateStr} - ${timeStr}</div>
                             <div>الزبون: ${custName} | الدفع: ${payType} | الخدمة: ${serviceType}</div>
                             ${notesText ? `<div style="margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
-                        </div>
-                        <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:4px; background:#f5f5f5;">
-                            <div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:2px; text-decoration:underline;">*** أمر تجهيز مطبخ ***</div>
-                            ${itemsKitchenHtml}
                         </div>
                         <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsCashierHtml}</div>
                         
