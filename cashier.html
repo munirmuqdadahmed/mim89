@@ -861,8 +861,8 @@
                         });
 
                         itemsHtml += `
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
-                                <span style="max-width:160px; word-break:break-word; padding-right:4px;">${name} (x${qty})</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
+                                <span style="max-width:150px; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap;">${price}</span>
                             </div>`;
                     }
@@ -870,7 +870,7 @@
             }
 
             const markup = `
-                <div style="padding-right:15px; box-sizing:border-box;">
+                <div style="padding-right:12px; box-sizing:border-box; width:100%;">
                     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
                         <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
                         <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
@@ -882,8 +882,8 @@
                         <div style="font-size:32px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
                     </div>
 
-                    <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4; padding-right:4px;">
-                        <div>الكاشير: الرئيسي</div>
+                    <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4;">
+                        <div>الكاشير: الكاشير الرئيسي</div>
                         <div>تاريخ والوقت: ${dateStr} - ${timeStr}</div>
                         <div>الزبون: ${custName}</div>
                         <div>طريقة الدفع: ${payType}</div>
@@ -894,7 +894,7 @@
                         ${itemsHtml}
                     </div>
 
-                    <div style="font-size:11px; line-height:1.4; color:#000; padding-right:4px;">
+                    <div style="font-size:11px; line-height:1.4; color:#000;">
                         <div style="display:flex; justify-content:space-between;"><span>مجموع الفرعي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
                         <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span>0 د.ع</span></div>
                         <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; border-top:1px solid #000; padding-top:3px; margin-top:3px;"><span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
@@ -910,8 +910,8 @@
 
             setTimeout(() => {
                 window.print();
-                setTimeout(() => { printBox.innerHTML = ''; }, 500);
-            }, 150);
+                setTimeout(() => { printBox.innerHTML = ''; }, 300);
+            }, 100);
         }
 
         // 🔥 2. دالة طباعة بون المطبخ المعزولة
@@ -963,30 +963,30 @@
                         });
 
                         itemsKitchenHtml += `
-                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:6px 0; font-size:16px; font-weight:900; color:#000;">
-                                <span style="padding-right:4px;">● ${name}</span>
-                                <span style="font-size:18px; font-weight:900; color:#000;">[ العدد: ${qty} ]</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #000; padding:5px 0; font-size:14px; font-weight:900; color:#000;">
+                                <span style="flex:1; padding-left:5px; word-break:break-word;">● ${name}</span>
+                                <span style="white-space:nowrap; font-size:15px; font-weight:900;">[ العدد: ${qty} ]</span>
                             </div>`;
                     }
                 }
             }
 
             const markup = `
-                <div style="padding-right:15px; box-sizing:border-box;">
+                <div style="padding-right:12px; box-sizing:border-box; width:100%;">
                     <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
                         <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
-                        <div style="font-size:42px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
+                        <div style="font-size:40px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
                     </div>
                     
-                    <div style="font-weight:900; font-size:13px; margin-bottom:3px; color:#000; padding-right:4px;">نوع الخدمة: ${serviceType}</div>
-                    <div style="font-size:12px; font-weight:bold; margin-bottom:3px; color:#000; padding-right:4px;">زبون: ${custName}</div>
-                    <div style="font-size:10px; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:3px; color:#000; padding-right:4px;">وقت الطلب: ${dateStr} - ${timeStr}</div>
+                    <div style="font-weight:900; font-size:12px; margin-bottom:2px; color:#000;">نوع الخدمة: ${serviceType}</div>
+                    <div style="font-size:11px; font-weight:bold; margin-bottom:2px; color:#000;">زبون: ${custName}</div>
+                    <div style="font-size:10px; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:3px; color:#000;">وقت الطلب: ${dateStr} - ${timeStr}</div>
                     
                     <div style="color:#000;">
                         ${itemsKitchenHtml}
                     </div>
                     
-                    ${notesText ? `<div style="font-size:13px; font-weight:900; margin-top:8px; border:2px solid #000; padding:4px; color:#000; background:#eee;">ملاحظات: ${notesText}</div>` : ''}
+                    ${notesText ? `<div style="font-size:12px; font-weight:900; margin-top:6px; border:1px solid #000; padding:4px; color:#000; background:#eee;">ملاحظات: ${notesText}</div>` : ''}
                 </div>
             `;
 
@@ -997,17 +997,15 @@
 
                 localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
                 
-                if (typeof processPosDirectCheckout === 'function') {
-                    processPosDirectCheckout();
-                } else if (typeof clearPosCart === 'function') {
+                if (typeof clearPosCart === 'function') {
                     clearPosCart();
                 }
 
                 const nInput = document.getElementById('posOrderNotesInput');
                 if (nInput) nInput.value = '';
 
-                setTimeout(() => { printBox.innerHTML = ''; }, 500);
-            }, 150);
+                setTimeout(() => { printBox.innerHTML = ''; }, 300);
+            }, 100);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
