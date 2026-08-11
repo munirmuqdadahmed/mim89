@@ -813,7 +813,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الموحدة المحدثة بـ IP الكاشير الجديد: 192.168.0.218
+        // ⭐ 🚀 الدالة الموحدة المحسّنة (تمنع الربش للمطبخ وتطبع الكاشير)
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -827,8 +827,7 @@
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
 
-            // 🎯 عناوين IP المعتمدة للطابعات
-            const cashierPrinterIp = "192.168.0.218"; // IP طابعة الكاشير الجديد المضبوط 
+            const cashierPrinterIp = "192.168.0.218"; // IP طابعة الكاشير
             const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ
 
             const now = new Date();
@@ -870,7 +869,7 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        itemsKitchenText += `● ${name}   [ العدد: ${qty} ]\n--------------------------------\n`;
+                        itemsKitchenText += `- ${name}   [العدد: ${qty}]\n`;
                         itemsCashierText += `${name} (x${qty}) : ${price}\n`;
                         itemsCashierHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
@@ -881,8 +880,18 @@
                 }
             }
 
-            // 2️⃣ إرسال بون المطبخ الحراري شبكياً عبر المنفذ 9100
-            let kitchenPayload = `*** بون المطبخ ***\nرقم الطلب: #${orderSeq}\nالخدمة: ${serviceType}\nالزبون: ${custName}\nالوقت: ${timeStr}\n--------------------------------\n${itemsKitchenText}${notesText ? 'ملاحظات: ' + notesText + '\n' : ''}\n\n`;
+            // 2️⃣ بون المطبخ (مُرمّز ونظيف لمنع ظهور الرموز الغريبة "الربش")
+            let kitchenPayload = "\x1B\x40" + // أمر إعادة ضبط الطابعة (ESC @) لتفريغ الذاكرة
+                                 "\x1B\x61\x01" + // توسيط (Center)
+                                 "*** بون المطبخ ***\n" +
+                                 `رقم الطلب: #${orderSeq}\n` +
+                                 `الخدمة: ${serviceType} | الزبون: ${custName}\n` +
+                                 `الوقت: ${timeStr}\n` +
+                                 "--------------------------------\n" +
+                                 "\x1B\x61\x00" + // محاذاة لليمين (Left)
+                                 itemsKitchenText +
+                                 (notesText ? "--------------------------------\nملاحظات: " + notesText + "\n" : "") +
+                                 "--------------------------------\n\n\n\x1B\x69"; // قطع الورق (Cut)
 
             try {
                 fetch(`http://${kitchenPrinterIp}:9100`, {
@@ -893,7 +902,7 @@
             } catch(e) {}
 
             // 3️⃣ إرسال بون الكاشير الحراري شبكياً إلى IP الكاشير (192.168.0.218)
-            let cashierPayload = `MIM89 FAST FOOD\nبغداد - القاهرة\nهاتف: 07750008630\n--------------------------------\nرقم الطلب: #${orderSeq}\nالتاريخ: ${dateStr} - ${timeStr}\nالزبون: ${custName}\nنوع الخدمة: ${serviceType}\nالدفع: ${payType}\n--------------------------------\n${itemsCashierText}--------------------------------\nالمجموع الكلي: ${totalValue.toLocaleString()} د.ع\n--------------------------------\nشكراً لزيارتكم MIM89 FAST FOOD\n\n`;
+            let cashierPayload = `MIM89 FAST FOOD\nبغداد - القاهرة\nرقم الطلب: #${orderSeq}\nالتاريخ: ${dateStr} - ${timeStr}\nالزبون: ${custName}\nالخدمة: ${serviceType}\n--------------------------------\n${itemsCashierText}--------------------------------\nالمجموع: ${totalValue.toLocaleString()} د.ع\n\n`;
 
             try {
                 fetch(`http://${cashierPrinterIp}:9100`, {
@@ -903,7 +912,7 @@
                 }).catch(() => {});
             } catch(e) {}
 
-            // 4️⃣ تجهيز وطباعة فاتورة الكاشير عبر نافذة الويندوز المحلية الاحتياطية
+            // 4️⃣ فتح نافذة طباعة الويندوز المحلية لتأكيد طباعة الكاشير رسمياً عبر المتصفح
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
@@ -911,7 +920,7 @@
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
                             <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
                             <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
-                            <div style="font-size:10px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
+                            <div style="font-size:10px; font-weight:bold; color:#000;">هاتف: 07750008630</div>
                         </div>
 
                         <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
@@ -949,7 +958,7 @@
                 }, 100);
             }
 
-            // 5️⃣ تصفير الكاشير والسلة والعداد فوراً في كل الأحوال!
+            // 5️⃣ تصفير الكاشير والسلة والعداد فوراً
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
 
             const posCartList = document.getElementById('posCartList');
