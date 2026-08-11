@@ -555,10 +555,10 @@
                             
                             <!-- 🖨️ أزرار الطباعة المنفصلة (الزبون / المطبخ) -->
                             <div style="display:flex; gap:4px; margin-bottom:4px;">
-                                <button class="gold-btn" onclick="executeDirectThermalPrint('customer')" style="flex:1; padding: 10px; font-size: 0.95rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">
+                                <button class="gold-btn" onclick="printCustomerInvoiceDirect()" style="flex:1; padding: 10px; font-size: 0.95rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">
                                     <i class="fa-solid fa-receipt"></i> 🧾 فاتورة الزبون
                                 </button>
-                                <button class="gold-btn" onclick="executeDirectThermalPrint('kitchen')" style="flex:1; padding: 10px; font-size: 0.95rem; background: #222; color: var(--gold-bright); border: 1px solid var(--gold-primary);">
+                                <button class="gold-btn" onclick="printKitchenTicketDirect()" style="flex:1; padding: 10px; font-size: 0.95rem; background: #222; color: var(--gold-bright); border: 1px solid var(--gold-primary);">
                                     <i class="fa-solid fa-fire"></i> 🔥 بون المطبخ
                                 </button>
                             </div>
@@ -614,7 +614,7 @@
             </div>
 
             <div style="display:flex; gap:6px;">
-                <button onclick="executeDirectThermalPrint('customer'); closeModal('quickCashModal');" class="gold-btn" style="flex:1;"><i class="fa-solid fa-print"></i> طباعة فاتورة الزبون</button>
+                <button onclick="printCustomerInvoiceDirect(); closeModal('quickCashModal');" class="gold-btn" style="flex:1;"><i class="fa-solid fa-print"></i> طباعة فاتورة الزبون</button>
                 <button onclick="closeModal('quickCashModal')" class="gold-btn" style="background:#444; color:#fff; width:auto;">إغلاق</button>
             </div>
         </div>
@@ -830,8 +830,8 @@
             if (m) m.style.display = 'none';
         }
 
-        // 🖨️ دالة تنفيذ الطباعة الحرارية الصريحة المباشرة
-        function executeDirectThermalPrint(targetType) {
+        // 🧾 1. دالة طباعة فاتورة الزبون حصراً
+        function printCustomerInvoiceDirect() {
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
 
@@ -840,6 +840,103 @@
 
             if (totalValue <= 0) {
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
+            }
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB');
+            const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            let orderSeq = localStorage.getItem('mim89_daily_order_seq');
+            orderSeq = orderSeq ? orderSeq : 101;
+
+            const custNameInput = document.getElementById('posCustName');
+            const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'زبون مباشر';
+
+            const activeTypeBtn = document.querySelector('#posOrderTypeGroup .toggle-btn.active');
+            let serviceType = activeTypeBtn ? activeTypeBtn.innerText.trim() : 'صالة';
+
+            const activePayBtn = document.querySelector('#posPaymentGroup .toggle-btn.active');
+            let payType = activePayBtn ? activePayBtn.innerText.trim() : 'كاش';
+
+            let itemsHtml = '';
+            const cartContainer = document.getElementById('posCartList');
+            if (cartContainer) {
+                const children = cartContainer.children;
+                for (let i = 0; i < children.length; i++) {
+                    const textContent = children[i].innerText || children[i].textContent || '';
+                    if (textContent.includes('اختر الوجبات')) continue;
+
+                    const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
+                    if (lines.length > 0) {
+                        let name = lines[0];
+                        let price = lines.find(l => l.includes('د.ع')) || '';
+                        let qty = '1';
+                        lines.forEach(line => {
+                            if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
+                        });
+
+                        itemsHtml += `
+                            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin:4px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
+                                <span>${name} (x${qty})</span>
+                                <span>${price}</span>
+                            </div>`;
+                    }
+                }
+            }
+
+            const markup = `
+                <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
+                    <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                    <div style="font-size:12px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
+                    <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
+                </div>
+
+                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px; background:#fff;">
+                    <div style="font-size:11px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
+                    <div style="font-size:36px; font-weight:900; line-height:1.1; color:#000;">#${orderSeq}</div>
+                </div>
+
+                <div style="font-size:12px; font-weight:bold; border-bottom:2px dashed #000; padding-bottom:4px; margin-bottom:6px; color:#000; line-height:1.4;">
+                    <div>الكاشير: الرئيسي</div>
+                    <div>التاريخ والوقت: ${dateStr} - ${timeStr}</div>
+                    <div>الزبون: ${custName}</div>
+                    <div>طريقة الدفع: ${payType}</div>
+                    <div>نوع الخدمة: ${serviceType}</div>
+                </div>
+
+                <div style="border-bottom:2px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
+                    ${itemsHtml}
+                </div>
+
+                <div style="font-size:13px; line-height:1.5; color:#000;">
+                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span>0 د.ع</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; border-top:2px solid #000; padding-top:4px; margin-top:4px;"><span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
+                </div>
+
+                <div style="text-align:center; margin-top:8px; border-top:2px dashed #000; padding-top:4px; font-size:11px; font-weight:bold; color:#000;">
+                    شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
+                </div>
+            `;
+
+            printBox.innerHTML = markup;
+
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => { printBox.innerHTML = ''; }, 500);
+            }, 150);
+        }
+
+        // 🔥 2. دالة طباعة بون المطبخ حصراً وتسليم الطلب
+        function printKitchenTicketDirect() {
+            const printBox = document.getElementById('mim89ThermalPrintBox');
+            if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
+
+            const totalElement = document.getElementById('posTotalAmount');
+            let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
+
+            if (totalValue <= 0) {
+                return alert('⚠️ السلة فارغة! اضف وجبات أولاً.');
             }
 
             const now = new Date();
@@ -858,8 +955,7 @@
             const notesInput = document.getElementById('posOrderNotesInput');
             const notesText = notesInput ? notesInput.value.trim() : '';
 
-            // تجميع عناصر السلة
-            let itemsHtml = '';
+            let itemsKitchenHtml = '';
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
                 const children = cartContainer.children;
@@ -870,71 +966,39 @@
                     const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
                     if (lines.length > 0) {
                         let name = lines[0];
-                        let price = lines.find(l => l.includes('د.ع')) || '';
-                        itemsHtml += `
-                            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; margin:4px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
+                        let qty = '1';
+                        lines.forEach(line => {
+                            if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
+                        });
+
+                        itemsKitchenHtml += `
+                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:6px 0; font-size:18px; font-weight:900; color:#000;">
                                 <span>● ${name}</span>
-                                <span>${price}</span>
+                                <span style="background:#000; color:#fff !important; padding:0 8px; border-radius:4px;">[ ${qty} ]</span>
                             </div>`;
                     }
                 }
             }
 
-            let markup = '';
-            if (targetType === 'customer') {
-                markup = `
-                    <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
-                        <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                        <div style="font-size:12px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
-                        <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630</div>
-                    </div>
+            const markup = `
+                <div style="text-align:center; border:2px dashed #000; padding:6px; margin-bottom:8px;">
+                    <h3 style="font-size:20px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
+                    <div style="font-size:48px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
+                </div>
+                
+                <div style="font-weight:900; font-size:16px; margin-bottom:4px; color:#000;">نوع الخدمة: ${serviceType}</div>
+                <div style="font-size:13px; font-weight:bold; margin-bottom:4px; color:#000;">الزبون: ${custName}</div>
+                <div style="font-size:12px; margin-bottom:8px; border-bottom:1px solid #000; padding-bottom:4px; color:#000;">الوقت: ${dateStr} - ${timeStr}</div>
+                
+                <div style="font-size:16px; font-weight:900; color:#000;">
+                    ${itemsKitchenHtml}
+                </div>
+                
+                ${notesText ? `<div style="font-size:15px; font-weight:900; margin-top:10px; border:2px solid #000; padding:6px; color:#000; background:#eee;">ملاحظات: ${notesText}</div>` : ''}
+            `;
 
-                    <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px; background:#fff;">
-                        <div style="font-size:12px; font-weight:bold; color:#000;">رقم الطلب / ORDER NO</div>
-                        <div style="font-size:38px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
-                    </div>
-
-                    <div style="font-size:12px; font-weight:bold; border-bottom:2px dashed #000; padding-bottom:4px; margin-bottom:6px; color:#000;">
-                        <div>التاريخ: ${dateStr} - ${timeStr}</div>
-                        <div>الزبون: ${custName}</div>
-                        <div>الخدمة: ${serviceType}</div>
-                    </div>
-
-                    <div style="border-bottom:2px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
-                        ${itemsHtml}
-                    </div>
-
-                    <div style="font-size:16px; font-weight:900; display:flex; justify-content:space-between; border-top:2px solid #000; padding-top:4px; color:#000;">
-                        <span>المجموع الكلي:</span>
-                        <span>${totalValue.toLocaleString()} د.ع</span>
-                    </div>
-
-                    <div style="text-align:center; margin-top:8px; font-size:11px; font-weight:bold; color:#000;">
-                        شكراً لزيارتكم MIM89 FAST FOOD
-                    </div>
-                `;
-            } else {
-                markup = `
-                    <div style="text-align:center; border:2px dashed #000; padding:6px; margin-bottom:8px;">
-                        <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
-                        <div style="font-size:44px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
-                    </div>
-                    
-                    <div style="font-weight:900; font-size:16px; margin-bottom:4px; color:#000;">الخدمة: ${serviceType}</div>
-                    <div style="font-size:13px; font-weight:bold; margin-bottom:6px; color:#000;">الزبون: ${custName} | ${timeStr}</div>
-                    
-                    <div style="border-top:2px solid #000; padding-top:6px; color:#000;">
-                        ${itemsHtml}
-                    </div>
-                    
-                    ${notesText ? `<div style="font-size:14px; font-weight:900; margin-top:8px; border:2px solid #000; padding:4px; color:#000;">ملاحظات: ${notesText}</div>` : ''}
-                `;
-            }
-
-            // 1. حقن الفاتورة داخل الحاوية المخصصة
             printBox.innerHTML = markup;
 
-            // 2. إطلاق الطباعة المباشرة
             setTimeout(() => {
                 window.print();
 
@@ -944,6 +1008,9 @@
                 } else if (typeof clearPosCart === 'function') {
                     clearPosCart();
                 }
+
+                const nInput = document.getElementById('posOrderNotesInput');
+                if (nInput) nInput.value = '';
 
                 setTimeout(() => { printBox.innerHTML = ''; }, 500);
             }, 150);
