@@ -1,6 +1,6 @@
 /* ==========================================
    MIM89 FAST FOOD - Complete Master Style Sheet
-   (iOS & iPad Safari POS Display Optimized - Fixed Version)
+   (iOS & iPad Safari POS Display Optimized - Fixed Thermal Print Edition)
    ========================================== */
 
 /* 1. المتغيرات والأساسيات */
@@ -21,7 +21,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -307,7 +307,6 @@ body {
     padding-bottom: 5px;
 }
 
-/* 🛠️ تعديل شبكة الوجبات لمنع التراكم والخيالات */
 .items-grid, .pos-items-grid, .products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -315,7 +314,6 @@ body {
     padding-bottom: 100px !important;
 }
 
-/* 🖼️ عزل الكروت خلفياً لمنع تداخل الشفافية ورسم النسخ الوهمية */
 .item-card, .pos-product-card {
     background-color: #1a1a1e !important;
     border: 1px solid var(--card-border);
@@ -372,9 +370,7 @@ body {
     font-size: 0.75rem;
 }
 
-/* ==========================================
-   8. شبكة الكاشير والتخطيط التجاوبي المحسّن للايباد (Landscape & Fixed Print Fix)
-   ========================================== */
+/* 8. شبكة الكاشير والتخطيط التجاوبي */
 #cashierMainApp {
     height: 100%;
     height: 100dvh;
@@ -392,7 +388,6 @@ body {
     overflow: hidden;
 }
 
-/* 📱 قفل السايدبار الخارجي تماماً لمنع اختفاء زر الطباعة في الوضع العرضي */
 .pos-sidebar {
     background: #18181c;
     border-left: 1px solid var(--card-border);
@@ -401,19 +396,17 @@ body {
     padding: 8px;
     height: 100% !important;
     max-height: 100% !important;
-    overflow: hidden !important; /* قفل التمرير الكلي للسايدبار */
+    overflow: hidden !important;
     box-sizing: border-box;
 }
 
-/* الخيارات العلوية والسفلية تبقى حرة الحجم ولا تنضغط نهائياً */
 .pos-sidebar > *:not(.cart-items-list):not(#posCartList) {
     flex-shrink: 0 !important;
 }
 
-/* 🛒 قائمة الأصناف في السلة هي الوحيدة التي تحصر وتستوعب السكرول */
 .cart-items-list, #posCartList {
     flex: 1 1 auto !important;
-    min-height: 0 !important; /* الخاصية السحرية لمنع دفع العناصر للخارج في أجهزة أبل */
+    min-height: 0 !important;
     max-height: none !important;
     overflow-y: auto !important;
     margin: 6px 0;
@@ -424,7 +417,6 @@ body {
     overscroll-behavior-y: contain;
 }
 
-/* 📱 التحكم بسلاسة التمرير في شاشة المنتجات */
 .pos-main-content {
     height: 100% !important;
     padding: 12px !important;
@@ -531,52 +523,50 @@ body {
     margin-top: 10px;
 }
 
-/* ==========================================
-   11. قواعد الطباعة المزدوجة التلقائية والحرارية
-   ========================================== */
+/* ========================================================= */
+/* 11. قواعد الطباعة الحرارية الصارمة المحسّنة (تمنع الصفحة البيضاء نهائياً) */
+/* ========================================================= */
+#mim89ThermalPrintBox {
+    display: none;
+}
+
 @media print {
     @page {
-        size: auto;
+        size: 80mm auto;
         margin: 0;
     }
+
     body {
         background: #ffffff !important;
         color: #000000 !important;
         overflow: visible !important;
         height: auto !important;
     }
-    body > *:not(#receiptModal):not(#dailyReportModal) {
+
+    /* إخفاء كل العناصر باستثناء حاوية الطباعة الحرارية والموديلات الخاصة */
+    body > *:not(#mim89ThermalPrintBox):not(#receiptModal):not(#dailyReportModal) {
         display: none !important;
     }
-    #receiptModal, #dailyReportModal {
+
+    /* إظهار حاوية الفاتورة الحرارية بوضوح تام على ورق 80mm */
+    #mim89ThermalPrintBox {
         display: block !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 76mm !important;
+        margin: 0 auto !important;
+        padding: 2mm !important;
         background: #ffffff !important;
         color: #000000 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    #receiptModal .modal-content, #dailyReportModal .modal-content, #receiptModal .modal-body {
-        border: none !important;
-        box-shadow: none !important;
-        width: 100% !important;
-        padding: 10px !important;
-        background: #ffffff !important;
-        color: #000000 !important;
+        font-family: 'Tajawal', Arial, sans-serif !important;
+        visibility: visible !important;
     }
 
-    /* فاصل الصفحة الحراري بين طابعة الزبون وطابعة المطبخ */
-    #customerReceiptTicket, .kitchen-copy {
-        page-break-before: always !important;
-        break-before: page !important;
-        margin-top: 15px;
-        padding-top: 10px;
+    #mim89ThermalPrintBox * {
+        color: #000000 !important;
+        background: transparent !important;
+        visibility: visible !important;
     }
 
     .no-print {
