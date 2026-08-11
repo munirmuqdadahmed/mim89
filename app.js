@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.3 Full Thermal Print Fix)
+   MIM89 FAST FOOD - Master Core Engine (v18.5 Direct Printer IP 192.168.0.218 Fix)
    مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
    ========================================================================== */
 
@@ -40,10 +40,10 @@ const DEFAULT_DATA = {
         cashier: "123"
     },
     printerSettings: {
-        enableIpPrinting: false,
-        cashierIp: "192.168.1.100",
-        kitchen1Ip: "192.168.1.101",
-        kitchen2Ip: "192.168.1.102",
+        enableIpPrinting: true,
+        cashierIp: "192.168.0.218", // 🎯 تم تحديث عنوان IP الكاشير المضبوط
+        kitchen1Ip: "192.168.0.200",
+        kitchen2Ip: "192.168.0.202",
         port: "9100"
     },
     cashiers: [
@@ -93,7 +93,7 @@ const DEFAULT_DATA = {
     items: [
         // 🔥 العروض المميزة
         { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
-        { id: 102, categoryId: 1, name: "عرض شاورما دبل مكس", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
+        { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
 
         // 🍔 قسم البركر
         { id: 201, categoryId: 2, name: "بركر كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", ingredients: "شريحة لحم طازج، طماطم، خس، صوص خاص", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
@@ -230,9 +230,6 @@ function getSystemPassword(type) {
     return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
 }
 
-/* ==========================================================================
-   🧮 محرك حساب كلفة الوجبة المحسّن
-   ========================================================================== */
 function calculateItemCost(item) {
     const inventory = getData('sys_inventory');
     if (!item || !item.recipe || !Array.isArray(item.recipe)) return 0;
@@ -253,7 +250,6 @@ function calculateItemCost(item) {
     return totalCost;
 }
 
-/* ⚡ المزامنة اللحظية السحابية */
 function setupCloudRealtimeSync() {
     if (!db) return;
 
@@ -340,9 +336,6 @@ async function globalSystemSync(btnElement) {
     }
 }
 
-/* ==========================================
-   3. المينيو العام وتجربة الزبون (index.html)
-   ========================================== */
 let cart = [];
 
 function loadPublicMenu() {
@@ -1016,10 +1009,6 @@ function updateDiscountUIState(type, badgeText) {
     }
 }
 
-/* ==========================================================================
-   💸 نظام إدارة الصرفيات والمسحوبات والسُلف (MIM89 Expense Management)
-   ========================================================================== */
-
 function openExpenseManagerModal() {
     renderEmployeesExpenseDropdown();
     renderExpensesListTable();
@@ -1062,7 +1051,7 @@ function addNewExpenseRecord() {
     let titleText = "";
     if (type === 'salary_advance') titleText = `سلفة / راتب موظف: (${empName})`;
     else if (type === 'monthly_fixed') titleText = `مصاريف ثابتة: (${note || 'مولدة / إيجار / نت'})`;
-    else titleText = `صرفيات يومية / نثرية: (${note || 'نظافة / زبالة / مكدي / مسواق'})`;
+    else titleText = `صرفيات يومية / نثرية: (${note || 'نظافة / زبالة / مسواق'})`;
 
     const expenseItem = {
         id: 'EXP_' + Date.now(),
@@ -1108,7 +1097,7 @@ function renderExpensesListTable() {
         <div style="background:#121214; border:1px solid var(--card-border); padding:8px 10px; border-radius:6px; margin-bottom:6px; font-size:0.85rem;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary);">
                 <strong>📌 ${item.title}</strong>
-                <strong style="color:var(--danger-red); font-size:0.95rem;">- ${Number(item.amount).toLocaleString()} د.ع</strong>
+                <strong style="color:var(--danger); font-size:0.95rem;">- ${Number(item.amount).toLocaleString()} د.ع</strong>
             </div>
             <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:4px;">
                 <span>الملاحظة: ${item.note}</span>
@@ -1117,10 +1106,6 @@ function renderExpensesListTable() {
         </div>
     `).join('');
 }
-
-/* ==========================================================================
-   إدارة ومحرر ملاحظات المطبخ السريعة
-   ========================================================================== */
 
 function renderQuickKitchenNotesButtons() {
     const notes = getData('sys_quick_kitchen_notes') || DEFAULT_DATA.quickKitchenNotes;
@@ -1162,7 +1147,7 @@ function renderKitchenNotesTable() {
     container.innerHTML = notes.map((note, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:#121214; padding:6px 10px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:4px;">
             <span style="font-size:0.85rem; color:#fff;">● ${note}</span>
-            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger-red); color:#fff; width:auto; padding:2px 8px; font-size:0.75rem;">حذف</button>
+            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:2px 8px; font-size:0.75rem;">حذف</button>
         </div>
     `).join('');
 }
@@ -1251,8 +1236,8 @@ function processPosDirectCheckout() {
     if (selectedPosOrderType === 'takeaway') typeText = 'سفري';
     if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
 
-    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '1';
-    localStorage.setItem('mim89_daily_order_seq', String(Number(orderSeq) + 1));
+    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '101';
+    localStorage.setItem('mim89_daily_order_seq', String((Number(orderSeq) % 999) + 1));
 
     const directOrder = {
         id: 'POS_' + Date.now(),
@@ -1342,10 +1327,6 @@ function clearCompletedOrdersHistory() {
         openCompletedOrdersModal();
     }
 }
-
-/* ==========================================
-   5. تقارير كشف الحساب المالي اليومي وجرد الوجبات وتقفيل الشيفتات
-   ========================================== */
 
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
@@ -1618,9 +1599,6 @@ function exportFullSystemBackup() {
     window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
 }
 
-/* ==========================================
-   6. محرك كاشف المكالمات، التنبيهات وإدارة الطلبات
-   ========================================== */
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
 let globalAudioCtx = null;
@@ -1814,7 +1792,7 @@ function generateOrderCardHTML(ord, docId) {
                 </div>
                 <div style="display:flex; gap:4px;">
                     <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger-red); color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger); color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
                 </div>
             </div>
         </div>
@@ -1902,7 +1880,6 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-// 🖨️ دالة طباعة التقارير الحرارية المفتوحة
 function printCurrentActiveModal() {
     document.body.classList.add('modal-open-for-print');
     setTimeout(() => {
@@ -1913,7 +1890,6 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// 🖨️ دالة تجهيز وطباعة الفاتورة الحرارية المباشرة والحقن النظيف في الحاوية الحصرية
 function printReceipt(order, shouldTriggerWindowPrint = true) {
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
@@ -1978,9 +1954,6 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
     }
 }
 
-/* ==========================================
-   7. إدارة المخزن والإدارة العامة (admin & inventory)
-   ========================================== */
 let currentUploadedBase64 = "";
 
 function handleImageUpload(event) {
@@ -2101,8 +2074,8 @@ function loadPrinterSettings() {
     if (!settings) return;
     
     if (document.getElementById('enableIpPrinting')) document.getElementById('enableIpPrinting').checked = !!settings.enableIpPrinting;
-    if (document.getElementById('cashierPrinterIp')) document.getElementById('cashierPrinterIp').value = settings.cashierIp || '';
-    if (document.getElementById('kitchenPrinter1Ip')) document.getElementById('kitchenPrinter1Ip').value = settings.kitchen1Ip || '';
+    if (document.getElementById('cashierPrinterIp')) document.getElementById('cashierPrinterIp').value = settings.cashierIp || '192.168.0.218';
+    if (document.getElementById('kitchenPrinter1Ip')) document.getElementById('kitchenPrinter1Ip').value = settings.kitchen1Ip || '192.168.0.200';
     if (document.getElementById('kitchenPrinter2Ip')) document.getElementById('kitchenPrinter2Ip').value = settings.kitchen2Ip || '';
     if (document.getElementById('printerPort')) document.getElementById('printerPort').value = settings.port || '9100';
 }
