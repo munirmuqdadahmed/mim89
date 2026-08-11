@@ -813,7 +813,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الموحدة المحسّنة (تمنع الربش للمطبخ وتطبع الكاشير)
+        // ⭐ 🚀 الدالة الموحدة المحدثة الصافية للطباعة المباشرة عبر الويندوز بدقة ودون ربش
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -826,9 +826,6 @@
             if (totalValue <= 0) {
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
-
-            const cashierPrinterIp = "192.168.0.218"; // IP طابعة الكاشير
-            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -848,11 +845,8 @@
             const notesInput = document.getElementById('posOrderNotesInput');
             const notesText = notesInput ? notesInput.value.trim() : '';
 
-            // 1️⃣ تجهيز الوجبات
-            let itemsKitchenText = '';
+            // 1️⃣ استخراج الوجبات وتنسيقها
             let itemsCashierHtml = '';
-            let itemsCashierText = '';
-
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
                 const children = cartContainer.children;
@@ -869,10 +863,8 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        itemsKitchenText += `- ${name}   [العدد: ${qty}]\n`;
-                        itemsCashierText += `${name} (x${qty}) : ${price}\n`;
                         itemsCashierHtml += `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
@@ -880,39 +872,7 @@
                 }
             }
 
-            // 2️⃣ بون المطبخ (مُرمّز ونظيف لمنع ظهور الرموز الغريبة "الربش")
-            let kitchenPayload = "\x1B\x40" + // أمر إعادة ضبط الطابعة (ESC @) لتفريغ الذاكرة
-                                 "\x1B\x61\x01" + // توسيط (Center)
-                                 "*** بون المطبخ ***\n" +
-                                 `رقم الطلب: #${orderSeq}\n` +
-                                 `الخدمة: ${serviceType} | الزبون: ${custName}\n` +
-                                 `الوقت: ${timeStr}\n` +
-                                 "--------------------------------\n" +
-                                 "\x1B\x61\x00" + // محاذاة لليمين (Left)
-                                 itemsKitchenText +
-                                 (notesText ? "--------------------------------\nملاحظات: " + notesText + "\n" : "") +
-                                 "--------------------------------\n\n\n\x1B\x69"; // قطع الورق (Cut)
-
-            try {
-                fetch(`http://${kitchenPrinterIp}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: kitchenPayload
-                }).catch(() => {});
-            } catch(e) {}
-
-            // 3️⃣ إرسال بون الكاشير الحراري شبكياً إلى IP الكاشير (192.168.0.218)
-            let cashierPayload = `MIM89 FAST FOOD\nبغداد - القاهرة\nرقم الطلب: #${orderSeq}\nالتاريخ: ${dateStr} - ${timeStr}\nالزبون: ${custName}\nالخدمة: ${serviceType}\n--------------------------------\n${itemsCashierText}--------------------------------\nالمجموع: ${totalValue.toLocaleString()} د.ع\n\n`;
-
-            try {
-                fetch(`http://${cashierPrinterIp}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: cashierPayload
-                }).catch(() => {});
-            } catch(e) {}
-
-            // 4️⃣ فتح نافذة طباعة الويندوز المحلية لتأكيد طباعة الكاشير رسمياً عبر المتصفح
+            // 2️⃣ بناء وبث قالب الفاتورة الحرارية
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
@@ -934,6 +894,7 @@
                             <div>الزبون: ${custName}</div>
                             <div>طريقة الدفع: ${payType}</div>
                             <div>نوع الخدمة: ${serviceType}</div>
+                            ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
                         </div>
 
                         <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px; color:#000;">
@@ -958,7 +919,7 @@
                 }, 100);
             }
 
-            // 5️⃣ تصفير الكاشير والسلة والعداد فوراً
+            // 3️⃣ تصفير السلة وزيادة العداد
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
 
             const posCartList = document.getElementById('posCartList');
@@ -967,7 +928,6 @@
             }
             const totalEl = document.getElementById('posTotalAmount');
             if (totalEl) totalEl.innerText = '0 د.ع';
-
             if (notesInput) notesInput.value = '';
         }
 
