@@ -360,7 +360,7 @@
             font-weight: 700;
         }
 
-        /* 🖨️ التنسيق الحراري المباشر 80mm */
+        /* 🖨️ التنسيق الحراري المباشر 80mm (الكاشير فقط) */
         #mim89ThermalPrintBox { display: none; }
 
         @media print {
@@ -572,7 +572,7 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية -->
+    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية (الكاشير فقط) -->
     <div id="mim89ThermalPrintBox"></div>
 
     <!-- 📊 النوافذ المنبثقة -->
@@ -813,7 +813,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الموحدة المستقلة (فاتورة كاشير محلياً للويندوز + بون مطبخ شبكياً فوراً)
+        // ⭐ 🚀 الدالة الفصل التام: كاشير محلي بالويندوز فقط + مطبخ شبكي خام فقط
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -827,7 +827,7 @@
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
 
-            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ المنفصلة
+            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ الشبكية
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -867,22 +867,22 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        // للكاشير (الويندوز)
+                        // للكاشير (HTML للويندوز)
                         itemsCashierHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
 
-                        // للمطبخ (الشبكة)
+                        // للمطبخ (نص خام شبكي)
                         itemsKitchenText += `- ${name}  [x${qty}]\n`;
                     }
                 }
             }
 
-            // 2️⃣ إرسال بون المطبخ مباشرة وبشكل مستقل إلى IP المطبخ (192.168.0.200) عبر بورت 9100
+            // 2️⃣ إرسال أمر المطبخ حصراً عبر البورت 9100 للشبكة (بدون أي تأثير على الكاشير)
             let kitchenPayload = 
-                "\x1B\x40" + // تصفير الذاكرة
+                "\x1B\x40" + 
                 "\x1B\x61\x01" + "*** امر تجهيز مطبخ ***\n" +
                 `طلب رقم: #${orderSeq}\n` +
                 `الخدمة: ${serviceType}\n` +
@@ -890,7 +890,7 @@
                 "\x1B\x61\x00" +
                 itemsKitchenText +
                 (notesText ? "--------------------------------\nملاحظة: " + notesText + "\n" : "") +
-                "\n\n\n\x1B\x69"; // قطع الورق
+                "\n\n\n\x1B\x69";
 
             try {
                 fetch(`http://${kitchenPrinterIp}:9100`, {
@@ -900,7 +900,7 @@
                 }).catch(() => {});
             } catch(e) {}
 
-            // 3️⃣ تجهيز فاتورة الكاشير فقط بطابعة الويندوز المحلية
+            // 3️⃣ طباعة فاتورة الكاشير المحلي فقط عبر الويندوز
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
