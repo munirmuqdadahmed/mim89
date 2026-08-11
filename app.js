@@ -1,7 +1,7 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.5 Direct Printer IP 192.168.0.218 Fix)
-   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
-   ========================================================================== */
+   MIM89 FAST FOOD - Master Core Engine (v18.6 Direct Printer IP & Kitchen Split Fix)
+   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة المزدوجة، والصرفيات
+   ========================================================================== */[span_1](start_span)[span_1](end_span)
 
 // 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
 let db = null;
@@ -21,14 +21,14 @@ try {
             firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
-        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
+        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");[span_2](start_span)[span_2](end_span)
 
         db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
+            console.log("حالة التخزين المحلي Offline Persistence:", err.code);[span_3](start_span)[span_3](end_span)
         });
     }
 } catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
+    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);[span_4](start_span)[span_4](end_span)
 }
 
 // 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً مع المكونات والتكاليف)
@@ -41,7 +41,7 @@ const DEFAULT_DATA = {
     },
     printerSettings: {
         enableIpPrinting: true,
-        cashierIp: "192.168.0.218", // 🎯 تم تحديث عنوان IP الكاشير المضبوط
+        cashierIp: "192.168.0.218",
         kitchen1Ip: "192.168.0.200",
         kitchen2Ip: "192.168.0.202",
         port: "9100"
@@ -91,18 +91,13 @@ const DEFAULT_DATA = {
         { id: 8, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
     ],
     items: [
-        // 🔥 العروض المميزة
         { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
         { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-
-        // 🍔 قسم البركر
         { id: 201, categoryId: 2, name: "بركر كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", ingredients: "شريحة لحم طازج، طماطم، خس، صوص خاص", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
         { id: 202, categoryId: 2, name: "بركر الجبن", price: 6000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحة لحم عجل طازج مع جبن شيدر ذائب", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
         { id: 203, categoryId: 2, name: "دبل تشيز بركر", price: 8000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحتي لحم طازج مع دبل جبن شيدر", recipe: [{ invId: 5, qty: 0.3 }, { invId: 6, qty: 1 }] },
         { id: 204, categoryId: 2, name: "بركر زنجر العملاق", price: 6500, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج زنجر مقرمش سبايسي مع الخس والجبن", recipe: [{ invId: 8, qty: 0.2 }, { invId: 6, qty: 1 }] },
         { id: 205, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج مقرمش مع خلطة وجبن 89 الخاص", recipe: [{ invId: 1, qty: 0.2 }, { invId: 6, qty: 1 }] },
-
-        // 🌯 قسم الشاورما (دجاج)
         { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
         { id: 302, categoryId: 3, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
         { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
@@ -112,14 +107,10 @@ const DEFAULT_DATA = {
         { id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
         { id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
         { id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] },
-
-        // 🥖 قسم السندويشات والصاج (زنجر، سكالوب، فاهيتا)
         { id: 401, categoryId: 4, name: "صاج زنجر سبايسي", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "شرائح دجاج زنجر مقرمشة، صلصة ثومية، خس، مخلل", recipe: [{ invId: 8, qty: 0.15 }, { invId: 2, qty: 1 }] },
         { id: 402, categoryId: 4, name: "صاج سكالوب دجاج", price: 4500, image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=500", ingredients: "شرائح سكالوب دجاج مقلية، صوص خاص، طماطم وخس", recipe: [{ invId: 7, qty: 0.15 }, { invId: 2, qty: 1 }] },
         { id: 403, categoryId: 4, name: "صاج فاهيتا دجاج", price: 5000, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "دجاج متبل مع الفلفل الألوان والمشروم والجبن الذائب", recipe: [{ invId: 1, qty: 0.15 }, { invId: 2, qty: 1 }] },
         { id: 404, categoryId: 4, name: "سندويش فاهيتا صمون فرنسي", price: 5500, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "فاهيتا دجاج بالخضار والجبن في صمون فرنسي طازج", recipe: [{ invId: 1, qty: 0.18 }] },
-
-        // 🍗 قسم الكنتاكي والريزو والوجبات
         { id: 501, categoryId: 5, name: "وجبة سكالوب دجاج", price: 6500, image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=500", ingredients: "قطع سكالوب مقرمشة مع البطاطس، الثومية، والخبز", recipe: [{ invId: 7, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
         { id: 502, categoryId: 5, name: "وجبة زنجر سوبر", price: 7000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "قطع زنجر حارة مقرمشة، بطاطس، صوصات، وخبز", recipe: [{ invId: 8, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
         { id: 503, categoryId: 5, name: "وجبة فاهيتا صحن", price: 7500, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "صحن فاهيتا دجاج بالمشروم والفلفل مع البطاطس والخبز", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
@@ -130,16 +121,12 @@ const DEFAULT_DATA = {
         { id: 508, categoryId: 5, name: "كنتاكي 4 قطع", price: 8000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "4 قطع كنتاكي مقرمش، بطاطس، خبز، ثومية", recipe: [{ invId: 1, qty: 0.5 }, { invId: 3, qty: 0.2 }] },
         { id: 509, categoryId: 5, name: "كنتاكي 6 قطع", price: 13000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "6 قطع كنتاكي مقرمش عائلي مع البطاطس", recipe: [{ invId: 1, qty: 0.75 }, { invId: 3, qty: 0.3 }] },
         { id: 510, categoryId: 5, name: "وجبة كنتاكي كاملة (10 قطع)", price: 20000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "10 قطع كنتاكي عائلي ضخم مع جميع الملحقات", recipe: [{ invId: 1, qty: 1.2 }, { invId: 3, qty: 0.5 }] },
-
-        // 🍟 الفنكر والمقبلات
         { id: 601, categoryId: 6, name: "أصابع موزاريلا", price: 750, image: "https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=500", ingredients: "أصابع جبن موزاريلا مقلية ذهبية", recipe: [] },
         { id: 602, categoryId: 6, name: "قدح فنكر سبايسي", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع بهارات سبايسي حارة", recipe: [{ invId: 3, qty: 0.1 }] },
         { id: 603, categoryId: 6, name: "حلقات بصل (5 قطع)", price: 2000, image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500", ingredients: "5 قطع حلقات بصل مقرمشة", recipe: [] },
         { id: 604, categoryId: 6, name: "قدح فنكر كلاسيك", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية ذهبية كلاسيكية", recipe: [{ invId: 3, qty: 0.2 }] },
         { id: 605, categoryId: 6, name: "قدح فنكر (دوريتوس/هالابينو)", price: 3500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع قطع دوريتوس وقطع هالابينو", recipe: [{ invId: 3, qty: 0.2 }] },
         { id: 606, categoryId: 6, name: "فنكر 89 الخاص", price: 4500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس ذهبية، جبن شيدر، صوص هالابينو، وخلطة 89", recipe: [{ invId: 3, qty: 0.25 }] },
-
-        // ➕ قسم الإضافات
         { id: 701, categoryId: 7, name: "بطاطا إضافية", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "حصة بطاطا مقلية إضافية", recipe: [{ invId: 3, qty: 0.1 }] },
         { id: 702, categoryId: 7, name: "صوص خاص", price: 1000, image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=500", ingredients: "علبة صوص MIM89 الخاص", recipe: [] },
         { id: 703, categoryId: 7, name: "هالابينو", price: 1000, image: "https://images.unsplash.com/photo-1588877323863-718873550e58?w=500", ingredients: "شرائح فلفل هالابينو حار", recipe: [] },
@@ -147,7 +134,6 @@ const DEFAULT_DATA = {
     ]
 };
 
-// المعالج الذكي لمطابقة أسماء مناطق التوصيل
 function normalizeArabicArea(str) {
     if (!str) return '';
     return str.toString()
@@ -158,7 +144,6 @@ function normalizeArabicArea(str) {
         .toLowerCase();
 }
 
-// دالة تهيئة البيانات المحصنة
 function initData() {
     let currentItems = getData('sys_items');
 
@@ -175,9 +160,9 @@ function initData() {
                 DEFAULT_DATA.categories.forEach(cat => {
                     batch.set(db.collection("menu_categories").doc(String(cat.id)), cat);
                 });
-                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);
+                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);[span_5](start_span)[span_5](end_span)
             } catch (err) {
-                console.error("Batch error:", err);
+                console.error("Batch error:", err);[span_6](start_span)[span_6](end_span)
             }
         }
     }
@@ -235,18 +220,14 @@ function calculateItemCost(item) {
     if (!item || !item.recipe || !Array.isArray(item.recipe)) return 0;
 
     let totalCost = 0;
-
     item.recipe.forEach(ingredient => {
         const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
-
         if (stockItem) {
             const costPerUnit = stockItem.costPerUnit 
                 || (stockItem.quantity > 0 ? (Number(stockItem.totalPrice) / Number(stockItem.quantity)) : 0);
-
             totalCost += (costPerUnit * Number(ingredient.qty || 0));
         }
     });
-
     return totalCost;
 }
 
@@ -262,7 +243,7 @@ function setupCloudRealtimeSync() {
                 refreshActiveUI();
             }
         }
-    }, err => console.log("Menu sync fallback:", err));
+    }, err => console.log("Menu sync fallback:", err));[span_7](start_span)[span_7](end_span)
 
     db.collection("menu_categories").onSnapshot(snapshot => {
         if (!snapshot.empty) {
@@ -273,7 +254,7 @@ function setupCloudRealtimeSync() {
                 refreshActiveUI();
             }
         }
-    }, err => console.log("Category sync fallback:", err));
+    }, err => console.log("Category sync fallback:", err));[span_8](start_span)[span_8](end_span)
 }
 
 function refreshActiveUI() {
@@ -321,10 +302,9 @@ async function globalSystemSync(btnElement) {
                 setData('sys_live_orders', cloudOrders);
             }
         }
-
         refreshActiveUI();
     } catch (error) {
-        console.error("Global sync error:", error);
+        console.error("Global sync error:", error);[span_9](start_span)[span_9](end_span)
         refreshActiveUI();
     } finally {
         if (btnElement) {
@@ -520,7 +500,6 @@ function calculateDeliveryCost() {
     let deliveryFee = 0;
     if (orderType === 'delivery') {
         const normalizedInput = normalizeArabicArea(areaInput);
-
         if (normalizedInput.includes("قاهره")) {
             deliveryFee = 0;
         } else if (areaInput !== "") {
@@ -669,7 +648,6 @@ function initCashierPage() {
     sessionStorage.removeItem('active_cashier');
     if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'flex';
     if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'none';
-    
     renderQuickKitchenNotesButtons();
 }
 
@@ -895,7 +873,6 @@ function toggleFreeDiscount() {
 
         activeDiscountType = 'free';
         posDiscountAmount = subtotal;
-        
         updateDiscountUIState('free', '🎉 طلب مجاني (100%)');
         renderPosCart();
     }
@@ -938,7 +915,6 @@ function promptAmountDiscount() {
 
         activeDiscountType = 'amount';
         posDiscountAmount = amt;
-
         updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString()} د.ع`);
         renderPosCart();
     }
@@ -948,7 +924,6 @@ function clearAllDiscounts() {
     activeDiscountType = null;
     posDiscountAmount = 0;
     currentPercentValue = 0;
-
     updateDiscountUIState(null, '');
     renderPosCart();
 }
@@ -959,7 +934,6 @@ function recalculateActiveDiscount() {
         clearAllDiscounts();
         return;
     }
-
     if (activeDiscountType === 'free') {
         posDiscountAmount = subtotal;
     } else if (activeDiscountType === 'percent') {
@@ -1076,7 +1050,6 @@ function addNewExpenseRecord() {
 
     document.getElementById('expenseAmountInput').value = '';
     document.getElementById('expenseNoteInput').value = '';
-    
     renderExpensesListTable();
     alert(`✅ تم تسجيل الصرفية بمبلغ (${amount.toLocaleString()} د.ع) وخصمها من الصندوق بنجاح!`);
 }
@@ -1422,7 +1395,6 @@ function renderItemsReport(targetDate) {
             ord.items.forEach(item => {
                 const qty = Number(item.qty || 0);
                 const price = Number(item.price || 0);
-                
                 if (!itemsSoldMap[item.name]) {
                     itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
                 }
@@ -1439,7 +1411,6 @@ function renderItemsReport(targetDate) {
     const itemsListEl = document.getElementById('repItemsSoldListDetail');
     if (itemsListEl) {
         const itemNames = Object.keys(itemsSoldMap);
-
         if (itemNames.length === 0) {
             itemsListEl.innerHTML = `<p style="text-align:center; color:#777; padding:15px 0;">لا توجد مبيعات وجبات مسجلة اليوم</p>`;
         } else {
@@ -1890,23 +1861,52 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
+// ⭐ الدالة المحدثة بالكامل لطباعة الكاشير محلياً وإرسال أمر المطبخ شبكياً
 function printReceipt(order, shouldTriggerWindowPrint = true) {
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     const custName = order.customerName || 'زبون مباشر';
     const payMethod = order.paymentMethod || '💵 كاش';
-    const serviceType = order.area || 'صالة';
+    const serviceType = order.area || order.orderType || 'صالة';
     const driverSuffix = order.driverName && order.driverName !== '-' ? ` - 🛵 ${order.driverName}` : '';
     const dateTime = order.dateDate && order.timestamp ? `${order.dateDate} - ${order.timestamp}` : `${getTodayString()} - ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
     const items = Array.isArray(order.items) ? order.items : [];
+    const notesText = order.notes && order.notes !== '-' ? order.notes : '';
 
-    let itemsHtml = items.map(i => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:13px; font-weight:bold; color:#000;">
-            <span>${i.name} (×${i.qty})</span>
-            <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
-        </div>
-    `).join('');
+    let itemsCashierHtml = '';
+    let itemsKitchenText = '';
 
+    items.forEach(i => {
+        itemsCashierHtml += `
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:13px; font-weight:bold; color:#000;">
+                <span>${i.name} (×${i.qty})</span>
+                <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
+            </div>`;
+        itemsKitchenText += `- ${i.name}  [x${i.qty}]\n`;
+    });
+
+    // 1️⃣ إرسال بون المطبخ فوراً عبر الشبكة إلى طابعة المطبخ (192.168.0.200)
+    const kitchenPrinterIp = "192.168.0.200";
+    let kitchenPayload = 
+        "\x1B\x40" + 
+        "\x1B\x61\x01" + "*** امر تجهيز مطبخ ***\n" +
+        `طلب رقم: #${orderNum}\n` +
+        `الخدمة: ${serviceType}${driverSuffix}\n` +
+        "--------------------------------\n" +
+        "\x1B\x61\x00" +
+        itemsKitchenText +
+        (notesText ? "--------------------------------\nملاحظة: " + notesText + "\n" : "") +
+        "\n\n\n\x1B\x69";
+
+    try {
+        fetch(`http://${kitchenPrinterIp}:9100`, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: kitchenPayload
+        }).catch(() => {});
+    } catch(e) {}
+
+    // 2️⃣ طباعة وصل الكاشير محلياً عبر الويندوز
     const thermalMarkup = `
         <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:8px; margin-bottom:8px;">
             <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
@@ -1925,10 +1925,11 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
             <div>الزبون: ${custName}</div>
             <div>طريقة الدفع: ${payMethod}</div>
             <div>نوع الخدمة: ${serviceType}${driverSuffix}</div>
+            ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
         </div>
 
         <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; color:#000;">
-            ${itemsHtml}
+            ${itemsCashierHtml}
         </div>
 
         <div style="font-size:13px; line-height:1.6; color:#000;">
