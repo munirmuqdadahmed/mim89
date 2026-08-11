@@ -360,25 +360,19 @@
             font-weight: 700;
         }
 
-        .quick-note-btn {
-            background: #25252b;
-            color: #ddd;
-            border: 1px solid #3d3d46;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
         /* ========================================================= */
-        /* 🖨️ قواعد الطباعة الحرارية المباشرة القاطعة */
+        /* 🖨️ ضبط أبعاد الطباعة الحرارية الصارمة المحذية 100% */
         /* ========================================================= */
         #mim89ThermalPrintBox {
             display: none;
         }
 
         @media print {
+            @page {
+                size: 80mm auto;
+                margin: 0mm !important;
+            }
+
             body > *:not(#mim89ThermalPrintBox) {
                 display: none !important;
             }
@@ -388,8 +382,7 @@
                 color: #000000 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
-                height: auto !important;
+                width: 72mm !important;
                 overflow: visible !important;
             }
 
@@ -398,19 +391,21 @@
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 76mm !important;
-                margin: 0 auto !important;
-                padding: 2mm !important;
+                width: 72mm !important;
+                margin: 0 !important;
+                padding: 2mm 3mm !important;
                 background: #ffffff !important;
                 color: #000000 !important;
                 font-family: 'Tajawal', Arial, sans-serif !important;
                 visibility: visible !important;
+                box-sizing: border-box !important;
             }
 
             #mim89ThermalPrintBox * {
                 color: #000000 !important;
                 background: transparent !important;
                 visibility: visible !important;
+                box-sizing: border-box !important;
             }
         }
     </style>
@@ -441,20 +436,16 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.75rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);">
-                        <i class="fa-solid fa-key" style="color:var(--gold-bright);"></i> فتح الدرج / الصندوق
-                    </button>
-                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger);">
-                        <i class="fa-solid fa-wallet" style="color:var(--danger);"></i> الصرفيات والسُلف اليومية
-                    </button>
-                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt" style="color:var(--gold-primary);"></i> سجل الفواتير المطبوعة</button>
-                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line" style="color:var(--blue-accent);"></i> كشف الحساب المالي اليومي</button>
-                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked" style="color:var(--gold-primary);"></i> جرد الوجبات المباعة</button>
-                    <button onclick="openShiftReportModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-lock" style="color:#3b82f6;"></i> تقفيل الشيفت والصندوق</button>
+                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
+                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
+                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
+                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
+                    <button onclick="openShiftReportModal(); toggleBrandMenu();"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</button>
                     <hr style="border-color:#333; margin:4px 0;">
-                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square" style="color:var(--purple-accent);"></i> تعديل ملاحظات المطبخ السريعة</button>
-                    <button onclick="unlockIpadAudio(); toggleBrandMenu();"><i class="fa-solid fa-bell" style="color:var(--gold-bright);"></i> تفعيل التنبيه الصوتي</button>
-                    <button onclick="globalSystemSync(this); toggleBrandMenu();"><i class="fa-solid fa-rotate" style="color:var(--success);"></i> تحديث ومزامنة النظام</button>
+                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square"></i> تعديل ملاحظات المطبخ السريعة</button>
+                    <button onclick="unlockIpadAudio(); toggleBrandMenu();"><i class="fa-solid fa-bell"></i> تفعيل التنبيه الصوتي</button>
+                    <button onclick="globalSystemSync(this); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
                     <hr style="border-color:#333; margin:4px 0;">
                     <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
                 </div>
@@ -511,33 +502,21 @@
                             </div>
 
                             <div style="display:flex; gap:4px; align-items:center;">
-                                <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">
-                                    🎉 مجاني
-                                </button>
-                                <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">
-                                    🏷️ % خصم
-                                </button>
-                                <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">
-                                    💵 خصم مبلغ
-                                </button>
-                                <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:5px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.8rem; display:none;">
-                                    ✕
-                                </button>
+                                <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">🎉 مجاني</button>
+                                <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">🏷️ % خصم</button>
+                                <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:#222228; color:#fff; border:1px solid #444; flex:1;">💵 خصم مبلغ</button>
+                                <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:5px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.8rem; display:none;">✕</button>
                             </div>
                         </div>
 
                         <!-- 📝 ملاحظات المطبخ السريعة -->
                         <div style="background:#121215; padding:6px; border-radius:8px; border:1px solid var(--card-border); margin: 4px 0; flex-shrink:0;">
-                            <span style="font-size:0.78rem; color:var(--gold-bright); font-weight:800; display:block; margin-bottom:4px;">
-                                <i class="fa-solid fa-pen-clip"></i> ملاحظات المطبخ:
-                            </span>
+                            <span style="font-size:0.78rem; color:var(--gold-bright); font-weight:800; display:block; margin-bottom:4px;"><i class="fa-solid fa-pen-clip"></i> ملاحظات المطبخ:</span>
                             <div id="quickNotesButtonsContainer" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px;"></div>
                             
                             <div style="display:flex; gap:4px; align-items:center;">
                                 <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.8rem; padding:6px; margin:0; flex:1; text-align:right;">
-                                <button type="button" onclick="document.getElementById('posOrderNotesInput').value = '';" title="مسح الملاحظات" class="gold-btn" style="background:var(--danger); color:#fff; padding:6px 10px; font-weight:bold; font-size:0.9rem; width:auto;">
-                                    ✕
-                                </button>
+                                <button type="button" onclick="document.getElementById('posOrderNotesInput').value = '';" title="مسح الملاحظات" class="gold-btn" style="background:var(--danger); color:#fff; padding:6px 10px; font-weight:bold; font-size:0.9rem; width:auto;">✕</button>
                             </div>
                         </div>
 
@@ -578,7 +557,7 @@
                 </div>
             </aside>
 
-            <!-- 📦 القسم الأيسر: الأقسام وسلة المنتجات والبحث -->
+            <!-- 📦 القسم الأيسر: الأصناف والمنتجات والبحث -->
             <main class="pos-main-content">
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
                     <input type="text" id="posSearchInput" class="gold-input" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.9rem; text-align:right;">
@@ -589,10 +568,10 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية المخصصة للطباعة السريعة -->
+    <!-- 🖨️ الحاوية الحرارية المخصصة للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
-    <!-- 📊 1. نافذة حاسبة الكاش والباقي للزبون -->
+    <!-- 📊 النوافذ المنبثقة -->
     <div id="quickCashModal" class="modal-overlay">
         <div class="modal-body" style="max-width:360px; text-align:center;">
             <h3 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد المستلم</h3>
@@ -620,7 +599,7 @@
         </div>
     </div>
 
-    <!-- 📑 2. نافذة سجل الفواتير المطبوعة -->
+    <!-- 📑 النوافذ الأخرى -->
     <div id="completedOrdersModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -632,7 +611,6 @@
         </div>
     </div>
 
-    <!-- 💵 3. نافذة إدارة الصرفيات والسُلف -->
     <div id="expenseManagerModal" class="modal-overlay">
         <div class="modal-body" style="max-width:500px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -664,7 +642,6 @@
         </div>
     </div>
 
-    <!-- 📈 4. نافذة كشف الحساب المالي اليومي -->
     <div id="dailyReportModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -697,7 +674,6 @@
         </div>
     </div>
 
-    <!-- 📦 5. نافذة جرد الوجبات المباعة -->
     <div id="itemsReportModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -723,7 +699,6 @@
         </div>
     </div>
 
-    <!-- 🔒 6. نافذة تقفيل الشيفت والصندوق -->
     <div id="shiftReportModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -753,7 +728,6 @@
         </div>
     </div>
 
-    <!-- ✏️ 7. نافذة محرر ملاحظات المطبخ السريعة -->
     <div id="kitchenNotesManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
@@ -762,7 +736,7 @@
             </div>
 
             <div style="display:flex; gap:4px; margin-bottom:10px;">
-                <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة (مثال: بدون بصل)..." style="font-size:0.85rem; text-align:right;">
+                <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة..." style="font-size:0.85rem; text-align:right;">
                 <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:6px 12px;">إضافة</button>
             </div>
 
@@ -770,7 +744,7 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي المباشر مع دالة الطباعة القاطعة -->
+    <!-- 🧠 المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
     <script>
         function openCashDrawer() { window.print(); }
@@ -830,7 +804,7 @@
             if (m) m.style.display = 'none';
         }
 
-        // 🧾 1. دالة طباعة فاتورة الزبون حصراً
+        // 🧾 1. دالة طباعة فاتورة الزبون المنسقة (تمنع اقتصاص الحروف والكلمات)
         function printCustomerInvoiceDirect() {
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
@@ -876,45 +850,45 @@
                         });
 
                         itemsHtml += `
-                            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin:4px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
-                                <span>${name} (x${qty})</span>
-                                <span>${price}</span>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
+                                <span style="max-width:180px; word-break:break-word;">${name} (x${qty})</span>
+                                <span style="white-space:nowrap;">${price}</span>
                             </div>`;
                     }
                 }
             }
 
             const markup = `
-                <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
-                    <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                    <div style="font-size:12px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
-                    <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
+                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
+                    <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                    <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
+                    <div style="font-size:10px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
                 </div>
 
-                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px; background:#fff;">
-                    <div style="font-size:11px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
-                    <div style="font-size:36px; font-weight:900; line-height:1.1; color:#000;">#${orderSeq}</div>
+                <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
+                    <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
+                    <div style="font-size:32px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
                 </div>
 
-                <div style="font-size:12px; font-weight:bold; border-bottom:2px dashed #000; padding-bottom:4px; margin-bottom:6px; color:#000; line-height:1.4;">
-                    <div>الكاشير: الرئيسي</div>
-                    <div>التاريخ والوقت: ${dateStr} - ${timeStr}</div>
-                    <div>الزبون: ${custName}</div>
+                <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4;">
+                    <div>الكاشير: الكاشير الرئيسي</div>
+                    <div>تاريخ والوقت: ${dateStr} - ${timeStr}</div>
+                    <div>زبون: ${custName}</div>
                     <div>طريقة الدفع: ${payType}</div>
                     <div>نوع الخدمة: ${serviceType}</div>
                 </div>
 
-                <div style="border-bottom:2px dashed #000; padding:4px 0; margin-bottom:6px; color:#000;">
+                <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px; color:#000;">
                     ${itemsHtml}
                 </div>
 
-                <div style="font-size:13px; line-height:1.5; color:#000;">
-                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
+                <div style="font-size:11px; line-height:1.4; color:#000;">
+                    <div style="display:flex; justify-content:space-between;"><span>مجموع الفرعي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span>0 د.ع</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; border-top:2px solid #000; padding-top:4px; margin-top:4px;"><span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; border-top:1px solid #000; padding-top:3px; margin-top:3px;"><span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
                 </div>
 
-                <div style="text-align:center; margin-top:8px; border-top:2px dashed #000; padding-top:4px; font-size:11px; font-weight:bold; color:#000;">
+                <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:10px; font-weight:bold; color:#000;">
                     شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
                 </div>
             `;
@@ -927,7 +901,7 @@
             }, 150);
         }
 
-        // 🔥 2. دالة طباعة بون المطبخ حصراً وتسليم الطلب
+        // 🔥 2. دالة طباعة بون المطبخ والتجهيز الخالص (بدون أسعار وبحجم خط واضح للمطبخ)
         function printKitchenTicketDirect() {
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
@@ -972,29 +946,29 @@
                         });
 
                         itemsKitchenHtml += `
-                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:6px 0; font-size:18px; font-weight:900; color:#000;">
+                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:4px 0; font-size:16px; font-weight:900; color:#000;">
                                 <span>● ${name}</span>
-                                <span style="background:#000; color:#fff !important; padding:0 8px; border-radius:4px;">[ ${qty} ]</span>
+                                <span style="background:#000; color:#fff !important; padding:0 6px; border-radius:3px;">[ ${qty} ]</span>
                             </div>`;
                     }
                 }
             }
 
             const markup = `
-                <div style="text-align:center; border:2px dashed #000; padding:6px; margin-bottom:8px;">
-                    <h3 style="font-size:20px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
-                    <div style="font-size:48px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
+                <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
+                    <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ والتجهيز ***</h3>
+                    <div style="font-size:42px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
                 </div>
                 
-                <div style="font-weight:900; font-size:16px; margin-bottom:4px; color:#000;">نوع الخدمة: ${serviceType}</div>
-                <div style="font-size:13px; font-weight:bold; margin-bottom:4px; color:#000;">الزبون: ${custName}</div>
-                <div style="font-size:12px; margin-bottom:8px; border-bottom:1px solid #000; padding-bottom:4px; color:#000;">الوقت: ${dateStr} - ${timeStr}</div>
+                <div style="font-weight:900; font-size:14px; margin-bottom:3px; color:#000;">نوع الخدمة: ${serviceType}</div>
+                <div style="font-size:12px; font-weight:bold; margin-bottom:3px; color:#000;">الزبون: ${custName}</div>
+                <div style="font-size:10px; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:3px; color:#000;">الوقت: ${dateStr} - ${timeStr}</div>
                 
-                <div style="font-size:16px; font-weight:900; color:#000;">
+                <div style="color:#000;">
                     ${itemsKitchenHtml}
                 </div>
                 
-                ${notesText ? `<div style="font-size:15px; font-weight:900; margin-top:10px; border:2px solid #000; padding:6px; color:#000; background:#eee;">ملاحظات: ${notesText}</div>` : ''}
+                ${notesText ? `<div style="font-size:13px; font-weight:900; margin-top:8px; border:2px solid #000; padding:4px; color:#000; background:#eee;">ملاحظات: ${notesText}</div>` : ''}
             `;
 
             printBox.innerHTML = markup;
