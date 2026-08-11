@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.2 Full Print Production Edition)
+   MIM89 FAST FOOD - Master Core Engine (v18.3 Full Thermal Print Fix)
    مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة، والصرفيات
    ========================================================================== */
 
@@ -1913,14 +1913,8 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// 🖨️ دالة تجهيز وطباعة الفاتورة والوصل الحراري المباشر
+// 🖨️ دالة تجهيز وطباعة الفاتورة الحرارية المباشرة والحقن النظيف في الحاوية الحصرية
 function printReceipt(order, shouldTriggerWindowPrint = true) {
-    // 1️⃣ إغلاق كافة النوافذ المنبثقة للتقارير فوراً قبل إطلاق الطباعة
-    document.body.classList.remove('modal-open-for-print');
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-        m.style.display = 'none';
-    });
-
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
     const custName = order.customerName || 'زبون مباشر';
@@ -1928,59 +1922,59 @@ function printReceipt(order, shouldTriggerWindowPrint = true) {
     const serviceType = order.area || 'صالة';
     const driverSuffix = order.driverName && order.driverName !== '-' ? ` - 🛵 ${order.driverName}` : '';
     const dateTime = order.dateDate && order.timestamp ? `${order.dateDate} - ${order.timestamp}` : `${getTodayString()} - ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
-
-    // 2️⃣ تعبئة وصل الزبون والكاشير
-    if (document.getElementById('receiptCashierName')) document.getElementById('receiptCashierName').innerText = "الكاشير: " + cashierName;
-    if (document.getElementById('receiptOrderNumBig')) document.getElementById('receiptOrderNumBig').innerText = `#${orderNum}`;
-    if (document.getElementById('receiptDateTime')) document.getElementById('receiptDateTime').innerText = `التاريخ والوقت: ${dateTime}`;
-    if (document.getElementById('receiptCustInfo')) document.getElementById('receiptCustInfo').innerText = `الزبون: ${custName}`;
-    if (document.getElementById('receiptPaymentInfo')) document.getElementById('receiptPaymentInfo').innerText = `طريقة الدفع: ${payMethod}`;
-    if (document.getElementById('receiptTypeInfo')) document.getElementById('receiptTypeInfo').innerText = `نوع الخدمة: ${serviceType}${driverSuffix}`;
-    
     const items = Array.isArray(order.items) ? order.items : [];
-    if (document.getElementById('receiptItemsBody')) {
-        document.getElementById('receiptItemsBody').innerHTML = items.map(i => `
-            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:0.85rem; color:#000;">
-                <span>${i.name} (×${i.qty})</span>
-                <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
-            </div>
-        `).join('');
-    }
 
-    if (document.getElementById('receiptSubtotal')) document.getElementById('receiptSubtotal').innerText = (order.subtotal || 0).toLocaleString() + ' د.ع';
-    if (document.getElementById('receiptDeliveryFee')) document.getElementById('receiptDeliveryFee').innerText = (order.deliveryFee || 0).toLocaleString() + ' د.ع';
-    if (document.getElementById('receiptGrandTotal')) document.getElementById('receiptGrandTotal').innerText = (order.totalAmount || 0).toLocaleString() + ' د.ع';
+    let itemsHtml = items.map(i => `
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:13px; font-weight:bold; color:#000;">
+            <span>${i.name} (×${i.qty})</span>
+            <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
+        </div>
+    `).join('');
 
-    // 3️⃣ تعبئة بون المطبخ المدمج
-    if (document.getElementById('kitchenOrderNumBig')) document.getElementById('kitchenOrderNumBig').innerText = `#${orderNum}`;
-    if (document.getElementById('kitchenOrderType')) document.getElementById('kitchenOrderType').innerText = `نوع الخدمة: ${serviceType}${driverSuffix}`;
-    if (document.getElementById('kitchenCustName')) document.getElementById('kitchenCustName').innerText = `الزبون: ${custName} ${order.phone && order.phone !== '-' ? '(' + order.phone + ')' : ''}`;
-    if (document.getElementById('kitchenTimeInfo')) document.getElementById('kitchenTimeInfo').innerText = `الوقت: ${dateTime}`;
+    const thermalMarkup = `
+        <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+            <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+            <div style="font-size:12px; font-weight:bold; margin-top:2px; color:#000;">بغداد - القاهرة</div>
+            <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
+        </div>
 
-    if (document.getElementById('kitchenItemsBody')) {
-        document.getElementById('kitchenItemsBody').innerHTML = items.map(i => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000; padding:4px 0; font-size:1.1rem; font-weight:bold; color:#000;">
-                <span>● ${i.name}</span>
-                <span style="font-size:1.2rem; background:#000; color:#fff; padding:0 6px; border-radius:3px;">[ العدد: ${i.qty} ]</span>
-            </div>
-        `).join('');
-    }
+        <div style="text-align:center; margin:8px 0; border:2px solid #000; padding:6px; border-radius:6px; background:#fff;">
+            <div style="font-size:12px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
+            <div style="font-size:36px; font-weight:900; line-height:1.1; color:#000;">#${orderNum}</div>
+        </div>
 
-    const notesBox = document.getElementById('kitchenNotesInfo');
-    if (notesBox) {
-        if (order.notes && order.notes !== '-' && order.notes !== 'لا يوجد') {
-            notesBox.innerText = `ملاحظات الطلب: ${order.notes}`;
-            notesBox.style.display = 'block';
-        } else {
-            notesBox.style.display = 'none';
+        <div style="font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:2px dashed #000; padding-bottom:6px; line-height:1.5; color:#000;">
+            <div>الكاشير: ${cashierName}</div>
+            <div>التاريخ والوقت: ${dateTime}</div>
+            <div>الزبون: ${custName}</div>
+            <div>طريقة الدفع: ${payMethod}</div>
+            <div>نوع الخدمة: ${serviceType}${driverSuffix}</div>
+        </div>
+
+        <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; color:#000;">
+            ${itemsHtml}
+        </div>
+
+        <div style="font-size:13px; line-height:1.6; color:#000;">
+            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span style="font-weight:bold;">${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span style="font-weight:bold;">${(order.deliveryFee || 0).toLocaleString()} د.ع</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:900; border-top:2px solid #000; padding-top:6px; margin-top:6px;"><span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span></div>
+        </div>
+
+        <div style="text-align:center; margin-top:12px; border-top:2px dashed #000; padding-top:6px; font-size:12px; font-weight:bold; color:#000;">
+            شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
+        </div>
+    `;
+
+    const printBox = document.getElementById('mim89ThermalPrintBox');
+    if (printBox) {
+        printBox.innerHTML = thermalMarkup;
+        if (shouldTriggerWindowPrint) {
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => { printBox.innerHTML = ''; }, 300);
+            }, 100);
         }
-    }
-
-    // 4️⃣ استدعاء نافذة الطباعة الحرارية فوراً
-    if (shouldTriggerWindowPrint) {
-        setTimeout(() => {
-            window.print();
-        }, 150);
     }
 }
 
