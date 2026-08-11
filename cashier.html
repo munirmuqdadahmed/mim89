@@ -361,7 +361,7 @@
         }
 
         /* ========================================================= */
-        /* 🖨️ ضبط أبعاد طباعة الفواتير بدون تداخل أو اقتطاع */
+        /* 🖨️ التنسيق الحراري المضبوط لمنع الفراغ العريض من اليمين */
         /* ========================================================= */
         #mim89ThermalPrintBox {
             display: none;
@@ -382,7 +382,7 @@
                 color: #000000 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 72mm !important;
+                width: 78mm !important;
                 overflow: visible !important;
             }
 
@@ -391,9 +391,9 @@
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 68mm !important;
+                width: 76mm !important;
                 margin: 0 !important;
-                padding: 2mm 8mm 2mm 1mm !important;
+                padding: 1mm 2mm !important; /* تقليل الهامش الأيمن لملء أطراف الورقة بالكامل */
                 background: #ffffff !important;
                 color: #000000 !important;
                 font-family: 'Tajawal', Arial, sans-serif !important;
@@ -527,7 +527,7 @@
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>
                         </div>
 
-                        <!-- 🔘 أزرار الطباعة المعزولة كلياً من أية نوافذ زائدة -->
+                        <!-- 🔘 أزرار الطباعة المعزولة -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1.1rem; font-weight:900;">
                                 <span>المجموع الكلي:</span>
@@ -745,7 +745,6 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي المعزول الذي يحل مشكلة النافذة الثالثة تماماً -->
     <script src="app.js"></script>
     <script>
         function openCashDrawer() { window.print(); }
@@ -805,13 +804,12 @@
             if (m) m.style.display = 'none';
         }
 
-        // 🎯 دالة جلب رقم الطلب الثابت
         function getCurrentOrderSeq() {
             let orderSeq = localStorage.getItem('mim89_daily_order_seq');
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // 🧾 1. دالة طباعة فاتورة الزبون المعزولة كلياً من أي استدعاء مزدوج
+        // 🧾 1. دالة طباعة فاتورة الزبون
         function printCustomerInvoiceDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -862,15 +860,15 @@
 
                         itemsHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
-                                <span style="max-width:150px; word-break:break-word;">${name} (x${qty})</span>
-                                <span style="white-space:nowrap;">${price}</span>
+                                <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
+                                <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
                     }
                 }
             }
 
             const markup = `
-                <div style="padding-right:12px; box-sizing:border-box; width:100%;">
+                <div style="width:100%; box-sizing:border-box;">
                     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
                         <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
                         <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
@@ -908,14 +906,13 @@
 
             printBox.innerHTML = markup;
 
-            // استخدام setTimeout موحد يمنع النافذة المزدوجة والمفاجئة
             setTimeout(() => {
                 window.print();
                 setTimeout(() => { printBox.innerHTML = ''; }, 300);
             }, 100);
         }
 
-        // 🔥 2. دالة طباعة بون المطبخ المعزولة المعالجة
+        // 🔥 2. دالة طباعة بون المطبخ
         function printKitchenTicketDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -965,7 +962,7 @@
 
                         itemsKitchenHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #000; padding:5px 0; font-size:14px; font-weight:900; color:#000;">
-                                <span style="flex:1; padding-left:5px; word-break:break-word;">● ${name}</span>
+                                <span style="flex:1; word-break:break-word;">● ${name}</span>
                                 <span style="white-space:nowrap; font-size:15px; font-weight:900;">[ العدد: ${qty} ]</span>
                             </div>`;
                     }
@@ -973,7 +970,7 @@
             }
 
             const markup = `
-                <div style="padding-right:12px; box-sizing:border-box; width:100%;">
+                <div style="width:100%; box-sizing:border-box;">
                     <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
                         <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
                         <div style="font-size:40px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
@@ -996,10 +993,8 @@
             setTimeout(() => {
                 window.print();
 
-                // زيادة العداد وتصفير السلة فقط هنا لمنع التكرارات بإنهاء العملية
                 localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
                 
-                // تنظيف السلة بدون استدعاء دالة checkout من app.js التي كانت تفتح النافذة الثالثة
                 const posCartList = document.getElementById('posCartList');
                 if (posCartList) {
                     posCartList.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>';
