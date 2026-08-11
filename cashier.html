@@ -360,7 +360,7 @@
             font-weight: 700;
         }
 
-        /* 🖨️ التنسيق الحراري المباشر 80mm (الكاشير والمطبخ معاً) */
+        /* 🖨️ التنسيق الحراري المباشر 80mm (للكاشير والمطبخ) */
         #mim89ThermalPrintBox { display: none; }
 
         @media print {
@@ -523,19 +523,19 @@
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>
                         </div>
 
-                        <!-- 🔘 أزرار الطباعة المباشرة والشاملة -->
+                        <!-- 🔘 أزرار الطباعة المفصولة والرئيسية -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1.1rem; font-weight:900;">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             
-                            <!-- ⭐ الزر الرئيس الموحد للطباعة المباشرة وإتمام الطلب (بدون أي أخطاء شبكية) -->
-                            <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 14px; font-size: 1.1rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                            <!-- ⭐ الزر الرئيس (طباعة وإتمام الطلب: مطبخ + كاشير معاً وتصفير السلة) -->
+                            <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 12px; font-size: 1rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
                                 <i class="fa-solid fa-print"></i> 🚀 طباعة وإتمام الطلب (المطبخ + الكاشير)
                             </button>
 
-                            <!-- أزرار ثانوية للطباعة المفردة والحاسبة -->
+                            <!-- الأزرار المفصولة -->
                             <div style="display:flex; gap:4px; margin-bottom:4px;">
                                 <button type="button" class="gold-btn" onclick="printCustomerInvoiceDirect(event)" style="flex:1; padding: 6px; font-size: 0.78rem; background: #222; color: var(--gold-bright); border: 1px solid #444;">
                                     🧾 زبون فقط
@@ -572,7 +572,7 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية (تطبع الكاشير والمطبخ معاً بشكل نظيف) -->
+    <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
     <!-- 📊 النوافذ المنبثقة -->
@@ -813,48 +813,28 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة النظيفة 100% المدمجة (تطبع المطبخ والكاشير معاً بشكل مرتب وبدون ترويسات شبكية مفسدة)
-        function printMasterAllDirect(event) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
-
+        // 1️⃣ طباعة فاتورة الزبون فقط
+        function printCustomerInvoiceOnly(event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-
-            if (totalValue <= 0) {
-                return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
-            }
+            if (totalValue <= 0) return alert('⚠️ السلة فارغة!');
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
-
             const orderSeq = getCurrentOrderSeq();
+            const custName = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
+            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
+            const payType = document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش';
 
-            const custNameInput = document.getElementById('posCustName');
-            const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'زبون مباشر';
-
-            const activeTypeBtn = document.querySelector('#posOrderTypeGroup .toggle-btn.active');
-            let serviceType = activeTypeBtn ? activeTypeBtn.innerText.trim() : 'صالة';
-
-            const activePayBtn = document.querySelector('#posPaymentGroup .toggle-btn.active');
-            let payType = activePayBtn ? activePayBtn.innerText.trim() : 'كاش';
-
-            const notesInput = document.getElementById('posOrderNotesInput');
-            const notesText = notesInput ? notesInput.value.trim() : '';
-
-            let itemsCashierHtml = '';
-            let itemsKitchenHtml = '';
-
+            let itemsHtml = '';
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
                 const children = cartContainer.children;
                 for (let i = 0; i < children.length; i++) {
                     const textContent = children[i].innerText || children[i].textContent || '';
                     if (textContent.includes('اختر الوجبات')) continue;
-
                     const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
                     if (lines.length > 0) {
                         let name = lines[0];
@@ -863,15 +843,71 @@
                         lines.forEach(line => {
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
-
-                        itemsCashierHtml += `
+                        itemsHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
+                    }
+                }
+            }
 
+            const printBox = document.getElementById('mim89ThermalPrintBox');
+            if (printBox) {
+                printBox.innerHTML = `
+                    <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+                        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
+                            <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                            <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة زبون</div>
+                        </div>
+                        <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
+                            <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون</div>
+                            <div style="font-size:28px; font-weight:900; color:#000;">#${orderSeq}</div>
+                        </div>
+                        <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
+                            <div>التاريخ: ${dateStr} - ${timeStr}</div>
+                            <div>الزبون: ${custName}</div>
+                            <div>الخدمة: ${serviceType} | الدفع: ${payType}</div>
+                        </div>
+                        <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
+                        <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px;">
+                            <span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span>
+                        </div>
+                        <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
+                    </div>`;
+                setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+            }
+        }
+
+        // 2️⃣ طباعة ورقة المطبخ فقط
+        function printKitchenTicketOnly(event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const totalElement = document.getElementById('posTotalAmount');
+            let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
+            if (totalValue <= 0) return alert('⚠️ السلة فارغة!');
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const orderSeq = getCurrentOrderSeq();
+            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
+            const notesText = document.getElementById('posOrderNotesInput')?.value.trim() || '';
+
+            let itemsKitchenHtml = '';
+            const cartContainer = document.getElementById('posCartList');
+            if (cartContainer) {
+                const children = cartContainer.children;
+                for (let i = 0; i < children.length; i++) {
+                    const textContent = children[i].innerText || children[i].textContent || '';
+                    if (textContent.includes('اختر الوجبات')) continue;
+                    const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
+                    if (lines.length > 0) {
+                        let name = lines[0];
+                        let qty = '1';
+                        lines.forEach(line => {
+                            if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
+                        });
                         itemsKitchenHtml += `
-                            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; margin:2px 0; color:#000;">
+                            <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; margin:4px 0; color:#000;">
                                 <span>- ${name}</span>
                                 <span>[x${qty}]</span>
                             </div>`;
@@ -879,71 +915,108 @@
                 }
             }
 
-            // طباعة الفاتورة الشاملة عبر نافذة النظام نظيفة وخالية من أي رموز
+            const printBox = document.getElementById('mim89ThermalPrintBox');
+            if (printBox) {
+                printBox.innerHTML = `
+                    <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+                        <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                            <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
+                            <div style="font-size:12px; font-weight:bold;">الوقت: ${timeStr}</div>
+                        </div>
+                        <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                            <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
+                            <div style="font-size:36px; font-weight:900;">#${orderSeq}</div>
+                        </div>
+                        <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:1px dashed #000; padding-bottom:4px;">
+                            <div>نوع الخدمة: ${serviceType}</div>
+                            ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:4px; font-size:14px;">⚠️ ملاحظات: ${notesText}</div>` : ''}
+                        </div>
+                        <div style="padding:4px 0;">${itemsKitchenHtml}</div>
+                    </div>`;
+                setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+            }
+        }
+
+        // 3️⃣ الطباعة الشاملة وإتمام الطلب (مطبخ + كاشير معاً وتتم مع الحاسبة وإتمام الطلب وتصفير السلة)
+        function printMasterAllDirect(event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+            const totalElement = document.getElementById('posTotalAmount');
+            let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
+            if (totalValue <= 0) return alert('⚠️ السلة فارغة!');
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB');
+            const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const orderSeq = getCurrentOrderSeq();
+            const custName = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
+            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
+            const payType = document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش';
+            const notesText = document.getElementById('posOrderNotesInput')?.value.trim() || '';
+
+            let itemsCashierHtml = '';
+            let itemsKitchenHtml = '';
+            const cartContainer = document.getElementById('posCartList');
+            if (cartContainer) {
+                const children = cartContainer.children;
+                for (let i = 0; i < children.length; i++) {
+                    const textContent = children[i].innerText || children[i].textContent || '';
+                    if (textContent.includes('اختر الوجبات')) continue;
+                    const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
+                    if (lines.length > 0) {
+                        let name = lines[0];
+                        let price = lines.find(l => l.includes('د.ع')) || '';
+                        let qty = '1';
+                        lines.forEach(line => {
+                            if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
+                        });
+                        itemsCashierHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px;"><span>${name} (x${qty})</span><span>${price}</span></div>`;
+                        itemsKitchenHtml += `<div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; margin:2px 0;"><span>- ${name}</span><span>[x${qty}]</span></div>`;
+                    }
+                }
+            }
+
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
                     <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
-                            <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                            <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
-                            <div style="font-size:10px; font-weight:bold; color:#000;">هاتف: 07750008630</div>
+                            <h2 style="font-size:18px; margin:0; font-weight:900;">MIM89 FAST FOOD</h2>
+                            <div style="font-size:10px; font-weight:bold;">بغداد - القاهرة</div>
                         </div>
-
                         <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
-                            <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
-                            <div style="font-size:32px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
+                            <div style="font-size:10px; font-weight:bold;">رقم طلب الزبون</div>
+                            <div style="font-size:32px; font-weight:900;">#${orderSeq}</div>
                         </div>
-
-                        <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4;">
+                        <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; line-height:1.4;">
                             <div>الكاشير: الرئيسي</div>
-                            <div>التاريخ والوقت: ${dateStr} - ${timeStr}</div>
-                            <div>الزبون: ${custName}</div>
-                            <div>طريقة الدفع: ${payType}</div>
-                            <div>نوع الخدمة: ${serviceType}</div>
-                            ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
+                            <div>التاريخ: ${dateStr} - ${timeStr}</div>
+                            <div>الزبون: ${custName} | الدفع: ${payType} | الخدمة: ${serviceType}</div>
+                            ${notesText ? `<div style="margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
                         </div>
-
                         <div style="border-bottom:1px dashed #000; padding:4px 0; margin-bottom:4px; background:#f5f5f5;">
                             <div style="text-align:center; font-weight:900; font-size:12px; margin-bottom:2px; text-decoration:underline;">*** أمر تجهيز مطبخ ***</div>
                             ${itemsKitchenHtml}
                         </div>
-
-                        <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px; color:#000;">
-                            ${itemsCashierHtml}
+                        <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsCashierHtml}</div>
+                        <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:3px;">
+                            <span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span>
                         </div>
-
-                        <div style="font-size:11px; line-height:1.4; color:#000;">
-                            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; border-top:1px solid #000; padding-top:3px; margin-top:3px;">
-                                <span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span>
-                            </div>
-                        </div>
-
-                        <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:10px; font-weight:bold; color:#000;">
-                            شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
-                        </div>
-                    </div>
-                `;
-
-                setTimeout(() => {
-                    window.print();
-                    setTimeout(() => { printBox.innerHTML = ''; }, 300);
-                }, 100);
+                        <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89 FAST FOOD</div>
+                    </div>`;
+                setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
             }
 
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
-
             const posCartList = document.getElementById('posCartList');
-            if (posCartList) {
-                posCartList.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>';
-            }
+            if (posCartList) posCartList.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>';
             const totalEl = document.getElementById('posTotalAmount');
             if (totalEl) totalEl.innerText = '0 د.ع';
+            const notesInput = document.getElementById('posOrderNotesInput');
             if (notesInput) notesInput.value = '';
         }
 
-        function printCustomerInvoiceDirect(event) { printMasterAllDirect(event); }
-        function printKitchenTicketDirect(event) { printMasterAllDirect(event); }
+        function printCustomerInvoiceDirect(event) { printCustomerInvoiceOnly(event); }
+        function printKitchenTicketDirect(event) { printKitchenTicketOnly(event); }
 
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof initCashierPage === 'function') initCashierPage();
