@@ -1,10 +1,19 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.6 Direct Printer IP & Kitchen Split Fix)
-   مشروع الفايربيس: mim89-ff938 | يتضمن الـ 32 صنفاً، الطباعة المباشرة المزدوجة، والصرفيات
-   ========================================================================== */[span_1](start_span)[span_1](end_span)
+   MIM89 FAST FOOD - Master Core Engine (v18.7 Clean Fixed Version)
+   مشروع الفايربيس: mim89-ff938 | نظام الكاشير والمبيعات المباشرة والمطبخ الشبكي
+   ========================================================================== */
 
-// 1. الاتصال السحابي بـ Firebase + تفعيل وضع العمل الحُر بدون إنترنت
+// 1. المتغيرات العامة والاتصال السحابي بـ Firebase
 let db = null;
+let activeCashierUser = null;
+let posCart = [];
+let selectedPosOrderType = 'dine_in';
+let selectedPosPaymentMethod = 'cash';
+let activeDiscountType = null;
+let posDiscountAmount = 0;
+let currentPercentValue = 0;
+let cart = [];
+
 try {
     const firebaseConfig = {
         apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -21,14 +30,14 @@ try {
             firebase.initializeApp(firebaseConfig);
         }
         db = firebase.firestore();
-        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");[span_2](start_span)[span_2](end_span)
+        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
 
         db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            console.log("حالة التخزين المحلي Offline Persistence:", err.code);[span_3](start_span)[span_3](end_span)
+            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
         });
     }
 } catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);[span_4](start_span)[span_4](end_span)
+    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
 // 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً مع المكونات والتكاليف)
@@ -160,9 +169,9 @@ function initData() {
                 DEFAULT_DATA.categories.forEach(cat => {
                     batch.set(db.collection("menu_categories").doc(String(cat.id)), cat);
                 });
-                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);[span_5](start_span)[span_5](end_span)
+                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);
             } catch (err) {
-                console.error("Batch error:", err);[span_6](start_span)[span_6](end_span)
+                console.error("Batch error:", err);
             }
         }
     }
@@ -243,7 +252,7 @@ function setupCloudRealtimeSync() {
                 refreshActiveUI();
             }
         }
-    }, err => console.log("Menu sync fallback:", err));[span_7](start_span)[span_7](end_span)
+    }, err => console.log("Menu sync fallback:", err));
 
     db.collection("menu_categories").onSnapshot(snapshot => {
         if (!snapshot.empty) {
@@ -254,7 +263,7 @@ function setupCloudRealtimeSync() {
                 refreshActiveUI();
             }
         }
-    }, err => console.log("Category sync fallback:", err));[span_8](start_span)[span_8](end_span)
+    }, err => console.log("Category sync fallback:", err));
 }
 
 function refreshActiveUI() {
@@ -304,7 +313,7 @@ async function globalSystemSync(btnElement) {
         }
         refreshActiveUI();
     } catch (error) {
-        console.error("Global sync error:", error);[span_9](start_span)[span_9](end_span)
+        console.error("Global sync error:", error);
         refreshActiveUI();
     } finally {
         if (btnElement) {
@@ -315,8 +324,6 @@ async function globalSystemSync(btnElement) {
         }
     }
 }
-
-let cart = [];
 
 function loadPublicMenu() {
     const categories = getData('sys_categories');
@@ -634,14 +641,6 @@ function saveOrderLocally(orderData) {
 /* ==========================================
    4. نقطة البيع POS والدليفري والتطبيقات (cashier.html)
    ========================================== */
-let activeCashierUser = null;
-let posCart = [];
-let selectedPosOrderType = 'dine_in';
-let selectedPosPaymentMethod = 'cash';
-
-let activeDiscountType = null;
-let posDiscountAmount = 0;
-let currentPercentValue = 0;
 
 function initCashierPage() { 
     initData(); 
@@ -1861,7 +1860,7 @@ function printCurrentActiveModal() {
     }, 100);
 }
 
-// ⭐ الدالة المحدثة بالكامل لطباعة الكاشير محلياً وإرسال أمر المطبخ شبكياً
+// دالة الطباعة المزدوجة المدمجة (مطبخ شبكي + كاشير محلي)
 function printReceipt(order, shouldTriggerWindowPrint = true) {
     const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
     const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
