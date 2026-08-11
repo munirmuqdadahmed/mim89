@@ -527,25 +527,32 @@
                             <p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>
                         </div>
 
-                        <!-- 🔘 أزرار الطباعة المباشرة -->
+                        <!-- 🔘 أزرار الطباعة المباشرة والشاملة -->
                         <div style="padding-top:6px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1.1rem; font-weight:900;">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             
-                            <div style="display:flex; gap:4px; margin-bottom:4px;">
-                                <button type="button" class="gold-btn" onclick="printCustomerInvoiceDirect(event)" style="flex:1; padding: 10px; font-size: 0.95rem; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000;">
-                                    <i class="fa-solid fa-receipt"></i> 🧾 فاتورة الزبون
-                                </button>
-                                <button type="button" class="gold-btn" onclick="printKitchenTicketDirect(event)" style="flex:1; padding: 10px; font-size: 0.95rem; background: #222; color: var(--gold-bright); border: 1px solid var(--gold-primary);">
-                                    <i class="fa-solid fa-fire"></i> 🔥 بون المطبخ
-                                </button>
-                            </div>
+                            <!-- ⭐ الزر الرئيس الموحد للطباعة المباشرة وإتمام الطلب -->
+                            <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 14px; font-size: 1.1rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                <i class="fa-solid fa-print"></i> 🚀 طباعة وإتمام الطلب (المطبخ + الكاشير)
+                            </button>
 
-                            <div style="display:flex; gap:4px;">
-                                <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="flex:1; background:#25252b; color:#fff; border:1px solid #444; font-size:0.85rem;">🧮 حاسبة كاش</button>
-                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="flex:1; background:var(--danger); color:#fff; font-size:0.85rem;">إلغاء الطلب</button>
+                            <!-- أزرار ثانوية للطباعة المفردة والحاسبة -->
+                            <div style="display:flex; gap:4px; margin-bottom:4px;">
+                                <button type="button" class="gold-btn" onclick="printCustomerInvoiceDirect(event)" style="flex:1; padding: 6px; font-size: 0.78rem; background: #222; color: var(--gold-bright); border: 1px solid #444;">
+                                    🧾 زبون فقط
+                                </button>
+                                <button type="button" class="gold-btn" onclick="printKitchenTicketDirect(event)" style="flex:1; padding: 6px; font-size: 0.78rem; background: #222; color: var(--gold-bright); border: 1px solid #444;">
+                                    🔥 مطبخ فقط
+                                </button>
+                                <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="flex:1; padding: 6px; font-size: 0.78rem; background: #25252b; color: #fff; border: 1px solid #444;">
+                                    🧮 حاسبة
+                                </button>
+                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 6px 10px; font-size: 0.78rem; background: var(--danger); color: #fff; width: auto;">
+                                    إلغاء
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -569,7 +576,7 @@
         </div>
     </div>
 
-    <!-- 🖨️ الحاوية الحرارية للطباعة -->
+    <!-- 🖨️ الحاوية الحرارية للطباعة المحلية -->
     <div id="mim89ThermalPrintBox"></div>
 
     <!-- 📊 النوافذ المنبثقة -->
@@ -594,7 +601,7 @@
             </div>
 
             <div style="display:flex; gap:6px;">
-                <button onclick="printCustomerInvoiceDirect(event); closeModal('quickCashModal');" class="gold-btn" style="flex:1;"><i class="fa-solid fa-print"></i> طباعة فاتورة الزبون</button>
+                <button onclick="printMasterAllDirect(event); closeModal('quickCashModal');" class="gold-btn" style="flex:1;"><i class="fa-solid fa-print"></i> إتمام والطباعة فوراً</button>
                 <button onclick="closeModal('quickCashModal')" class="gold-btn" style="background:#444; color:#fff; width:auto;">إغلاق</button>
             </div>
         </div>
@@ -805,21 +812,17 @@
             if (m) m.style.display = 'none';
         }
 
-        // 🎯 دالة جلب رقم الطلب الثابت
         function getCurrentOrderSeq() {
             let orderSeq = localStorage.getItem('mim89_daily_order_seq');
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // 🧾 1. دالة طباعة فاتورة الزبون
-        function printCustomerInvoiceDirect(event) {
+        // ⭐ 🚀 الدالة الرئيسية الموحدة: إرسال الطلب في نفس اللحظة للمطبخ والكاشير معاً!
+        async function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
                 event.preventDefault();
             }
-
-            const printBox = document.getElementById('mim89ThermalPrintBox');
-            if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
 
             const totalElement = document.getElementById('posTotalAmount');
             let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
@@ -827,6 +830,9 @@
             if (totalValue <= 0) {
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
+
+            const kitchenPrinterIp = "192.168.0.200";
+            const cashierPrinterIp = "192.168.0.201";
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -843,7 +849,13 @@
             const activePayBtn = document.querySelector('#posPaymentGroup .toggle-btn.active');
             let payType = activePayBtn ? activePayBtn.innerText.trim() : 'كاش';
 
-            let itemsHtml = '';
+            const notesInput = document.getElementById('posOrderNotesInput');
+            const notesText = notesInput ? notesInput.value.trim() : '';
+
+            // 1️⃣ تجهيز نصوص الوجبات
+            let itemsKitchenText = '';
+            let itemsCashierText = '';
+
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
                 const children = cartContainer.children;
@@ -860,112 +872,14 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        itemsHtml += `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
-                                <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
-                                <span style="white-space:nowrap; margin-right:4px;">${price}</span>
-                            </div>`;
+                        itemsKitchenText += `● ${name}   [ العدد: ${qty} ]\n--------------------------------\n`;
+                        itemsCashierText += `${name} (x${qty}) ..... ${price}\n`;
                     }
                 }
             }
 
-            const markup = `
-                <div style="width:100%; box-sizing:border-box;">
-                    <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
-                        <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                        <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة</div>
-                        <div style="font-size:10px; font-weight:bold; color:#000;">هاتف: 07750008630 - 07850008630</div>
-                    </div>
-
-                    <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
-                        <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
-                        <div style="font-size:32px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
-                    </div>
-
-                    <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4;">
-                        <div>الكاشير: الكاشير الرئيسي</div>
-                        <div>تاريخ والوقت: ${dateStr} - ${timeStr}</div>
-                        <div>الزبون: ${custName}</div>
-                        <div>طريقة الدفع: ${payType}</div>
-                        <div>نوع الخدمة: ${serviceType}</div>
-                    </div>
-
-                    <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px; color:#000;">
-                        ${itemsHtml}
-                    </div>
-
-                    <div style="font-size:11px; line-height:1.4; color:#000;">
-                        <div style="display:flex; justify-content:space-between;"><span>مجموع الفرعي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span>0 د.ع</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:900; border-top:1px solid #000; padding-top:3px; margin-top:3px;"><span>المجموع الكلي:</span> <span>${totalValue.toLocaleString()} د.ع</span></div>
-                    </div>
-
-                    <div style="text-align:center; margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:10px; font-weight:bold; color:#000;">
-                        شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
-                    </div>
-                </div>
-            `;
-
-            printBox.innerHTML = markup;
-
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => { printBox.innerHTML = ''; }, 300);
-            }, 100);
-        }
-
-        // 🔥 2. دالة طباعة بون المطبخ المباشرة عبر الشبكة (IP: 192.168.0.200)
-        function printKitchenTicketDirect(event) {
-            if (event) {
-                event.stopPropagation();
-                event.preventDefault();
-            }
-
-            const kitchenPrinterIp = "192.168.0.200";
-
-            const totalElement = document.getElementById('posTotalAmount');
-            let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-
-            if (totalValue <= 0) {
-                return alert('⚠️ السلة فارغة! اضف وجبات أولاً.');
-            }
-
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB');
-            const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-            const orderSeq = getCurrentOrderSeq();
-
-            const custNameInput = document.getElementById('posCustName');
-            const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'زبون مباشر';
-
-            const activeTypeBtn = document.querySelector('#posOrderTypeGroup .toggle-btn.active');
-            let serviceType = activeTypeBtn ? activeTypeBtn.innerText.trim() : 'صالة';
-
-            const notesInput = document.getElementById('posOrderNotesInput');
-            const notesText = notesInput ? notesInput.value.trim() : '';
-
-            let itemsText = '';
-            const cartContainer = document.getElementById('posCartList');
-            if (cartContainer) {
-                const children = cartContainer.children;
-                for (let i = 0; i < children.length; i++) {
-                    const textContent = children[i].innerText || children[i].textContent || '';
-                    if (textContent.includes('اختر الوجبات')) continue;
-
-                    const lines = textContent.split('\n').map(l => l.trim()).filter(l => l !== '');
-                    if (lines.length > 0) {
-                        let name = lines[0];
-                        let qty = '1';
-                        lines.forEach(line => {
-                            if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
-                        });
-                        itemsText += `● ${name}   [ العدد: ${qty} ]\n--------------------------------\n`;
-                    }
-                }
-            }
-
-            let rawPrintPayload = `
+            // 2️⃣ تجهيز بايلود المطبخ
+            let kitchenPayload = `
 ================================
        *** بون المطبخ ***       
              #${orderSeq}               
@@ -974,22 +888,48 @@
 الزبون     : ${custName}
 الوقت      : ${dateStr} - ${timeStr}
 --------------------------------
-${itemsText}
+${itemsKitchenText}
 ${notesText ? 'ملاحظات: ' + notesText + '\n--------------------------------\n' : ''}
 
 
 `;
 
-            fetch(`http://${kitchenPrinterIp}:9100`, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: rawPrintPayload
-            })
-            .then(() => {
-                console.log('✅ تم إرسال الطلب إلى طابعة المطبخ بنجاح!');
-                
+            // 3️⃣ تجهيز بايلود الكاشير
+            let cashierPayload = `
+================================
+        MIM89 FAST FOOD         
+         بغداد - القاهرة          
+   07750008630 - 07850008630    
+================================
+       رقم الطلب: #${orderSeq}       
+================================
+الكاشير  : الرئيسي
+التاريخ  : ${dateStr} - ${timeStr}
+الزبون   : ${custName}
+طريقة الدفع: ${payType}
+نوع الخدمة: ${serviceType}
+--------------------------------
+${itemsCashierText}--------------------------------
+المجموع الكلي: ${totalValue.toLocaleString()} د.ع
+================================
+  شكراً لزيارتكم MIM89 FAST FOOD  
+================================
+
+
+`;
+
+            // 4️⃣ الإرسال المزدوج بالشبكة في أجزاء من الثانية!
+            try {
+                await Promise.all([
+                    fetch(`http://${kitchenPrinterIp}:9100`, { method: 'POST', mode: 'no-cors', body: kitchenPayload }),
+                    fetch(`http://${cashierPrinterIp}:9100`, { method: 'POST', mode: 'no-cors', body: cashierPayload })
+                ]);
+
+                console.log('✅ تم إرسال أمر الطباعة المزدوج بنجاح لكلا الطابعتين!');
+
+                // تحديث العداد وتفريغ السلة فوراً
                 localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
-                
+
                 const posCartList = document.getElementById('posCartList');
                 if (posCartList) {
                     posCartList.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للطلب</p>';
@@ -997,12 +937,21 @@ ${notesText ? 'ملاحظات: ' + notesText + '\n------------------------------
                 const totalEl = document.getElementById('posTotalAmount');
                 if (totalEl) totalEl.innerText = '0 د.ع';
 
-                const nInput = document.getElementById('posOrderNotesInput');
-                if (nInput) nInput.value = '';
-            })
-            .catch(err => {
-                alert('⚠️ تعذر الاتصال بطابعة المطبخ! تأكد من الـ IP: ' + kitchenPrinterIp);
-            });
+                if (notesInput) notesInput.value = '';
+
+            } catch (err) {
+                alert('⚠️ حدث خطأ في الاتصال بالشبكة! يرجى التأكد من توصيل الطابعات بالراوتر.');
+            }
+        }
+
+        // 🧾 دالة طباعة زبون منفردة (تستدعي الموحدة)
+        function printCustomerInvoiceDirect(event) {
+            printMasterAllDirect(event);
+        }
+
+        // 🔥 دالة طباعة مطبخ منفردة (تستدعي الموحدة)
+        function printKitchenTicketDirect(event) {
+            printMasterAllDirect(event);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
