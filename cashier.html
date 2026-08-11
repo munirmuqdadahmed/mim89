@@ -405,6 +405,11 @@
                 visibility: visible !important;
                 box-sizing: border-box !important;
             }
+            
+            .page-break {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
         }
     </style>
 </head>
@@ -813,7 +818,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الموحدة المستقلة (فاتورة كاشير محلياً للويندوز + بون مطبخ شبكياً فوراً)
+        // 🚀 الدالة الموحدة المكتملة والمستقرة 100% (تطبع الوصلين معاً)
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -826,8 +831,6 @@
             if (totalValue <= 0) {
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
-
-            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ المنفصلة
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -847,9 +850,9 @@
             const notesInput = document.getElementById('posOrderNotesInput');
             const notesText = notesInput ? notesInput.value.trim() : '';
 
-            // 1️⃣ استخراج الوجبات وتنسيقها
+            // 1️⃣ استخراج وتنسيق عناصر السلة للكاشير وللمطبخ
             let itemsCashierHtml = '';
-            let itemsKitchenText = '';
+            let itemsKitchenHtml = '';
 
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
@@ -867,43 +870,28 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
-                        // للكاشير (الويندوز)
+                        // للكاشير
                         itemsCashierHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap; margin-right:4px;">${price}</span>
                             </div>`;
 
-                        // للمطبخ (الشبكة)
-                        itemsKitchenText += `- ${name}  [x${qty}]\n`;
+                        // للمطبخ
+                        itemsKitchenHtml += `
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
+                                <span style="flex:1;">${name}</span>
+                                <span style="font-size:20px; background:#000; color:#fff; padding:0 6px; border-radius:4px;">x${qty}</span>
+                            </div>`;
                     }
                 }
             }
 
-            // 2️⃣ إرسال بون المطبخ مباشرة وبشكل مستقل إلى IP المطبخ (192.168.0.200) عبر بورت 9100
-            let kitchenPayload = 
-                "\x1B\x40" + // تصفير الذاكرة
-                "\x1B\x61\x01" + "*** امر تجهيز مطبخ ***\n" +
-                `طلب رقم: #${orderSeq}\n` +
-                `الخدمة: ${serviceType}\n` +
-                "--------------------------------\n" +
-                "\x1B\x61\x00" +
-                itemsKitchenText +
-                (notesText ? "--------------------------------\nملاحظة: " + notesText + "\n" : "") +
-                "\n\n\n\x1B\x69"; // قطع الورق
-
-            try {
-                fetch(`http://${kitchenPrinterIp}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: kitchenPayload
-                }).catch(() => {});
-            } catch(e) {}
-
-            // 3️⃣ تجهيز فاتورة الكاشير فقط بطابعة الويندوز المحلية
+            // 2️⃣ بناء الفاتورتين معاً مفصولتين بصفحة مستقلة (Page-Break)
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
+                    <!-- 🧾 الفاتورة الأولى: الكاشير والزبون -->
                     <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
                             <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
@@ -939,6 +927,32 @@
                             شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
                         </div>
                     </div>
+
+                    <!-- ✂️ فاصل صفحات إجباري للطابعة الحرارية -->
+                    <div class="page-break"></div>
+
+                    <!-- 🔥 الفاتورة الثانية: أمر تجهيز المطبخ -->
+                    <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000; padding-top:10px;">
+                        <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:6px;">
+                            <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">🔥 أمر تجهيز مطبخ 🔥</h2>
+                            <div style="font-size:14px; font-weight:900; color:#000; margin-top:2px;">الخدمة: [ ${serviceType} ]</div>
+                        </div>
+
+                        <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                            <div style="font-size:11px; font-weight:bold; color:#000;">رقم الطلب</div>
+                            <div style="font-size:38px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
+                        </div>
+
+                        <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:6px; color:#000;">
+                            <div>الوقت: ${timeStr}</div>
+                            <div>الزبون: ${custName}</div>
+                            ${notesText ? `<div style="font-size:14px; color:#000; font-weight:900; background:#eee; padding:3px; margin-top:4px; border:1px solid #000;">⚠️ ملاحظة: ${notesText}</div>` : ''}
+                        </div>
+
+                        <div style="margin-bottom:6px;">
+                            ${itemsKitchenHtml}
+                        </div>
+                    </div>
                 `;
 
                 setTimeout(() => {
@@ -947,7 +961,7 @@
                 }, 100);
             }
 
-            // 4️⃣ تصفير السلة وزيادة العداد
+            // 3️⃣ تصفير السلة وزيادة تسلسل الطلب
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
 
             const posCartList = document.getElementById('posCartList');
