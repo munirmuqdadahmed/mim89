@@ -360,12 +360,8 @@
             font-weight: 700;
         }
 
-        /* ========================================================= */
-        /* 🖨️ التنسيق الحراري المضبوط للمستند المطبوع محلياً */
-        /* ========================================================= */
-        #mim89ThermalPrintBox {
-            display: none;
-        }
+        /* 🖨️ التنسيق الحراري المباشر 80mm */
+        #mim89ThermalPrintBox { display: none; }
 
         @media print {
             @page {
@@ -817,7 +813,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // ⭐ 🚀 الدالة الموحدة المحدثة: طباعة الكاشير + بون المطبخ + تصفير السلة فوراً
+        // ⭐ 🚀 الدالة الموحدة المحدثة بـ IP الكاشير الجديد: 192.168.0.218
         function printMasterAllDirect(event) {
             if (event) {
                 event.stopPropagation();
@@ -831,7 +827,9 @@
                 return alert('⚠️ السلة فارغة! اضف وجبات أولاً قبل الطباعة.');
             }
 
-            const kitchenPrinterIp = "192.168.0.200";
+            // 🎯 عناوين IP المعتمدة للطابعات
+            const cashierPrinterIp = "192.168.0.218"; // IP طابعة الكاشير الجديد المضبوط 
+            const kitchenPrinterIp = "192.168.0.200"; // IP طابعة المطبخ
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
@@ -854,6 +852,7 @@
             // 1️⃣ تجهيز الوجبات
             let itemsKitchenText = '';
             let itemsCashierHtml = '';
+            let itemsCashierText = '';
 
             const cartContainer = document.getElementById('posCartList');
             if (cartContainer) {
@@ -872,6 +871,7 @@
                         });
 
                         itemsKitchenText += `● ${name}   [ العدد: ${qty} ]\n--------------------------------\n`;
+                        itemsCashierText += `${name} (x${qty}) : ${price}\n`;
                         itemsCashierHtml += `
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
                                 <span style="flex:1; word-break:break-word;">${name} (x${qty})</span>
@@ -881,7 +881,7 @@
                 }
             }
 
-            // 2️⃣ تجهيز نص المطبخ الحراري وإرساله دون إيقاف السكربت
+            // 2️⃣ إرسال بون المطبخ الحراري شبكياً عبر المنفذ 9100
             let kitchenPayload = `*** بون المطبخ ***\nرقم الطلب: #${orderSeq}\nالخدمة: ${serviceType}\nالزبون: ${custName}\nالوقت: ${timeStr}\n--------------------------------\n${itemsKitchenText}${notesText ? 'ملاحظات: ' + notesText + '\n' : ''}\n\n`;
 
             try {
@@ -892,7 +892,18 @@
                 }).catch(() => {});
             } catch(e) {}
 
-            // 3️⃣ تجهيز وطباعة فاتورة الكاشير فوراً عبر تعريف الويندوز المباشر (ضمان خط عربي واصل وواضح)
+            // 3️⃣ إرسال بون الكاشير الحراري شبكياً إلى IP الكاشير (192.168.0.218)
+            let cashierPayload = `MIM89 FAST FOOD\nبغداد - القاهرة\nهاتف: 07750008630\n--------------------------------\nرقم الطلب: #${orderSeq}\nالتاريخ: ${dateStr} - ${timeStr}\nالزبون: ${custName}\nنوع الخدمة: ${serviceType}\nالدفع: ${payType}\n--------------------------------\n${itemsCashierText}--------------------------------\nالمجموع الكلي: ${totalValue.toLocaleString()} د.ع\n--------------------------------\nشكراً لزيارتكم MIM89 FAST FOOD\n\n`;
+
+            try {
+                fetch(`http://${cashierPrinterIp}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: cashierPayload
+                }).catch(() => {});
+            } catch(e) {}
+
+            // 4️⃣ تجهيز وطباعة فاتورة الكاشير عبر نافذة الويندوز المحلية الاحتياطية
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (printBox) {
                 printBox.innerHTML = `
@@ -938,7 +949,7 @@
                 }, 100);
             }
 
-            // 4️⃣ تصفير الكاشير والسلة والعداد فوراً في كل الأحوال!
+            // 5️⃣ تصفير الكاشير والسلة والعداد فوراً في كل الأحوال!
             localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
 
             const posCartList = document.getElementById('posCartList');
@@ -951,15 +962,8 @@
             if (notesInput) notesInput.value = '';
         }
 
-        // 🧾 دالة طباعة زبون منفردة
-        function printCustomerInvoiceDirect(event) {
-            printMasterAllDirect(event);
-        }
-
-        // 🔥 دالة طباعة مطبخ منفردة
-        function printKitchenTicketDirect(event) {
-            printMasterAllDirect(event);
-        }
+        function printCustomerInvoiceDirect(event) { printMasterAllDirect(event); }
+        function printKitchenTicketDirect(event) { printMasterAllDirect(event); }
 
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof initCashierPage === 'function') initCashierPage();
