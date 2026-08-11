@@ -376,9 +376,14 @@
             color: #000;
         }
 
-        /* 🖨️ نظام التحكم المباشر بالطباعة الحرارية المخصصة (80mm) */
+        /* 🖨️ الحل التقني للطباعة: إخفاء العناصر خارج الشاشة وتفعيلها عند الطباعة فقط بدون display:none */
         .thermal-print-block {
-            display: none !important;
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 72mm;
+            opacity: 0;
+            pointer-events: none;
         }
 
         @media print {
@@ -400,12 +405,10 @@
                 visibility: hidden !important; 
             }
 
-            /* طباعة فاتورة الزبون فقط */
+            /* 1️⃣ طباعة فاتورة الزبون فقط */
             body.print-mode-customer #customerPrintArea, 
             body.print-mode-customer #customerPrintArea * { 
                 visibility: visible !important; 
-                color: #000000 !important; 
-                background: #ffffff !important;
             }
 
             body.print-mode-customer #customerPrintArea { 
@@ -421,15 +424,15 @@
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
-                display: block !important;
+                opacity: 1 !important;
+                color: #000 !important;
+                background: #fff !important;
             }
 
-            /* طباعة بون المطبخ فقط */
+            /* 2️⃣ طباعة بون المطبخ فقط */
             body.print-mode-kitchen #kitchenPrintArea, 
             body.print-mode-kitchen #kitchenPrintArea * { 
                 visibility: visible !important; 
-                color: #000000 !important; 
-                background: #ffffff !important;
             }
 
             body.print-mode-kitchen #kitchenPrintArea { 
@@ -445,7 +448,9 @@
                 text-align: right !important;
                 font-size: 11px !important;
                 font-family: 'Tahoma', sans-serif !important;
-                display: block !important;
+                opacity: 1 !important;
+                color: #000 !important;
+                background: #fff !important;
             }
         }
     </style>
@@ -1063,16 +1068,19 @@
             if (!seq) return;
 
             isPrintingInProgress = true;
-            document.body.classList.add('print-mode-customer');
             document.body.classList.remove('print-mode-kitchen');
+            document.body.classList.add('print-mode-customer');
 
-            setTimeout(() => {
-                window.print();
+            // تأخير متزامن لضمان رندر الفاتورة بالكامل في المتصفح قبل فتح المعاينة
+            requestAnimationFrame(() => {
                 setTimeout(() => {
-                    document.body.classList.remove('print-mode-customer');
-                    isPrintingInProgress = false;
-                }, 300);
-            }, 100);
+                    window.print();
+                    setTimeout(() => {
+                        document.body.classList.remove('print-mode-customer');
+                        isPrintingInProgress = false;
+                    }, 500);
+                }, 150);
+            });
         }
 
         // 🔥 2. دالة طباعة بون المطبخ والتجهيز فقط
@@ -1082,29 +1090,31 @@
             if (!seq) return;
 
             isPrintingInProgress = true;
-            document.body.classList.add('print-mode-kitchen');
             document.body.classList.remove('print-mode-customer');
+            document.body.classList.add('print-mode-kitchen');
 
-            setTimeout(() => {
-                window.print();
-                
-                // حفظ الرقم التراكمي اليومي وتفريغ السلة بعد الطباعة
-                localStorage.setItem('mim89_daily_order_seq', seq);
-
+            requestAnimationFrame(() => {
                 setTimeout(() => {
-                    document.body.classList.remove('print-mode-kitchen');
+                    window.print();
                     
-                    if (typeof processPosDirectCheckout === 'function') {
-                        processPosDirectCheckout();
-                    } else if (typeof clearPosCart === 'function') {
-                        clearPosCart();
-                    }
+                    // حفظ الرقم التراكمي اليومي وتفريغ السلة بعد طباعة المطبخ
+                    localStorage.setItem('mim89_daily_order_seq', seq);
 
-                    const notesInput = document.getElementById('posOrderNotesInput');
-                    if (notesInput) notesInput.value = '';
-                    isPrintingInProgress = false;
-                }, 300);
-            }, 100);
+                    setTimeout(() => {
+                        document.body.classList.remove('print-mode-kitchen');
+                        
+                        if (typeof processPosDirectCheckout === 'function') {
+                            processPosDirectCheckout();
+                        } else if (typeof clearPosCart === 'function') {
+                            clearPosCart();
+                        }
+
+                        const notesInput = document.getElementById('posOrderNotesInput');
+                        if (notesInput) notesInput.value = '';
+                        isPrintingInProgress = false;
+                    }, 500);
+                }, 150);
+            });
         }
 
         // 🔔 تفعيل التنبيه الصوتي
