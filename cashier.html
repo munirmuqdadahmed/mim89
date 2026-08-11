@@ -361,7 +361,7 @@
         }
 
         /* ========================================================= */
-        /* 🖨️ ضبط أبعاد الطباعة الحرارية الصارمة المحذية 100% */
+        /* 🖨️ قواعد الطباعة المعالجة لمنع اقتصاص الحروف والكلمات */
         /* ========================================================= */
         #mim89ThermalPrintBox {
             display: none;
@@ -391,14 +391,16 @@
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 72mm !important;
+                width: 70mm !important;
                 margin: 0 !important;
-                padding: 2mm 3mm !important;
+                padding: 2mm 5mm 2mm 1mm !important; /* إضافة هامش أمان أيمن 5mm يمنع قطع النص */
                 background: #ffffff !important;
                 color: #000000 !important;
                 font-family: 'Tajawal', Arial, sans-serif !important;
                 visibility: visible !important;
                 box-sizing: border-box !important;
+                text-align: right !important;
+                direction: rtl !important;
             }
 
             #mim89ThermalPrintBox * {
@@ -744,7 +746,7 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي الرئيسي -->
+    <!-- 🧠 المحرك البرمجي الرئيسي المحدث بالكامل -->
     <script src="app.js"></script>
     <script>
         function openCashDrawer() { window.print(); }
@@ -804,7 +806,13 @@
             if (m) m.style.display = 'none';
         }
 
-        // 🧾 1. دالة طباعة فاتورة الزبون المنسقة (تمنع اقتصاص الحروف والكلمات)
+        // 🎯 دالة جلب رقم الطلب الحالي الثابت
+        function getCurrentOrderSeq() {
+            let orderSeq = localStorage.getItem('mim89_daily_order_seq');
+            return orderSeq ? parseInt(orderSeq) : 101;
+        }
+
+        // 🧾 1. دالة طباعة فاتورة الزبون المنسقة (بدون قطع الحروف)
         function printCustomerInvoiceDirect() {
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
@@ -820,8 +828,7 @@
             const dateStr = now.toLocaleDateString('en-GB');
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            let orderSeq = localStorage.getItem('mim89_daily_order_seq');
-            orderSeq = orderSeq ? orderSeq : 101;
+            const orderSeq = getCurrentOrderSeq();
 
             const custNameInput = document.getElementById('posCustName');
             const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'زبون مباشر';
@@ -851,7 +858,7 @@
 
                         itemsHtml += `
                             <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin:3px 0; border-bottom:1px solid #ddd; padding-bottom:2px; color:#000;">
-                                <span style="max-width:180px; word-break:break-word;">${name} (x${qty})</span>
+                                <span style="max-width:170px; word-break:break-word;">${name} (x${qty})</span>
                                 <span style="white-space:nowrap;">${price}</span>
                             </div>`;
                     }
@@ -873,7 +880,7 @@
                 <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.4;">
                     <div>الكاشير: الكاشير الرئيسي</div>
                     <div>تاريخ والوقت: ${dateStr} - ${timeStr}</div>
-                    <div>زبون: ${custName}</div>
+                    <div>نوع الزبون: ${custName}</div>
                     <div>طريقة الدفع: ${payType}</div>
                     <div>نوع الخدمة: ${serviceType}</div>
                 </div>
@@ -901,7 +908,7 @@
             }, 150);
         }
 
-        // 🔥 2. دالة طباعة بون المطبخ والتجهيز الخالص (بدون أسعار وبحجم خط واضح للمطبخ)
+        // 🔥 2. دالة طباعة بون المطبخ الموحد بالرقم والواضح للوجبات (بدون رفع رقم الطلب)
         function printKitchenTicketDirect() {
             const printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) return alert('خطأ في النظام: حاوية الطباعة غير مسجلة!');
@@ -917,8 +924,8 @@
             const dateStr = now.toLocaleDateString('en-GB');
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-            let orderSeq = localStorage.getItem('mim89_daily_order_seq');
-            orderSeq = orderSeq ? (parseInt(orderSeq) % 999) + 1 : 101;
+            // نفس رقم طلب الزبون بدون أي زيادة
+            const orderSeq = getCurrentOrderSeq();
 
             const custNameInput = document.getElementById('posCustName');
             const custName = (custNameInput && custNameInput.value.trim() !== '') ? custNameInput.value.trim() : 'زبون مباشر';
@@ -945,10 +952,11 @@
                             if (line.includes('x') || line.includes('العدد')) qty = line.replace(/[^0-9]/g, '') || '1';
                         });
 
+                        // إظهار الأرقام بوضوح خط أسود نقي
                         itemsKitchenHtml += `
-                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:4px 0; font-size:16px; font-weight:900; color:#000;">
+                            <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding:6px 0; font-size:16px; font-weight:900; color:#000;">
                                 <span>● ${name}</span>
-                                <span style="background:#000; color:#fff !important; padding:0 6px; border-radius:3px;">[ ${qty} ]</span>
+                                <span style="font-size:18px; font-weight:900; color:#000; padding:0 4px;">[ العدد: ${qty} ]</span>
                             </div>`;
                     }
                 }
@@ -956,13 +964,13 @@
 
             const markup = `
                 <div style="text-align:center; border:2px dashed #000; padding:4px; margin-bottom:6px;">
-                    <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ والتجهيز ***</h3>
+                    <h3 style="font-size:18px; margin:0; font-weight:900; color:#000;">*** بون المطبخ ***</h3>
                     <div style="font-size:42px; font-weight:900; line-height:1; color:#000;">#${orderSeq}</div>
                 </div>
                 
-                <div style="font-weight:900; font-size:14px; margin-bottom:3px; color:#000;">نوع الخدمة: ${serviceType}</div>
-                <div style="font-size:12px; font-weight:bold; margin-bottom:3px; color:#000;">الزبون: ${custName}</div>
-                <div style="font-size:10px; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:3px; color:#000;">الوقت: ${dateStr} - ${timeStr}</div>
+                <div style="font-weight:900; font-size:13px; margin-bottom:3px; color:#000;">نوع الخدمة: ${serviceType}</div>
+                <div style="font-size:12px; font-weight:bold; margin-bottom:3px; color:#000;">زبون: ${custName}</div>
+                <div style="font-size:10px; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:3px; color:#000;">وقت الطلب: ${dateStr} - ${timeStr}</div>
                 
                 <div style="color:#000;">
                     ${itemsKitchenHtml}
@@ -976,7 +984,8 @@
             setTimeout(() => {
                 window.print();
 
-                localStorage.setItem('mim89_daily_order_seq', orderSeq);
+                // زيادة رقم العداد ليكون جاهزاً للطلب القادم فقط بعد إكمال طباعة المطبخ وتسليم الفاتورة
+                localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
                 if (typeof processPosDirectCheckout === 'function') {
                     processPosDirectCheckout();
                 } else if (typeof clearPosCart === 'function') {
