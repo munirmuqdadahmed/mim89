@@ -376,14 +376,11 @@
             color: #000;
         }
 
-        /* 🖨️ الحل التقني للطباعة: إخفاء العناصر خارج الشاشة وتفعيلها عند الطباعة فقط بدون display:none */
-        .thermal-print-block {
-            position: fixed;
-            left: -9999px;
-            top: -9999px;
-            width: 72mm;
-            opacity: 0;
-            pointer-events: none;
+        /* 🖨️ إعدادات الطباعة الحرارية المباشرة (حل مشكلة المعاينة والورق الأبيض) */
+        @media screen {
+            #customerPrintArea, #kitchenPrintArea {
+                display: none !important;
+            }
         }
 
         @media print {
@@ -398,57 +395,38 @@
                 background: #fff !important;
                 color: #000 !important;
                 height: auto !important;
-                overflow: visible !important;
             }
 
             body * { 
-                visibility: hidden !important; 
+                display: none !important;
             }
 
-            /* 1️⃣ طباعة فاتورة الزبون فقط */
+            /* 1️⃣ إظهار طباعة الزبون فقط */
             body.print-mode-customer #customerPrintArea, 
             body.print-mode-customer #customerPrintArea * { 
+                display: block !important;
                 visibility: visible !important; 
             }
 
-            body.print-mode-customer #customerPrintArea { 
-                position: absolute !important; 
-                left: 0 !important; 
-                top: 0 !important; 
-                width: 72mm !important; 
-                max-width: 72mm !important; 
-                margin: 0 !important; 
-                padding: 2mm !important; 
-                box-sizing: border-box !important;
-                direction: rtl !important;
-                text-align: right !important;
-                font-size: 11px !important;
-                font-family: 'Tahoma', sans-serif !important;
-                opacity: 1 !important;
-                color: #000 !important;
-                background: #fff !important;
-            }
-
-            /* 2️⃣ طباعة بون المطبخ فقط */
+            /* 2️⃣ إظهار طباعة المطبخ فقط */
             body.print-mode-kitchen #kitchenPrintArea, 
             body.print-mode-kitchen #kitchenPrintArea * { 
+                display: block !important;
                 visibility: visible !important; 
             }
 
-            body.print-mode-kitchen #kitchenPrintArea { 
+            #customerPrintArea, #kitchenPrintArea { 
                 position: absolute !important; 
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 72mm !important; 
-                max-width: 72mm !important; 
                 margin: 0 !important; 
                 padding: 2mm !important; 
                 box-sizing: border-box !important;
                 direction: rtl !important;
                 text-align: right !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
                 font-family: 'Tahoma', sans-serif !important;
-                opacity: 1 !important;
                 color: #000 !important;
                 background: #fff !important;
             }
@@ -634,10 +612,8 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-       📄 1️⃣ منطقة طباعة فاتورة الزبون والمالية فقط (مستقلة تماماً)
-       ========================================================================== -->
-    <div id="customerPrintArea" class="thermal-print-block">
+    <!-- 📄 1️⃣ منطقة طباعة فاتورة الزبون -->
+    <div id="customerPrintArea">
         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
             <h2 style="font-size:1.3rem; margin:0; color:#000; font-weight:900;">MIM89 FAST FOOD</h2>
             <small style="color:#000; font-size:0.85rem; font-weight:bold;">بغداد - القاهرة</small><br>
@@ -672,10 +648,8 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-       📄 2️⃣ منطقة طباعة بون المطبخ والتجهيز فقط (مستقلة تماماً)
-       ========================================================================== -->
-    <div id="kitchenPrintArea" class="thermal-print-block">
+    <!-- 📄 2️⃣ منطقة طباعة بون المطبخ -->
+    <div id="kitchenPrintArea">
         <div style="text-align:center; border:2px dashed #000; padding:6px; margin-bottom:8px;">
             <h3 style="font-size:1.3rem; margin:0; font-weight:900;">*** بون المطبخ والتجهيز ***</h3>
             <div id="kitchenOrderNumBig" style="font-size:2.8rem; font-weight:900; margin-top:2px;">#----</div>
@@ -1068,19 +1042,15 @@
             if (!seq) return;
 
             isPrintingInProgress = true;
-            document.body.classList.remove('print-mode-kitchen');
-            document.body.classList.add('print-mode-customer');
+            document.body.className = 'cashier-body print-mode-customer';
 
-            // تأخير متزامن لضمان رندر الفاتورة بالكامل في المتصفح قبل فتح المعاينة
-            requestAnimationFrame(() => {
+            setTimeout(() => {
+                window.print();
                 setTimeout(() => {
-                    window.print();
-                    setTimeout(() => {
-                        document.body.classList.remove('print-mode-customer');
-                        isPrintingInProgress = false;
-                    }, 500);
-                }, 150);
-            });
+                    document.body.className = 'cashier-body';
+                    isPrintingInProgress = false;
+                }, 300);
+            }, 250);
         }
 
         // 🔥 2. دالة طباعة بون المطبخ والتجهيز فقط
@@ -1090,31 +1060,28 @@
             if (!seq) return;
 
             isPrintingInProgress = true;
-            document.body.classList.remove('print-mode-customer');
-            document.body.classList.add('print-mode-kitchen');
+            document.body.className = 'cashier-body print-mode-kitchen';
 
-            requestAnimationFrame(() => {
+            setTimeout(() => {
+                window.print();
+                
+                // حفظ الرقم التراكمي اليومي وتفريغ السلة بعد طباعة المطبخ
+                localStorage.setItem('mim89_daily_order_seq', seq);
+
                 setTimeout(() => {
-                    window.print();
+                    document.body.className = 'cashier-body';
                     
-                    // حفظ الرقم التراكمي اليومي وتفريغ السلة بعد طباعة المطبخ
-                    localStorage.setItem('mim89_daily_order_seq', seq);
+                    if (typeof processPosDirectCheckout === 'function') {
+                        processPosDirectCheckout();
+                    } else if (typeof clearPosCart === 'function') {
+                        clearPosCart();
+                    }
 
-                    setTimeout(() => {
-                        document.body.classList.remove('print-mode-kitchen');
-                        
-                        if (typeof processPosDirectCheckout === 'function') {
-                            processPosDirectCheckout();
-                        } else if (typeof clearPosCart === 'function') {
-                            clearPosCart();
-                        }
-
-                        const notesInput = document.getElementById('posOrderNotesInput');
-                        if (notesInput) notesInput.value = '';
-                        isPrintingInProgress = false;
-                    }, 500);
-                }, 150);
-            });
+                    const notesInput = document.getElementById('posOrderNotesInput');
+                    if (notesInput) notesInput.value = '';
+                    isPrintingInProgress = false;
+                }, 300);
+            }, 250);
         }
 
         // 🔔 تفعيل التنبيه الصوتي
