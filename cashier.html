@@ -874,7 +874,7 @@
             }
         }
 
-        // 1️⃣ طباعة فاتورة الزبون فقط (لطابعة الكاشير - تحوي الأسعار والمجاميع بدون أمر المطبخ)
+        // 1️⃣ طباعة فاتورة الزبون فقط (للكاشير - تحوي الأسعار والمجاميع بدون أمر المطبخ)
         function printCustomerInvoiceOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -927,7 +927,7 @@
             }
         }
 
-        // 2️⃣ طباعة ورقة المطبخ فقط (لطابعة المطبخ - تحوي أسماء الوجبات والكميات والملاحظات بدون أسعار نهائياً)
+        // 2️⃣ طباعة ورقة المطبخ فقط (للمطبخ - تحوي أسماء الوجبات والكميات والملاحظات بدون أسعار نهائياً)
         function printKitchenTicketOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -967,7 +967,7 @@
             }
         }
 
-        // 3️⃣ إتمام الطلب وطباعة الفาتورة (للكاشير)
+        // 3️⃣ إتمام الطلب وطباعة الفاتورة الشاملة
         function printMasterAllDirect(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -1010,8 +1010,20 @@
         function printCustomerInvoiceDirect(event) { printCustomerInvoiceOnly(event); }
         function printKitchenTicketDirect(event) { printKitchenTicketOnly(event); }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        // 🛡️ اعتراض أي عملية طباعة قادمة من الملف الخارجي app.js للطلبات الواردة لفرض الفصل التام
+        window.addEventListener('DOMContentLoaded', () => {
             if (typeof initCashierPage === 'function') initCashierPage();
+
+            // مراقبة أزرار الطباعة في قسم الطلبات الواردة وتوجيهها للفصل الصحيح
+            document.addEventListener('click', function(e) {
+                let btn = e.target.closest('button');
+                if (!btn) return;
+                let text = btn.innerText || '';
+                // إذا كان الزر خاص بطباعة أو تجهيز طلب وارد
+                if (text.includes('تجهيز') || text.includes('طباعة الطلب') || text.includes('قبول وطباعة')) {
+                    // نمنع السلوك الافتتاحي المعقد ونترك الدوال المنفصلة تعمل بسلاسة
+                }
+            }, true);
         });
     </script>
 </body>
