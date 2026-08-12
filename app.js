@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.7 Clean Fixed Version)
+   MIM89 FAST FOOD - Master Core Engine (v18.8 Clean Fixed & Separated Version)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير والمبيعات المباشرة والمطبخ الشبكي
    ========================================================================== */
 
@@ -40,7 +40,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
-// 2. البيانات الأساسية الكاملة لمطعم MIM89 (32 صنفاً مع المكونات والتكاليف)
+// 2. البيانات الأساسية الكاملة لمطعم MIM89 (شاورما دجاج فقط)
 const DEFAULT_DATA = {
     passwords: { 
         admin: "admin123", 
@@ -219,6 +219,24 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
+// 🔢 دوال إدارة تسلسل أرقام الطلبات التصاعدي الدقيق
+function getOrderSequence(customOrder) {
+    if (customOrder) {
+        if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
+        if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
+    }
+    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
+    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
+    return seqNum;
+}
+
+function incrementOrderSequence() {
+    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
+    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
+    let nextSeq = (seqNum >= 999) ? 101 : seqNum + 1;
+    localStorage.setItem('mim89_daily_order_seq', nextSeq);
+}
+
 function getSystemPassword(type) {
     const sysPasses = getData('sys_passwords') || {};
     return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
@@ -280,7 +298,6 @@ function refreshActiveUI() {
     }
 }
 
-// دالة التحديث والمزامنة الفورية الفاعلة 100%
 async function globalSystemSync(btnElement) {
     let originalText = "";
     if (btnElement) {
@@ -386,34 +403,6 @@ function filterCategory(catId, btnElement) {
     document.querySelectorAll('.menu-section').forEach(sec => {
         sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
     });
-}
-
-function filterPublicMenu() {
-    const q = document.getElementById('publicSearchInput').value.toLowerCase();
-    const items = getData('sys_items');
-    const sectionsContainer = document.getElementById('menuSections');
-    if (!sectionsContainer) return;
-    sectionsContainer.innerHTML = '';
-
-    const filtered = items.filter(i => i.name.toLowerCase().includes(q) || (i.ingredients && i.ingredients.toLowerCase().includes(q)));
-    
-    sectionsContainer.innerHTML = `
-        <div class="items-grid">
-            ${filtered.map(item => `
-                <div class="item-card">
-                    <img src="${item.image}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})">
-                    <div class="item-details">
-                        <h3 class="item-name">${item.name}</h3>
-                        <p class="item-desc">${item.ingredients}</p>
-                        <div class="item-footer">
-                            <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                            <button class="add-cart-btn" onclick="addToCart(${item.id})"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
 }
 
 function openItemDetails(id) {
@@ -1190,6 +1179,7 @@ function renderPosCart() {
     }
 }
 
+// 🚀 إتمام الطلب المباشر برقم تسلسلي دقيق وطباعة فاتورة الكاشير
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
@@ -1211,8 +1201,7 @@ function processPosDirectCheckout() {
     if (selectedPosOrderType === 'takeaway') typeText = 'سفري';
     if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
 
-    let orderSeq = localStorage.getItem('mim89_daily_order_seq') || '101';
-    localStorage.setItem('mim89_daily_order_seq', String((Number(orderSeq) % 999) + 1));
+    let orderSeq = getOrderSequence();
 
     const directOrder = {
         id: 'POS_' + Date.now(),
@@ -1238,7 +1227,9 @@ function processPosDirectCheckout() {
 
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
-    printReceipt(directOrder, true);
+    printCustomerInvoiceOnly(null, directOrder);
+    
+    incrementOrderSequence();
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (driverSelect) driverSelect.value = '';
@@ -1292,7 +1283,7 @@ function reprintCompletedOrder(orderId) {
     const order = completed.find(o => o.id === orderId);
     if (order) {
         closeModal('completedOrdersModal');
-        printReceipt(order, true);
+        printCustomerInvoiceOnly(null, order);
     }
 }
 
@@ -1531,45 +1522,116 @@ function confirmCloseShiftAndLogout() {
     }
 }
 
-function exportFullSystemBackup() {
-    const backupData = {
-        systemName: "MIM89 FAST FOOD POS",
-        exportDate: new Date().toLocaleString('ar-IQ'),
-        menuCategories: getData('sys_categories'),
-        menuItems: getData('sys_items'),
-        inventoryStock: getData('sys_inventory'),
-        deliveryDrivers: getData('sys_drivers'),
-        deliveryAreas: getData('sys_areas'),
-        completedSalesOrders: getData('sys_completed_orders')
+// 🖨️ دوال الطباعة المفصولة بالكامل (فاتورة الكاشير المالية وحدها وأمر المطبخ وحده)
+function printCustomerInvoiceOnly(event, customOrder) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const order = customOrder || {
+        orderNum: getOrderSequence(),
+        customerName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
+        phone: '',
+        paymentMethod: selectedPosPaymentMethod === 'visa' ? 'فيزا / ماستر' : 'كاش',
+        area: selectedPosOrderType === 'delivery' ? 'توصيل' : (selectedPosOrderType === 'takeaway' ? 'سفري' : 'صالة'),
+        items: [...posCart],
+        subtotal: posCart.reduce((sum, i) => sum + (i.price * i.qty), 0),
+        discount: posDiscountAmount,
+        totalAmount: Math.max(0, posCart.reduce((sum, i) => sum + (i.price * i.qty), 0) - posDiscountAmount),
+        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
+        dateDate: getTodayString(),
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
     };
 
-    const jsonStr = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MIM89_Full_System_Backup_${getTodayString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
 
-    const completed = getData('sys_completed_orders');
-    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
-    const todayTotal = todayOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    let itemsHtml = '';
+    order.items.forEach(i => {
+        const itemTotal = Number(i.price) * Number(i.qty);
+        itemsHtml += `
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
+                <span style="flex:1; word-break:break-word;">${i.name} (x${i.qty})</span>
+                <span style="white-space:nowrap; margin-right:4px;">${itemTotal.toLocaleString()} د.ع</span>
+            </div>`;
+    });
 
-    let waText = `📂 *نسخة احتياطية لنظام MIM89* 📂\n`;
-    waText += `----------------------------------\n`;
-    waText += `📅 *التاريخ:* ${new Date().toLocaleDateString('ar-IQ')}\n`;
-    waText += `🍔 *عدد أصناف المينيو:* ${backupData.menuItems.length}\n`;
-    waText += `📦 *مواد المخزن والجرد:* ${backupData.inventoryStock.length}\n`;
-    waText += `💰 *مبيعات اليوم:* ${todayTotal.toLocaleString()} د.ع (${todayOrders.length} فاتورة)\n`;
-    waText += `----------------------------------\n`;
-    waText += `تم تحميل ملف النسخة الاحتياطية بنجاح على الجهاز.`;
+    const printBox = document.getElementById('mim89ThermalPrintBox');
+    if (printBox) {
+        printBox.innerHTML = `
+            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
+                    <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                    <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة الحساب (كاشير)</div>
+                </div>
+                <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
+                    <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
+                    <div style="font-size:28px; font-weight:900; color:#000;">#${order.orderNum}</div>
+                </div>
+                <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.5;">
+                    <div>التاريخ: ${order.dateDate} - ${order.timestamp}</div>
+                    <div>اسم الزبون: ${order.customerName}</div>
+                    ${order.phone ? `<div style="font-size:13px; font-weight:900;">📞 هاتف الزبون: ${order.phone}</div>` : ''}
+                    <div>الخدمة: ${order.area} | الدفع: ${order.paymentMethod}</div>
+                    ${order.notes ? `<div>ملاحظات: ${order.notes}</div>` : ''}
+                </div>
+                <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
+                
+                <div style="font-size:12px; margin-top:4px; line-height:1.5;">
+                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
+                    ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم المطبق:</span> <span>- ${order.discount.toLocaleString()} د.ع</span></div>` : ''}
+                    <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
+                        <span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
+                    </div>
+                </div>
+                <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
+            </div>`;
+        setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+    }
+}
 
-    const myPhone = "9647750008630";
-    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
+function printKitchenTicketOnly(event, customOrder) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const order = customOrder || {
+        orderNum: getOrderSequence(),
+        customerName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
+        phone: '',
+        area: selectedPosOrderType === 'delivery' ? 'توصيل' : (selectedPosOrderType === 'takeaway' ? 'سفري' : 'صالة'),
+        items: [...posCart],
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
+    };
+
+    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
+
+    let itemsKitchenHtml = '';
+    order.items.forEach(i => {
+        itemsKitchenHtml += `
+            <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
+                <span>- ${i.name}</span>
+                <span>[x${i.qty}]</span>
+            </div>`;
+    });
+
+    const printBox = document.getElementById('mim89ThermalPrintBox');
+    if (printBox) {
+        printBox.innerHTML = `
+            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                    <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
+                    <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
+                </div>
+                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                    <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
+                    <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
+                </div>
+                <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px; line-height:1.5;">
+                    <div>الخدمة: ${order.area}</div>
+                    <div>الزبون: ${order.customerName}</div>
+                    ${order.phone ? `<div style="font-size:14px; font-weight:900;">📞 هاتف الزبون: ${order.phone}</div>` : ''}
+                    ${order.notes ? `<div style="color:#000; font-weight:900; margin-top:4px; font-size:15px;">⚠️ ملاحظات: ${order.notes}</div>` : ''}
+                </div>
+                <div style="padding:4px 0;">${itemsKitchenHtml}</div>
+            </div>`;
+        setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+    }
 }
 
 let knownOrderIds = new Set();
@@ -1808,7 +1870,7 @@ function fulfillAndPrintOrder(docId, orderId) {
                 saveCompletedOrder(order);
                 deductInventoryFromRecipe(order.items);
                 db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
-                printReceipt(order, true);
+                printCustomerInvoiceOnly(null, order);
             } else {
                 fulfillLocalOrder(orderId);
             }
@@ -1828,7 +1890,7 @@ function fulfillLocalOrder(orderId) {
         deductInventoryFromRecipe(order.items);
         orders = orders.filter(o => o.id !== orderId);
         setData('sys_live_orders', orders);
-        printReceipt(order, true);
+        printCustomerInvoiceOnly(null, order);
     }
 }
 
@@ -1851,98 +1913,6 @@ function deductInventoryFromRecipe(items) {
     });
 
     setData('sys_inventory', inventory);
-}
-
-function printCurrentActiveModal() {
-    document.body.classList.add('modal-open-for-print');
-    setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-            document.body.classList.remove('modal-open-for-print');
-        }, 500);
-    }, 100);
-}
-
-// دالة الطباعة النظيفة والمحدثة (منزلية عبر نافذة الويندوز وتجنب ترويسات الشبكة المفسدة)
-function printReceipt(order, shouldTriggerWindowPrint = true) {
-    const orderNum = order.orderNum || (order.id ? String(order.id).replace('POS_', '').slice(-4) : '101');
-    const cashierName = order.cashierName || (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    const custName = order.customerName || 'زبون مباشر';
-    const payMethod = order.paymentMethod || '💵 كاش';
-    const serviceType = order.area || order.orderType || 'صالة';
-    const driverSuffix = order.driverName && order.driverName !== '-' ? ` - 🛵 ${order.driverName}` : '';
-    const dateTime = order.dateDate && order.timestamp ? `${order.dateDate} - ${order.timestamp}` : `${getTodayString()} - ${new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}`;
-    const items = Array.isArray(order.items) ? order.items : [];
-    const notesText = order.notes && order.notes !== '-' ? order.notes : '';
-
-    let itemsCashierHtml = '';
-    let itemsKitchenHtml = '';
-
-    items.forEach(i => {
-        itemsCashierHtml += `
-            <div style="display:flex; justify-content:space-between; margin-bottom:2px; font-size:13px; font-weight:bold; color:#000;">
-                <span>${i.name} (×${i.qty})</span>
-                <span>${((i.price || 0) * i.qty).toLocaleString()} د.ع</span>
-            </div>`;
-        
-        itemsKitchenHtml += `
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:15px; font-weight:900; color:#000;">
-                <span>- ${i.name}</span>
-                <span>[×${i.qty}]</span>
-            </div>`;
-    });
-
-    const thermalMarkup = `
-        <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:8px; margin-bottom:8px;">
-            <h2 style="font-size:20px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-            <div style="font-size:12px; font-weight:bold; margin-top:2px; color:#000;">بغداد - القاهرة</div>
-            <div style="font-size:12px; font-weight:bold; color:#000;">هاتف: 07750008630</div>
-        </div>
-
-        <div style="text-align:center; margin:8px 0; border:2px solid #000; padding:6px; border-radius:6px; background:#fff;">
-            <div style="font-size:12px; font-weight:bold; color:#000;">رقم طلب الزبون / ORDER NO</div>
-            <div style="font-size:36px; font-weight:900; line-height:1.1; color:#000;">#${orderNum}</div>
-        </div>
-
-        <div style="font-size:12px; margin-bottom:8px; font-weight:bold; border-bottom:2px dashed #000; padding-bottom:6px; line-height:1.5; color:#000;">
-            <div>الكاشير: ${cashierName}</div>
-            <div>التاريخ والوقت: ${dateTime}</div>
-            <div>الزبون: ${custName}</div>
-            <div>طريقة الدفع: ${payMethod}</div>
-            <div>نوع الخدمة: ${serviceType}${driverSuffix}</div>
-            ${notesText ? `<div style="color:#000; font-weight:bold; margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
-        </div>
-
-        <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; background:#f9f9f9; padding:6px;">
-            <div style="text-align:center; font-weight:900; font-size:14px; margin-bottom:4px; text-decoration:underline;">*** أمر تجهيز مطبخ ***</div>
-            ${itemsKitchenHtml}
-        </div>
-
-        <div style="border-bottom:2px dashed #000; padding:6px 0; margin-bottom:8px; color:#000;">
-            ${itemsCashierHtml}
-        </div>
-
-        <div style="font-size:13px; line-height:1.6; color:#000;">
-            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span style="font-weight:bold;">${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <span style="font-weight:bold;">${(order.deliveryFee || 0).toLocaleString()} د.ع</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:18px; font-weight:900; border-top:2px solid #000; padding-top:6px; margin-top:6px;"><span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span></div>
-        </div>
-
-        <div style="text-align:center; margin-top:12px; border-top:2px dashed #000; padding-top:6px; font-size:12px; font-weight:bold; color:#000;">
-            شكراً لزيارتكم MIM89 FAST FOOD - أهلاً وسهلاً بكم
-        </div>
-    `;
-
-    const printBox = document.getElementById('mim89ThermalPrintBox');
-    if (printBox) {
-        printBox.innerHTML = thermalMarkup;
-        if (shouldTriggerWindowPrint) {
-            setTimeout(() => {
-                window.print();
-                setTimeout(() => { printBox.innerHTML = ''; }, 300);
-            }, 100);
-        }
-    }
 }
 
 let currentUploadedBase64 = "";
