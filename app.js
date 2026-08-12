@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v18.8 Clean Fixed & Separated Version)
+   MIM89 FAST FOOD - Master Core Engine (v18.9 Clean Fixed & Separated Version)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير والمبيعات المباشرة والمطبخ الشبكي
    ========================================================================== */
 
@@ -13,6 +13,7 @@ let activeDiscountType = null;
 let posDiscountAmount = 0;
 let currentPercentValue = 0;
 let cart = [];
+let lastCompletedOrder = null; // الاحتفاظ بآخر طلب لإمكانية طباعته أو طباعة المطبخ في أي وقت
 
 try {
     const firebaseConfig = {
@@ -94,19 +95,13 @@ const DEFAULT_DATA = {
         { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع", totalPrice: 40000, costPerUnit: 200 },
         { id: 3, name: "بطاطس", quantity: 150, unit: "كغم", totalPrice: 150000, costPerUnit: 1000 },
         { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة", totalPrice: 30000, costPerUnit: 1000 },
-        { id: 5, name: "لحم عجل طازج", quantity: 80, unit: "كغم", totalPrice: 640000, costPerUnit: 8000 },
-        { id: 6, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 },
-        { id: 7, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
-        { id: 8, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
+        { id: 5, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 },
+        { id: 6, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
+        { id: 7, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
     ],
     items: [
         { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
         { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-        { id: 201, categoryId: 2, name: "بركر كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", ingredients: "شريحة لحم طازج، طماطم، خس، صوص خاص", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
-        { id: 202, categoryId: 2, name: "بركر الجبن", price: 6000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحة لحم عجل طازج مع جبن شيدر ذائب", recipe: [{ invId: 5, qty: 0.15 }, { invId: 6, qty: 1 }] },
-        { id: 203, categoryId: 2, name: "دبل تشيز بركر", price: 8000, image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=500", ingredients: "شريحتي لحم طازج مع دبل جبن شيدر", recipe: [{ invId: 5, qty: 0.3 }, { invId: 6, qty: 1 }] },
-        { id: 204, categoryId: 2, name: "بركر زنجر العملاق", price: 6500, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج زنجر مقرمش سبايسي مع الخس والجبن", recipe: [{ invId: 8, qty: 0.2 }, { invId: 6, qty: 1 }] },
-        { id: 205, categoryId: 2, name: "بركر 89 الخاص (دجاج)", price: 7000, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج مقرمش مع خلطة وجبن 89 الخاص", recipe: [{ invId: 1, qty: 0.2 }, { invId: 6, qty: 1 }] },
         { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
         { id: 302, categoryId: 3, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
         { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
@@ -115,31 +110,7 @@ const DEFAULT_DATA = {
         { id: 306, categoryId: 3, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
         { id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
         { id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
-        { id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] },
-        { id: 401, categoryId: 4, name: "صاج زنجر سبايسي", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "شرائح دجاج زنجر مقرمشة، صلصة ثومية، خس، مخلل", recipe: [{ invId: 8, qty: 0.15 }, { invId: 2, qty: 1 }] },
-        { id: 402, categoryId: 4, name: "صاج سكالوب دجاج", price: 4500, image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=500", ingredients: "شرائح سكالوب دجاج مقلية، صوص خاص، طماطم وخس", recipe: [{ invId: 7, qty: 0.15 }, { invId: 2, qty: 1 }] },
-        { id: 403, categoryId: 4, name: "صاج فاهيتا دجاج", price: 5000, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "دجاج متبل مع الفلفل الألوان والمشروم والجبن الذائب", recipe: [{ invId: 1, qty: 0.15 }, { invId: 2, qty: 1 }] },
-        { id: 404, categoryId: 4, name: "سندويش فاهيتا صمون فرنسي", price: 5500, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "فاهيتا دجاج بالخضار والجبن في صمون فرنسي طازج", recipe: [{ invId: 1, qty: 0.18 }] },
-        { id: 501, categoryId: 5, name: "وجبة سكالوب دجاج", price: 6500, image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=500", ingredients: "قطع سكالوب مقرمشة مع البطاطس، الثومية، والخبز", recipe: [{ invId: 7, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
-        { id: 502, categoryId: 5, name: "وجبة زنجر سوبر", price: 7000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "قطع زنجر حارة مقرمشة، بطاطس، صوصات، وخبز", recipe: [{ invId: 8, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
-        { id: 503, categoryId: 5, name: "وجبة فاهيتا صحن", price: 7500, image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=500", ingredients: "صحن فاهيتا دجاج بالمشروم والفلفل مع البطاطس والخبز", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
-        { id: 504, categoryId: 5, name: "كنتاكي قطعتين", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "2 قطعة دجاج مقرمش، بطاطس، ثومية، خبز", recipe: [{ invId: 1, qty: 0.25 }, { invId: 3, qty: 0.15 }] },
-        { id: 505, categoryId: 5, name: "ريزو (كلاسيك / دجاج)", price: 5000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو متبل، قطع دجاج كص", recipe: [{ invId: 1, qty: 0.15 }] },
-        { id: 506, categoryId: 5, name: "ريزو (جبنة / مشروم)", price: 6000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو مع صوص الجبن والمشروم", recipe: [{ invId: 1, qty: 0.15 }] },
-        { id: 507, categoryId: 5, name: "ريزو 89 الخاص", price: 7500, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو مع قطع دجاج مقرمشة وخلطة 89 الخاصة", recipe: [{ invId: 1, qty: 0.2 }] },
-        { id: 508, categoryId: 5, name: "كنتاكي 4 قطع", price: 8000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "4 قطع كنتاكي مقرمش، بطاطس، خبز، ثومية", recipe: [{ invId: 1, qty: 0.5 }, { invId: 3, qty: 0.2 }] },
-        { id: 509, categoryId: 5, name: "كنتاكي 6 قطع", price: 13000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "6 قطع كنتاكي مقرمش عائلي مع البطاطس", recipe: [{ invId: 1, qty: 0.75 }, { invId: 3, qty: 0.3 }] },
-        { id: 510, categoryId: 5, name: "وجبة كنتاكي كاملة (10 قطع)", price: 20000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=500", ingredients: "10 قطع كنتاكي عائلي ضخم مع جميع الملحقات", recipe: [{ invId: 1, qty: 1.2 }, { invId: 3, qty: 0.5 }] },
-        { id: 601, categoryId: 6, name: "أصابع موزاريلا", price: 750, image: "https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?w=500", ingredients: "أصابع جبن موزاريلا مقلية ذهبية", recipe: [] },
-        { id: 602, categoryId: 6, name: "قدح فنكر سبايسي", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع بهارات سبايسي حارة", recipe: [{ invId: 3, qty: 0.1 }] },
-        { id: 603, categoryId: 6, name: "حلقات بصل (5 قطع)", price: 2000, image: "https://images.unsplash.com/photo-1639024471283-03518883512d?w=500", ingredients: "5 قطع حلقات بصل مقرمشة", recipe: [] },
-        { id: 604, categoryId: 6, name: "قدح فنكر كلاسيك", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية ذهبية كلاسيكية", recipe: [{ invId: 3, qty: 0.2 }] },
-        { id: 605, categoryId: 6, name: "قدح فنكر (دوريتوس/هالابينو)", price: 3500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس مقلية مع قطع دوريتوس وقطع هالابينو", recipe: [{ invId: 3, qty: 0.2 }] },
-        { id: 606, categoryId: 6, name: "فنكر 89 الخاص", price: 4500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "بطاطس ذهبية، جبن شيدر، صوص هالابينو، وخلطة 89", recipe: [{ invId: 3, qty: 0.25 }] },
-        { id: 701, categoryId: 7, name: "بطاطا إضافية", price: 1000, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=500", ingredients: "حصة بطاطا مقلية إضافية", recipe: [{ invId: 3, qty: 0.1 }] },
-        { id: 702, categoryId: 7, name: "صوص خاص", price: 1000, image: "https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=500", ingredients: "علبة صوص MIM89 الخاص", recipe: [] },
-        { id: 703, categoryId: 7, name: "هالابينو", price: 1000, image: "https://images.unsplash.com/photo-1588877323863-718873550e58?w=500", ingredients: "شرائح فلفل هالابينو حار", recipe: [] },
-        { id: 704, categoryId: 7, name: "جبن شيدر", price: 1000, image: "https://images.unsplash.com/photo-1552767059-ce182ead8c1b?w=500", ingredients: "صلصة جبن شيدر ذائبة إضافية", recipe: [] }
+        { id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
     ]
 };
 
@@ -156,7 +127,7 @@ function normalizeArabicArea(str) {
 function initData() {
     let currentItems = getData('sys_items');
 
-    if (!currentItems || currentItems.length < 10) {
+    if (!currentItems || currentItems.length < 5) {
         localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
         localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
 
@@ -265,7 +236,7 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            if (cloudItems.length >= 10) {
+            if (cloudItems.length >= 5) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
             }
@@ -276,7 +247,7 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudCategories = [];
             snapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-            if (cloudCategories.length >= 5) {
+            if (cloudCategories.length >= 3) {
                 setData('sys_categories', cloudCategories);
                 refreshActiveUI();
             }
@@ -312,14 +283,14 @@ async function globalSystemSync(btnElement) {
             if (!itemSnap.empty) {
                 let cloudItems = [];
                 itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 10) setData('sys_items', cloudItems);
+                if (cloudItems.length >= 5) setData('sys_items', cloudItems);
             }
 
             const catSnap = await db.collection("menu_categories").get();
             if (!catSnap.empty) {
                 let cloudCategories = [];
                 catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-                if (cloudCategories.length >= 5) setData('sys_categories', cloudCategories);
+                if (cloudCategories.length >= 3) setData('sys_categories', cloudCategories);
             }
 
             const orderSnap = await db.collection("orders").get();
@@ -1179,7 +1150,7 @@ function renderPosCart() {
     }
 }
 
-// 🚀 إتمام الطلب المباشر برقم تسلسلي دقيق وطباعة فاتورة الكاشير
+// 🚀 إتمام الطلب المباشر وتثبيت آخر طلب لضمان إمكانية طباعة المطبخ والكاشير في أي وقت
 function processPosDirectCheckout() {
     if (posCart.length === 0) return alert("اختر وجبات أولاً للفاتورة!");
     
@@ -1225,8 +1196,13 @@ function processPosDirectCheckout() {
         createdTimestamp: Date.now()
     };
 
+    // حفظ الطلب كآخر طلب نشط لضمان عمل أزرار الطباعة المفصولة بعدها
+    window.lastCompletedOrder = directOrder;
+
     saveCompletedOrder(directOrder);
     deductInventoryFromRecipe(directOrder.items);
+    
+    // طباعة فاتورة الكاشير المالية تلقائياً
     printCustomerInvoiceOnly(null, directOrder);
     
     incrementOrderSequence();
@@ -1282,6 +1258,7 @@ function reprintCompletedOrder(orderId) {
     const completed = getData('sys_completed_orders');
     const order = completed.find(o => o.id === orderId);
     if (order) {
+        window.lastCompletedOrder = order;
         closeModal('completedOrdersModal');
         printCustomerInvoiceOnly(null, order);
     }
@@ -1522,10 +1499,10 @@ function confirmCloseShiftAndLogout() {
     }
 }
 
-// 🖨️ دوال الطباعة المفصولة بالكامل (فاتورة الكاشير المالية وحدها وأمر المطبخ وحده)
+// 🧾 1. فاتورة الكاشير / الزبون المالية فقط (مع وقت أمان 3 ثوانٍ)
 function printCustomerInvoiceOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
-    const order = customOrder || {
+    const order = customOrder || window.lastCompletedOrder || {
         orderNum: getOrderSequence(),
         customerName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
         phone: '',
@@ -1541,7 +1518,9 @@ function printCustomerInvoiceOnly(event, customOrder) {
         notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
     };
 
-    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
+    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب لطباعتها!');
+
+    window.lastCompletedOrder = order;
 
     let itemsHtml = '';
     order.items.forEach(i => {
@@ -1583,13 +1562,17 @@ function printCustomerInvoiceOnly(event, customOrder) {
                 </div>
                 <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
             </div>`;
-        setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+        setTimeout(() => { 
+            window.print(); 
+            setTimeout(() => { printBox.innerHTML = ''; }, 3000); 
+        }, 150);
     }
 }
 
+// 🔥 2. أمر تجهيز المطبخ فقط (بدون أسعار نهائياً مع وقت أمان 3 ثوانٍ)
 function printKitchenTicketOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
-    const order = customOrder || {
+    const order = customOrder || window.lastCompletedOrder || {
         orderNum: getOrderSequence(),
         customerName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
         phone: '',
@@ -1599,7 +1582,7 @@ function printKitchenTicketOnly(event, customOrder) {
         notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
     };
 
-    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
+    if (!order.items || order.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب لطباعة ورقة المطبخ!');
 
     let itemsKitchenHtml = '';
     order.items.forEach(i => {
@@ -1630,7 +1613,10 @@ function printKitchenTicketOnly(event, customOrder) {
                 </div>
                 <div style="padding:4px 0;">${itemsKitchenHtml}</div>
             </div>`;
-        setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
+        setTimeout(() => { 
+            window.print(); 
+            setTimeout(() => { printBox.innerHTML = ''; }, 3000); 
+        }, 150);
     }
 }
 
@@ -1867,6 +1853,7 @@ function fulfillAndPrintOrder(docId, orderId) {
         db.collection("orders").doc(docId).get().then(doc => {
             if (doc.exists) {
                 const order = doc.data();
+                window.lastCompletedOrder = order;
                 saveCompletedOrder(order);
                 deductInventoryFromRecipe(order.items);
                 db.collection("orders").doc(docId).update({ status: 'تم التجهيز' });
@@ -1886,6 +1873,7 @@ function fulfillLocalOrder(orderId) {
     let orders = getData('sys_live_orders');
     const order = orders.find(o => o.id === orderId);
     if (order) {
+        window.lastCompletedOrder = order;
         saveCompletedOrder(order);
         deductInventoryFromRecipe(order.items);
         orders = orders.filter(o => o.id !== orderId);
