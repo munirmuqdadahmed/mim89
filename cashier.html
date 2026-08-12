@@ -830,7 +830,7 @@
             return orderSeq ? parseInt(orderSeq) : 101;
         }
 
-        // دوال مساعدة لحساب المجاميع والخصومات بدقة مطلقة من مصفوفة السلة
+        // دوال مساعدة ذكية تدعم البيع المباشر والطلبات الواردة دون إظهار صفر
         function getCartSubtotal() {
             if (typeof posCart === 'undefined' || !Array.isArray(posCart)) return 0;
             return posCart.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
@@ -844,25 +844,49 @@
             return Math.max(0, getCartSubtotal() - getCartDiscount());
         }
 
-        // 1️⃣ طباعة فاتورة الزبون فقط (مع الخصم والأسعار الصحيحة)
-        function printCustomerInvoiceOnly(event) {
+        function getActiveOrderData(customOrder) {
+            if (customOrder && customOrder.items && customOrder.items.length > 0) {
+                let sub = customOrder.subtotal || customOrder.items.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+                let disc = customOrder.discount || 0;
+                let tot = customOrder.totalAmount || customOrder.total || Math.max(0, sub - disc);
+                return {
+                    items: customOrder.items,
+                    subtotal: sub,
+                    discount: disc,
+                    total: tot,
+                    custName: customOrder.customerName || 'زبون دليفري',
+                    orderSeq: customOrder.orderNum || getCurrentOrderSeq(),
+                    serviceType: customOrder.orderType === 'delivery' ? 'توصيل' : (customOrder.orderType === 'takeaway' ? 'سفري' : 'صالة'),
+                    payType: customOrder.paymentMethod === 'visa' ? 'فيزا / ماستر' : 'كاش',
+                    notes: customOrder.notes || ''
+                };
+            } else {
+                return {
+                    items: typeof posCart !== 'undefined' ? posCart : [],
+                    subtotal: getCartSubtotal(),
+                    discount: getCartDiscount(),
+                    total: getCartFinalTotal(),
+                    custName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
+                    orderSeq: getCurrentOrderSeq(),
+                    serviceType: document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة',
+                    payType: document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش',
+                    notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
+                };
+            }
+        }
+
+        // 1️⃣ طباعة فاتورة الزبون فقط
+        function printCustomerInvoiceOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
-            if (typeof posCart === 'undefined' || posCart.length === 0) return alert('⚠️ السلة فارغة!');
+            const activeData = getActiveOrderData(customOrder);
+            if (activeData.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
-            const orderSeq = getCurrentOrderSeq();
-            const custName = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
-            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
-            const payType = document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش';
-
-            const subtotal = getCartSubtotal();
-            const discount = getCartDiscount();
-            const finalTotal = getCartFinalTotal();
 
             let itemsHtml = '';
-            posCart.forEach(i => {
+            activeData.items.forEach(i => {
                 const itemTotal = Number(i.price) * Number(i.qty);
                 itemsHtml += `
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
@@ -881,20 +905,21 @@
                         </div>
                         <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
                             <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون</div>
-                            <div style="font-size:28px; font-weight:900; color:#000;">#${orderSeq}</div>
+                            <div style="font-size:28px; font-weight:900; color:#000;">#${activeData.orderSeq}</div>
                         </div>
                         <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
                             <div>التاريخ: ${dateStr} - ${timeStr}</div>
-                            <div>الزبون: ${custName}</div>
-                            <div>الخدمة: ${serviceType} | الدفع: ${payType}</div>
+                            <div>الزبون: ${activeData.custName}</div>
+                            <div>الخدمة: ${activeData.serviceType} | الدفع: ${activeData.payType}</div>
+                            ${activeData.notes ? `<div>ملاحظات: ${activeData.notes}</div>` : ''}
                         </div>
                         <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
                         
                         <div style="font-size:12px; margin-top:4px; line-height:1.5;">
-                            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${subtotal.toLocaleString()} د.ع</span></div>
-                            ${discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#000;"><span>الخصم المطبق:</span> <span>- ${discount.toLocaleString()} د.ع</span></div>` : ''}
+                            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${activeData.subtotal.toLocaleString()} د.ع</span></div>
+                            ${activeData.discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#000;"><span>الخصم المطبق:</span> <span>- ${activeData.discount.toLocaleString()} د.ع</span></div>` : ''}
                             <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
-                                <span>المجموع الكلي:</span> <span>${finalTotal.toLocaleString()} د.ع</span>
+                                <span>المجموع الكلي:</span> <span>${activeData.total.toLocaleString()} د.ع</span>
                             </div>
                         </div>
                         <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
@@ -903,19 +928,17 @@
             }
         }
 
-        // 2️⃣ طباعة ورقة المطبخ فقط (بدون أسعار وبدون مجاميع نهائياً)
-        function printKitchenTicketOnly(event) {
+        // 2️⃣ طباعة ورقة المطبخ فقط
+        function printKitchenTicketOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
-            if (typeof posCart === 'undefined' || posCart.length === 0) return alert('⚠️ السلة فارغة!');
+            const activeData = getActiveOrderData(customOrder);
+            if (activeData.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
 
             const now = new Date();
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
-            const orderSeq = getCurrentOrderSeq();
-            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
-            const notesText = document.getElementById('posOrderNotesInput')?.value.trim() || '';
 
             let itemsKitchenHtml = '';
-            posCart.forEach(i => {
+            activeData.items.forEach(i => {
                 itemsKitchenHtml += `
                     <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
                         <span>- ${i.name}</span>
@@ -933,11 +956,11 @@
                         </div>
                         <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
                             <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
-                            <div style="font-size:38px; font-weight:900;">#${orderSeq}</div>
+                            <div style="font-size:38px; font-weight:900;">#${activeData.orderSeq}</div>
                         </div>
                         <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
-                            <div>نوع الخدمة: ${serviceType}</div>
-                            ${notesText ? `<div style="color:#000; font-weight:900; margin-top:4px; font-size:15px;">⚠️ ملاحظات: ${notesText}</div>` : ''}
+                            <div>نوع الخدمة: ${activeData.serviceType} | الزبون: ${activeData.custName}</div>
+                            ${activeData.notes ? `<div style="color:#000; font-weight:900; margin-top:4px; font-size:15px;">⚠️ ملاحظات: ${activeData.notes}</div>` : ''}
                         </div>
                         <div style="padding:4px 0;">${itemsKitchenHtml}</div>
                     </div>`;
@@ -945,26 +968,18 @@
             }
         }
 
-        // 3️⃣ الطباعة الشاملة وإتمام الطلب (فاتورة كاشير نظيفة بدون أمر المطبخ المكرر)
-        function printMasterAllDirect(event) {
+        // 3️⃣ الطباعة الشاملة وإتمام الطلب (فاتورة كاشير نظيفة)
+        function printMasterAllDirect(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
-            if (typeof posCart === 'undefined' || posCart.length === 0) return alert('⚠️ السلة فارغة!');
+            const activeData = getActiveOrderData(customOrder);
+            if (activeData.items.length === 0) return alert('⚠️ السلة فارغة أو لا توجد وجبات في الطلب!');
 
             const now = new Date();
             const dateStr = now.toLocaleDateString('en-GB');
             const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: true });
-            const orderSeq = getCurrentOrderSeq();
-            const custName = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
-            const serviceType = document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة';
-            const payType = document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش';
-            const notesText = document.getElementById('posOrderNotesInput')?.value.trim() || '';
-
-            const subtotal = getCartSubtotal();
-            const discount = getCartDiscount();
-            const finalTotal = getCartFinalTotal();
 
             let itemsCashierHtml = '';
-            posCart.forEach(i => {
+            activeData.items.forEach(i => {
                 const itemTotal = Number(i.price) * Number(i.qty);
                 itemsCashierHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px;"><span>${i.name} (x${i.qty})</span><span>${itemTotal.toLocaleString()} د.ع</span></div>`;
             });
@@ -979,21 +994,21 @@
                         </div>
                         <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
                             <div style="font-size:10px; font-weight:bold;">رقم طلب الزبون</div>
-                            <div style="font-size:32px; font-weight:900;">#${orderSeq}</div>
+                            <div style="font-size:32px; font-weight:900;">#${activeData.orderSeq}</div>
                         </div>
                         <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; line-height:1.4;">
                             <div>الكاشير: الرئيسي</div>
                             <div>التاريخ: ${dateStr} - ${timeStr}</div>
-                            <div>الزبون: ${custName} | الدفع: ${payType} | الخدمة: ${serviceType}</div>
-                            ${notesText ? `<div style="margin-top:2px;">ملاحظات: ${notesText}</div>` : ''}
+                            <div>الزبون: ${activeData.custName} | الدفع: ${activeData.payType} | الخدمة: ${activeData.serviceType}</div>
+                            ${activeData.notes ? `<div style="margin-top:2px;">ملاحظات: ${activeData.notes}</div>` : ''}
                         </div>
                         <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsCashierHtml}</div>
                         
                         <div style="font-size:12px; margin-top:4px; line-height:1.5;">
-                            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${subtotal.toLocaleString()} د.ع</span></div>
-                            ${discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#000;"><span>الخصم المطبق:</span> <span>- ${discount.toLocaleString()} د.ع</span></div>` : ''}
+                            <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${activeData.subtotal.toLocaleString()} د.ع</span></div>
+                            ${activeData.discount > 0 ? `<div style="display:flex; justify-content:space-between; color:#000;"><span>الخصم المطبق:</span> <span>- ${activeData.discount.toLocaleString()} د.ع</span></div>` : ''}
                             <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:3px; margin-top:2px;">
-                                <span>المجموع الكلي:</span> <span>${finalTotal.toLocaleString()} د.ع</span>
+                                <span>المجموع الكلي:</span> <span>${activeData.total.toLocaleString()} د.ع</span>
                             </div>
                         </div>
                         <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89 FAST FOOD</div>
@@ -1001,18 +1016,18 @@
                 setTimeout(() => { window.print(); setTimeout(() => { printBox.innerHTML = ''; }, 300); }, 100);
             }
 
-            // حفظ الطلب في السجل وتصفير السلة
-            if (typeof saveCompletedOrder === 'function') {
+            // حفظ الطلب في السجل وتصفير السلة إذا لم يكن طلباً واردحاً مخصصاً
+            if (!customOrder && typeof saveCompletedOrder === 'function') {
                 const completedOrderData = {
                     id: 'POS_' + Date.now(),
-                    orderNum: orderSeq,
-                    customerName: custName,
+                    orderNum: activeData.orderSeq,
+                    customerName: activeData.custName,
                     orderType: typeof selectedPosOrderType !== 'undefined' ? selectedPosOrderType : 'dine_in',
                     paymentMethod: typeof selectedPosPaymentMethod !== 'undefined' ? selectedPosPaymentMethod : 'cash',
                     items: [...posCart],
-                    subtotal: subtotal,
-                    discount: discount,
-                    totalAmount: finalTotal,
+                    subtotal: activeData.subtotal,
+                    discount: activeData.discount,
+                    totalAmount: activeData.total,
                     cashierName: typeof activeCashierUser !== 'undefined' && activeCashierUser ? activeCashierUser.name : 'الرئيسي',
                     timestamp: timeStr,
                     createdTimestamp: Date.now()
@@ -1020,14 +1035,16 @@
                 saveCompletedOrder(completedOrderData);
             }
 
-            localStorage.setItem('mim89_daily_order_seq', (parseInt(orderSeq) % 999) + 1);
-            posCart = [];
-            if (typeof clearAllDiscounts === 'function') clearAllDiscounts();
-            if (typeof renderPosCart === 'function') renderPosCart();
-            const notesInput = document.getElementById('posOrderNotesInput');
-            if (notesInput) notesInput.value = '';
-            const custInput = document.getElementById('posCustName');
-            if (custInput) custInput.value = '';
+            if (!customOrder) {
+                localStorage.setItem('mim89_daily_order_seq', (parseInt(activeData.orderSeq) % 999) + 1);
+                posCart = [];
+                if (typeof clearAllDiscounts === 'function') clearAllDiscounts();
+                if (typeof renderPosCart === 'function') renderPosCart();
+                const notesInput = document.getElementById('posOrderNotesInput');
+                if (notesInput) notesInput.value = '';
+                const custInput = document.getElementById('posCustName');
+                if (custInput) custInput.value = '';
+            }
         }
 
         function printCustomerInvoiceDirect(event) { printCustomerInvoiceOnly(event); }
