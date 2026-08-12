@@ -544,16 +544,16 @@
                             </div>
                         </div>
 
-                        <!-- 🔘 أزرار الطباعة المفصولة والرئيسية (ثابتة في الأسفل دائماً بحجم مريح للمس) -->
+                        <!-- 🔘 أزرار الطباعة المفصولة (طابعة الكاشير وطابعة المطبخ) -->
                         <div style="padding-top:4px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
                             <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
                                 <span>المجموع الكلي:</span>
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             
-                            <!-- ⭐ الزر الرئيس -->
+                            <!-- ⭐ الزر الرئيس لإتمام الطلب -->
                             <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4); min-height: 38px;">
-                                <i class="fa-solid fa-print"></i> 🚀 إتمام الطلب وطباعة الفاتورة
+                                <i class="fa-solid fa-print"></i> 🚀 إتمام الطلب (حفظ وطباعة الكاشير)
                             </button>
 
                             <!-- الأزرار المفصولة للطابعتين -->
@@ -825,7 +825,13 @@
             if (m) m.style.display = 'none';
         }
 
-        function getCurrentOrderSeq() {
+        // استخراج رقم الطلب الحقيقي والمرتب من البيانات الواردة أو التسلسل اليومي
+        function getOrderSequence(customOrder) {
+            if (customOrder) {
+                if (customOrder.orderNum) return customOrder.orderNum;
+                if (customOrder.orderNumber) return customOrder.orderNumber;
+                if (customOrder.id && !isNaN(customOrder.id)) return customOrder.id;
+            }
             let orderSeq = localStorage.getItem('mim89_daily_order_seq');
             return orderSeq ? parseInt(orderSeq) : 101;
         }
@@ -843,30 +849,39 @@
             return Math.max(0, getCartSubtotal() - getCartDiscount());
         }
 
+        // دالة موحدة لاستخراج بيانات الزبون (الاسم + رقم الهاتف حصرياً) ليتمكن الدليفري من الاتصال
         function getActiveOrderData(customOrder) {
             if (customOrder && customOrder.items && customOrder.items.length > 0) {
                 let sub = customOrder.subtotal || customOrder.items.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
                 let disc = customOrder.discount || 0;
                 let tot = customOrder.totalAmount || customOrder.total || Math.max(0, sub - disc);
+                
+                // جلب الاسم ورقم الهاتف بدقة من الطلب الوارد (واتساب / اتصال)
+                let cName = customOrder.customerName || customOrder.name || 'زبون دليفري';
+                let cPhone = customOrder.phone || customOrder.customerPhone || customOrder.phoneNumber || '';
+
                 return {
                     items: customOrder.items,
                     subtotal: sub,
                     discount: disc,
                     total: tot,
-                    custName: customOrder.customerName || 'زبون دليفري',
-                    orderSeq: customOrder.orderNum || getCurrentOrderSeq(),
+                    custName: cName,
+                    custPhone: cPhone,
+                    orderSeq: getOrderSequence(customOrder),
                     serviceType: customOrder.orderType === 'delivery' ? 'توصيل' : (customOrder.orderType === 'takeaway' ? 'سفري' : 'صالة'),
                     payType: customOrder.paymentMethod === 'visa' ? 'فيزا / ماستر' : 'كاش',
                     notes: customOrder.notes || ''
                 };
             } else {
+                let directNameInput = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
                 return {
                     items: typeof posCart !== 'undefined' ? posCart : [],
                     subtotal: getCartSubtotal(),
                     discount: getCartDiscount(),
                     total: getCartFinalTotal(),
-                    custName: document.getElementById('posCustName')?.value.trim() || 'زبون مباشر',
-                    orderSeq: getCurrentOrderSeq(),
+                    custName: directNameInput,
+                    custPhone: '',
+                    orderSeq: getOrderSequence(null),
                     serviceType: document.querySelector('#posOrderTypeGroup .toggle-btn.active')?.innerText.trim() || 'صالة',
                     payType: document.querySelector('#posPaymentGroup .toggle-btn.active')?.innerText.trim() || 'كاش',
                     notes: document.getElementById('posOrderNotesInput')?.value.trim() || ''
@@ -874,7 +889,7 @@
             }
         }
 
-        // 1️⃣ طباعة فاتورة الزبون فقط (للكاشير - تحوي الأسعار والمجاميع بدون أمر المطبخ)
+        // 🧾 1. فاتورة الزبون والكاشير (تحوي الاسم ورقم الهاتف والأسعار والمجاميع.. بدون أي ذكر للمطبخ)
         function printCustomerInvoiceOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -900,15 +915,16 @@
                     <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
                         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
                             <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                            <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة زبون</div>
+                            <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة الحساب</div>
                         </div>
                         <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
-                            <div style="font-size:10px; font-weight:bold; color:#000;">رقم طلب الزبون</div>
+                            <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
                             <div style="font-size:28px; font-weight:900; color:#000;">#${activeData.orderSeq}</div>
                         </div>
-                        <div style="font-size:10px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
+                        <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.5;">
                             <div>التاريخ: ${dateStr} - ${timeStr}</div>
-                            <div>الزبون: ${activeData.custName}</div>
+                            <div>اسم الزبون: ${activeData.custName}</div>
+                            ${activeData.custPhone ? `<div style="font-size:13px; font-weight:900;">📞 هاتف الزبون: ${activeData.custPhone}</div>` : ''}
                             <div>الخدمة: ${activeData.serviceType} | الدفع: ${activeData.payType}</div>
                             ${activeData.notes ? `<div>ملاحظات: ${activeData.notes}</div>` : ''}
                         </div>
@@ -927,7 +943,7 @@
             }
         }
 
-        // 2️⃣ طباعة ورقة المطبخ فقط (للمطبخ - تحوي أسماء الوجبات والكميات والملاحظات بدون أسعار نهائياً)
+        // 🔥 2. أمر تجهيز المطبخ (يُطبع لطابعة المطبخ فقط: اسم الزبون، رقمه، الوجبات والكميات والملاحظات.. وبدون أسعار نهائياً)
         function printKitchenTicketOnly(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -957,8 +973,10 @@
                             <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
                             <div style="font-size:38px; font-weight:900;">#${activeData.orderSeq}</div>
                         </div>
-                        <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
-                            <div>نوع الخدمة: ${activeData.serviceType} | الزبون: ${activeData.custName}</div>
+                        <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px; line-height:1.5;">
+                            <div>الخدمة: ${activeData.serviceType}</div>
+                            <div>الزبون: ${activeData.custName}</div>
+                            ${activeData.custPhone ? `<div style="font-size:14px; font-weight:900;">📞 الهاتف: ${activeData.custPhone}</div>` : ''}
                             ${activeData.notes ? `<div style="color:#000; font-weight:900; margin-top:4px; font-size:15px;">⚠️ ملاحظات: ${activeData.notes}</div>` : ''}
                         </div>
                         <div style="padding:4px 0;">${itemsKitchenHtml}</div>
@@ -967,7 +985,7 @@
             }
         }
 
-        // 3️⃣ إتمام الطلب وطباعة الفاتورة الشاملة
+        // 🚀 إتمام الطلب الرئيسي المباشر
         function printMasterAllDirect(event, customOrder) {
             if (event) { event.stopPropagation(); event.preventDefault(); }
             const activeData = getActiveOrderData(customOrder);
@@ -982,6 +1000,7 @@
                     id: 'POS_' + Date.now(),
                     orderNum: activeData.orderSeq,
                     customerName: activeData.custName,
+                    customerPhone: activeData.custPhone,
                     orderType: typeof selectedPosOrderType !== 'undefined' ? selectedPosOrderType : 'dine_in',
                     paymentMethod: typeof selectedPosPaymentMethod !== 'undefined' ? selectedPosPaymentMethod : 'cash',
                     items: [...posCart],
@@ -1010,20 +1029,8 @@
         function printCustomerInvoiceDirect(event) { printCustomerInvoiceOnly(event); }
         function printKitchenTicketDirect(event) { printKitchenTicketOnly(event); }
 
-        // 🛡️ اعتراض أي عملية طباعة قادمة من الملف الخارجي app.js للطلبات الواردة لفرض الفصل التام
-        window.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
             if (typeof initCashierPage === 'function') initCashierPage();
-
-            // مراقبة أزرار الطباعة في قسم الطلبات الواردة وتوجيهها للفصل الصحيح
-            document.addEventListener('click', function(e) {
-                let btn = e.target.closest('button');
-                if (!btn) return;
-                let text = btn.innerText || '';
-                // إذا كان الزر خاص بطباعة أو تجهيز طلب وارد
-                if (text.includes('تجهيز') || text.includes('طباعة الطلب') || text.includes('قبول وطباعة')) {
-                    // نمنع السلوك الافتتاحي المعقد ونترك الدوال المنفصلة تعمل بسلاسة
-                }
-            }, true);
         });
     </script>
 </body>
