@@ -1,6 +1,7 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v19.5 Full Integrated System)
+   MIM89 FAST FOOD - Master Core Engine (v20.0 Complete Uncut Master Version)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير والمبيعات المباشرة والمطبخ الشبكي
+   صاحب النظام: منير مقداد
    ========================================================================== */
 
 // 1. المتغيرات العامة والاتصال السحابي بـ Firebase
@@ -13,8 +14,9 @@ let activeDiscountType = null;
 let posDiscountAmount = 0;
 let currentPercentValue = 0;
 let cart = [];
-let activePendingPrintOrder = null; // الاحتفاظ بالطلب النشط لضمان طباعة الزبون والمطبخ قبل التفريغ
+let activePendingPrintOrder = null;
 let lastCompletedOrder = null;
+let currentUploadedBase64 = "";
 
 try {
     const firebaseConfig = {
@@ -191,7 +193,6 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-// 🔢 دوال إدارة تسلسل أرقام الطلبات التصاعدي الدقيق
 function getOrderSequence(customOrder) {
     if (customOrder) {
         if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
@@ -636,8 +637,8 @@ function loginCashier() {
         sessionStorage.setItem('shift_start_time', new Date().toLocaleString('ar-IQ'));
         sessionStorage.setItem('shift_start_timestamp', Date.now());
 
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('cashierMainApp').style.display = 'block';
+        if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
+        if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'block';
         if (document.getElementById('activeCashierName')) document.getElementById('activeCashierName').innerText = "الكاشير: " + user.name;
         if (document.getElementById('authError')) document.getElementById('authError').innerText = "";
         if (passInput) passInput.value = "";
@@ -723,7 +724,7 @@ function loadPosDirectMenu(catId = 'all') {
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
@@ -739,7 +740,7 @@ function filterPosProducts() {
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
 }
@@ -780,7 +781,7 @@ function autoSearchCustomerByPhone(phoneInput) {
     resultsBox.innerHTML = uniqueCustomers.slice(0, 3).map(cust => `
         <div onclick="fillCustomerData('${cust.customerName.replace(/'/g, "\\'")}', '${cust.phone}', '${(cust.area || '').replace(/'/g, "\\'")}', '${(cust.address || '').replace(/'/g, "\\\'")}')" 
              style="padding:8px; background:#222; border-bottom:1px solid #333; cursor:pointer; border-radius:6px; margin-bottom:4px;">
-            <strong style="color:var(--gold-bright); font-size:0.85rem;">👤 ${cust.customerName}</strong> 
+            <strong style="color:var(--gold-bright, #ffd700); font-size:0.85rem;">👤 ${cust.customerName}</strong> 
             <small style="color:#aaa;">(${cust.phone})</small><br>
             <span style="font-size:0.75rem; color:#ccc;">📍 ${cust.area || ''} ${cust.address ? '- ' + cust.address : ''}</span>
         </div>
@@ -800,6 +801,8 @@ function fillCustomerData(name, phone, area, address) {
 function addToPosCart(itemId) {
     const items = getData('sys_items');
     const item = items.find(i => Number(i.id) === Number(itemId));
+    if (!item) return;
+
     const exist = posCart.find(c => Number(c.id) === Number(itemId));
 
     if (exist) {
@@ -827,12 +830,9 @@ function clearPosCart() {
     renderPosCart();
 }
 
-// 🍔 إضافة ملاحظة مخصصة للوجبة المحددة داخل السلة (بركر أو شاورما)
 function addNoteToCartItem(cartIndex, noteText) {
     if (posCart[cartIndex]) {
-        if (!posCart[cartIndex].itemNotes) {
-            posCart[cartIndex].itemNotes = [];
-        }
+        if (!posCart[cartIndex].itemNotes) posCart[cartIndex].itemNotes = [];
         if (!posCart[cartIndex].itemNotes.includes(noteText)) {
             posCart[cartIndex].itemNotes.push(noteText);
             renderPosCart();
@@ -847,13 +847,19 @@ function removeNoteFromCartItem(cartIndex, noteIdx) {
     }
 }
 
+function addCustomItemNotePrompt(cartIndex) {
+    const text = prompt("أدخل ملاحظة مخصصة لهذه الوجبة:");
+    if (text && text.trim() !== "") {
+        addNoteToCartItem(cartIndex, text.trim());
+    }
+}
+
 function toggleFreeDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'free') {
         clearAllDiscounts();
     } else {
-        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
-
         activeDiscountType = 'free';
         posDiscountAmount = subtotal;
         updateDiscountUIState('free', '🎉 طلب مجاني (100%)');
@@ -862,40 +868,31 @@ function toggleFreeDiscount() {
 }
 
 function togglePercentDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'percent') {
         clearAllDiscounts();
     } else {
-        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
-
-        const inputPercent = prompt("أدخل نسبة الخصم المئوية (مثال: 20 أو 50):", currentPercentValue || "50");
-        if (inputPercent === null) return;
-
+        const inputPercent = prompt("أدخل نسبة الخصم المئوية (مثال: 50):", currentPercentValue || "50");
+        if (!inputPercent) return;
         const pVal = Math.min(100, Math.max(1, Number(inputPercent) || 0));
-        if (pVal <= 0) return clearAllDiscounts();
-
         currentPercentValue = pVal;
         activeDiscountType = 'percent';
         posDiscountAmount = (subtotal * pVal) / 100;
-
         updateDiscountUIState('percent', `🏷️ خصم ${pVal}%`);
         renderPosCart();
     }
 }
 
 function promptAmountDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'amount') {
         clearAllDiscounts();
     } else {
-        const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-        if (subtotal === 0) return alert("السلة فارغة! اضف وجبات أولاً.");
-
         const inputAmt = prompt("أدخل قيمة الخصم بالمبلغ (د.ع):", posDiscountAmount || "1000");
-        if (inputAmt === null) return;
-
+        if (!inputAmt) return;
         const amt = Math.max(0, Number(inputAmt) || 0);
-        if (amt <= 0) return clearAllDiscounts();
-
         activeDiscountType = 'amount';
         posDiscountAmount = amt;
         updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString()} د.ع`);
@@ -913,114 +910,152 @@ function clearAllDiscounts() {
 
 function recalculateActiveDiscount() {
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    if (subtotal === 0) {
-        clearAllDiscounts();
-        return;
-    }
-    if (activeDiscountType === 'free') {
-        posDiscountAmount = subtotal;
-    } else if (activeDiscountType === 'percent') {
-        posDiscountAmount = (subtotal * currentPercentValue) / 100;
-    }
+    if (subtotal === 0) { clearAllDiscounts(); return; }
+    if (activeDiscountType === 'free') posDiscountAmount = subtotal;
+    else if (activeDiscountType === 'percent') posDiscountAmount = (subtotal * currentPercentValue) / 100;
 }
 
 function updateDiscountUIState(type, badgeText) {
-    const btnFree = document.getElementById('btnFreeDiscount');
-    const btnPercent = document.getElementById('btnPercentDiscount');
-    const btnAmount = document.getElementById('btnAmountDiscount');
-    const btnClearX = document.getElementById('btnClearDiscountX');
     const badge = document.getElementById('discountStatusBadge');
-
-    [btnFree, btnPercent, btnAmount].forEach(btn => {
-        if (btn) {
-            btn.style.background = '#222228';
-            btn.style.borderColor = '#444';
-            btn.style.color = '#fff';
-        }
-    });
-
-    if (type === 'free' && btnFree) {
-        btnFree.style.background = '#10b981';
-        btnFree.style.borderColor = '#10b981';
-    } else if (type === 'percent' && btnPercent) {
-        btnPercent.style.background = '#3b82f6';
-        btnPercent.style.borderColor = '#3b82f6';
-    } else if (type === 'amount' && btnAmount) {
-        btnAmount.style.background = 'var(--gold-primary)';
-        btnAmount.style.borderColor = 'var(--gold-primary)';
-        btnAmount.style.color = '#000';
-    }
-
-    if (btnClearX) {
-        btnClearX.style.display = type ? 'inline-block' : 'none';
-    }
-
     if (badge) {
         if (badgeText) {
             badge.innerText = badgeText;
             badge.style.display = 'inline-block';
-            badge.style.color = type === 'free' ? '#10b981' : (type === 'percent' ? '#38bdf8' : 'var(--gold-bright)');
         } else {
             badge.style.display = 'none';
         }
     }
 }
 
+function renderPosCart() {
+    const list = document.getElementById('posCartList');
+    const totalEl = document.getElementById('posTotalAmount');
+    if (!list) return;
+
+    if (posCart.length === 0) {
+        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.85rem; padding:20px;">اختر الوجبات لإضافتها للفاتورة</p>`;
+        if (totalEl) totalEl.innerText = "0 د.ع";
+        return;
+    }
+
+    const quickNotes = getData('sys_quick_kitchen_notes') || ["بدون ثوم 🧄", "سبايسي 🌶️", "صوص زيادة 🧀", "بدون مخلل 🥒"];
+    let subtotal = 0;
+
+    let cartContentHtml = posCart.map((item, index) => {
+        const itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
+
+        let notesTags = (item.itemNotes && item.itemNotes.length > 0) ? 
+            `<div style="display:flex; gap:3px; flex-wrap:wrap; margin-top:3px;">` + 
+            item.itemNotes.map((n, nIdx) => `<span style="background:#333; color:var(--gold-bright, #ffd700); font-size:0.7rem; padding:1px 6px; border-radius:4px; border:1px solid #555;">${n} <b onclick="removeNoteFromCartItem(${index}, ${nIdx})" style="cursor:pointer; color:#ff4d4d; margin-right:3px;">×</b></span>`).join('') +
+            `</div>` : '';
+
+        let quickButtons = `<div style="display:flex; gap:3px; flex-wrap:wrap; margin-top:4px;">` + 
+            quickNotes.map(qn => `<button onclick="addNoteToCartItem(${index}, '${qn}')" style="font-size:0.65rem; background:#222; color:#ccc; border:1px solid #444; padding:2px 5px; border-radius:3px; cursor:pointer;">+ ${qn}</button>`).join('') +
+            `<button onclick="addCustomItemNotePrompt(${index})" style="font-size:0.65rem; background:#333; color:var(--gold-bright, #ffd700); border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer;">✏️ مخصصة</button>` +
+            `</div>`;
+
+        return `
+            <div style="background:#1c1c20; padding:8px; border-radius:6px; margin-bottom:6px; border:1px solid #333;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#fff; font-size:0.85rem;">${item.name}</strong>
+                    <div style="display:flex; gap:4px; align-items:center;">
+                        <button onclick="changePosCartQty(${item.id}, -1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">-</button>
+                        <span style="color:#ffd700; font-weight:bold;">${item.qty}</span>
+                        <button onclick="changePosCartQty(${item.id}, 1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">+</button>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:3px;">
+                    <span>${Number(item.price).toLocaleString()} د.ع × ${item.qty}</span>
+                    <strong style="color:#ffd700;">${itemTotal.toLocaleString()} د.ع</strong>
+                </div>
+                ${notesTags}
+                ${quickButtons}
+            </div>
+        `;
+    }).join('');
+
+    cartContentHtml += `
+        <div style="margin-top:8px; border-top:1px dashed #444; padding-top:6px;">
+            <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom:2px;">📝 ملاحظات عامة للطلب بالكامل:</label>
+            <input type="text" id="posOrderNotesInput" placeholder="أدخل أي ملاحظات إضافية..." style="width:100%; padding:6px; background:#111; border:1px solid #444; border-radius:4px; color:#fff; font-size:0.8rem; box-sizing:border-box;">
+        </div>
+    `;
+
+    list.innerHTML = cartContentHtml;
+
+    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
+    if (totalEl) {
+        if (posDiscountAmount > 0) {
+            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.85rem; margin-left:6px;">${subtotal.toLocaleString()}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString() + ' د.ع'}`;
+        } else {
+            totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
+        }
+    }
+}
+
+// 5. حاسبة النقد والطباعة الإلزامية الآمنة
 function openQuickCashModal() {
-    const totalElement = document.getElementById('posTotalAmount');
-    let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-    if (totalValue <= 0) {
+    if (posCart.length === 0) {
         alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
         return;
     }
-    document.getElementById('modalCashTotalReq').innerText = totalValue.toLocaleString() + ' د.ع';
-    document.getElementById('cashGivenInput').value = '';
-    document.getElementById('cashChangeResult').innerText = '0 د.ع';
-    openModal('quickCashModal');
+
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const finalTotal = Math.max(0, subtotal - posDiscountAmount);
+
+    const modalEl = document.getElementById('quickCashModal');
+    const reqEl = document.getElementById('modalCashTotalReq');
+    const givenInput = document.getElementById('cashGivenInput');
+    const resEl = document.getElementById('cashChangeResult');
+
+    if (modalEl && reqEl && givenInput && resEl) {
+        reqEl.innerText = finalTotal.toLocaleString() + ' د.ع';
+        givenInput.value = '';
+        resEl.innerText = '0 د.ع';
+        openModal('quickCashModal');
+    } else {
+        prepareAndOpenPrintModal();
+    }
 }
 
 function setCashGiven(amount) {
-    document.getElementById('cashGivenInput').value = amount;
-    calculateCashChange();
+    const input = document.getElementById('cashGivenInput');
+    if (input) {
+        input.value = amount;
+        calculateCashChange();
+    }
 }
 
 function calculateCashChange() {
-    const totalElement = document.getElementById('posTotalAmount');
-    let req = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-    let given = parseInt(document.getElementById('cashGivenInput').value) || 0;
-    let change = given - req;
+    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const req = Math.max(0, subtotal - posDiscountAmount);
+    const given = parseInt(document.getElementById('cashGivenInput')?.value || 0);
+    const change = given - req;
     const resEl = document.getElementById('cashChangeResult');
-    if (change < 0) {
-        resEl.style.color = 'var(--danger)';
-        resEl.innerText = 'متبقي للزبون دفع: ' + Math.abs(change).toLocaleString() + ' د.ع';
-    } else {
-        resEl.style.color = 'var(--success)';
-        resEl.innerText = change.toLocaleString() + ' د.ع';
+    if (resEl) {
+        if (change < 0) {
+            resEl.style.color = '#ff4d4d';
+            resEl.innerText = 'متبقي للزبون: ' + Math.abs(change).toLocaleString() + ' د.ع';
+        } else {
+            resEl.style.color = '#10b981';
+            resEl.innerText = change.toLocaleString() + ' د.ع';
+        }
     }
 }
 
-// 🧮 الانتقال الإلزامي بعد الحاسبة إلى نافذة طباعة الفواتير
 function proceedToPrintAfterCash() {
-    const givenInput = document.getElementById('cashGivenInput').value;
-    if (!givenInput || Number(givenInput) <= 0) {
-        return alert("⚠️ يرجى إدخال المبلغ المستلم من الزبون في الحاسبة أولاً!");
-    }
-
     closeModal('quickCashModal');
     prepareAndOpenPrintModal();
 }
 
-// 🖨️ فتح نافذة خيارات الطباعة الموحدة وحفظ الطلب مؤقتاً
 function prepareAndOpenPrintModal() {
     if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
 
-    const custName = document.getElementById('posCustName') ? (document.getElementById('posCustName').value.trim() || "زبون مباشر") : "زبون مباشر";
+    const custName = document.getElementById('posCustName')?.value.trim() || "زبون مباشر";
     const driverSelect = document.getElementById('posDriverSelect');
     const selectedDriver = driverSelect ? driverSelect.value : '';
-
-    if (selectedPosOrderType === 'delivery' && !selectedDriver) {
-        return alert("🛵 يرجى اختيار سائق التوصيل أو التطبيق المعتمد للمحاسبة!");
-    }
+    const generalNotes = document.getElementById('posOrderNotesInput')?.value.trim() || '';
 
     const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const finalTotal = Math.max(0, subtotal - posDiscountAmount);
@@ -1029,11 +1064,9 @@ function prepareAndOpenPrintModal() {
     if (selectedPosOrderType === 'takeaway') typeText = 'سفري';
     if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
 
-    let orderSeq = getOrderSequence();
-
     const pendingOrder = {
         id: 'POS_' + Date.now(),
-        orderNum: orderSeq,
+        orderNum: getOrderSequence(),
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
@@ -1041,88 +1074,58 @@ function prepareAndOpenPrintModal() {
         area: typeText,
         driverName: selectedDriver || '-',
         address: "-",
-        notes: '-',
+        notes: generalNotes,
         items: JSON.parse(JSON.stringify(posCart)),
         subtotal: subtotal,
         discount: posDiscountAmount,
-        deliveryFee: 0,
         totalAmount: finalTotal,
         cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
         dateDate: getTodayString(),
         timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
-        createdTimestamp: Date.now(),
-        customerPrinted: false,
-        kitchenPrinted: false
+        createdTimestamp: Date.now()
     };
 
     window.activePendingPrintOrder = pendingOrder;
-    updatePrintModalBadges();
-    openModal('printOptionsModal');
-}
 
-function updatePrintModalBadges() {
-    const ord = window.activePendingPrintOrder;
-    if (!ord) return;
-    
-    const custBadge = document.getElementById('custPrintBadge');
-    const kitchenBadge = document.getElementById('kitchenPrintBadge');
-
-    if (custBadge) {
-        custBadge.innerText = ord.customerPrinted ? " (✅ تم الطبع)" : " (لم تُطبع)";
-        custBadge.style.color = ord.customerPrinted ? "var(--success)" : "#888";
-    }
-    if (kitchenBadge) {
-        kitchenBadge.innerText = ord.kitchenPrinted ? " (✅ تم الطبع)" : " (لم يُطبع)";
-        kitchenBadge.style.color = ord.kitchenPrinted ? "var(--success)" : "#888";
+    const printModal = document.getElementById('printOptionsModal');
+    if (printModal) {
+        openModal('printOptionsModal');
+    } else {
+        printCustomerInvoiceOnly(null, pendingOrder);
+        setTimeout(() => printKitchenTicketOnly(null, pendingOrder), 1000);
+        tryFinalizeAndClearOrder();
     }
 }
 
 function executeCustomerPrintOnly() {
-    const ord = window.activePendingPrintOrder;
-    if (!ord) return alert("⚠️ لا يوجد طلب نشط للطباعة!");
-    
-    printCustomerInvoiceOnly(null, ord);
-    ord.customerPrinted = true;
-    updatePrintModalBadges();
+    if (window.activePendingPrintOrder) {
+        printCustomerInvoiceOnly(null, window.activePendingPrintOrder);
+    }
 }
 
 function executeKitchenPrintOnly() {
-    const ord = window.activePendingPrintOrder;
-    if (!ord) return alert("⚠️ لا يوجد طلب نشط للطباعة!");
-    
-    printKitchenTicketOnly(null, ord);
-    ord.kitchenPrinted = true;
-    updatePrintModalBadges();
+    if (window.activePendingPrintOrder) {
+        printKitchenTicketOnly(null, window.activePendingPrintOrder);
+    }
 }
 
 function tryFinalizeAndClearOrder() {
     const ord = window.activePendingPrintOrder;
-    if (!ord) return closeModal('printOptionsModal');
-
-    // حفظ الطلب وتخصيم المخزون وتحديث التسلسل
-    saveCompletedOrder(ord);
-    deductInventoryFromRecipe(ord.items);
-    incrementOrderSequence();
-
-    // تفريغ السلة الآن فقط بعد إتمام الطباعتين
+    if (ord) {
+        saveCompletedOrder(ord);
+        deductInventoryFromRecipe(ord.items);
+        incrementOrderSequence();
+    }
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
-    
     window.activePendingPrintOrder = null;
     closeModal('printOptionsModal');
-    alert("✅ تم إتمام الطلب وتفريغ السلة من الكاشير بنجاح!");
+    alert("✅ تم تثبيت الطلب وتفريغ السلة بنجاح!");
 }
 
 function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
-    if (!order.dateDate) order.dateDate = getTodayString();
-    
-    const existingIndex = completed.findIndex(o => o.id === order.id);
-    if (existingIndex !== -1) {
-        completed[existingIndex] = order;
-    } else {
-        completed.unshift(order);
-    }
+    completed.unshift(order);
     setData('sys_completed_orders', completed);
 }
 
@@ -1133,19 +1136,19 @@ function openCompletedOrdersModal() {
     if (!list) return;
 
     if (!completed || completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px; font-size:0.85rem;">لا توجد فواتير سابقة مطبوعة</p>`;
+        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">لا توجد فواتير سابقة مطبوعة</p>`;
     } else {
         list.innerHTML = completed.map(ord => {
             const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
             return `
-                <div style="background:#222228; border:1px solid var(--card-border); border-radius:8px; padding:8px; margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--gold-primary);">
+                <div style="background:#222; border:1px solid #444; border-radius:8px; padding:8px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:#ffd700;">
                         <strong>👤 ${ord.customerName || 'زبون'} ${ord.driverName ? ' - 🛵 ' + ord.driverName : ''}</strong>
                         <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
                     </div>
                     <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
-                        <strong style="color:var(--gold-bright); font-size:0.9rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
+                        <strong style="color:#ffd700; font-size:0.9rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
                         <button class="gold-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="reprintCompletedOrder('${ord.id}')">🖨️ إعادة طباعة</button>
                     </div>
                 </div>
@@ -1174,7 +1177,7 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   إدارة الصرفيات والمسحوبات وسُلف الموظفين
+   6. إدارة الصرفيات وسُلف الموظفين
    ========================================== */
 
 function openExpenseManagerModal() {
@@ -1260,12 +1263,12 @@ function renderExpensesTable() {
     tableEl.innerHTML = todayExpenses.map(exp => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:#222; border-bottom:1px solid #333; padding:6px; margin-bottom:4px; border-radius:4px;">
             <div>
-                <strong style="color:var(--danger); font-size:0.8rem;">${exp.type}</strong>
+                <strong style="color:#ff4d4d; font-size:0.8rem;">${exp.type}</strong>
                 <div style="font-size:0.75rem; color:#aaa;">${exp.note} (${exp.timestamp})</div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-                <strong style="color:var(--gold-bright); font-size:0.85rem;">${exp.amount.toLocaleString()} د.ع</strong>
-                <button onclick="deleteExpenseRecord('${exp.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem;">✕</button>
+                <strong style="color:#ffd700; font-size:0.85rem;">${exp.amount.toLocaleString()} د.ع</strong>
+                <button onclick="deleteExpenseRecord('${exp.id}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.8rem;">✕</button>
             </div>
         </div>
     `).join('');
@@ -1281,7 +1284,7 @@ function deleteExpenseRecord(expId) {
 }
 
 /* ==========================================
-   إدارة ملاحظات المطبخ السريعة
+   7. إدارة ملاحظات المطبخ السريعة
    ========================================== */
 
 function openKitchenNotesManagerModal() {
@@ -1302,7 +1305,7 @@ function renderKitchenNotesTable() {
     listEl.innerHTML = notes.map((note, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; background:#222; border-bottom:1px solid #333; padding:6px; margin-bottom:4px; border-radius:4px;">
             <span style="color:#fff; font-size:0.85rem;">● ${note}</span>
-            <button onclick="deleteKitchenNoteItem(${idx})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.85rem;">✕ حذف</button>
+            <button onclick="deleteKitchenNoteItem(${idx})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.85rem;">✕ حذف</button>
         </div>
     `).join('');
 }
@@ -1331,7 +1334,7 @@ function deleteKitchenNoteItem(idx) {
 }
 
 /* ==========================================
-   التقارير اليومية والكشوفات المالية
+   8. التقارير اليومية والكشوفات المالية
    ========================================== */
 
 function openDailyReportModal() {
@@ -1351,7 +1354,6 @@ function renderDailyReport(targetDate) {
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
     let totalExpensesAmt = 0;
-    let driverStatsMap = {};
 
     filteredOrders.forEach(ord => {
         const orderTotal = Number(ord.totalAmount || 0);
@@ -1363,14 +1365,6 @@ function renderDailyReport(targetDate) {
             totalVisa += orderTotal;
         } else {
             totalCash += orderTotal;
-        }
-
-        if (ord.driverName && ord.driverName !== '-' && ord.driverName !== '') {
-            if (!driverStatsMap[ord.driverName]) {
-                driverStatsMap[ord.driverName] = { count: 0, totalAmount: 0 };
-            }
-            driverStatsMap[ord.driverName].count += 1;
-            driverStatsMap[ord.driverName].totalAmount += orderTotal;
         }
     });
 
@@ -1436,7 +1430,7 @@ function renderItemsReport(targetDate) {
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:6px 0; align-items:center;">
                     <span>● <strong>${name}</strong></span>
                     <div>
-                        <span style="background:#333; color:var(--gold-bright); padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-left:6px;">العدد: ${itemsSoldMap[name].qty}</span>
+                        <span style="background:#333; color:#ffd700; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-left:6px;">العدد: ${itemsSoldMap[name].qty}</span>
                         <strong style="color:#10b981; font-size:0.85rem;">${itemsSoldMap[name].totalPrice.toLocaleString()} د.ع</strong>
                     </div>
                 </div>
@@ -1547,16 +1541,19 @@ function confirmCloseShiftAndLogout() {
     }
 }
 
-// 🧾 1. طباعة فاتورة الكاشير / الزبون المالية فقط
+/* ==========================================
+   9. الطباعة الحرارية للفواتير والمطبخ
+   ========================================== */
+
 function printCustomerInvoiceOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
     const order = customOrder || window.activePendingPrintOrder;
-    if (!order) return alert('⚠️ لا توجد بيانات للطلب!');
+    if (!order) return alert('⚠️ لا توجد بيانات للطباعة!');
 
     let itemsHtml = '';
     order.items.forEach(i => {
         const itemTotal = Number(i.price) * Number(i.qty);
-        let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><small style="color:#333; font-weight:bold;">(${i.itemNotes.join(' - ')})</small>` : '';
+        let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><small style="color:#000; font-weight:bold;">★ ملاحظة: ${i.itemNotes.join(' - ')}</small>` : '';
         itemsHtml += `
             <div style="font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
@@ -1567,50 +1564,44 @@ function printCustomerInvoiceOnly(event, customOrder) {
             </div>`;
     });
 
-    const printBox = document.getElementById('mim89ThermalPrintBox');
-    if (printBox) {
-        printBox.innerHTML = `
-            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
-                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
-                    <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                    <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة الحساب (كاشير)</div>
+    const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
+    printBox.innerHTML = `
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+            <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
+                <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة كاشير</div>
+            </div>
+            <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
+                <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
+                <div style="font-size:28px; font-weight:900; color:#000;">#${order.orderNum}</div>
+            </div>
+            <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
+                <div>التاريخ: ${order.dateDate} - ${order.timestamp}</div>
+                <div>اسم الزبون: ${order.customerName}</div>
+                <div>نوع الخدمة: ${order.area} | الدفع: ${order.paymentMethod}</div>
+                ${order.notes ? `<div style="font-size:12px; font-weight:900; margin-top:2px;">ملاحظة عامة: ${order.notes}</div>` : ''}
+            </div>
+            <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
+            <div style="font-size:12px; margin-top:4px;">
+                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
+                ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم:</span> <span>- ${order.discount.toLocaleString()} د.ع</span></div>` : ''}
+                <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
+                    <span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
                 </div>
-                <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
-                    <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
-                    <div style="font-size:28px; font-weight:900; color:#000;">#${order.orderNum}</div>
-                </div>
-                <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000; line-height:1.5;">
-                    <div>التاريخ: ${order.dateDate} - ${order.timestamp}</div>
-                    <div>اسم الزبون: ${order.customerName}</div>
-                    <div>الخدمة: ${order.area} | الدفع: ${order.paymentMethod}</div>
-                </div>
-                <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
-                
-                <div style="font-size:12px; margin-top:4px; line-height:1.5;">
-                    <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
-                    ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم المطبق:</span> <span>- ${order.discount.toLocaleString()} د.ع</span></div>` : ''}
-                    <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
-                        <span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
-                    </div>
-                </div>
-                <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
-            </div>`;
-        setTimeout(() => { 
-            window.print(); 
-            setTimeout(() => { printBox.innerHTML = ''; }, 3000); 
-        }, 150);
-    }
+            </div>
+            <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
+        </div>`;
+    setTimeout(() => { window.print(); }, 150);
 }
 
-// 🔥 2. أمر تجهيز المطبخ فقط (بدون أسعار نهائياً مع الملاحظات الفردية للوجبات)
 function printKitchenTicketOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
     const order = customOrder || window.activePendingPrintOrder;
-    if (!order) return alert('⚠️ لا توجد بيانات للطلب!');
+    if (!order) return alert('⚠️ لا توجد بيانات للطباعة!');
 
     let itemsKitchenHtml = '';
     order.items.forEach(i => {
-        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? ` <span style="font-size:13px; color:#000; font-weight:bold;">[${i.itemNotes.join(', ')}]</span>` : '';
+        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="font-size:14px; color:#000; font-weight:900;">⚠️ [${i.itemNotes.join(' ، ')}]</span>` : '';
         itemsKitchenHtml += `
             <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
@@ -1621,30 +1612,40 @@ function printKitchenTicketOnly(event, customOrder) {
             </div>`;
     });
 
-    const printBox = document.getElementById('mim89ThermalPrintBox');
-    if (printBox) {
-        printBox.innerHTML = `
-            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
-                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
-                    <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
-                    <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
-                </div>
-                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
-                    <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
-                    <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
-                </div>
-                <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px; line-height:1.5;">
-                    <div>الخدمة: ${order.area}</div>
-                    <div>الزبون: ${order.customerName}</div>
-                </div>
-                <div style="padding:4px 0;">${itemsKitchenHtml}</div>
-            </div>`;
-        setTimeout(() => { 
-            window.print(); 
-            setTimeout(() => { printBox.innerHTML = ''; }, 3000); 
-        }, 150);
-    }
+    const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
+    printBox.innerHTML = `
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
+                <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
+            </div>
+            <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
+                <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
+            </div>
+            <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
+                <div>الخدمة: ${order.area}</div>
+                <div>الزبون: ${order.customerName}</div>
+                ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
+            </div>
+            <div style="padding:4px 0;">${itemsKitchenHtml}</div>
+        </div>`;
+    setTimeout(() => { window.print(); }, 150);
 }
+
+function createThermalPrintContainer() {
+    let box = document.getElementById('mim89ThermalPrintBox');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'mim89ThermalPrintBox';
+        document.body.appendChild(box);
+    }
+    return box;
+}
+
+/* ==========================================
+   10. التنبيهات الصوتية ومراقبة الطلبات الواردة
+   ========================================== */
 
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
@@ -1818,12 +1819,12 @@ function generateOrderCardHTML(ord, docId) {
     const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
 
     return `
-        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright)' : 'var(--gold-primary)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
-            <div style="display:flex; justify-content:space-between; color:var(--gold-primary); font-size:0.85rem;">
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright, #ffd700)' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
                 <strong>📞 ${displayName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            ${pastCustomer ? '<span style="background:var(--gold-primary); color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
+            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
             <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
             <hr style="border-color:#333; margin:6px 0;">
             <ul style="padding-right:12px; font-size:0.8rem;">
@@ -1833,11 +1834,11 @@ function generateOrderCardHTML(ord, docId) {
             </ul>
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:var(--gold-bright); font-size:0.85rem;">المجموع: ${total} د.ع</strong>
+                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع: ${total} د.ع</strong>
                 </div>
                 <div style="display:flex; gap:4px;">
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:var(--gold-bright); border:1px solid var(--gold-primary); flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:var(--danger); color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:#ffd700; border:1px solid #ffd700; flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
                 </div>
             </div>
         </div>
@@ -1871,6 +1872,10 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
     alert(`تم جلب بيانات الزبون (${name}) لشاشة المبيعات بنجاح! اختر الوجبات من القائمة للمحاسبة.`);
 }
 
+/* ==========================================
+   11. لوحة جرد المخزن (inventory.html)
+   ========================================== */
+
 function deductInventoryFromRecipe(items) {
     if (!Array.isArray(items) || items.length === 0) return;
     let inventory = getData('sys_inventory');
@@ -1892,107 +1897,10 @@ function deductInventoryFromRecipe(items) {
     setData('sys_inventory', inventory);
 }
 
-function renderPosCart() {
-    const list = document.getElementById('posCartList');
-    const totalEl = document.getElementById('posTotalAmount');
-    if (!list) return;
-
-    if (posCart.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:15px;">اختر الوجبات لإضافتها للفاتورة</p>`;
-        if (totalEl) totalEl.innerText = "0 د.ع";
-        return;
-    }
-
-    const quickNotes = getData('sys_quick_kitchen_notes') || ["بدون ثوم 🧄", "سبايسي 🌶️", "صوص زيادة 🧀", "بدون مخلل 🥒"];
-
-    let subtotal = 0;
-    list.innerHTML = posCart.map((item, index) => {
-        const itemTotal = item.price * item.qty;
-        subtotal += itemTotal;
-        
-        let notesHtml = '';
-        if (item.itemNotes && item.itemNotes.length > 0) {
-            notesHtml = `<div style="display:flex; gap:3px; flex-wrap:wrap; margin-top:2px;">` + 
-                item.itemNotes.map((n, nIdx) => `<span style="background:#333; color:var(--gold-bright); font-size:0.65rem; padding:1px 5px; border-radius:4px;">${n} <span onclick="removeNoteFromCartItem(${index}, ${nIdx})" style="cursor:pointer; color:var(--danger);">×</span></span>`).join('') +
-                `</div>`;
-        }
-
-        let quickNotesButtons = `<div style="display:flex; gap:2px; flex-wrap:wrap; margin-top:3px;">` + 
-            quickNotes.map(qn => `<button onclick="addNoteToCartItem(${index}, '${qn}')" style="font-size:0.6rem; background:#222; color:#aaa; border:1px solid #444; padding:1px 4px; border-radius:3px; cursor:pointer;">+ ${qn}</button>`).join('') +
-            `</div>`;
-
-        return `
-            <div style="background:#1c1c20; padding:6px; border-radius:6px; margin-bottom:5px; font-size:0.8rem; border:1px solid var(--card-border);">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:var(--gold-primary);">${item.name}</strong>
-                    <div style="display:flex; gap:4px; align-items:center;">
-                        <button onclick="changePosCartQty(${item.id}, -1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">-</button>
-                        <span>${item.qty}</span>
-                        <button onclick="changePosCartQty(${item.id}, 1)" class="gold-btn" style="padding:1px 6px; font-size:0.75rem;">+</button>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:2px;">
-                    <span>السعر: ${Number(item.price).toLocaleString()} د.ع</span>
-                    <strong style="color:var(--gold-bright);">${itemTotal.toLocaleString()} د.ع</strong>
-                </div>
-                ${notesHtml}
-                ${quickNotesButtons}
-            </div>
-        `;
-    }).join('');
-
-    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
-    if (totalEl) {
-        totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
-    }
-}
-
-/* ==========================================
-   5. إدارة الصور وتعديل الأصناف
-   ========================================== */
-
-let currentUploadedBase64 = "";
-
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            currentUploadedBase64 = e.target.result;
-            const preview = document.getElementById('imgPreview');
-            if (preview) preview.src = currentUploadedBase64;
-            const urlInput = document.getElementById('itemImage');
-            if (urlInput) urlInput.value = "";
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function triggerInlineImageUpload(itemId) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                updateItemInline(itemId, 'image', evt.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-}
-
-/* ==========================================
-   6. لوحة جرد المخزن (inventory.html)
-   ========================================== */
-
 function initInventoryPage() { initData(); }
 
 function loginInventory() {
-    const pass = document.getElementById('invPassInput').value.trim();
+    const pass = document.getElementById('invPassInput')?.value.trim();
     const validInvPass = getSystemPassword('inventory');
     const validAdminPass = getSystemPassword('admin');
 
@@ -2022,9 +1930,9 @@ function renderInventoryTable() {
 }
 
 function addNewInventoryItem() {
-    const name = document.getElementById('newInvName').value;
-    const qty = Number(document.getElementById('newInvQty').value);
-    const unit = document.getElementById('newInvUnit').value;
+    const name = document.getElementById('newInvName')?.value;
+    const qty = Number(document.getElementById('newInvQty')?.value);
+    const unit = document.getElementById('newInvUnit')?.value;
 
     if (!name || !qty) return alert("أدخل الاسم والكمية");
 
@@ -2032,9 +1940,9 @@ function addNewInventoryItem() {
     inv.push({ id: Date.now(), name, quantity: qty, unit: unit || 'قطع' });
     setData('sys_inventory', inv);
 
-    document.getElementById('newInvName').value = '';
-    document.getElementById('newInvQty').value = '';
-    document.getElementById('newInvUnit').value = '';
+    if (document.getElementById('newInvName')) document.getElementById('newInvName').value = '';
+    if (document.getElementById('newInvQty')) document.getElementById('newInvQty').value = '';
+    if (document.getElementById('newInvUnit')) document.getElementById('newInvUnit').value = '';
     renderInventoryTable();
 }
 
@@ -2056,13 +1964,13 @@ function deleteInvItem(id) {
 }
 
 /* ==========================================
-   7. لوحة تحكم الإدارة الكاملة Admin (admin.html)
+   12. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
 function initAdminPage() { initData(); }
 
 function loginAdmin() {
-    const pass = document.getElementById('adminPassInput').value.trim();
+    const pass = document.getElementById('adminPassInput')?.value.trim();
     const validAdminPass = getSystemPassword('admin');
 
     if (pass === validAdminPass || pass === "admin123" || pass === "123") {
@@ -2148,6 +2056,38 @@ function deleteArea(name) {
     renderAdminAreas();
 }
 
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentUploadedBase64 = e.target.result;
+            const preview = document.getElementById('imgPreview');
+            if (preview) preview.src = currentUploadedBase64;
+            const urlInput = document.getElementById('itemImage');
+            if (urlInput) urlInput.value = "";
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function triggerInlineImageUpload(itemId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                updateItemInline(itemId, 'image', evt.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
+
 function updateItemInline(id, field, value) {
     let items = getData('sys_items');
     let item = items.find(i => Number(i.id) === Number(id));
@@ -2194,7 +2134,7 @@ function renderAdminItems() {
                 <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:4px;">
-                        <input type="number" value="${item.price}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:var(--gold-bright); font-weight:bold; width:100px;">
+                        <input type="number" value="${item.price}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
                         <small style="color:#aaa;">د.ع</small>
                     </div>
                 </td>
@@ -2411,7 +2351,7 @@ function updateAllSystemPasswords() {
 }
 
 /* ==========================================
-   8. النوافذ المنبثقة والدوال المساعدة General Helpers
+   13. النوافذ المنبثقة والدوال المساعدة General Helpers
    ========================================== */
 
 function openModal(id) {
