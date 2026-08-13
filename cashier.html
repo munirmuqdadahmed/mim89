@@ -226,7 +226,7 @@
             flex: 1 1 auto !important;
             overflow-y: auto !important;
             min-height: 70px;
-            max-height: 140px;
+            max-height: 160px;
             margin: 2px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
@@ -523,16 +523,6 @@
                                 </div>
                             </div>
 
-                            <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
-                                <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800; display:block; margin-bottom:2px;"><i class="fa-solid fa-pen-clip"></i> ملاحظات المطبخ:</span>
-                                <div id="quickNotesButtonsContainer" style="display:flex; gap:3px; flex-wrap:wrap; margin-bottom:4px;"></div>
-                                
-                                <div style="display:flex; gap:3px; align-items:center;">
-                                    <input type="text" id="posOrderNotesInput" class="gold-input" placeholder="أو اكتب ملاحظة خاصة هنا..." style="font-size:0.75rem; padding:5px; margin:0; flex:1; text-align:right;">
-                                    <button type="button" onclick="document.getElementById('posOrderNotesInput').value = '';" title="مسح الملاحظات" class="gold-btn" style="background:var(--danger); color:#fff; padding:5px 8px; font-weight:bold; font-size:0.8rem; width:auto; min-height:26px;">✕</button>
-                                </div>
-                            </div>
-
                             <div id="posCartList" class="cart-items-list">
                                 <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
                             </div>
@@ -544,22 +534,14 @@
                                 <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                             </div>
                             
-                            <button type="button" class="gold-btn" onclick="printMasterAllDirect(event)" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, #10b981, #059669); color:#fff; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4); min-height: 38px;">
-                                <i class="fa-solid fa-print"></i> 🚀 إتمام الطلب (حفظ وطباعة الكاشير)
+                            <!-- زر إلزامي يفتح الحاسبة أولاً -->
+                            <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4); min-height: 38px;">
+                                <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
                             </button>
 
                             <div style="display:flex; gap:3px; margin-bottom:1px;">
-                                <button type="button" class="gold-btn" onclick="printCustomerInvoiceOnly(event)" style="flex:1; padding: 5px 2px; font-size: 0.72rem; background: #222; color: var(--gold-bright); border: 1px solid #444; min-height: 30px;">
-                                    🧾 زبون فقط
-                                </button>
-                                <button type="button" class="gold-btn" onclick="printKitchenTicketOnly(event)" style="flex:1; padding: 5px 2px; font-size: 0.72rem; background: #222; color: var(--gold-bright); border: 1px solid #444; min-height: 30px;">
-                                    🔥 مطبخ فقط
-                                </button>
-                                <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="flex:1; padding: 5px 2px; font-size: 0.72rem; background: #25252b; color: #fff; border: 1px solid #444; min-height: 30px;">
-                                    🧮 حاسبة
-                                </button>
-                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 5px 6px; font-size: 0.72rem; background: var(--danger); color: #fff; width: auto; min-height: 30px;">
-                                    إلغاء
+                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; background: var(--danger); color: #fff; width: 100%; min-height: 30px;">
+                                    إلغاء السلة
                                 </button>
                             </div>
                         </div>
@@ -587,10 +569,10 @@
     <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
-    <!-- 📊 النوافذ المنبثقة -->
+    <!-- 📊 النوافذ المنبثقة الإجبارية -->
     <div id="quickCashModal" class="modal-overlay">
         <div class="modal-body" style="max-width:340px; text-align:center;">
-            <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد المستلم</h3>
+            <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد (إجباري)</h3>
             <p style="font-size:0.8rem; color:#aaa;">المبلغ الكلي المطلوب:</p>
             <h2 id="modalCashTotalReq" style="color:var(--gold-bright); font-size:1.6rem; margin-bottom:8px;">0 د.ع</h2>
             
@@ -609,8 +591,32 @@
             </div>
 
             <div style="display:flex; gap:5px;">
-                <button onclick="printMasterAllDirect(event); closeModal('quickCashModal');" class="gold-btn" style="flex:1; padding:8px;"><i class="fa-solid fa-print"></i> إتمام والطباعة فوراً</button>
-                <button onclick="closeModal('quickCashModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:8px;">إغلاق</button>
+                <button onclick="proceedToPrintAfterCash()" class="gold-btn" style="flex:1; padding:8px; background:var(--success); color:#fff;"><i class="fa-solid fa-check"></i> تأكيد والانتقال للطباعة</button>
+                <button onclick="closeModal('quickCashModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:8px;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🖨️ نافذة خيارات الطباعة المتكاملة (زبون + مطبخ) -->
+    <div id="printOptionsModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:380px; text-align:center;">
+            <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-print"></i> إتمام وطباعة الطلب</h3>
+            <p style="font-size:0.8rem; color:#aaa; margin-bottom:12px;">اطبع فاتورة الزبون وأمر المطبخ. لن يُفرغ الكاشير الطلب إلا بعد إتمام الطباعتين معاً.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <button id="btnPrintCustomerModal" onclick="executeCustomerPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:10px; font-size:0.9rem;">
+                    🧾 1. طباعة فاتورة الزبون <span id="custPrintBadge" style="font-size:0.75rem; color:#888;">(لم تُطبع)</span>
+                </button>
+                <button id="btnPrintKitchenModal" onclick="executeKitchenPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:10px; font-size:0.9rem;">
+                    🔥 2. طباعة أمر تجهيز المطبخ <span id="kitchenPrintBadge" style="font-size:0.75rem; color:#888;">(لم يُطبع)</span>
+                </button>
+            </div>
+
+            <div style="display:flex; gap:5px;">
+                <button onclick="tryFinalizeAndClearOrder()" class="gold-btn" style="flex:1; background:var(--success); color:#fff; padding:8px;">
+                    <i class="fa-solid fa-check"></i> إتمام وتفريغ السلة نهائياً
+                </button>
+                <button onclick="closeModal('printOptionsModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:8px;">إغلاق مؤقت</button>
             </div>
         </div>
     </div>
@@ -637,18 +643,13 @@
             <div style="background:#121215; padding:8px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:10px;">
                 <label class="section-label">نوع الصرفية:</label>
                 <select id="expenseTypeSelect" class="gold-input" onchange="toggleExpenseTypeFields()" style="font-size:0.8rem; margin-bottom:5px;"></select>
-
                 <select id="expenseEmployeeSelect" class="gold-input" style="display:none; font-size:0.8rem; margin-bottom:5px;"></select>
-
                 <label class="section-label">المبلغ (د.ع):</label>
                 <input type="number" id="expenseAmountInput" class="gold-input" placeholder="أدخل المبلغ بالدينار..." style="font-size:0.85rem; margin-bottom:5px;">
-
                 <label class="section-label">ملاحظات / التفاصيل:</label>
                 <input type="text" id="expenseNoteInput" class="gold-input" placeholder="اكتب تفاصيل الصرفية هنا..." style="font-size:0.8rem; margin-bottom:6px;">
-
                 <button onclick="addNewExpenseRecord()" class="gold-btn" style="background:var(--danger); color:#fff;">تسجيل الصرفية وخصمها من الصندوق</button>
             </div>
-
             <h5 style="color:var(--gold-bright); margin-bottom:5px;">صرفيات اليوم المسجلة:</h5>
             <div id="expensesListTable" style="max-height:150px; overflow-y:auto; font-size:0.8rem;"></div>
         </div>
@@ -660,12 +661,10 @@
                 <h4 style="color:var(--blue-accent);"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</h4>
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-
             <div style="display:flex; gap:5px; margin-bottom:8px;">
                 <input type="date" id="reportDateInput" class="gold-input" style="flex:2;" onchange="renderDailyReport(this.value)">
                 <button onclick="renderDailyReport(document.getElementById('reportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
-
             <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
                 <div id="reportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center; margin-bottom:5px;"></div>
                 <div id="reportCashierText" style="color:#aaa; text-align:center; margin-bottom:6px;"></div>
@@ -680,7 +679,6 @@
                 <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>إجمالي الصرفيات:</span> - <strong id="repTotalExpenses">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;"><span>الصافي الفعلي بالصندوق:</span> <strong id="repNetCashBox" style="color:var(--gold-bright);">0</strong> د.ع</div>
             </div>
-
             <h5 style="color:var(--gold-primary); margin:8px 0 5px 0;">إحصائيات سائقي التوصيل:</h5>
             <div id="repDriversList" style="max-height:100px; overflow-y:auto; font-size:0.75rem;"></div>
         </div>
@@ -692,19 +690,15 @@
                 <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</h4>
                 <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-
             <div style="display:flex; gap:5px; margin-bottom:8px;">
                 <input type="date" id="itemsReportDateInput" class="gold-input" style="flex:2;" onchange="renderItemsReport(this.value)">
                 <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
-
             <div style="background:#121215; padding:6px; border-radius:6px; margin-bottom:8px; font-size:0.8rem;">
                 <div id="itemsReportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center;"></div>
                 <div style="text-align:center; margin-top:3px;">إجمالي القطع المباعة: <strong id="repTotalItemsQty" style="color:var(--success);">0 قطعة</strong></div>
             </div>
-
             <div id="repItemsSoldListDetail" style="max-height:200px; overflow-y:auto; font-size:0.8rem;"></div>
-
             <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn" style="margin-top:10px; background:#25D366; color:#fff;">
                 <i class="fa-brands fa-whatsapp"></i> إرسال تقرير الجرد عبر الواتساب
             </button>
@@ -717,7 +711,6 @@
                 <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت والصندوق</h4>
                 <button onclick="closeModal('shiftReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-
             <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
                 <div>الكاشير الحالي: <strong id="shiftCashierName" style="color:var(--gold-bright);">الرئيسي</strong></div>
                 <div>وقت بداية الشيفت: <strong id="shiftStartTime" style="color:#aaa;">--:--</strong></div>
@@ -733,7 +726,6 @@
                     <strong id="shiftNetDrawerCash" style="color:var(--gold-bright);">0</strong> د.ع
                 </div>
             </div>
-
             <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:10px;">
                 تأكيد تقفيل الشيفت وتسليم الصندوق 🔒
             </button>
@@ -746,12 +738,10 @@
                 <h4 style="color:var(--purple-accent);"><i class="fa-solid fa-pen-to-square"></i> محرر ملاحظات المطبخ السريعة</h4>
                 <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-
             <div style="display:flex; gap:4px; margin-bottom:8px;">
                 <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة..." style="font-size:0.8rem; text-align:right;">
                 <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:5px 10px;">إضافة</button>
             </div>
-
             <div id="kitchenNotesListTable" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
         </div>
     </div>
@@ -773,39 +763,6 @@
             }
         }
 
-        function openQuickCashModal() {
-            const totalElement = document.getElementById('posTotalAmount');
-            let totalValue = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-            if (totalValue <= 0) {
-                alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
-                return;
-            }
-            document.getElementById('modalCashTotalReq').innerText = totalValue.toLocaleString() + ' د.ع';
-            document.getElementById('cashGivenInput').value = '';
-            document.getElementById('cashChangeResult').innerText = '0 د.ع';
-            openModal('quickCashModal');
-        }
-
-        function setCashGiven(amount) {
-            document.getElementById('cashGivenInput').value = amount;
-            calculateCashChange();
-        }
-
-        function calculateCashChange() {
-            const totalElement = document.getElementById('posTotalAmount');
-            let req = totalElement ? (parseInt(totalElement.innerText.replace(/[^0-9]/g, '')) || 0) : 0;
-            let given = parseInt(document.getElementById('cashGivenInput').value) || 0;
-            let change = given - req;
-            const resEl = document.getElementById('cashChangeResult');
-            if (change < 0) {
-                resEl.style.color = 'var(--danger)';
-                resEl.innerText = 'متبقي للزبون دفع: ' + Math.abs(change).toLocaleString() + ' د.ع';
-            } else {
-                resEl.style.color = 'var(--success)';
-                resEl.innerText = change.toLocaleString() + ' د.ع';
-            }
-        }
-
         function openModal(modalId) {
             const m = document.getElementById(modalId);
             if (m) m.style.display = 'flex';
@@ -814,15 +771,6 @@
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
             if (m) m.style.display = 'none';
-        }
-
-        function printMasterAllDirect(event) {
-            if (event) { event.stopPropagation(); event.preventDefault(); }
-            if (typeof processPosDirectCheckout === 'function') {
-                processPosDirectCheckout();
-            } else {
-                alert('⚠️ دالة إتمام الطلب غير متوفرة في ملف app.js');
-            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
