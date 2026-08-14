@@ -45,11 +45,11 @@
         body.public-menu-body {
             background-color: var(--bg-dark);
             color: var(--text-main);
-            padding-bottom: 90px;
+            padding-bottom: 110px; /* مساحة مضاعفة للشريط السفلي المكبر */
             user-select: none;
         }
 
-        /* 👑 هيدر المينيو المودرن مع زر القائمة الجانبية (3 شخوط) */
+        /* 👑 هيدر المينيو المودرن */
         .public-header {
             background: linear-gradient(180deg, #1c1c24 0%, #0f0f12 100%);
             border-bottom: 1px solid var(--card-border);
@@ -65,19 +65,19 @@
             background: rgba(245, 158, 11, 0.15);
             border: 1px solid var(--gold-primary);
             color: var(--gold-primary);
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             cursor: pointer;
             transition: 0.2s;
         }
 
         .hamburger-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.92);
         }
 
         .brand-header-title {
@@ -87,7 +87,7 @@
 
         .public-brand-title {
             color: var(--gold-primary);
-            font-size: 1.3rem;
+            font-size: 1.35rem;
             font-weight: 900;
             letter-spacing: 0.5px;
         }
@@ -98,12 +98,59 @@
             margin-top: 2px;
         }
 
+        /* شارة حالة الدوام المباشرة */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            margin-top: 6px;
+            transition: 0.3s;
+        }
+
+        .status-badge.open {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-badge.closed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-badge.open .status-dot {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: blink 1.5s infinite;
+        }
+
+        .status-badge.closed .status-dot {
+            background-color: var(--danger);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
         /* 🍔 البردة / القائمة الجانبية (Side Drawer Menu) */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
             z-index: 3000;
             display: none;
             opacity: 0;
@@ -118,8 +165,8 @@
         .side-drawer {
             position: fixed;
             top: 0;
-            right: -300px;
-            width: 290px;
+            right: -310px;
+            width: 300px;
             height: 100%;
             background: var(--card-bg);
             border-left: 1px solid var(--gold-primary);
@@ -127,7 +174,7 @@
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
-            box-shadow: -5px 0 25px rgba(0,0,0,0.8);
+            box-shadow: -5px 0 25px rgba(0,0,0,0.85);
         }
 
         .side-drawer.active {
@@ -136,7 +183,7 @@
 
         .drawer-header {
             background: #121216;
-            padding: 20px 15px;
+            padding: 18px 15px;
             border-bottom: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
@@ -153,7 +200,7 @@
             background: none;
             border: none;
             color: #aaa;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             cursor: pointer;
         }
 
@@ -217,10 +264,10 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             color: #ccc;
-            padding: 7px 16px;
+            padding: 8px 18px;
             border-radius: 20px;
             white-space: nowrap;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             font-weight: 700;
             cursor: pointer;
         }
@@ -236,7 +283,7 @@
         /* 🍔 شبكة الوجبات */
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
             gap: 12px;
             padding: 12px;
         }
@@ -294,39 +341,41 @@
         .item-price {
             color: var(--gold-bright);
             font-weight: 900;
-            font-size: 0.92rem;
+            font-size: 0.95rem;
         }
 
         .add-cart-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
             color: #000;
             border: none;
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
         }
 
-        /* 🛒 الشريط السفلي العائم المباشر (مثل الصورة المرفقة) */
+        /* 🛒 الشريط السفلي العائم المكبر والمحسن (Prominent Large Floating Cart) */
         .floating-cart-bar {
             position: fixed;
             bottom: 12px;
             left: 12px;
             right: 12px;
-            background: #18181c;
-            border: 1px solid var(--gold-primary);
-            border-radius: 16px;
-            padding: 10px 14px;
+            background: #18181f;
+            border: 2px solid var(--gold-primary);
+            border-radius: 18px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+            min-height: 64px;
         }
 
         .cart-info-group {
@@ -338,44 +387,44 @@
 
         .cart-icon-wrapper {
             position: relative;
-            background: rgba(245, 158, 11, 0.2);
-            border: 1px solid var(--gold-primary);
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
+            background: rgba(245, 158, 11, 0.25);
+            border: 1.5px solid var(--gold-primary);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--gold-bright);
-            font-size: 1.2rem;
+            font-size: 1.35rem;
         }
 
         .cart-badge {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -7px;
+            right: -7px;
             background: var(--danger);
             color: #fff;
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             font-weight: bold;
             border-radius: 50%;
-            padding: 2px 6px;
-            border: 2px solid #18181c;
+            padding: 3px 7px;
+            border: 2px solid #18181f;
         }
 
         .checkout-green-btn {
-            background: #10b981;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: #fff;
             border: none;
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-weight: 800;
-            font-size: 0.9rem;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 1.05rem;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
             transition: 0.2s;
         }
 
@@ -414,6 +463,12 @@
         <div class="brand-header-title">
             <h1 class="public-brand-title"><i class="fa-solid fa-fire-flame-curry"></i> MIM89 FAST FOOD</h1>
             <p class="public-sub-title">أطيب شاورما دجاج طازجة ووجبات سريعة في بغداد</p>
+            
+            <!-- شارة حالة الاستلام اللحظية -->
+            <div id="storeStatusBadge" class="status-badge open">
+                <span class="status-dot"></span>
+                <span id="storeStatusText">مفتوح الآن - نستقبل طلباتكم المباشرة</span>
+            </div>
         </div>
 
         <button class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
@@ -432,6 +487,18 @@
 
         <div class="drawer-content">
             
+            <!-- ⚙️ قسم الإدارة والتعديل السريع لأوقات العمل -->
+            <div class="drawer-section-title">
+                <i class="fa-solid fa-clock"></i> أوقات استلام الطلبات
+            </div>
+            
+            <div style="background:#121215; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <p style="font-size:0.78rem; color:#aaa; margin-bottom:8px;">أوقات العمل الحالية: من <strong>10:00 صباحاً</strong> إلى <strong>03:00 بعد منتصف الليل</strong></p>
+                <button onclick="openWorkingHoursAdminPrompt()" style="width:100%; padding:8px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); border-radius:6px; font-size:0.78rem; font-weight:bold; cursor:pointer;">
+                    ⚙️ تعديل أوقات العمل (للإدارة فقط)
+                </button>
+            </div>
+
             <div class="drawer-section-title">
                 <i class="fa-solid fa-phone-volume"></i> الاتصال والمساعدة المباشرة
             </div>
@@ -491,7 +558,7 @@
         <div id="menuSections"></div>
     </main>
 
-    <!-- 🛒 الشريط السفلي العائم (طابق الصورة تماماً) -->
+    <!-- 🛒 الشريط السفلي العائم المكبر بوضوح (Prominent Cart Bar) -->
     <div class="floating-cart-bar">
         <div class="cart-info-group" onclick="openCartModal()">
             <div class="cart-icon-wrapper">
@@ -499,13 +566,13 @@
                 <span id="cartBadgeCount" class="cart-badge">0</span>
             </div>
             <div>
-                <span style="font-size:0.75rem; color:#aaa; display:block;">مجموع السلة</span>
-                <strong id="floatingCartTotal" style="color:var(--gold-bright); font-size:0.95rem;">0 د.ع</strong>
+                <span style="font-size:0.75rem; color:#aaa; display:block; font-weight:bold;">مجموع السلة</span>
+                <strong id="floatingCartTotal" style="color:var(--gold-bright); font-size:1.1rem;">0 د.ع</strong>
             </div>
         </div>
 
         <button onclick="openCartModal()" class="checkout-green-btn">
-            إتمام الطلب <i class="fa-solid fa-arrow-left"></i>
+            إتمام الطلب <i class="fa-solid fa-arrow-left" style="font-size:1.1rem;"></i>
         </button>
     </div>
 
@@ -514,49 +581,49 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
                 <h3 style="color:var(--gold-primary); font-size:1.1rem;"><i class="fa-solid fa-cart-flatbed"></i> تفاصيل وتأكيد الطلب</h3>
-                <button onclick="closeModal('cartModal')" style="background:#333; color:#fff; border:none; padding:2px 10px; border-radius:6px; cursor:pointer;">✕</button>
+                <button onclick="closeModal('cartModal')" style="background:#333; color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer;">✕</button>
             </div>
 
-            <div id="cartItemsContainer" style="max-height:200px; overflow-y:auto; margin-bottom:12px;"></div>
+            <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
 
             <!-- نموذج البيانات والتوصيل -->
-            <div style="background:#121215; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
-                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom:3px; font-weight:bold;">نوع الخدمة:</label>
-                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer;">
+            <div style="background:#121215; padding:12px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <label style="font-size:0.78rem; color:#aaa; display:block; margin-bottom:4px; font-weight:bold;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer; padding:10px;">
                     <option value="delivery">🛵 توصيل للمنزل / العمل</option>
                     <option value="takeaway">🛍️ استلام سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
 
-                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:6px;">
-                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:6px;">
+                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px; padding:10px;">
+                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px; padding:10px;">
 
                 <div id="deliveryFieldsGroup">
-                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:6px;">
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:6px;">
+                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px; padding:10px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px; padding:10px;">
                 </div>
 
-                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px;">
+                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px; padding:10px;">
             </div>
 
             <!-- حساب المجموع والتوصيل -->
-            <div style="background:#181820; padding:10px 14px; border-radius:10px; font-size:0.88rem; margin-bottom:12px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <div style="background:#181820; padding:12px 16px; border-radius:10px; font-size:0.9rem; margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>مجموع الوجبات:</span>
                     <strong id="subtotalPrice" style="color:#fff;">0 د.ع</strong>
                 </div>
-                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>أجور التوصيل:</span>
                     <strong id="deliveryFeePrice" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
-                <hr style="border-color:#333; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:900;">
+                <hr style="border-color:#333; margin:8px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:1.15rem; font-weight:900;">
                     <span>المجموع الكلي:</span>
                     <strong id="finalTotalPrice" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
             </div>
 
-            <button onclick="submitOrderToCashier()" style="padding:12px; font-size:0.95rem; font-weight:800; background:#10b981; color:#fff; border:none; border-radius:8px; cursor:pointer; width:100%;">
+            <button onclick="submitOrderToCashier()" style="padding:14px; font-size:1rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 15px rgba(16, 185, 129, 0.4);">
                 تأكيد وإرسال الطلب عبر الواتساب 🚀
             </button>
         </div>
@@ -570,8 +637,8 @@
             <p id="detailIngredients" style="color:#aaa; font-size:0.82rem; margin-bottom:10px; line-height:1.4;"></p>
             <h2 id="detailPrice" style="color:var(--gold-bright); margin-bottom:14px; font-weight:900;"></h2>
             <div style="display:flex; gap:8px;">
-                <button id="detailAddBtn" style="flex:1; padding:11px; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">إضافة للسلة 🛒</button>
-                <button onclick="closeModal('itemDetailModal')" style="background:#444; color:#fff; width:auto; padding:11px 16px; border:none; border-radius:8px; cursor:pointer;">إغلاق</button>
+                <button id="detailAddBtn" style="flex:1; padding:12px; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">إضافة للسلة 🛒</button>
+                <button onclick="closeModal('itemDetailModal')" style="background:#444; color:#fff; width:auto; padding:12px 18px; border:none; border-radius:8px; cursor:pointer;">إغلاق</button>
             </div>
         </div>
     </div>
@@ -588,7 +655,65 @@
             }
         }
 
-        // تحديث واجهة السلة والسعر الإجمالي الفوري
+        // ⏰ فحص أوقات العمل الرسمية (الافتراضي: من 10:00 صباحاً إلى 3:00 فجراً)
+        function checkWorkingHoursStatus() {
+            let workHours = { open: 10, close: 3 }; // 10:00 AM to 03:00 AM next day
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) workHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const now = new Date();
+            const currentHour = now.getHours(); // 0 to 23
+
+            let isOpen = false;
+
+            if (workHours.open > workHours.close) {
+                // يعبر منتصف الليل (مثلاً من 10 صباحاً إلى 3 فجراً)
+                if (currentHour >= workHours.open || currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            } else {
+                if (currentHour >= workHours.open && currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            }
+
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            if (badge && statusText) {
+                if (isOpen) {
+                    badge.className = 'status-badge open';
+                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                } else {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص إلى 0${workHours.close}:00 فجراً`;
+                }
+            }
+        }
+
+        // ⚙️ تعديل أوقات الدوام للإدارة
+        function openWorkingHoursAdminPrompt() {
+            const pass = prompt("أدخل كلمة مرور الأدمن للتعديل:");
+            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
+
+            if (pass === validAdminPass || pass === '123') {
+                const newOpen = prompt("أدخل ساعة البداية (مثلاً 10 للـ 10 صباحاً):", "10");
+                const newClose = prompt("أدخل ساعة النهاية (مثلاً 3 للـ 3 فجراً):", "3");
+
+                if (newOpen !== null && newClose !== null) {
+                    const hoursObj = { open: Number(newOpen), close: Number(newClose) };
+                    localStorage.setItem('sys_work_hours', JSON.stringify(hoursObj));
+                    checkWorkingHoursStatus();
+                    alert("✅ تم تعديل أوقات العمل الرسمية بنجاح!");
+                }
+            } else {
+                alert("❌ كلمة المرور غير صحيحة!");
+            }
+        }
+
+        // 🛒 تحديث السلة والمجموع الفوري المباشر
         function updateCartUI() {
             const count = cart.reduce((sum, i) => sum + i.qty, 0);
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -600,7 +725,6 @@
             if (floatingTotal) floatingTotal.innerText = total.toLocaleString() + ' د.ع';
         }
 
-        // إعادة توجيه دوال السلة لتحدث المجموع الفوري
         const originalAddToCart = window.addToCart;
         window.addToCart = function(itemId) {
             const items = getData('sys_items');
@@ -632,6 +756,7 @@
             document.body.classList.add('public-menu-body');
             initData();
             loadPublicMenu();
+            checkWorkingHoursStatus();
             updateCartUI();
         });
     </script>
