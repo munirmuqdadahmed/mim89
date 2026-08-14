@@ -149,32 +149,25 @@
             background: rgba(245, 158, 11, 0.12);
             border: 1px solid var(--gold-primary);
             color: var(--gold-bright);
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
             user-select: none;
             touch-action: manipulation;
+            z-index: 10002;
         }
 
         .hamburger-btn:active { transform: scale(0.92); }
 
-        .brand-header-title {
-            text-align: center;
-            flex-grow: 1;
-        }
-
-        .public-brand-title {
-            font-size: 1.35rem;
-            font-weight: 900;
-            letter-spacing: 0.5px;
-        }
+        .brand-header-title { text-align: center; flex-grow: 1; }
+        .public-brand-title { font-size: 1.35rem; font-weight: 900; letter-spacing: 0.5px; }
 
         .status-badge {
             display: inline-flex;
@@ -212,6 +205,7 @@
             50% { opacity: 0.3; }
         }
 
+        /* البردة الجانبية */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -361,6 +355,7 @@
             height: 135px;
             object-fit: cover;
             border-bottom: 1px solid var(--card-border);
+            cursor: pointer;
         }
 
         .item-details {
@@ -463,7 +458,7 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 2000;
+            z-index: 20000;
             padding: 15px;
         }
 
@@ -562,7 +557,7 @@
             </div>
         </div>
 
-        <button id="hamburgerBtn" class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
+        <button type="button" id="hamburgerBtn" class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
             <i class="fa-solid fa-bars"></i>
         </button>
     </header>
@@ -576,11 +571,11 @@
                 <i class="fa-solid fa-utensils" style="color:var(--gold-primary);"></i> 
                 <span class="gold-reflective-text">MIM89 FAST FOOD</span>
             </h3>
-            <button onclick="toggleSideDrawer()" class="close-drawer-btn">✕</button>
+            <button type="button" onclick="toggleSideDrawer()" class="close-drawer-btn">✕</button>
         </div>
 
         <div class="drawer-content">
-            <button onclick="openActiveOrderTrackerModal(); toggleSideDrawer();" class="drawer-link-btn" style="border-color:var(--gold-primary); background:rgba(245,158,11,0.15); color:var(--gold-bright); margin-bottom:12px;">
+            <button type="button" onclick="openActiveOrderTrackerModal(); toggleSideDrawer();" class="drawer-link-btn" style="border-color:var(--gold-primary); background:rgba(245,158,11,0.15); color:var(--gold-bright); margin-bottom:12px;">
                 <i class="fa-solid fa-route" style="font-size:1.2rem;"></i>
                 <div>
                     <div>تتبع طلبك الحالي 🛵</div>
@@ -623,7 +618,7 @@
 
     <!-- الشريط السفلي العائم -->
     <div class="floating-cart-bar">
-        <button onclick="openCartModal()" class="checkout-green-btn">
+        <button type="button" onclick="openCartModal()" class="checkout-green-btn">
             إتمام الطلب <i class="fa-solid fa-arrow-left"></i>
         </button>
 
@@ -645,7 +640,7 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #333; padding-bottom:8px;">
                 <h3 style="color:var(--gold-bright); font-size:1.15rem;"><i class="fa-solid fa-cart-flatbed"></i> تفاصيل وتأكيد الطلب</h3>
-                <button onclick="closeModal('cartModal')" style="background:#333; color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer;">✕</button>
+                <button type="button" onclick="closeModal('cartModal')" style="background:#333; color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer;">✕</button>
             </div>
 
             <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
@@ -668,12 +663,12 @@
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
 
-                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px;">
-                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px;">
+                <!-- الحقول المطلوبة إجبارياً لإرسال الطلب -->
+                <input type="text" id="custName" class="gold-input-inline" placeholder="الاسم الكريم (مطلوب) *" style="margin-bottom:8px;">
+                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (مطلوب) *" style="margin-bottom:8px;">
 
-                <!-- تنظيم قسم التوصيل بشريطين منفصلين (اختر المنطقة + اكتب الشارع) لمنع التداخل -->
                 <div id="deliveryFieldsGroup">
-                    <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل:</label>
+                    <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل (مطلوب) *:</label>
                     <select id="custAreaSelect" class="gold-input-inline" onchange="calculateDeliveryCost()" style="margin-bottom:8px; cursor:pointer; background:#101014;">
                         <option value="القاهرة">📍 القاهرة (مجاني 🎉)</option>
                         <option value="البنوك">📍 البنوك</option>
@@ -686,13 +681,14 @@
                         <option value="منطقة أخرى">✏️ منطقة أخرى...</option>
                     </select>
 
+                    <!-- الحقول الاختيارية بالكامل -->
                     <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom:3px; font-weight:bold;">✍️ اسم الشارع أو المحلة (اختياري):</label>
                     <input type="text" id="custArea" class="gold-input-inline" placeholder="مثال: شارع أبو طالب..." oninput="calculateDeliveryCost()" style="margin-bottom:8px;">
 
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (اختياري)..." style="margin-bottom:8px;">
                 </div>
 
-                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب العام..." style="margin-bottom:4px;">
+                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب العام (اختياري)..." style="margin-bottom:4px;">
             </div>
 
             <!-- حساب المجموع بالإنكليزي -->
@@ -716,18 +712,18 @@
                 </div>
             </div>
 
-            <button id="sendOrderBtn" onclick="submitOrderToCashier()" style="padding:14px; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 18px rgba(16, 185, 129, 0.45);">
+            <button type="button" id="sendOrderBtn" onclick="submitOrderToCashier()" style="padding:14px; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 18px rgba(16, 185, 129, 0.45);">
                 تأكيد وإرسال الطلب عبر الواتساب 🚀
             </button>
         </div>
     </div>
 
-    <!-- نافذة تخصيص الوجبة -->
+    <!-- نافذة تخصيص الوجبة (تحويل إجباري عند ضغط زر الزائد +) -->
     <div id="itemDetailModal" class="modal-overlay">
         <div class="modal-body" style="text-align:right;">
             <div style="position:relative;">
                 <img id="detailImg" src="" style="width:100%; height:170px; object-fit:cover; border-radius:12px; margin-bottom:10px; border:1px solid var(--gold-primary);">
-                <button onclick="closeModal('itemDetailModal')" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.7); color:#fff; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer;">✕</button>
+                <button type="button" onclick="closeModal('itemDetailModal')" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.7); color:#fff; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer;">✕</button>
             </div>
             
             <h3 id="detailTitle" style="color:var(--gold-bright); margin-bottom:4px; font-weight:900; font-size:1.2rem;"></h3>
@@ -766,7 +762,7 @@
                 <strong id="detailCalculatedPrice" style="color:var(--gold-bright); font-size:1.2rem;">0 د.ع</strong>
             </div>
 
-            <button id="detailAddBtn" onclick="addCustomizedItemToCart()" style="width:100%; padding:14px; background:var(--gold-gradient); color:#000; border:none; border-radius:12px; font-weight:900; cursor:pointer; font-size:1.05rem;">
+            <button type="button" id="detailAddBtn" onclick="addCustomizedItemToCart()" style="width:100%; padding:14px; background:var(--gold-gradient); color:#000; border:none; border-radius:12px; font-weight:900; cursor:pointer; font-size:1.05rem;">
                 إضافة للسلة 🛒
             </button>
         </div>
@@ -777,7 +773,7 @@
         <div class="modal-body" style="text-align:center; max-width:420px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:8px; margin-bottom:12px;">
                 <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-route"></i> تتبع حالة الطلب المباشر</h3>
-                <button onclick="closeModal('orderTrackerModal')" style="background:#333; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">✕</button>
+                <button type="button" onclick="closeModal('orderTrackerModal')" style="background:#333; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">✕</button>
             </div>
 
             <div style="background:#181822; padding:10px; border-radius:10px; border:1px solid var(--gold-primary); margin-bottom:12px;">
@@ -827,12 +823,22 @@
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
 
+        // 💡 دالة الشفط والتنظيف الذكية للأسعار - تستخرج الأرقام حتى مع النقاط أو النصوص أو الأرقام العربية
         function cleanPrice(v) {
-            if (!v) return 0;
-            let num = Number(v);
+            if (v === null || v === undefined) return 0;
+            if (typeof v === 'number') return isNaN(v) ? 0 : v;
+            
+            let str = String(v);
+            // تحويل الأرقام الشرقية/العربية إلى إنكليزية
+            str = str.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+            // مسح كل الرموز والنصوص والنقاط والشارحات
+            str = str.replace(/[^\d]/g, '');
+            
+            let num = parseInt(str, 10);
             return isNaN(num) ? 0 : num;
         }
 
+        // 🍔 إصلاح البردة الجانبية المباشر
         window.toggleSideDrawer = function() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
@@ -992,9 +998,9 @@
                             <span style="color:var(--gold-bright); font-size:0.8rem; font-weight:700; margin-top:2px; display:inline-block;">${itemTotal.toLocaleString('en-US')} د.ع</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <button onclick="changeCartIndexQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+                            <button type="button" onclick="changeCartIndexQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
                             <span style="color:#fff; font-weight:800;">${item.qty}</span>
-                            <button onclick="changeCartIndexQty(${index}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
+                            <button type="button" onclick="changeCartIndexQty(${index}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
                         </div>
                     </div>
                 `;
@@ -1013,6 +1019,7 @@
             if (floatingTotal) floatingTotal.innerText = total.toLocaleString('en-US') + ' د.ع';
         }
 
+        // 🍟 فتح نافذة التخصيص إجبارياً عند ضغط زر الزائد + وتصفير وإلغاء القيم القديمة
         window.openItemCustomizationModal = function(itemId) {
             let items = [];
             if (typeof getData === 'function') items = getData('sys_items');
@@ -1223,7 +1230,7 @@
             else alert("⚠️ لم تقم بإرسال أي طلب حتى الآن.");
         }
 
-        // إرسال الطلب للكاشير والواتساب فوراً
+        // 🚀 إرسال الطلب المباشر: ربط الإلزام حصراً بـ (الاسم، الهاتف، والمنطقة) وكل الحقول الأخرى اختيارية!
         window.submitOrderToCashier = function() {
             try {
                 if (!cart || cart.length === 0) {
@@ -1238,12 +1245,7 @@
                 let selectArea = document.getElementById('custAreaSelect')?.value || '';
                 let inputArea = document.getElementById('custArea')?.value.trim() || '';
 
-                let area = selectArea;
-                if (inputArea) area += ` (${inputArea})`;
-
-                const address = document.getElementById('custAddress')?.value.trim();
-                const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
-
+                // 🔥 التحقق من الحقول المطلوبة حصراً فقط!
                 if (!name) {
                     alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
                     return;
@@ -1252,12 +1254,17 @@
                     alert("⚠️ يرجى كتابة رقم الهاتف لتأكيد الطلب!");
                     return;
                 }
-                if (type === 'delivery') {
-                    if (!address) {
-                        alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
-                        return;
-                    }
+                if (type === 'delivery' && !selectArea) {
+                    alert("⚠️ يرجى اختيار منطقة التوصيل!");
+                    return;
                 }
+
+                // الحقول الاختيارية بالكامل
+                let area = selectArea;
+                if (inputArea) area += ` - شارع: ${inputArea}`;
+
+                const address = document.getElementById('custAddress')?.value.trim() || 'غير محدد';
+                const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
 
                 const subtotal = cart.reduce((sum, item) => sum + (cleanPrice(item.price) * cleanPrice(item.qty)), 0);
 
@@ -1283,7 +1290,7 @@
                     customerPhone: phone,
                     orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
                     area: area,
-                    address: address || 'غير محدد',
+                    address: address,
                     notes: notes,
                     items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.price * i.qty, customNotes: i.customNotes || '' })),
                     subtotal: subtotal,
@@ -1296,10 +1303,12 @@
 
                 localStorage.setItem('sys_last_order_id', orderId);
 
+                // إرسال البيانات للفايربيس (الكاشير) دون إيقاف فتح الواتساب
                 if (typeof db !== 'undefined' && db) {
                     db.collection('orders').add(orderObj).catch(e => console.warn("Firebase Order Error:", e));
                 }
 
+                // تجهيز رسالة الواتساب
                 let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
                 text += `🏷️ *رقم الطلب:* ${orderId}\n`;
                 text += `----------------------------------\n`;
@@ -1307,8 +1316,8 @@
                 text += `📞 *الهاتف:* ${phone}\n`;
                 text += `📌 *الخدمة:* ${type === 'delivery' ? '🛵 توصيل' : (type === 'takeaway' ? '🛍️ سفري' : '🍽️ داخل الصالة')}\n`;
                 if (type === 'delivery') {
-                    text += `📍 *المنطقة:* ${area}\n`;
-                    text += `🏠 *العنوان:* ${address}\n`;
+                    text += `📍 *المنطقة والشارع:* ${area}\n`;
+                    if (address && address !== 'غير محدد') text += `🏠 *العنوان التفصيلي:* ${address}\n`;
                 }
                 if (notes && notes !== 'لا يوجد') text += `📝 *ملاحظات:* ${notes}\n`;
                 text += `----------------------------------\n`;
@@ -1327,6 +1336,8 @@
                 cart = [];
                 updateCartUI();
                 closeModal('cartModal');
+
+                // تحويل فوري ومستقيم لفتح التطبيق دون حجب متصفح الهاتف
                 window.location.href = waUrl;
             } catch(err) {
                 alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
@@ -1354,9 +1365,9 @@
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
             if (navContainer && cats && cats.length > 0) {
-                let navHtml = `<button class="category-tab active" onclick="scrollToCategory('all')">الكل 🍔</button>`;
+                let navHtml = `<button type="button" class="category-tab active" onclick="scrollToCategory('all')">الكل 🍔</button>`;
                 cats.forEach(c => {
-                    navHtml += `<button class="category-tab" onclick="scrollToCategory('cat_${c.id}')">${c.name}</button>`;
+                    navHtml += `<button type="button" class="category-tab" onclick="scrollToCategory('cat_${c.id}')">${c.name}</button>`;
                 });
                 navContainer.innerHTML = navHtml;
             }
@@ -1380,7 +1391,8 @@
                                     </div>
                                     <div class="item-footer">
                                         <div class="item-price">${cleanPrice(item.price).toLocaleString('en-US')} د.ع</div>
-                                        <button class="add-cart-btn ${isSoldOut ? 'disabled' : ''}" onclick="openItemCustomizationModal(${item.id})" ${isSoldOut ? 'disabled' : ''}>
+                                        <!-- زر الزائد + يفتح دائماً نافذة التخصيص إجبارياً -->
+                                        <button type="button" class="add-cart-btn ${isSoldOut ? 'disabled' : ''}" onclick="openItemCustomizationModal(${item.id})" ${isSoldOut ? 'disabled' : ''}>
                                             ${isSoldOut ? '✕' : '+'}
                                         </button>
                                     </div>
