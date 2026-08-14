@@ -54,7 +54,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 🎬 شاشة الانطلاقة المحسّنة مع إلغاء اللمس تلقائياً */
+        /* 🎬 شاشة اللوكو: تختفي تلقائياً عبر CSS بعد 0.8 ثانية بدون اعتماد على الجافاسكريبت */
         .splash-screen {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -63,19 +63,19 @@
             justify-content: center;
             align-items: center;
             z-index: 99999;
-            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+            animation: fadeOutSplash 0.4s ease-out 0.8s forwards;
+            pointer-events: none;
         }
 
-        .splash-screen.hidden {
-            opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
-            display: none !important;
+        @keyframes fadeOutSplash {
+            0% { opacity: 1; visibility: visible; }
+            99% { opacity: 0; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; display: none !important; }
         }
 
         .splash-logo-box {
             text-align: center;
-            animation: splashPop 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: splashPop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             position: relative;
         }
 
@@ -447,7 +447,6 @@
         }
 
         .add-cart-btn:active { transform: scale(0.88); }
-        .add-cart-btn.disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
 
         .floating-cart-bar {
             position: fixed;
@@ -554,9 +553,7 @@
             outline: none;
         }
 
-        .gold-input-inline:focus {
-            border-color: var(--gold-primary);
-        }
+        .gold-input-inline:focus { border-color: var(--gold-primary); }
 
         .custom-option-group {
             background: #181822;
@@ -596,88 +593,23 @@
             border: 1px solid #282832;
         }
 
-        .custom-checkbox-label input {
-            accent-color: var(--gold-primary);
-            width: 16px;
-            height: 16px;
-        }
+        .custom-checkbox-label input { accent-color: var(--gold-primary); width: 16px; height: 16px; }
 
-        .tracking-stepper {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-            margin: 20px 0;
-        }
-
-        .tracking-stepper::before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 10%;
-            right: 10%;
-            height: 4px;
-            background: #282835;
-            z-index: 1;
-        }
-
-        .tracking-progress-bar {
-            position: absolute;
-            top: 20px;
-            right: 10%;
-            height: 4px;
-            background: var(--gold-primary);
-            z-index: 2;
-            transition: width 0.4s ease;
-        }
-
-        .step-item {
-            position: relative;
-            z-index: 3;
-            text-align: center;
-            flex: 1;
-        }
-
-        .step-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: #181822;
-            border: 2px solid #333;
-            color: #666;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 6px;
-            font-size: 1rem;
-            transition: 0.3s;
-        }
-
-        .step-item.active .step-icon {
-            background: var(--gold-primary);
-            color: #000;
-            border-color: var(--gold-bright);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
-        }
-
-        .step-item.completed .step-icon {
-            background: var(--success);
-            color: #fff;
-            border-color: var(--success);
-        }
-
-        .step-label {
-            font-size: 0.72rem;
-            font-weight: 800;
-            color: #aaa;
-        }
-
+        .tracking-stepper { display: flex; justify-content: space-between; position: relative; margin: 20px 0; }
+        .tracking-stepper::before { content: ''; position: absolute; top: 20px; left: 10%; right: 10%; height: 4px; background: #282835; z-index: 1; }
+        .tracking-progress-bar { position: absolute; top: 20px; right: 10%; height: 4px; background: var(--gold-primary); z-index: 2; transition: width 0.4s ease; }
+        .step-item { position: relative; z-index: 3; text-align: center; flex: 1; }
+        .step-icon { width: 42px; height: 42px; border-radius: 50%; background: #181822; border: 2px solid #333; color: #666; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 1rem; transition: 0.3s; }
+        .step-item.active .step-icon { background: var(--gold-primary); color: #000; border-color: var(--gold-bright); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+        .step-item.completed .step-icon { background: var(--success); color: #fff; border-color: var(--success); }
+        .step-label { font-size: 0.72rem; font-weight: 800; color: #aaa; }
         .step-item.active .step-label { color: var(--gold-bright); }
         .step-item.completed .step-label { color: var(--success); }
     </style>
 </head>
 <body class="public-menu-body">
 
-    <!-- 🎬 شاشة الانطلاقة -->
+    <!-- 🎬 شاشة الانطلاقة ذاتية الإخفاء والتلاشي سلفاً -->
     <div id="splashScreen" class="splash-screen">
         <div class="splash-logo-box">
             <div class="splash-glow-ring"></div>
@@ -697,7 +629,7 @@
             
             <div id="storeStatusBadge" class="status-badge open">
                 <span class="status-dot"></span>
-                <span id="storeStatusText">مفتوح الآن - نستقبل طلباتكم</span>
+                <span id="storeStatusText">جاري التحديث...</span>
             </div>
         </div>
 
@@ -727,20 +659,14 @@
                 </div>
             </button>
 
-            <div class="drawer-section-title">
-                <i class="fa-solid fa-clock"></i> أوقات استلام الطلبات
-            </div>
-            
+            <div class="drawer-section-title"><i class="fa-solid fa-clock"></i> أوقات استلام الطلبات</div>
             <div style="background:#16161c; padding:12px; border-radius:12px; border:1px solid var(--card-border); margin-bottom:12px;">
                 <p style="font-size:0.83rem; color:#ccc; line-height:1.5;">
                     📍 نستقبل جميع الطلبات يومياً من الساعة <strong>10:00 صباحاً</strong> وحتى الساعة <strong>03:00 بعد منتصف الليل</strong>.
                 </p>
             </div>
 
-            <div class="drawer-section-title">
-                <i class="fa-solid fa-phone-volume"></i> الاتصال والمساعدة المباشرة
-            </div>
-            
+            <div class="drawer-section-title"><i class="fa-solid fa-phone-volume"></i> الاتصال والمساعدة المباشرة</div>
             <a href="tel:07750008630" class="drawer-link-btn" style="border-color:var(--gold-primary);">
                 <i class="fa-solid fa-phone" style="color:var(--gold-bright);"></i>
                 <div>
@@ -748,7 +674,6 @@
                     <small style="color:#aaa;">07750008630</small>
                 </div>
             </a>
-
             <a href="https://api.whatsapp.com/send?phone=9647750008630" target="_blank" class="drawer-link-btn" style="border-color:#25D366;">
                 <i class="fa-brands fa-whatsapp" style="color:#25D366; font-size:1.2rem;"></i>
                 <div>
@@ -975,7 +900,7 @@
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
 
-        // 🟢 1. دالة فحص وتحديث شارة ساعات العمل فوراً (تقرأ المحلي قبل أي انتظر للفايربيس)
+        // ⚡ 1. دالة التحديث اللحظي الفوري لأوقات الدوام
         function checkWorkingHoursStatus() {
             try {
                 const stored = localStorage.getItem('sys_work_hours');
@@ -998,13 +923,9 @@
 
             let isOpen = false;
             if (globalWorkHours.open > globalWorkHours.close) {
-                if (currentHour >= globalWorkHours.open || currentHour < globalWorkHours.close) {
-                    isOpen = true;
-                }
+                if (currentHour >= globalWorkHours.open || currentHour < globalWorkHours.close) isOpen = true;
             } else {
-                if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) {
-                    isOpen = true;
-                }
+                if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) isOpen = true;
             }
 
             if (badge && statusText) {
@@ -1018,14 +939,6 @@
             }
 
             return { isOpen, reason: 'time', hours: globalWorkHours };
-        }
-
-        // 🎬 2. دالة إخفاء الشاشة الافتتاحية مع حظر اللمس نهائياً
-        function hideSplashScreenNow() {
-            const splash = document.getElementById('splashScreen');
-            if (splash) {
-                splash.classList.add('hidden');
-            }
         }
 
         function toggleSideDrawer() {
@@ -1545,21 +1458,17 @@
             }
         }
 
-        // 🚀 بداية التشغيل المنظم والسريع
+        // 🟢 تنفيذ فوري ومستقل
+        checkWorkingHoursStatus();
+
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
-
-            // 1. فحص وتحديد حالة الدوام فوراً بآلية محلية فائقة السرعة
-            checkWorkingHoursStatus();
-
-            // 2. إخفاء اللوكو مضموناً وبدون تعليق بعد 600ms
-            setTimeout(hideSplashScreenNow, 600);
-
-            // 3. تهيئة البيانات الآمنة
-            try { if (typeof initData === 'function') initData(); } catch(e) { console.warn(e); }
-            try { loadPublicMenu(); } catch(e) { console.warn(e); }
-            try { syncWorkHoursWithFirebase(); } catch(e) { console.warn(e); }
-            try { updateCartUI(); } catch(e) { console.warn(e); }
+            
+            // تهيئة النظام وعرض المينيو والفايربيس
+            try { if (typeof initData === 'function') initData(); } catch(e){}
+            try { loadPublicMenu(); } catch(e){}
+            try { syncWorkHoursWithFirebase(); } catch(e){}
+            try { updateCartUI(); } catch(e){}
         });
     </script>
 </body>
