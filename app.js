@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.1 Complete Fix & Optimized Version)
+   MIM89 FAST FOOD - Master Core Engine (v21.2 Fixed & Optimized Version)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -18,13 +18,32 @@ let activePendingPrintOrder = null;
 let lastCompletedOrder = null;
 let currentUploadedBase64 = "";
 
-// 🧮 دالة عالمية لتنظيف أي سعر/رقم من الفواصل والنصوص وتحويله إلى رقم مجرد
+// 🧮 دالة عالمية لتنظيف أي سعر/رقم من الفواصل والنصوص والأرقام الشرقية وتحويله إلى رقم مجرد
 function cleanPrice(val) {
+    if (val === null || val === undefined) return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    if (!val) return 0;
-    const cleaned = String(val).replace(/[^\d]/g, '');
-    return parseInt(cleaned, 10) || 0;
+    let str = String(val).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
+    let num = parseInt(str, 10);
+    return isNaN(num) ? 0 : num;
 }
+
+// 🍔 دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط) المباشرة
+window.toggleSideDrawer = function() {
+    const drawer = document.getElementById('sideDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (!drawer || !overlay) return;
+
+    if (drawer.classList.contains('active')) {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    } else {
+        overlay.style.display = 'block';
+        void drawer.offsetWidth;
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+    }
+};
 
 try {
     const firebaseConfig = {
@@ -678,12 +697,13 @@ function calculateDeliveryCost() {
     const totalEl = document.getElementById('finalTotalPrice');
 
     if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString('ar-IQ') + ' د.ع';
-    if (feeEl) feeEl.innerText = (orderType === 'delivery' && (deliveryFee === 0 || finalArea.includes('قاهرة') || finalArea.includes('قاهره'))) ? "مجاني 🎉" : deliveryFee.toLocaleString('ar-IQ') + ' د.ع';
+    if (feeEl) feeEl.innerText = (orderType === 'delivery' && (deliveryFee === 0 || finalArea.includes('القاهرة') || finalArea.includes('قاهرة') || finalArea.includes('قاهره'))) ? "مجاني 🎉" : deliveryFee.toLocaleString('ar-IQ') + ' د.ع';
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
-function submitOrderToCashier() {
-    if (cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
+// 🚀 إرسال الطلب المباشر - الإلزام حصراً بـ (الاسم، الهاتف، والمنطقة) وكل الحقول الأخرى اختيارية تماماً!
+window.submitOrderToCashier = function() {
+    if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
     
     const nameInput = document.getElementById('custName');
     const phoneInput = document.getElementById('custPhone');
@@ -693,19 +713,19 @@ function submitOrderToCashier() {
     const addressInput = document.getElementById('custAddress');
     const notesInput = document.getElementById('orderNotes');
 
-    const name = nameInput ? nameInput.value.trim() : 'زبون كريم';
+    const name = nameInput ? nameInput.value.trim() : '';
     const phone = phoneInput ? phoneInput.value.trim().replace(/\s+/g, '') : '';
     const type = typeSelect ? typeSelect.value : 'delivery';
     
-    let area = areaInput ? areaInput.value.trim() : '';
-    if ((!area || area === '') && areaSelect && areaSelect.value && areaSelect.value !== 'custom') {
-        area = areaSelect.value;
-        if (areaInput) areaInput.value = area;
+    let area = areaSelect ? areaSelect.value : 'القاهرة';
+    if (areaInput && areaInput.value.trim() !== '') {
+        area += ` - شارع: ${areaInput.value.trim()}`;
     }
 
     const address = addressInput ? addressInput.value.trim() : 'غير محدد';
     const notes = notesInput ? notesInput.value.trim() : 'لا يوجد';
 
+    // 🔥 التحقق من الحقول المطلوبة حصراً
     if (!name || name === '') {
         return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
     }
@@ -716,10 +736,7 @@ function submitOrderToCashier() {
 
     if (type === 'delivery') {
         if (!area || area === '' || area === '-- اختر المنطقة --') {
-            return alert("⚠️ يرجى اختيار أو كتابة منطقة التوصيل!");
-        }
-        if (!address || address === '') {
-            return alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
+            return alert("⚠️ يرجى اختيار منطقة التوصيل!");
         }
     }
 
@@ -735,7 +752,7 @@ function submitOrderToCashier() {
     let deliveryFee = 0;
     if (type === 'delivery') {
         const normArea = normalizeArabicArea(area);
-        deliveryFee = (normArea.includes("قاهره") || area.includes("قاهرة")) ? 0 : 2500;
+        deliveryFee = (normArea.includes("قاهره") || area.includes("قاهرة") || area.includes("القاهرة")) ? 0 : 2500;
     }
     const totalAmount = subtotal + deliveryFee;
     const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
@@ -777,8 +794,8 @@ function submitOrderToCashier() {
     waMessage += `📞 *الهاتف:* ${phone}\n`;
     waMessage += `📌 *الخدمة:* ${typeText}\n`;
     if (type === 'delivery') {
-        waMessage += `📍 *المنطقة:* ${area}\n`;
-        waMessage += `🏠 *العنوان:* ${address}\n`;
+        waMessage += `📍 *المنطقة والشارع:* ${area}\n`;
+        if (address && address !== 'غير محدد') waMessage += `🏠 *العنوان التفصيلي:* ${address}\n`;
     }
     if (notes && notes !== 'لا يوجد') {
         waMessage += `📝 *ملاحظات:* ${notes}\n`;
@@ -810,8 +827,8 @@ function submitOrderToCashier() {
         listenToOrderTracking(orderId);
     }
 
-    window.open(waUrl, '_blank');
-}
+    window.location.href = waUrl;
+};
 
 function saveOrderLocally(orderData) {
     const orders = getData('sys_live_orders');
@@ -2666,7 +2683,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v21.1-MIM89",
+            version: "v21.2-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
