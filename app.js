@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.0 Complete Uncut Master Version)
+   MIM89 FAST FOOD - Master Core Engine (v21.1 Complete Fix & Optimized Version)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -17,6 +17,14 @@ let cart = [];
 let activePendingPrintOrder = null;
 let lastCompletedOrder = null;
 let currentUploadedBase64 = "";
+
+// 🧮 دالة عالمية لتنظيف أي سعر/رقم من الفواصل والنصوص وتحويله إلى رقم مجرد
+function cleanPrice(val) {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    if (!val) return 0;
+    const cleaned = String(val).replace(/[^\d]/g, '');
+    return parseInt(cleaned, 10) || 0;
+}
 
 try {
     const firebaseConfig = {
@@ -222,11 +230,11 @@ function calculateItemCost(item) {
 
     let totalCost = 0;
     item.recipe.forEach(ingredient => {
-        const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
+        const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ingredient.invId));
         if (stockItem) {
             const costPerUnit = stockItem.costPerUnit 
-                || (stockItem.quantity > 0 ? (Number(stockItem.totalPrice) / Number(stockItem.quantity)) : 0);
-            totalCost += (costPerUnit * Number(ingredient.qty || 0));
+                || (cleanPrice(stockItem.quantity) > 0 ? (cleanPrice(stockItem.totalPrice) / cleanPrice(stockItem.quantity)) : 0);
+            totalCost += (costPerUnit * cleanPrice(ingredient.qty || 0));
         }
     });
     return totalCost;
@@ -490,7 +498,7 @@ function loadPublicMenu() {
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
-    allBtn.innerText = 'الكل';
+    allBtn.innerText = 'الكل 🍔';
     allBtn.onclick = () => filterCategory('all', allBtn);
     navContainer.appendChild(allBtn);
 
@@ -501,23 +509,24 @@ function loadPublicMenu() {
         btn.onclick = () => filterCategory(cat.id, btn);
         navContainer.appendChild(btn);
 
-        const catItems = items.filter(i => Number(i.categoryId) === Number(cat.id));
+        const catItems = items.filter(i => cleanPrice(i.categoryId) === cleanPrice(cat.id));
         if (catItems.length > 0) {
             const sec = document.createElement('div');
             sec.className = 'menu-section';
+            sec.id = `cat_${cat.id}`;
             sec.setAttribute('data-category', cat.id);
             sec.innerHTML = `
-                <h2 class="section-title"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
+                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
                                 <h3 class="item-name" onclick="openItemDetails(${item.id})">${item.name}</h3>
-                                <p class="item-desc">${item.ingredients || 'وجبة طازجة من MIM89'}</p>
+                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
-                                    <span class="item-price">${Number(item.price).toLocaleString()} د.ع</span>
-                                    <button class="add-cart-btn" onclick="addToCart(${item.id})" title="إضافة للسلة"><i class="fa-solid fa-plus"></i></button>
+                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                    <button class="add-cart-btn" onclick="addToCart(${item.id})" title="إضافة للسلة">+</button>
                                 </div>
                             </div>
                         </div>
@@ -540,33 +549,47 @@ function filterCategory(catId, btnElement) {
 }
 
 function openItemDetails(id) {
-    const item = getData('sys_items').find(i => Number(i.id) === Number(id));
+    const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
     if (!item) return;
-    document.getElementById('detailImg').src = item.image;
-    document.getElementById('detailTitle').innerText = item.name;
-    document.getElementById('detailPrice').innerText = Number(item.price).toLocaleString() + ' د.ع';
-    document.getElementById('detailIngredients').innerText = item.ingredients;
-    document.getElementById('detailAddBtn').onclick = () => { addToCart(item.id); closeModal('itemDetailModal'); };
+    const imgEl = document.getElementById('detailImg');
+    const titleEl = document.getElementById('detailTitle');
+    const priceEl = document.getElementById('detailPrice');
+    const ingEl = document.getElementById('detailIngredients');
+    const addBtn = document.getElementById('detailAddBtn');
+
+    if (imgEl) imgEl.src = item.image || item.img;
+    if (titleEl) titleEl.innerText = item.name;
+    if (priceEl) priceEl.innerText = cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع';
+    if (ingEl) ingEl.innerText = item.ingredients || item.desc || 'وجبة طازجة من MIM89';
+    if (addBtn) addBtn.onclick = () => { addToCart(item.id); closeModal('itemDetailModal'); };
+    
     openModal('itemDetailModal');
 }
 
 function addToCart(itemId) {
     const items = getData('sys_items');
-    const item = items.find(i => Number(i.id) === Number(itemId));
-    const exist = cart.find(c => Number(c.id) === Number(itemId));
+    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
+    if (!item) return;
+
+    const exist = cart.find(c => cleanPrice(c.id) === cleanPrice(itemId));
 
     if (exist) {
         exist.qty += 1;
     } else {
-        cart.push({ ...item, qty: 1 });
+        cart.push({ ...item, price: cleanPrice(item.price), qty: 1 });
     }
     updateCartBadge();
 }
 
 function updateCartBadge() {
-    const count = cart.reduce((sum, i) => sum + i.qty, 0);
+    const count = cart.reduce((sum, i) => sum + cleanPrice(i.qty), 0);
+    const total = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+
     const badge = document.getElementById('cartBadgeCount');
+    const floatingTotal = document.getElementById('floatingCartTotal');
+
     if (badge) badge.innerText = count;
+    if (floatingTotal) floatingTotal.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
 }
 
 function openCartModal() {
@@ -579,31 +602,31 @@ function renderCartModalItems() {
     const container = document.getElementById('cartItemsContainer');
     if (!container) return;
 
-    if (cart.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">السلة فارغة حالياً</p>`;
+    if (!cart || cart.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#aaa; padding:20px;">السلة فارغة حالياً</p>`;
         return;
     }
 
     container.innerHTML = cart.map(item => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#222; padding:8px 12px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#181820; padding:10px 12px; border-radius:10px; border:1px solid #282835;">
             <div>
-                <strong style="color:var(--gold-primary);">${item.name}</strong><br>
-                <small style="color:#aaa;">${Number(item.price).toLocaleString()} د.ع</small>
+                <strong style="color:#fff; font-size:0.88rem;">${item.name}</strong><br>
+                <small style="color:var(--gold-bright, #ffd700);">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</small>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <button onclick="changeCartQty(${item.id}, -1)" class="gold-btn" style="padding:2px 10px;">-</button>
-                <span>${item.qty}</span>
-                <button onclick="changeCartQty(${item.id}, 1)" class="gold-btn" style="padding:2px 10px;">+</button>
+                <button onclick="changeCartQty(${item.id}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+                <span style="color:#fff; font-weight:bold;">${item.qty}</span>
+                <button onclick="changeCartQty(${item.id}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
             </div>
         </div>
     `).join('');
 }
 
 function changeCartQty(id, change) {
-    const item = cart.find(c => Number(c.id) === Number(id));
+    const item = cart.find(c => cleanPrice(c.id) === cleanPrice(id));
     if (item) {
         item.qty += change;
-        if (item.qty <= 0) cart = cart.filter(c => Number(c.id) !== Number(id));
+        if (item.qty <= 0) cart = cart.filter(c => cleanPrice(c.id) !== cleanPrice(id));
     }
     updateCartBadge();
     renderCartModalItems();
@@ -626,24 +649,27 @@ function toggleDeliveryFields() {
 }
 
 function calculateDeliveryCost() {
-    const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
-    const areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
     
+    let areaInput = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
+    let areaSelect = document.getElementById('custAreaSelect') ? document.getElementById('custAreaSelect').value : '';
+    let finalArea = areaInput || (areaSelect !== 'custom' ? areaSelect : '');
+
     let deliveryFee = 0;
     if (orderType === 'delivery') {
-        const normalizedInput = normalizeArabicArea(areaInput);
+        const normalizedInput = normalizeArabicArea(finalArea);
         if (normalizedInput.includes("قاهره")) {
             deliveryFee = 0;
-        } else if (areaInput !== "") {
+        } else if (finalArea !== "") {
             const areas = getData('sys_areas');
             const found = areas.find(a => {
                 const normName = normalizeArabicArea(a.name);
                 return normName === normalizedInput || normalizedInput.includes(normName);
             });
-            deliveryFee = found ? found.price : 3000;
+            deliveryFee = found ? cleanPrice(found.price) : 2500;
         } else {
-            deliveryFee = 3000;
+            deliveryFee = 2500;
         }
     }
 
@@ -651,57 +677,79 @@ function calculateDeliveryCost() {
     const feeEl = document.getElementById('deliveryFeePrice');
     const totalEl = document.getElementById('finalTotalPrice');
 
-    if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString() + ' د.ع';
-    if (feeEl) feeEl.innerText = deliveryFee === 0 ? "مجاني 🎉" : deliveryFee.toLocaleString() + ' د.ع';
-    if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString() + ' د.ع';
+    if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString('ar-IQ') + ' د.ع';
+    if (feeEl) feeEl.innerText = (orderType === 'delivery' && (deliveryFee === 0 || finalArea.includes('قاهرة') || finalArea.includes('قاهره'))) ? "مجاني 🎉" : deliveryFee.toLocaleString('ar-IQ') + ' د.ع';
+    if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
 function submitOrderToCashier() {
-    if (cart.length === 0) return alert("السلة فارغة!");
+    if (cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
     
-    const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
-    const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim().replace(/\s+/g, '') : '';
-    const type = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
-    const area = document.getElementById('custArea') ? document.getElementById('custArea').value.trim() : '';
-    const address = document.getElementById('custAddress') ? document.getElementById('custAddress').value.trim() : '';
-    const notes = document.getElementById('orderNotes') ? document.getElementById('orderNotes').value.trim() : '';
+    const nameInput = document.getElementById('custName');
+    const phoneInput = document.getElementById('custPhone');
+    const typeSelect = document.getElementById('orderTypeSelect');
+    const areaInput = document.getElementById('custArea');
+    const areaSelect = document.getElementById('custAreaSelect');
+    const addressInput = document.getElementById('custAddress');
+    const notesInput = document.getElementById('orderNotes');
 
-    const iraqiPhoneRegex = /^07[3-9]\d{8}$/;
-    if (!phone || !iraqiPhoneRegex.test(phone)) {
-        return alert("❌ يرجى إدخال رقم هاتف عراقي صحيح يتكون من 11 رقماً ويبدأ بـ 07\nمثال: 07750008630");
+    const name = nameInput ? nameInput.value.trim() : 'زبون كريم';
+    const phone = phoneInput ? phoneInput.value.trim().replace(/\s+/g, '') : '';
+    const type = typeSelect ? typeSelect.value : 'delivery';
+    
+    let area = areaInput ? areaInput.value.trim() : '';
+    if ((!area || area === '') && areaSelect && areaSelect.value && areaSelect.value !== 'custom') {
+        area = areaSelect.value;
+        if (areaInput) areaInput.value = area;
     }
 
-    if (type === 'delivery' && (!name || !area || !address)) {
-        return alert("يرجى إكمال جميع الحقول المطلوبة (الاسم، المنطقة، والعنوان)");
-    } else if (!name) {
-        return alert("يرجى إدخال الاسم على الأقل");
+    const address = addressInput ? addressInput.value.trim() : 'غير محدد';
+    const notes = notesInput ? notesInput.value.trim() : 'لا يوجد';
+
+    if (!name || name === '') {
+        return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
+    }
+
+    if (!phone || phone === '') {
+        return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
+    }
+
+    if (type === 'delivery') {
+        if (!area || area === '' || area === '-- اختر المنطقة --') {
+            return alert("⚠️ يرجى اختيار أو كتابة منطقة التوصيل!");
+        }
+        if (!address || address === '') {
+            return alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
+        }
     }
 
     saveCustomerRecord(name, phone, area, address);
 
-    const submitBtn = document.querySelector('#cartModal .gold-btn');
+    const submitBtn = document.getElementById('sendOrderBtn');
     if (submitBtn) {
-        submitBtn.innerText = "⏳ جاري إرسال الطلب للكاشير والواتساب...";
+        submitBtn.innerText = "⏳ جاري تحويل الطلب للكاشير والواتساب...";
         submitBtn.disabled = true;
     }
 
-    const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     let deliveryFee = 0;
     if (type === 'delivery') {
         const normArea = normalizeArabicArea(area);
-        deliveryFee = normArea.includes("قاهره") ? 0 : 3000;
+        deliveryFee = (normArea.includes("قاهره") || area.includes("قاهرة")) ? 0 : 2500;
     }
     const totalAmount = subtotal + deliveryFee;
+    const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
 
     const orderData = {
-        id: 'ORD_' + Date.now(),
+        id: orderId,
+        orderId: orderId,
         customerName: name,
         phone: phone,
-        orderType: type,
-        area: area,
-        address: address,
+        orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
+        area: area || 'غير محدد',
+        address: address || 'غير محدد',
         notes: notes,
-        items: cart,
+        items: cart.map(i => ({ name: i.name, qty: cleanPrice(i.qty), price: cleanPrice(i.price), total: cleanPrice(i.price) * cleanPrice(i.qty), customNotes: i.customNotes || '' })),
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         totalAmount: totalAmount,
@@ -716,45 +764,50 @@ function submitOrderToCashier() {
         db.collection("orders").add(orderData).catch(err => console.error("Firebase Order Sync Error:", err));
     }
 
-    let typeText = '🚗 توصيل منزل';
-    if (type === 'takeaway') typeText = '🛍️ سفري من المطعم';
-    if (type === 'dine_in') typeText = '🍽️ صالة';
+    let typeText = '🛵 توصيل للمنزل';
+    if (type === 'takeaway') typeText = '🛍️ استلام سفري من المطعم';
+    if (type === 'dine_in') typeText = '🍽️ تناول داخل الصالة';
 
-    let itemsListText = cart.map(item => `• ${item.name} × ${item.qty} (${(item.price * item.qty).toLocaleString()} د.ع)`).join('\n');
+    let itemsListText = cart.map(item => `▫️ ${item.name}${item.customNotes ? ' ('+item.customNotes+')' : ''} × ${item.qty} = ${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع`).join('\n');
 
-    let waMessage = `🔥 *طلب جديد من MIM89 FAST FOOD* 🔥\n`;
+    let waMessage = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
+    waMessage += `🏷️ *رقم الطلب:* ${orderId}\n`;
     waMessage += `----------------------------------\n`;
-    waMessage += `👤 *الاسم:* ${name}\n`;
-    waMessage += `📞 *رقم الهاتف:* ${phone}\n`;
-    waMessage += `📋 *نوع الخدمة:* ${typeText}\n`;
+    waMessage += `👤 *الزبون:* ${name}\n`;
+    waMessage += `📞 *الهاتف:* ${phone}\n`;
+    waMessage += `📌 *الخدمة:* ${typeText}\n`;
     if (type === 'delivery') {
         waMessage += `📍 *المنطقة:* ${area}\n`;
         waMessage += `🏠 *العنوان:* ${address}\n`;
     }
-    if (notes) {
+    if (notes && notes !== 'لا يوجد') {
         waMessage += `📝 *ملاحظات:* ${notes}\n`;
     }
     waMessage += `----------------------------------\n`;
     waMessage += `🛒 *الوجبات والطلبات:*\n${itemsListText}\n`;
     waMessage += `----------------------------------\n`;
-    waMessage += `💵 *المجموع الفرعي:* ${subtotal.toLocaleString()} د.ع\n`;
+    waMessage += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString('ar-IQ')} د.ع\n`;
     if (type === 'delivery') {
-        waMessage += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString() + ' د.ع'}\n`;
+        waMessage += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString('ar-IQ') + ' د.ع'}\n`;
     }
-    waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString()} د.ع\n`;
-    waMessage += `----------------------------------\n`;
-    waMessage += `⏳ *تم تحويل الطلب للكاشير، يرجى البدء بالتجهيز.*`;
+    waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString('ar-IQ')} د.ع\n`;
 
     const restaurantPhone = "9647750008630";
     const waUrl = `https://api.whatsapp.com/send?phone=${restaurantPhone}&text=${encodeURIComponent(waMessage)}`;
+
+    localStorage.setItem('sys_last_order_id', orderId);
 
     cart = [];
     updateCartBadge();
     closeModal('cartModal');
 
     if (submitBtn) {
-        submitBtn.innerText = "إرسال الفاتورة عبر الواتساب";
+        submitBtn.innerText = "تأكيد وإرسال الطلب عبر الواتساب 🚀";
         submitBtn.disabled = false;
+    }
+
+    if (typeof listenToOrderTracking === 'function') {
+        listenToOrderTracking(orderId);
     }
 
     window.open(waUrl, '_blank');
@@ -872,7 +925,7 @@ function loadPosDirectMenu(catId = 'all') {
         catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
     });
 
-    const filtered = catId === 'all' ? items : items.filter(i => Number(i.categoryId) === Number(catId));
+    const filtered = catId === 'all' ? items : items.filter(i => cleanPrice(i.categoryId) === cleanPrice(catId));
 
     if (filtered.length === 0) {
         grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
@@ -881,9 +934,9 @@ function loadPosDirectMenu(catId = 'all') {
 
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
     `).join('');
 }
@@ -897,34 +950,34 @@ function filterPosProducts() {
     const filtered = items.filter(i => i.name.toLowerCase().includes(query));
     grid.innerHTML = filtered.map(item => `
         <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
     `).join('');
 }
 
 function addToPosCart(itemId) {
     const items = getData('sys_items');
-    const item = items.find(i => Number(i.id) === Number(itemId));
+    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
 
-    const exist = posCart.find(c => Number(c.id) === Number(itemId));
+    const exist = posCart.find(c => cleanPrice(c.id) === cleanPrice(itemId));
 
     if (exist) {
         exist.qty += 1;
     } else {
-        posCart.push({ ...item, qty: 1, itemNotes: [] });
+        posCart.push({ ...item, price: cleanPrice(item.price), qty: 1, itemNotes: [] });
     }
     recalculateActiveDiscount();
     renderPosCart();
 }
 
 function changePosCartQty(id, change) {
-    const item = posCart.find(c => Number(c.id) === Number(id));
+    const item = posCart.find(c => cleanPrice(c.id) === cleanPrice(id));
     if (item) {
         item.qty += change;
-        if (item.qty <= 0) posCart = posCart.filter(c => Number(c.id) !== Number(id));
+        if (item.qty <= 0) posCart = posCart.filter(c => cleanPrice(c.id) !== cleanPrice(id));
     }
     recalculateActiveDiscount();
     renderPosCart();
@@ -961,7 +1014,7 @@ function addCustomItemNotePrompt(cartIndex) {
 }
 
 function toggleFreeDiscount() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'free') {
         clearAllDiscounts();
@@ -974,14 +1027,14 @@ function toggleFreeDiscount() {
 }
 
 function togglePercentDiscount() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'percent') {
         clearAllDiscounts();
     } else {
         const inputPercent = prompt("أدخل نسبة الخصم المئوية (مثال: 50):", currentPercentValue || "50");
         if (!inputPercent) return;
-        const pVal = Math.min(100, Math.max(1, Number(inputPercent) || 0));
+        const pVal = Math.min(100, Math.max(1, cleanPrice(inputPercent) || 0));
         currentPercentValue = pVal;
         activeDiscountType = 'percent';
         posDiscountAmount = (subtotal * pVal) / 100;
@@ -991,17 +1044,17 @@ function togglePercentDiscount() {
 }
 
 function promptAmountDiscount() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     if (subtotal === 0) return alert("السلة فارغة!");
     if (activeDiscountType === 'amount') {
         clearAllDiscounts();
     } else {
         const inputAmt = prompt("أدخل قيمة الخصم بالمبلغ (د.ع):", posDiscountAmount || "1000");
         if (!inputAmt) return;
-        const amt = Math.max(0, Number(inputAmt) || 0);
+        const amt = Math.max(0, cleanPrice(inputAmt) || 0);
         activeDiscountType = 'amount';
         posDiscountAmount = amt;
-        updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString()} د.ع`);
+        updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString('ar-IQ')} د.ع`);
         renderPosCart();
     }
 }
@@ -1015,7 +1068,7 @@ function clearAllDiscounts() {
 }
 
 function recalculateActiveDiscount() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     if (subtotal === 0) { clearAllDiscounts(); return; }
     if (activeDiscountType === 'free') posDiscountAmount = subtotal;
     else if (activeDiscountType === 'percent') posDiscountAmount = (subtotal * currentPercentValue) / 100;
@@ -1048,7 +1101,7 @@ function renderPosCart() {
     let subtotal = 0;
 
     let cartContentHtml = posCart.map((item, index) => {
-        const itemTotal = item.price * item.qty;
+        const itemTotal = cleanPrice(item.price) * cleanPrice(item.qty);
         subtotal += itemTotal;
 
         let notesTags = (item.itemNotes && item.itemNotes.length > 0) ? 
@@ -1072,8 +1125,8 @@ function renderPosCart() {
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:3px;">
-                    <span>${Number(item.price).toLocaleString()} د.ع × ${item.qty}</span>
-                    <strong style="color:#ffd700;">${itemTotal.toLocaleString()} د.ع</strong>
+                    <span>${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع × ${item.qty}</span>
+                    <strong style="color:#ffd700;">${itemTotal.toLocaleString('ar-IQ')} د.ع</strong>
                 </div>
                 ${notesTags}
                 ${quickButtons}
@@ -1093,9 +1146,9 @@ function renderPosCart() {
     const finalNetTotal = Math.max(0, subtotal - posDiscountAmount);
     if (totalEl) {
         if (posDiscountAmount > 0) {
-            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.85rem; margin-left:6px;">${subtotal.toLocaleString()}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString() + ' د.ع'}`;
+            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.85rem; margin-left:6px;">${subtotal.toLocaleString('ar-IQ')}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString('ar-IQ') + ' د.ع'}`;
         } else {
-            totalEl.innerText = finalNetTotal.toLocaleString() + ' د.ع';
+            totalEl.innerText = finalNetTotal.toLocaleString('ar-IQ') + ' د.ع';
         }
     }
 }
@@ -1107,7 +1160,7 @@ function openQuickCashModal() {
         return;
     }
 
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const finalTotal = Math.max(0, subtotal - posDiscountAmount);
 
     const modalEl = document.getElementById('quickCashModal');
@@ -1116,7 +1169,7 @@ function openQuickCashModal() {
     const resEl = document.getElementById('cashChangeResult');
 
     if (modalEl && reqEl && givenInput && resEl) {
-        reqEl.innerText = finalTotal.toLocaleString() + ' د.ع';
+        reqEl.innerText = finalTotal.toLocaleString('ar-IQ') + ' د.ع';
         givenInput.value = '';
         resEl.innerText = '0 د.ع';
         openModal('quickCashModal');
@@ -1134,18 +1187,18 @@ function setCashGiven(amount) {
 }
 
 function calculateCashChange() {
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const req = Math.max(0, subtotal - posDiscountAmount);
-    const given = parseInt(document.getElementById('cashGivenInput')?.value || 0);
+    const given = cleanPrice(document.getElementById('cashGivenInput')?.value || 0);
     const change = given - req;
     const resEl = document.getElementById('cashChangeResult');
     if (resEl) {
         if (change < 0) {
             resEl.style.color = '#ff4d4d';
-            resEl.innerText = 'متبقي للزبون: ' + Math.abs(change).toLocaleString() + ' د.ع';
+            resEl.innerText = 'متبقي للزبون: ' + Math.abs(change).toLocaleString('ar-IQ') + ' د.ع';
         } else {
             resEl.style.color = '#10b981';
-            resEl.innerText = change.toLocaleString() + ' د.ع';
+            resEl.innerText = change.toLocaleString('ar-IQ') + ' د.ع';
         }
     }
 }
@@ -1163,7 +1216,7 @@ function prepareAndOpenPrintModal() {
     const selectedDriver = driverSelect ? driverSelect.value : '';
     const generalNotes = document.getElementById('posOrderNotesInput')?.value.trim() || '';
 
-    const subtotal = posCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const finalTotal = Math.max(0, subtotal - posDiscountAmount);
 
     let typeText = 'صالة';
@@ -1258,7 +1311,7 @@ function openCompletedOrdersModal() {
                     </div>
                     <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
-                        <strong style="color:#ffd700; font-size:0.9rem;">${Number(ord.totalAmount || 0).toLocaleString()} د.ع</strong>
+                        <strong style="color:#ffd700; font-size:0.9rem;">${cleanPrice(ord.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</strong>
                         <button class="gold-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="reprintCompletedOrder('${ord.id}')">🖨️ إعادة طباعة</button>
                     </div>
                 </div>
@@ -1325,7 +1378,7 @@ function addNewExpenseRecord() {
     const amtInput = document.getElementById('expenseAmountInput');
     const noteInput = document.getElementById('expenseNoteInput');
 
-    const amount = Number(amtInput ? amtInput.value : 0);
+    const amount = cleanPrice(amtInput ? amtInput.value : 0);
     if (!amount || amount <= 0) return alert("⚠️ أدخل مبلغ الصرفية بشكل صحيح!");
 
     const expType = typeSelect ? typeSelect.value : 'عامة';
@@ -1377,7 +1430,7 @@ function renderExpensesTable() {
                 <div style="font-size:0.75rem; color:#aaa;">${exp.note} (${exp.timestamp})</div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-                <strong style="color:#ffd700; font-size:0.85rem;">${exp.amount.toLocaleString()} د.ع</strong>
+                <strong style="color:#ffd700; font-size:0.85rem;">${cleanPrice(exp.amount).toLocaleString('ar-IQ')} د.ع</strong>
                 <button onclick="deleteExpenseRecord('${exp.id}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.8rem;">✕</button>
             </div>
         </div>
@@ -1466,10 +1519,10 @@ function renderDailyReport(targetDate) {
     let totalExpensesAmt = 0;
 
     filteredOrders.forEach(ord => {
-        const orderTotal = Number(ord.totalAmount || 0);
+        const orderTotal = cleanPrice(ord.totalAmount || 0);
         totalSales += orderTotal;
-        totalDelivery += Number(ord.deliveryFee || 0);
-        subtotalFood += Number(ord.subtotal || 0);
+        totalDelivery += cleanPrice(ord.deliveryFee || 0);
+        subtotalFood += cleanPrice(ord.subtotal || 0);
 
         if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
             totalVisa += orderTotal;
@@ -1479,22 +1532,22 @@ function renderDailyReport(targetDate) {
     });
 
     filteredExpenses.forEach(exp => {
-        totalExpensesAmt += Number(exp.amount || 0);
+        totalExpensesAmt += cleanPrice(exp.amount || 0);
     });
 
     const netCashInHand = Math.max(0, totalCash - totalExpensesAmt);
 
     if (document.getElementById('reportDateText')) document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
     if (document.getElementById('reportCashierText')) document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    if (document.getElementById('repTotalSales')) document.getElementById('repTotalSales').innerText = totalSales.toLocaleString();
+    if (document.getElementById('repTotalSales')) document.getElementById('repTotalSales').innerText = totalSales.toLocaleString('ar-IQ');
     if (document.getElementById('repOrdersCount')) document.getElementById('repOrdersCount').innerText = filteredOrders.length;
-    if (document.getElementById('repTotalCash')) document.getElementById('repTotalCash').innerText = totalCash.toLocaleString();
-    if (document.getElementById('repTotalVisa')) document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString();
-    if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString();
-    if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString();
+    if (document.getElementById('repTotalCash')) document.getElementById('repTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
+    if (document.getElementById('repTotalVisa')) document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
+    if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString('ar-IQ');
+    if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString('ar-IQ');
 
-    if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExpensesAmt.toLocaleString();
-    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = netCashInHand.toLocaleString();
+    if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExpensesAmt.toLocaleString('ar-IQ');
+    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = netCashInHand.toLocaleString('ar-IQ');
 
     openDriverSettlementModal();
 }
@@ -1517,8 +1570,8 @@ function renderItemsReport(targetDate) {
     filteredOrders.forEach(ord => {
         if (ord.items && Array.isArray(ord.items)) {
             ord.items.forEach(item => {
-                const qty = Number(item.qty || 0);
-                const price = Number(item.price || 0);
+                const qty = cleanPrice(item.qty || 0);
+                const price = cleanPrice(item.price || 0);
                 if (!itemsSoldMap[item.name]) {
                     itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
                 }
@@ -1530,7 +1583,7 @@ function renderItemsReport(targetDate) {
     });
 
     if (document.getElementById('itemsReportDateText')) document.getElementById('itemsReportDateText').innerText = "تاريخ جرد الوجبات: " + targetDate;
-    if (document.getElementById('repTotalItemsQty')) document.getElementById('repTotalItemsQty').innerText = totalItemsQtyCount.toLocaleString() + " قطعة";
+    if (document.getElementById('repTotalItemsQty')) document.getElementById('repTotalItemsQty').innerText = totalItemsQtyCount.toLocaleString('ar-IQ') + " قطعة";
 
     const itemsListEl = document.getElementById('repItemsSoldListDetail');
     if (itemsListEl) {
@@ -1543,7 +1596,7 @@ function renderItemsReport(targetDate) {
                     <span>● <strong>${name}</strong></span>
                     <div>
                         <span style="background:#333; color:#ffd700; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-left:6px;">العدد: ${itemsSoldMap[name].qty}</span>
-                        <strong style="color:#10b981; font-size:0.85rem;">${itemsSoldMap[name].totalPrice.toLocaleString()} د.ع</strong>
+                        <strong style="color:#10b981; font-size:0.85rem;">${itemsSoldMap[name].totalPrice.toLocaleString('ar-IQ')} د.ع</strong>
                     </div>
                 </div>
             `).join('');
@@ -1564,8 +1617,8 @@ function exportItemsReportPDFAndWhatsApp() {
     filteredOrders.forEach(ord => {
         if (ord.items && Array.isArray(ord.items)) {
             ord.items.forEach(item => {
-                const qty = Number(item.qty || 0);
-                const price = Number(item.price || 0);
+                const qty = cleanPrice(item.qty || 0);
+                const price = cleanPrice(item.price || 0);
                 if (!itemsSoldMap[item.name]) {
                     itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
                 }
@@ -1586,7 +1639,7 @@ function exportItemsReportPDFAndWhatsApp() {
     waText += `----------------------------------\n`;
 
     itemNames.forEach(name => {
-        waText += `• *${name}:* ${itemsSoldMap[name].qty} قطعة (${itemsSoldMap[name].totalPrice.toLocaleString()} د.ع)\n`;
+        waText += `• *${name}:* ${itemsSoldMap[name].qty} قطعة (${itemsSoldMap[name].totalPrice.toLocaleString('ar-IQ')} د.ع)\n`;
     });
 
     waText += `----------------------------------\n`;
@@ -1617,7 +1670,7 @@ function openShiftReportModal() {
     let totalCash = 0, totalVisa = 0, grandTotal = 0, totalExpAmt = 0;
 
     shiftOrders.forEach(ord => {
-        const amt = Number(ord.totalAmount || 0);
+        const amt = cleanPrice(ord.totalAmount || 0);
         grandTotal += amt;
         if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
             totalVisa += amt;
@@ -1627,19 +1680,19 @@ function openShiftReportModal() {
     });
 
     shiftExpenses.forEach(e => {
-        totalExpAmt += Number(e.amount || 0);
+        totalExpAmt += cleanPrice(e.amount || 0);
     });
 
     const netCashInDrawer = Math.max(0, totalCash - totalExpAmt);
 
     if (document.getElementById('shiftCashierName')) document.getElementById('shiftCashierName').innerText = activeUser.name;
     if (document.getElementById('shiftStartTime')) document.getElementById('shiftStartTime').innerText = shiftStartStr;
-    if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString();
-    if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExpAmt.toLocaleString();
-    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = netCashInDrawer.toLocaleString();
-    if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString();
+    if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
+    if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExpAmt.toLocaleString('ar-IQ');
+    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = netCashInDrawer.toLocaleString('ar-IQ');
+    if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
     if (document.getElementById('shiftOrdersCount')) document.getElementById('shiftOrdersCount').innerText = shiftOrders.length;
-    if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = grandTotal.toLocaleString();
+    if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = grandTotal.toLocaleString('ar-IQ');
 
     openModal('shiftReportModal');
 }
@@ -1664,13 +1717,13 @@ function printCustomerInvoiceOnly(event, customOrder) {
 
     let itemsHtml = '';
     order.items.forEach(i => {
-        const itemTotal = Number(i.price) * Number(i.qty);
+        const itemTotal = cleanPrice(i.price) * cleanPrice(i.qty);
         let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><small style="color:#000; font-weight:bold;">★ ملاحظة: ${i.itemNotes.join(' - ')}</small>` : '';
         itemsHtml += `
             <div style="font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
                     <span>${i.name} (x${i.qty})</span>
-                    <span>${itemTotal.toLocaleString()} د.ع</span>
+                    <span>${itemTotal.toLocaleString('ar-IQ')} د.ع</span>
                 </div>
                 ${notesText}
             </div>`;
@@ -1695,10 +1748,10 @@ function printCustomerInvoiceOnly(event, customOrder) {
             </div>
             <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
             <div style="font-size:12px; margin-top:4px;">
-                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${(order.subtotal || 0).toLocaleString()} د.ع</span></div>
-                ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم:</span> <span>- ${order.discount.toLocaleString()} د.ع</span></div>` : ''}
+                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${cleanPrice(order.subtotal || 0).toLocaleString('ar-IQ')} د.ع</span></div>
+                ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم:</span> <span>- ${cleanPrice(order.discount).toLocaleString('ar-IQ')} د.ع</span></div>` : ''}
                 <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
-                    <span>المجموع الكلي:</span> <span>${(order.totalAmount || 0).toLocaleString()} د.ع</span>
+                    <span>المجموع الكلي:</span> <span>${cleanPrice(order.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</span>
                 </div>
             </div>
             <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
@@ -1914,7 +1967,7 @@ function listenForIncomingOrders() {
 
 function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
-    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? Number(ord.totalAmount).toLocaleString() : '0';
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
 
     const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
     const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
@@ -2011,8 +2064,8 @@ function getDriverDailySettlementReport(driverName) {
     let ordersCount = driverOrders.length;
 
     driverOrders.forEach(ord => {
-        totalAmountCollected += Number(ord.totalAmount || 0);
-        totalDeliveryFees += Number(ord.deliveryFee || 0);
+        totalAmountCollected += cleanPrice(ord.totalAmount || 0);
+        totalDeliveryFees += cleanPrice(ord.deliveryFee || 0);
     });
 
     const netToPayToRestaurant = totalAmountCollected - totalDeliveryFees;
@@ -2044,11 +2097,11 @@ function openDriverSettlementModal() {
                     <span style="background:#333; color:#ffd700; padding:1px 6px; border-radius:4px; font-size:0.75rem;">${rep.ordersCount} طلبات اليوم</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#aaa; margin-top:4px;">
-                    <span>المقبوضات: ${rep.totalAmountCollected.toLocaleString()} د.ع</span>
-                    <span>أجور التوصيل: ${rep.totalDeliveryFees.toLocaleString()} د.ع</span>
+                    <span>المقبوضات: ${rep.totalAmountCollected.toLocaleString('ar-IQ')} د.ع</span>
+                    <span>أجور التوصيل: ${rep.totalDeliveryFees.toLocaleString('ar-IQ')} د.ع</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; border-top:1px dashed #444; padding-top:4px;">
-                    <strong style="color:#10b981; font-size:0.85rem;">الصافي المطلوب تسليمه للصندوق: ${rep.netToPayToRestaurant.toLocaleString()} د.ع</strong>
+                    <strong style="color:#10b981; font-size:0.85rem;">الصافي المطلوب تسليمه للصندوق: ${rep.netToPayToRestaurant.toLocaleString('ar-IQ')} د.ع</strong>
                 </div>
             </div>
         `;
@@ -2059,7 +2112,7 @@ function openDriverSettlementModal() {
     let talabateyTotal = 0, totersTotal = 0, baleTotal = 0;
     completed.forEach(ord => {
         const dName = String(ord.driverName || '').toLowerCase();
-        const amt = Number(ord.totalAmount || 0);
+        const amt = cleanPrice(ord.totalAmount || 0);
 
         if (dName.includes("طلباتي")) talabateyTotal += amt;
         else if (dName.includes("توترز")) totersTotal += amt;
@@ -2070,13 +2123,13 @@ function openDriverSettlementModal() {
         <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid #38bdf8;">
             <h4 style="color:#38bdf8; margin-bottom:8px;">📱 تراكم مستحقات الشركات (تصفية شهرية)</h4>
             <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق طلباتي:</span> <strong style="color:#38bdf8;">${talabateyTotal.toLocaleString()} د.ع</strong>
+                <span>📱 تطبيق طلباتي:</span> <strong style="color:#38bdf8;">${talabateyTotal.toLocaleString('ar-IQ')} د.ع</strong>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق توترز:</span> <strong style="color:#a855f7;">${totersTotal.toLocaleString()} د.ع</strong>
+                <span>📱 تطبيق توترز:</span> <strong style="color:#a855f7;">${totersTotal.toLocaleString('ar-IQ')} د.ع</strong>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                <span>📱 تطبيق بلي:</span> <strong style="color:#10b981;">${baleTotal.toLocaleString()} د.ع</strong>
+                <span>📱 تطبيق بلي:</span> <strong style="color:#10b981;">${baleTotal.toLocaleString('ar-IQ')} د.ع</strong>
             </div>
         </div>
     `;
@@ -2095,13 +2148,13 @@ function deductInventoryFromRecipe(items) {
     const allMenuItems = getData('sys_items');
 
     items.forEach(cartItem => {
-        const menuItem = allMenuItems.find(m => Number(m.id) === Number(cartItem.id));
+        const menuItem = allMenuItems.find(m => cleanPrice(m.id) === cleanPrice(cartItem.id));
         if (menuItem && menuItem.recipe) {
             menuItem.recipe.forEach(ingredient => {
-                const stockItem = inventory.find(inv => Number(inv.id) === Number(ingredient.invId));
+                const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ingredient.invId));
                 if (stockItem) {
-                    const totalDeduct = (Number(ingredient.qty) || 0) * (Number(cartItem.qty) || 1);
-                    stockItem.quantity = Math.max(0, Number(stockItem.quantity) - totalDeduct);
+                    const totalDeduct = (cleanPrice(ingredient.qty) || 0) * (cleanPrice(cartItem.qty) || 1);
+                    stockItem.quantity = Math.max(0, cleanPrice(stockItem.quantity) - totalDeduct);
                 }
             });
         }
@@ -2137,9 +2190,9 @@ function renderInventoryTable() {
     }
 
     tbody.innerHTML = inv.map((item, index) => {
-        const costPerUnit = (item.totalPrice && item.quantity && Number(item.quantity) > 0) 
-            ? (Number(item.totalPrice) / Number(item.quantity)) 
-            : (Number(item.costPerUnit) || 0);
+        const costPerUnit = (item.totalPrice && item.quantity && cleanPrice(item.quantity) > 0) 
+            ? (cleanPrice(item.totalPrice) / cleanPrice(item.quantity)) 
+            : (cleanPrice(item.costPerUnit) || 0);
 
         return `
             <tr>
@@ -2148,7 +2201,7 @@ function renderInventoryTable() {
                 <td><input type="number" value="${item.quantity || 0}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline"></td>
                 <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline"></td>
                 <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline"></td>
-                <td style="color:var(--gold-bright, #ffd700); font-weight:bold;">${Number(costPerUnit.toFixed(0)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}</td>
+                <td style="color:var(--gold-bright, #ffd700); font-weight:bold;">${cleanPrice(costPerUnit.toFixed(0)).toLocaleString('ar-IQ')} د.ع / ${item.unit || 'وحدة'}</td>
                 <td><button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:2px 6px; font-size:0.75rem;">حذف</button></td>
             </tr>
         `;
@@ -2157,9 +2210,9 @@ function renderInventoryTable() {
 
 function addNewInventoryItem() {
     const name = document.getElementById('newInvName')?.value.trim();
-    const qty = Number(document.getElementById('newInvQty')?.value);
+    const qty = cleanPrice(document.getElementById('newInvQty')?.value);
     const unit = document.getElementById('newInvUnit')?.value.trim() || 'كغم';
-    const totalPrice = Number(document.getElementById('newInvPrice')?.value) || 0;
+    const totalPrice = cleanPrice(document.getElementById('newInvPrice')?.value) || 0;
 
     if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية على الأقل!");
 
@@ -2188,18 +2241,18 @@ function addNewInventoryItem() {
 
 function updateInvField(id, field, value) {
     let inv = getData('sys_inventory');
-    let item = inv.find(i => Number(i.id) === Number(id));
+    let item = inv.find(i => cleanPrice(i.id) === cleanPrice(id));
 
     if (item) {
         if (field === 'quantity' || field === 'totalPrice') {
-            item[field] = Number(value);
+            item[field] = cleanPrice(value);
         } else {
             item[field] = value;
         }
 
-        if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
-            item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
-        } else if (item.quantity === 0) {
+        if (item.totalPrice && item.quantity && cleanPrice(item.quantity) > 0) {
+            item.costPerUnit = cleanPrice(item.totalPrice) / cleanPrice(item.quantity);
+        } else if (cleanPrice(item.quantity) === 0) {
             item.costPerUnit = 0;
         }
 
@@ -2210,7 +2263,7 @@ function updateInvField(id, field, value) {
 
 function deleteInvItem(id) {
     if (confirm("حذف هذه المادة من الجرد والمخزن؟")) {
-        let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
+        let inv = getData('sys_inventory').filter(i => cleanPrice(i.id) !== cleanPrice(id));
         setData('sys_inventory', inv);
         renderInventoryTable();
     }
@@ -2284,7 +2337,7 @@ function renderAdminAreas() {
         <tr>
             <td>${idx + 1}</td>
             <td><strong>${a.name}</strong></td>
-            <td>${a.price === 0 ? 'مجاني 🎉' : a.price.toLocaleString() + ' د.ع'}</td>
+            <td>${cleanPrice(a.price) === 0 ? 'مجاني 🎉' : cleanPrice(a.price).toLocaleString('ar-IQ') + ' د.ع'}</td>
             <td><button class="gold-btn btn-danger btn-sm" onclick="deleteArea('${a.name}')">حذف</button></td>
         </tr>
     `).join('');
@@ -2292,7 +2345,7 @@ function renderAdminAreas() {
 
 function saveDeliveryArea() {
     const name = document.getElementById('areaNameInput').value.trim();
-    const price = Number(document.getElementById('areaPriceInput').value);
+    const price = cleanPrice(document.getElementById('areaPriceInput').value);
     if (!name) return alert("أدخل اسم المنطقة");
 
     let areas = getData('sys_areas');
@@ -2344,11 +2397,11 @@ function triggerInlineImageUpload(itemId) {
 
 function updateItemInline(id, field, value) {
     let items = getData('sys_items');
-    let item = items.find(i => Number(i.id) === Number(id));
+    let item = items.find(i => cleanPrice(i.id) === cleanPrice(id));
 
     if (item) {
         if (field === 'price') {
-            item.price = Number(value) || 0;
+            item.price = cleanPrice(value) || 0;
         } else {
             item[field] = value.trim();
         }
@@ -2376,11 +2429,11 @@ function renderAdminItems() {
     if (!tbody) return;
 
     tbody.innerHTML = items.map(item => {
-        const cat = categories.find(c => Number(c.id) === Number(item.categoryId));
+        const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(item.categoryId));
         return `
             <tr>
                 <td style="text-align:center;">
-                    <img src="${item.image}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة">
+                    <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة">
                 </td>
                 <td>
                     <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'name', this.value)" style="font-weight:bold;">
@@ -2388,7 +2441,7 @@ function renderAdminItems() {
                 <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:4px;">
-                        <input type="number" value="${item.price}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
+                        <input type="number" value="${cleanPrice(item.price)}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
                         <small style="color:#aaa;">د.ع</small>
                     </div>
                 </td>
@@ -2404,15 +2457,15 @@ function renderAdminItems() {
 function saveItem() {
     const id = document.getElementById('editItemId').value;
     const name = document.getElementById('itemName').value.trim();
-    const price = Number(document.getElementById('itemPrice').value);
-    const categoryId = Number(document.getElementById('itemCategory').value);
+    const price = cleanPrice(document.getElementById('itemPrice').value);
+    const categoryId = cleanPrice(document.getElementById('itemCategory').value);
     const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    let existingItem = id ? getData('sys_items').find(i => Number(i.id) === Number(id)) : null;
+    let existingItem = id ? getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id)) : null;
 
     let image = currentUploadedBase64 
         || (document.getElementById('itemImage') ? document.getElementById('itemImage').value.trim() : '')
-        || (existingItem ? existingItem.image : '') 
+        || (existingItem ? (existingItem.image || existingItem.img) : '') 
         || 'https://via.placeholder.com/300?text=MIM89';
 
     if (!name || !price) {
@@ -2421,7 +2474,7 @@ function saveItem() {
 
     let items = getData('sys_items');
     let newItemData = { 
-        id: id ? Number(id) : Date.now(), 
+        id: id ? cleanPrice(id) : Date.now(), 
         name: name, 
         price: price, 
         categoryId: categoryId, 
@@ -2431,7 +2484,7 @@ function saveItem() {
     };
 
     if (id) {
-        items = items.map(i => Number(i.id) === Number(id) ? { ...i, ...newItemData } : i);
+        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? { ...i, ...newItemData } : i);
     } else {
         items.push(newItemData);
     }
@@ -2451,25 +2504,27 @@ function saveItem() {
 }
 
 function editItem(id) {
-    const item = getData('sys_items').find(i => Number(i.id) === Number(id));
+    const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
     if (!item) return;
 
     document.getElementById('editItemId').value = item.id;
     document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemPrice').value = cleanPrice(item.price);
     document.getElementById('itemCategory').value = item.categoryId;
-    document.getElementById('itemIngredients').value = item.ingredients || '';
+    document.getElementById('itemIngredients').value = item.ingredients || item.desc || '';
 
-    if (item.image && item.image.startsWith('data:image')) {
-        currentUploadedBase64 = item.image;
+    const itemImg = item.image || item.img || '';
+
+    if (itemImg && itemImg.startsWith('data:image')) {
+        currentUploadedBase64 = itemImg;
         if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
     } else {
         currentUploadedBase64 = '';
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = item.image || '';
+        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = itemImg;
     }
 
     const preview = document.getElementById('imgPreview');
-    if (preview) preview.src = item.image || 'https://via.placeholder.com/150';
+    if (preview) preview.src = itemImg || 'https://via.placeholder.com/150';
     
     document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2494,7 +2549,7 @@ function resetItemForm() {
 
 function deleteItem(id) {
     if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
-        let items = getData('sys_items').filter(i => Number(i.id) !== Number(id));
+        let items = getData('sys_items').filter(i => cleanPrice(i.id) !== cleanPrice(id));
         setData('sys_items', items);
         
         if (db) {
@@ -2611,7 +2666,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v21.0-MIM89",
+            version: "v21.1-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
