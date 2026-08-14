@@ -9,9 +9,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 Menu">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0f0f12">
+    <meta name="theme-color" content="#0d0d10">
 
-    <title>MIM89 FAST FOOD - المينيو الإلكتروني والطلب المباشر</title>
+    <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
 
     <!-- الخطوط والأيقونات والتصميم الموحد -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -26,9 +26,9 @@
         :root {
             --gold-primary: #f59e0b;
             --gold-bright: #fbbf24;
-            --bg-dark: #0f0f12;
+            --bg-dark: #0d0d10;
             --card-bg: #18181c;
-            --card-border: #2a2a32;
+            --card-border: #24242c;
             --text-main: #f3f4f6;
             --danger: #ef4444;
             --success: #10b981;
@@ -45,96 +45,173 @@
         body.public-menu-body {
             background-color: var(--bg-dark);
             color: var(--text-main);
-            padding-bottom: 80px;
+            padding-bottom: 110px; /* مساحة واسعة للشريط العائم */
             user-select: none;
         }
 
-        /* 👑 هيدر المينيو المودرن */
+        /* 👑 هيدر المينيو */
         .public-header {
-            background: linear-gradient(180deg, #1c1c24 0%, #0f0f12 100%);
+            background: #141418;
             border-bottom: 1px solid var(--card-border);
-            padding: 16px 12px;
-            text-align: center;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+
+        .hamburger-btn {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .hamburger-btn:active { transform: scale(0.92); }
+
+        .brand-header-title {
+            text-align: center;
+            flex-grow: 1;
         }
 
         .public-brand-title {
             color: var(--gold-primary);
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 900;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
-        .public-sub-title {
-            color: #aaa;
-            font-size: 0.8rem;
-            margin-top: 4px;
-        }
-
+        /* شارة حالة الدوام */
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-            border: 1px solid var(--success);
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.72rem;
             font-weight: 800;
-            margin-top: 8px;
+            margin-top: 4px;
+        }
+
+        .status-badge.open {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-badge.closed {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--success);
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
+        }
+
+        .status-badge.open .status-dot {
+            background-color: var(--success);
             box-shadow: 0 0 8px var(--success);
             animation: blink 1.5s infinite;
         }
+
+        .status-badge.closed .status-dot { background-color: var(--danger); }
 
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
 
-        /* 🔍 حقل البحث المباشر في المينيو */
-        .menu-search-wrapper {
-            padding: 10px 12px 2px 12px;
+        /* 🍔 البردة الجانبية المودرن (3 شخوط) */
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 3000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .gold-input-inline {
+        .drawer-overlay.active { display: block; opacity: 1; }
+
+        .side-drawer {
+            position: fixed;
+            top: 0;
+            right: -310px;
+            width: 290px;
+            height: 100%;
+            background: #18181c;
+            border-left: 1px solid var(--gold-primary);
+            z-index: 3001;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.85);
+        }
+
+        .side-drawer.active { right: 0; }
+
+        .drawer-header {
+            background: #121216;
+            padding: 18px 15px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drawer-header h3 { color: var(--gold-primary); font-size: 1.1rem; font-weight: 900; }
+        .close-drawer-btn { background: none; border: none; color: #aaa; font-size: 1.4rem; cursor: pointer; }
+
+        .drawer-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
+
+        .drawer-section-title {
+            color: var(--gold-bright);
+            font-size: 0.83rem;
+            font-weight: 800;
+            margin: 14px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #2a2a32;
+            padding-bottom: 4px;
+        }
+
+        .drawer-link-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 11px;
             background: #121215;
             border: 1px solid var(--card-border);
-            color: #fff;
-            padding: 10px 14px;
             border-radius: 10px;
+            color: #fff;
+            text-decoration: none;
             font-size: 0.85rem;
-            width: 100%;
-            outline: none;
-            transition: 0.2s;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
 
-        .gold-input-inline:focus {
-            border-color: var(--gold-primary);
-            box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
-        }
-
-        /* 🏷️ شريط الأقسام المودرن اللاصق */
+        /* 🏷️ شريط الأقسام السريع (تطابق الصورة) */
         .categories-sticky-bar {
             position: sticky;
             top: 0;
-            background: rgba(15, 15, 18, 0.95);
+            background: rgba(13, 13, 16, 0.95);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             z-index: 100;
-            padding: 10px 12px;
+            padding: 12px;
             display: flex;
             gap: 8px;
             overflow-x: auto;
@@ -144,16 +221,15 @@
         .categories-sticky-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
-            background: var(--card-bg);
+            background: #18181c;
             border: 1px solid var(--card-border);
             color: #ccc;
-            padding: 7px 16px;
+            padding: 8px 18px;
             border-radius: 20px;
             white-space: nowrap;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             font-weight: 700;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .category-tab.active {
@@ -164,46 +240,34 @@
             box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
         }
 
-        .section-title {
-            color: var(--gold-primary);
-            font-size: 1.05rem;
-            font-weight: 900;
-            padding: 14px 12px 4px 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* 🍔 شبكة الوجبات والمنتجات */
+        /* 🍔 شبكة الكروت السوداء الفاخرة (مطابقة للصور 100%) */
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             padding: 12px;
         }
 
+        @media (min-width: 650px) {
+            .items-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+        }
+
         .item-card {
-            background: var(--card-bg);
+            background: #18181c;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: transform 0.2s, border-color 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .item-card:active {
-            transform: scale(0.98);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
         .item-img {
             width: 100%;
-            height: 125px;
+            height: 130px;
             object-fit: cover;
-            border-bottom: 1px solid var(--card-border);
-            cursor: pointer;
+            border-bottom: 1px solid #222;
         }
 
         .item-details {
@@ -215,18 +279,19 @@
         }
 
         .item-name {
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             font-weight: 800;
             color: #fff;
             margin-bottom: 4px;
-            cursor: pointer;
         }
 
         .item-desc {
-            font-size: 0.73rem;
-            color: #aaa;
+            font-size: 0.72rem;
+            color: #888;
             line-height: 1.35;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #2a2a32;
+            padding-bottom: 8px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -243,97 +308,104 @@
         .item-price {
             color: var(--gold-bright);
             font-weight: 900;
-            font-size: 0.92rem;
+            font-size: 0.95rem;
         }
 
+        /* الزر الدائري المميز + */
         .add-cart-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
             color: #000;
             border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+            font-size: 1.15rem;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+            transition: 0.15s;
         }
 
-        .add-cart-btn:active {
-            transform: scale(0.9);
-        }
+        .add-cart-btn:active { transform: scale(0.88); }
 
-        /* 📌 الشريط السفلي المودرن للتنقل (Bottom Navigation Bar) */
-        .bottom-nav-bar {
+        /* 🛒 الشريط السفلي العائم (مطابق للقطة الشاشة تماماً) */
+        .floating-cart-bar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(24, 24, 28, 0.96);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid var(--card-border);
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            background: #18181f;
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 10px 14px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
             z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95);
         }
 
-        .nav-item-btn {
-            background: none;
-            border: none;
-            color: #aaa;
+        .cart-info-group {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 3px;
-            font-size: 0.72rem;
-            font-weight: 700;
+            gap: 12px;
             cursor: pointer;
-            transition: 0.2s;
+        }
+
+        .cart-icon-wrapper {
             position: relative;
-            flex: 1;
-        }
-
-        .nav-item-btn.active, .nav-item-btn:hover {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold-primary);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: var(--gold-bright);
-        }
-
-        .nav-item-btn i {
             font-size: 1.25rem;
         }
 
-        .cart-badge-counter {
+        .cart-badge {
             position: absolute;
-            top: -4px;
-            right: 22%;
+            top: -6px;
+            right: -6px;
             background: var(--danger);
             color: #fff;
+            font-size: 0.7rem;
+            font-weight: bold;
             border-radius: 50%;
             padding: 2px 6px;
-            font-size: 0.65rem;
-            font-weight: bold;
-            box-shadow: 0 0 6px var(--danger);
+            border: 2px solid #18181f;
         }
 
-        /* ℹ️ قسم المزيد والمعلومات المودرن */
-        .more-info-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 16px;
-            margin: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        /* زر إتمام الطلب الأخضر العريض المميز */
+        .checkout-green-btn {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 25px;
+            font-weight: 900;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            transition: 0.2s;
         }
 
-        /* 📊 النوافذ المنبثقة Modals */
+        .checkout-green-btn:active { transform: scale(0.95); }
+
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.88);
             display: none;
             justify-content: center;
             align-items: center;
@@ -342,16 +414,14 @@
         }
 
         .modal-body {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: #18181c;
+            border: 1px solid #333;
             padding: 18px;
-            border-radius: 14px;
+            border-radius: 16px;
             width: 100%;
             max-width: 440px;
             max-height: 90vh;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
     </style>
 </head>
@@ -359,156 +429,174 @@
 
     <!-- 👑 الهيدر العلوي -->
     <header class="public-header">
-        <h1 class="public-brand-title">
-            <i class="fa-solid fa-fire-flame-curry"></i> MIM89 FAST FOOD
-        </h1>
-        <p class="public-sub-title">أطيب شاورما دجاج طازجة ووجبات سريعة في بغداد - القاهرة</p>
-        <div class="status-badge">
-            <span class="status-dot"></span>
-            <span>مفتوح الآن - نستقبل طلباتكم المباشرة</span>
+        <div class="brand-header-title">
+            <h1 class="public-brand-title"><i class="fa-solid fa-fire-flame-curry"></i> MIM89 FAST FOOD</h1>
+            
+            <div id="storeStatusBadge" class="status-badge open">
+                <span class="status-dot"></span>
+                <span id="storeStatusText">مفتوح الآن - نستقبل طلباتكم</span>
+            </div>
         </div>
+
+        <button class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
+            <i class="fa-solid fa-bars"></i>
+        </button>
     </header>
 
-    <!-- 🔍 حقل البحث في الوجبات -->
-    <div class="menu-search-wrapper">
-        <input type="text" id="publicSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة، شاورما، أو عروض..." oninput="searchPublicMenu(this.value)">
-    </div>
+    <!-- 🍔 البردة الجانبية المودرن (3 شخوط) -->
+    <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
+    
+    <aside id="sideDrawer" class="side-drawer">
+        <div class="drawer-header">
+            <h3><i class="fa-solid fa-utensils"></i> MIM89 FAST FOOD</h3>
+            <button onclick="toggleSideDrawer()" class="close-drawer-btn">✕</button>
+        </div>
+
+        <div class="drawer-content">
+            
+            <div class="drawer-section-title">
+                <i class="fa-solid fa-clock"></i> أوقات استلام الطلبات
+            </div>
+            
+            <div style="background:#121215; padding:10px; border-radius:10px; border:1px solid #333; margin-bottom:12px;">
+                <p style="font-size:0.78rem; color:#aaa; margin-bottom:8px;">أوقات العمل الرسمية: من <strong>10:00 صباحاً</strong> حتى <strong>03:00 فجراً</strong></p>
+                <button onclick="openWorkingHoursAdminPrompt()" style="width:100%; padding:8px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); border-radius:6px; font-size:0.78rem; font-weight:bold; cursor:pointer;">
+                    ⚙️ تعديل ساعات العمل (للأدمن)
+                </button>
+            </div>
+
+            <div class="drawer-section-title">
+                <i class="fa-solid fa-phone-volume"></i> الاتصال والمساعدة المباشرة
+            </div>
+            
+            <a href="tel:07750008630" class="drawer-link-btn" style="border-color:var(--gold-primary);">
+                <i class="fa-solid fa-phone" style="color:var(--gold-bright);"></i>
+                <div>
+                    <div>اتصل بنا مباشرة</div>
+                    <small style="color:#aaa;">07750008630</small>
+                </div>
+            </a>
+
+            <a href="https://api.whatsapp.com/send?phone=9647750008630" target="_blank" class="drawer-link-btn" style="border-color:#25D366;">
+                <i class="fa-brands fa-whatsapp" style="color:#25D366; font-size:1.2rem;"></i>
+                <div>
+                    <div>مراسلة عبر الواتساب</div>
+                    <small style="color:#aaa;">خدمة الزبائن السريعة</small>
+                </div>
+            </a>
+
+            <div class="drawer-section-title">
+                <i class="fa-solid fa-share-nodes"></i> صفحات التواصل الاجتماعي
+            </div>
+
+            <a href="https://facebook.com" target="_blank" class="drawer-link-btn">
+                <i class="fa-brands fa-facebook" style="color:#1877F2; font-size:1.1rem;"></i> الفيسبوك الرسمي
+            </a>
+
+            <a href="https://instagram.com" target="_blank" class="drawer-link-btn">
+                <i class="fa-brands fa-instagram" style="color:#E4405F; font-size:1.1rem;"></i> الانستغرام
+            </a>
+
+            <a href="https://tiktok.com" target="_blank" class="drawer-link-btn">
+                <i class="fa-brands fa-tiktok" style="color:#fff; font-size:1.1rem;"></i> التيك توك
+            </a>
+
+            <div class="drawer-section-title">
+                <i class="fa-solid fa-location-dot"></i> موقع المطعم
+            </div>
+
+            <a href="https://maps.google.com" target="_blank" class="drawer-link-btn">
+                <i class="fa-solid fa-map-location-dot" style="color:#38bdf8; font-size:1.1rem;"></i>
+                <div>
+                    <div>بغداد - القاهرة</div>
+                    <small style="color:#aaa;">الشارع الرئيسي - مشاهدة الخريطة</small>
+                </div>
+            </a>
+
+        </div>
+    </aside>
 
     <!-- 🏷️ شريط الأقسام السريع -->
     <div id="categoriesNav" class="categories-sticky-bar"></div>
 
-    <!-- 📱 محتوى المينيو الأقسام والوجبات -->
-    <main id="mainMenuTab" class="tab-view-content">
+    <!-- 📱 شبكة الوجبات الرئيسية -->
+    <main id="mainMenuTab">
         <div id="menuSections"></div>
     </main>
 
-    <!-- 💬 قسم المزيد والملاحظات ومناطق التوصيل (Modern More Tab) -->
-    <main id="moreInfoTab" class="tab-view-content" style="display:none;">
-        
-        <!-- 🛵 مناطق التوصيل والأجور -->
-        <div class="more-info-card">
-            <h3 style="color:var(--gold-primary); margin-bottom:10px; font-size:1rem;">
-                <i class="fa-solid fa-motorcycle"></i> مناطق وخيارات التوصيل
-            </h3>
-            <div style="font-size:0.85rem; color:#ccc; line-height:1.7;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:8px 0;">
-                    <span>📍 منطقة القاهرة (المنطقة المباشرة):</span>
-                    <strong style="color:var(--success);">مجاني 🎉</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:8px 0;">
-                    <span>📍 منطقة البنوك والشعب:</span>
-                    <strong style="color:var(--gold-bright);">2,000 - 2,500 د.ع</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding:8px 0;">
-                    <span>📍 الأعظمية والمناطق المجاورة:</span>
-                    <strong style="color:var(--gold-bright);">3,000 د.ع</strong>
-                </div>
+    <!-- 🛒 الشريط السفلي العائم المباشر (تطابق صورتك تماماً) -->
+    <div class="floating-cart-bar">
+        <button onclick="openCartModal()" class="checkout-green-btn">
+            إتمام الطلب <i class="fa-solid fa-arrow-left"></i>
+        </button>
+
+        <div class="cart-info-group" onclick="openCartModal()">
+            <div style="text-align:left;">
+                <span style="font-size:0.72rem; color:#aaa; display:block;">مجموع السلة</span>
+                <strong id="floatingCartTotal" style="color:var(--gold-bright); font-size:1.05rem;">0 د.ع</strong>
+            </div>
+
+            <div class="cart-icon-wrapper">
+                <i class="fa-solid fa-shopping-bag"></i>
+                <span id="cartBadgeCount" class="cart-badge">0</span>
             </div>
         </div>
+    </div>
 
-        <!-- 📩 قسم إرسال الملاحظات والشكاوى المباشرة -->
-        <div class="more-info-card" style="border-color:var(--gold-primary);">
-            <h3 style="color:var(--gold-primary); margin-bottom:8px; font-size:1rem;">
-                <i class="fa-solid fa-comment-dots"></i> إرسال ملاحظات أو اقتراحات للإدارة
-            </h3>
-            <p style="font-size:0.78rem; color:#aaa; margin-bottom:12px;">رأيك يهمنا جداً! اكتب ملاحظتك وسوف تصل مباشرة لـ منير مقداد (إدارة المطعم).</p>
-
-            <input type="text" id="feedbackCustName" class="gold-input-inline" placeholder="اسمك الكريم (اختياري)..." style="margin-bottom:8px;">
-            <input type="tel" id="feedbackCustPhone" class="gold-input-inline" placeholder="رقم الهاتف (اختياري)..." style="margin-bottom:8px;">
-            <textarea id="feedbackText" class="gold-input-inline" rows="3" placeholder="اكتب ملاحظتك، استفسارك، أو أي اقتراح هنا..." style="margin-bottom:10px;"></textarea>
-
-            <button onclick="sendCustomerFeedbackToManagement()" class="gold-btn" style="width:100%; padding:11px; font-weight:800; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; cursor:pointer;">
-                <i class="fa-solid fa-paper-plane"></i> إرسال الملاحظة مباشرة للإدارة
-            </button>
-        </div>
-
-        <!-- 📞 معلومات الاتصال والعمل -->
-        <div class="more-info-card">
-            <h3 style="color:var(--gold-primary); margin-bottom:8px; font-size:1rem;">
-                <i class="fa-solid fa-store"></i> معلومات المطعم وساعات العمل
-            </h3>
-            <div style="font-size:0.82rem; color:#ccc; line-height:1.9;">
-                <div>📍 <strong>العنوان:</strong> بغداد - القاهرة - الشارع الرئيسي</div>
-                <div>⏰ <strong>ساعات العمل:</strong> يومياً من 11:00 صباحاً حتى 12:00 منتصف الليل</div>
-                <div>📞 <strong>رقم الطلبات المباشر:</strong> <a href="tel:07750008630" style="color:var(--gold-bright); text-decoration:none; font-weight:bold;">07750008630</a></div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- 📌 الشريط السفلي للتنقل السريع -->
-    <nav class="bottom-nav-bar">
-        <button class="nav-item-btn active" onclick="switchPublicTab('menu', this)">
-            <i class="fa-solid fa-utensils"></i>
-            <span>المينيو</span>
-        </button>
-        
-        <button class="nav-item-btn" onclick="openCartModal()">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span>السلة</span>
-            <span id="cartBadgeCount" class="cart-badge-counter">0</span>
-        </button>
-
-        <button class="nav-item-btn" onclick="switchPublicTab('more', this)">
-            <i class="fa-solid fa-circle-info"></i>
-            <span>المزيد والملاحظات</span>
-        </button>
-    </nav>
-
-    <!-- 🛒 نافذة السلة المنبثقة للطلب المباشر -->
+    <!-- 🛒 نافذة السلة المنبثقة وتأكيد الطلب -->
     <div id="cartModal" class="modal-overlay">
         <div class="modal-body">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--card-border); padding-bottom:8px;">
-                <h3 style="color:var(--gold-primary); font-size:1.1rem;"><i class="fa-solid fa-cart-flatbed"></i> سلة الطلبات</h3>
-                <button onclick="closeModal('cartModal')" class="gold-btn" style="width:auto; padding:2px 10px; background:#333; color:#fff; border:none; border-radius:6px; cursor:pointer;">✕</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
+                <h3 style="color:var(--gold-primary); font-size:1.1rem;"><i class="fa-solid fa-cart-flatbed"></i> تفاصيل وتأكيد الطلب</h3>
+                <button onclick="closeModal('cartModal')" style="background:#333; color:#fff; border:none; padding:4px 12px; border-radius:6px; cursor:pointer;">✕</button>
             </div>
 
-            <div id="cartItemsContainer" style="max-height:210px; overflow-y:auto; margin-bottom:12px;"></div>
+            <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
 
-            <!-- نموذج بيانات الزبون والتوصيل -->
-            <div style="background:#121215; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
-                <label style="font-size:0.75rem; color:#aaa; display:block; margin-bottom:3px; font-weight:bold;">نوع الخدمة:</label>
-                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer;">
+            <!-- نموذج البيانات والتوصيل -->
+            <div style="background:#121215; padding:12px; border-radius:10px; border:1px solid #333; margin-bottom:12px;">
+                <label style="font-size:0.78rem; color:#aaa; display:block; margin-bottom:4px; font-weight:bold;">نوع الخدمة:</label>
+                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
                     <option value="delivery">🛵 توصيل للمنزل / العمل</option>
                     <option value="takeaway">🛍️ استلام سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
 
-                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:6px;">
-                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:6px;">
+                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
+                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
 
                 <div id="deliveryFieldsGroup">
-                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:6px;">
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:6px;">
+                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
                 </div>
 
-                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px;">
+                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px; padding:10px; background:#18181c; border:1px solid #333; color:#fff; width:100%; border-radius:6px;">
             </div>
 
             <!-- حساب المجموع والتوصيل -->
-            <div style="background:#181820; padding:10px 14px; border-radius:10px; font-size:0.88rem; margin-bottom:12px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <div style="background:#121216; padding:12px 16px; border-radius:10px; font-size:0.9rem; margin-bottom:14px; border:1px solid #222;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>مجموع الوجبات:</span>
                     <strong id="subtotalPrice" style="color:#fff;">0 د.ع</strong>
                 </div>
-                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <div id="deliveryFeeLine" style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span>أجور التوصيل:</span>
                     <strong id="deliveryFeePrice" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
-                <hr style="border-color:#333; margin:6px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:900;">
+                <hr style="border-color:#333; margin:8px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:900;">
                     <span>المجموع الكلي:</span>
                     <strong id="finalTotalPrice" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
             </div>
 
-            <button onclick="submitOrderToCashier()" class="gold-btn btn-block" style="padding:12px; font-size:0.95rem; font-weight:800; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; cursor:pointer; width:100%;">
-                إرسال الفاتورة عبر الواتساب للكاشير 🚀
+            <button onclick="submitOrderToCashier()" style="padding:14px; font-size:1rem; font-weight:900; background:#10b981; color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 15px rgba(16, 185, 129, 0.4);">
+                تأكيد وإرسال الطلب عبر الواتساب 🚀
             </button>
         </div>
     </div>
 
-    <!-- 🔍 نافذة تفاصيل الوجبة المنبثقة -->
+    <!-- 🔍 نافذة تفاصيل الوجبة -->
     <div id="itemDetailModal" class="modal-overlay">
         <div class="modal-body" style="text-align:center;">
             <img id="detailImg" src="" style="width:100%; height:170px; object-fit:cover; border-radius:10px; margin-bottom:10px; border:1px solid var(--gold-primary);">
@@ -516,8 +604,8 @@
             <p id="detailIngredients" style="color:#aaa; font-size:0.82rem; margin-bottom:10px; line-height:1.4;"></p>
             <h2 id="detailPrice" style="color:var(--gold-bright); margin-bottom:14px; font-weight:900;"></h2>
             <div style="display:flex; gap:8px;">
-                <button id="detailAddBtn" class="gold-btn" style="flex:1; padding:11px; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">إضافة للسلة 🛒</button>
-                <button onclick="closeModal('itemDetailModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:11px 16px; border:none; border-radius:8px; cursor:pointer;">إغلاق</button>
+                <button id="detailAddBtn" style="flex:1; padding:12px; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">إضافة للسلة 🛒</button>
+                <button onclick="closeModal('itemDetailModal')" style="background:#444; color:#fff; width:auto; padding:12px 18px; border:none; border-radius:8px; cursor:pointer;">إغلاق</button>
             </div>
         </div>
     </div>
@@ -525,71 +613,114 @@
     <!-- 🧠 المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
     <script>
-        function switchPublicTab(tabType, btnEl) {
-            document.querySelectorAll('.nav-item-btn').forEach(b => b.classList.remove('active'));
-            if (btnEl) btnEl.classList.add('active');
-
-            const menuTab = document.getElementById('mainMenuTab');
-            const moreTab = document.getElementById('moreInfoTab');
-            const catStickyBar = document.getElementById('categoriesNav');
-
-            if (tabType === 'menu') {
-                if (menuTab) menuTab.style.display = 'block';
-                if (moreTab) moreTab.style.display = 'none';
-                if (catStickyBar) catStickyBar.style.display = 'flex';
-            } else if (tabType === 'more') {
-                if (menuTab) menuTab.style.display = 'none';
-                if (moreTab) moreTab.style.display = 'block';
-                if (catStickyBar) catStickyBar.style.display = 'none';
+        function toggleSideDrawer() {
+            const drawer = document.getElementById('sideDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (drawer && overlay) {
+                drawer.classList.toggle('active');
+                overlay.classList.toggle('active');
             }
         }
 
-        function searchPublicMenu(query) {
-            const q = query.toLowerCase().trim();
-            const sections = document.querySelectorAll('.menu-section');
-            sections.forEach(sec => {
-                const items = sec.querySelectorAll('.item-card');
-                let hasVisibleItem = false;
-                items.forEach(item => {
-                    const name = item.querySelector('.item-name')?.innerText.toLowerCase() || '';
-                    const desc = item.querySelector('.item-desc')?.innerText.toLowerCase() || '';
-                    if (name.includes(q) || desc.includes(q)) {
-                        item.style.display = 'flex';
-                        hasVisibleItem = true;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-                sec.style.display = hasVisibleItem ? 'block' : 'none';
-            });
+        // ⏰ فحص حالة أوقات العمل الحية
+        function checkWorkingHoursStatus() {
+            let workHours = { open: 10, close: 3 }; // 10:00 AM to 03:00 AM
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) workHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const now = new Date();
+            const currentHour = now.getHours(); // 0-23
+
+            let isOpen = false;
+            if (workHours.open > workHours.close) {
+                if (currentHour >= workHours.open || currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            } else {
+                if (currentHour >= workHours.open && currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            }
+
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            if (badge && statusText) {
+                if (isOpen) {
+                    badge.className = 'status-badge open';
+                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                } else {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
+                }
+            }
         }
 
-        function sendCustomerFeedbackToManagement() {
-            const name = document.getElementById('feedbackCustName').value.trim() || 'زبون الكريم';
-            const phone = document.getElementById('feedbackCustPhone').value.trim() || 'غير محدد';
-            const text = document.getElementById('feedbackText').value.trim();
+        function openWorkingHoursAdminPrompt() {
+            const pass = prompt("أدخل كلمة مرور الأدمن للتعديل:");
+            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
 
-            if (!text) return alert("⚠️ يرجى كتابة الملاحظة أولاً قبل الإرسال!");
+            if (pass === validAdminPass || pass === '123') {
+                const newOpen = prompt("أدخل ساعة بداية الدوام (مثلاً 10 لـ 10 صباحاً):", "10");
+                const newClose = prompt("أدخل ساعة نهاية الدوام (مثلاً 3 لـ 3 فجراً):", "3");
 
-            let waMsg = `💬 *ملاحظة جديدة من زبون - MIM89 FAST FOOD* 💬\n`;
-            waMsg += `----------------------------------\n`;
-            waMsg += `👤 *الاسم:* ${name}\n`;
-            waMsg += `📞 *رقم الهاتف:* ${phone}\n`;
-            waMsg += `📝 *الملاحظة / الاقتراح:*\n${text}\n`;
-            waMsg += `----------------------------------\n`;
-            waMsg += `تم الإرسال من المينيو الإلكتروني المباشر.`;
-
-            const ownerPhone = "9647750008630";
-            window.open(`https://api.whatsapp.com/send?phone=${ownerPhone}&text=${encodeURIComponent(waMsg)}`, '_blank');
-
-            document.getElementById('feedbackText').value = '';
-            alert("✅ تم تحويل ملاحظتك بنجاح للواتساب الخاص بالإدارة، شكراً لاهتمامك!");
+                if (newOpen !== null && newClose !== null) {
+                    const hoursObj = { open: Number(newOpen), close: Number(newClose) };
+                    localStorage.setItem('sys_work_hours', JSON.stringify(hoursObj));
+                    checkWorkingHoursStatus();
+                    alert("✅ تم تعديل وساعات الدوام بنجاح!");
+                }
+            } else {
+                alert("❌ كلمة المرور غير صحيحة!");
+            }
         }
+
+        // 🛒 تحديث حقيقي ولحظي للسلة والمجموع الذهبي
+        function updateCartUI() {
+            const count = cart.reduce((sum, i) => sum + i.qty, 0);
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+            const badge = document.getElementById('cartBadgeCount');
+            const floatingTotal = document.getElementById('floatingCartTotal');
+
+            if (badge) badge.innerText = count;
+            if (floatingTotal) floatingTotal.innerText = total.toLocaleString() + ' د.ع';
+        }
+
+        // ربط الإضافة المباشرة من أزرار + الدائرية
+        window.addToCart = function(itemId) {
+            const items = getData('sys_items');
+            const item = items.find(i => Number(i.id) === Number(itemId));
+            if (!item) return;
+
+            const exist = cart.find(c => Number(c.id) === Number(itemId));
+            if (exist) {
+                exist.qty += 1;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+            updateCartUI();
+        };
+
+        window.changeCartQty = function(id, change) {
+            const item = cart.find(c => Number(c.id) === Number(id));
+            if (item) {
+                item.qty += change;
+                if (item.qty <= 0) cart = cart.filter(c => Number(c.id) !== Number(id));
+            }
+            updateCartUI();
+            renderCartModalItems();
+            calculateDeliveryCost();
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
             initData();
             loadPublicMenu();
+            checkWorkingHoursStatus();
+            updateCartUI();
         });
     </script>
 </body>
