@@ -653,7 +653,7 @@
         </div>
 
         <div class="drawer-content">
-            <button onclick="openActiveOrderTrackerModal()" class="drawer-link-btn" style="border-color:var(--gold-primary); background:rgba(245,158,11,0.15); color:var(--gold-bright); margin-bottom:12px;">
+            <button onclick="openActiveOrderTrackerModal(); toggleSideDrawer();" class="drawer-link-btn" style="border-color:var(--gold-primary); background:rgba(245,158,11,0.15); color:var(--gold-bright); margin-bottom:12px;">
                 <i class="fa-solid fa-route" style="font-size:1.2rem;"></i>
                 <div>
                     <div>تتبع طلبك الحالي 🛵</div>
@@ -748,7 +748,6 @@
                     <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل (اختر أو أكتب):</label>
                     <div style="display:flex; gap:6px; margin-bottom:8px;">
                         <select id="custAreaSelect" class="gold-input-inline" onchange="onSelectAreaDropdown(this.value)" style="flex:1; padding:8px; font-size:0.8rem; cursor:pointer; background:#101014;">
-                            <option value="">-- اختر المنطقة --</option>
                             <option value="القاهرة">📍 القاهرة (مجاني 🎉)</option>
                             <option value="البنوك">📍 البنوك</option>
                             <option value="الشعب">📍 الشعب</option>
@@ -760,16 +759,16 @@
                             <option value="custom">✏️ منطقة أخرى...</option>
                         </select>
 
-                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem;">
+                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem; display:none;">
                     </div>
 
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة / الشارع)..." style="margin-bottom:8px;">
                 </div>
 
                 <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب العام..." style="margin-bottom:4px;">
             </div>
 
-            <!-- حساب المجموع -->
+            <!-- حساب المجموع بالإنكليزي -->
             <div style="background:#16161c; padding:12px 16px; border-radius:12px; font-size:0.9rem; margin-bottom:14px; border:1px solid #282835;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span>مجموع الوجبات:</span>
@@ -896,32 +895,37 @@
     <!-- 🧠 المحرك البرمجي المباشر والموثوق -->
     <script src="app.js"></script>
     <script>
+        let cart = []; // تعريف السلة عالمياً للوقاية من أخطاء السكربت
         let globalWorkHours = { open: 10, close: 3, isEmergencyClosed: false };
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
 
-        // 🍔 1. إصلاح دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط)
+        function cleanPrice(v) {
+            if (!v) return 0;
+            let num = Number(v);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // 🍔 1. إصلاح البردة الجانبية المباشرة
         window.toggleSideDrawer = function() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
-            if (drawer && overlay) {
-                const isActive = drawer.classList.contains('active');
-                if (isActive) {
-                    drawer.classList.remove('active');
-                    overlay.classList.remove('active');
-                    setTimeout(() => { overlay.style.display = 'none'; }, 300);
-                } else {
-                    overlay.style.display = 'block';
-                    setTimeout(() => {
-                        drawer.classList.add('active');
-                        overlay.classList.add('active');
-                    }, 10);
-                }
+            if (!drawer || !overlay) return;
+
+            if (drawer.classList.contains('active')) {
+                drawer.classList.remove('active');
+                overlay.classList.remove('active');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+            } else {
+                overlay.style.display = 'block';
+                void drawer.offsetWidth;
+                drawer.classList.add('active');
+                overlay.classList.add('active');
             }
         };
 
-        // ⚡ 2. دالة التحديث الفوري المباشر لحالة الدوام
+        // ⚡ 2. فحص أوقات الدوام
         window.checkWorkingHoursStatus = function() {
             try {
                 const stored = localStorage.getItem('sys_work_hours');
@@ -991,25 +995,29 @@
             calculateDeliveryCost();
         }
 
-        // 📍 مزامنة اختيار المنطقة من القائمة المنسدلة للإنبوت
+        // 📍 التحكم بالحقل النصي المباشر عند اختيار "منطقة أخرى"
         function onSelectAreaDropdown(val) {
             const input = document.getElementById('custArea');
             if (!input) return;
-            if (val && val !== 'custom') {
-                input.value = val;
-            } else if (val === 'custom') {
+            if (val === 'custom') {
+                input.style.display = 'block';
                 input.value = '';
                 input.focus();
+            } else {
+                input.style.display = 'none';
+                input.value = '';
             }
             calculateDeliveryCost();
         }
 
+        // 🚗 3. التوصيل مجاني لقاهرة دائماً وحساب الأرقام بالأرقام الإنكليزية
         function calculateDeliveryCost() {
             const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
-            const areaInput = document.getElementById('custArea')?.value.trim() || document.getElementById('custAreaSelect')?.value || '';
-            
+            const selectArea = document.getElementById('custAreaSelect')?.value || '';
+            const inputArea = document.getElementById('custArea')?.value.trim() || '';
+
             const subtotal = cart.reduce((sum, item) => sum + (cleanPrice(item.price) * cleanPrice(item.qty)), 0);
-            
+
             let discount = 0;
             if (activeAppliedCoupon) {
                 if (activeAppliedCoupon.type === 'percent') discount = Math.round(subtotal * (activeAppliedCoupon.value / 100));
@@ -1018,10 +1026,16 @@
 
             let fee = 0;
             if (type === 'delivery') {
-                const normArea = areaInput.toLowerCase();
-                if (activeAppliedCoupon?.type === 'free_delivery' || normArea.includes('قاهرة') || normArea.includes('قاهره')) {
+                if (selectArea === 'القاهرة' || activeAppliedCoupon?.type === 'free_delivery') {
                     fee = 0;
-                } else if (normArea !== '' && normArea !== 'custom' && normArea !== '-- اختر المنطقة --') {
+                } else if (selectArea === 'custom') {
+                    const normInput = inputArea.toLowerCase();
+                    if (normInput.includes('قاهرة') || normInput.includes('قاهره')) {
+                        fee = 0;
+                    } else if (normInput !== '') {
+                        fee = 2500;
+                    }
+                } else if (selectArea !== '') {
                     fee = 2500;
                 }
             }
@@ -1034,24 +1048,24 @@
             const promoLine = document.getElementById('promoDiscountLine');
             const promoPriceEl = document.getElementById('promoDiscountPrice');
 
-            if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString('ar-IQ') + ' د.ع';
+            if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString('en-US') + ' د.ع';
             if (promoLine && promoPriceEl) {
                 if (discount > 0) {
                     promoLine.style.display = 'flex';
-                    promoPriceEl.innerText = '- ' + discount.toLocaleString('ar-IQ') + ' د.ع';
+                    promoPriceEl.innerText = '- ' + discount.toLocaleString('en-US') + ' د.ع';
                 } else {
                     promoLine.style.display = 'none';
                 }
             }
 
             if (feeEl) {
-                if (type === 'delivery' && (activeAppliedCoupon?.type === 'free_delivery' || areaInput.includes('قاهرة') || areaInput.includes('قاهره'))) {
+                if (type === 'delivery' && fee === 0) {
                     feeEl.innerText = 'مجاني 🎉';
                 } else {
-                    feeEl.innerText = fee.toLocaleString('ar-IQ') + ' د.ع';
+                    feeEl.innerText = fee.toLocaleString('en-US') + ' د.ع';
                 }
             }
-            if (totalEl) totalEl.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+            if (totalEl) totalEl.innerText = total.toLocaleString('en-US') + ' د.ع';
         }
 
         function renderCartModalItems() {
@@ -1076,7 +1090,7 @@
                         <div style="flex-grow:1;">
                             <h4 style="color:#fff; font-size:0.88rem; font-weight:800;">${item.name}</h4>
                             ${item.customNotes ? `<div style="font-size:0.72rem; color:var(--gold-bright); margin-top:2px;">🔹 ${item.customNotes}</div>` : ''}
-                            <span style="color:var(--gold-bright); font-size:0.8rem; font-weight:700; margin-top:2px; display:inline-block;">${itemTotal.toLocaleString('ar-IQ')} د.ع</span>
+                            <span style="color:var(--gold-bright); font-size:0.8rem; font-weight:700; margin-top:2px; display:inline-block;">${itemTotal.toLocaleString('en-US')} د.ع</span>
                         </div>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <button onclick="changeCartIndexQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
@@ -1089,7 +1103,6 @@
             container.innerHTML = html;
         }
 
-        // 🛒 3. تحديث مجموع وحسابات السلة
         function updateCartUI() {
             const count = cart.reduce((sum, i) => sum + cleanPrice(i.qty), 0);
             const total = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
@@ -1098,7 +1111,7 @@
             const floatingTotal = document.getElementById('floatingCartTotal');
 
             if (badge) badge.innerText = count;
-            if (floatingTotal) floatingTotal.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+            if (floatingTotal) floatingTotal.innerText = total.toLocaleString('en-US') + ' د.ع';
         }
 
         window.openItemCustomizationModal = function(itemId) {
@@ -1138,7 +1151,7 @@
                 total += cleanPrice(cb.getAttribute('data-price')) || 0;
             });
 
-            document.getElementById('detailCalculatedPrice').innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+            document.getElementById('detailCalculatedPrice').innerText = total.toLocaleString('en-US') + ' د.ع';
             return total;
         }
 
@@ -1308,7 +1321,124 @@
             else alert("⚠️ لم تقم بإرسال أي طلب حتى الآن.");
         }
 
-        // 🚀 4. إصلاح إرسال وتصدير الطلب للواتساب والفايربيس
+        // 🚀 4. إرسال الطلب المباشر عبر الواتساب والفايربيس بالتحويل الفوري (مضمون 100%)
+        window.submitOrderToCashier = async function() {
+            try {
+                if (!cart || cart.length === 0) {
+                    alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
+                    return;
+                }
+
+                const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
+                const name = document.getElementById('custName')?.value.trim();
+                const phone = document.getElementById('custPhone')?.value.trim();
+
+                let selectArea = document.getElementById('custAreaSelect')?.value || '';
+                let inputArea = document.getElementById('custArea')?.value.trim() || '';
+
+                let area = (selectArea && selectArea !== 'custom') ? selectArea : (inputArea || 'غير محدد');
+                const address = document.getElementById('custAddress')?.value.trim();
+                const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
+
+                if (!name) {
+                    alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
+                    return;
+                }
+                if (!phone) {
+                    alert("⚠️ يرجى كتابة رقم الهاتف لتأكيد الطلب!");
+                    return;
+                }
+                if (type === 'delivery') {
+                    if (!area || area === 'غير محدد') {
+                        alert("⚠️ يرجى اختيار منطقة التوصيل!");
+                        return;
+                    }
+                    if (!address) {
+                        alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
+                        return;
+                    }
+                }
+
+                const subtotal = cart.reduce((sum, item) => sum + (cleanPrice(item.price) * cleanPrice(item.qty)), 0);
+
+                let discount = 0;
+                if (activeAppliedCoupon) {
+                    if (activeAppliedCoupon.type === 'percent') discount = Math.round(subtotal * (activeAppliedCoupon.value / 100));
+                    else if (activeAppliedCoupon.type === 'amount') discount = activeAppliedCoupon.value;
+                }
+
+                let deliveryFee = 0;
+                if (type === 'delivery') {
+                    if (selectArea === 'القاهرة' || activeAppliedCoupon?.type === 'free_delivery') {
+                        deliveryFee = 0;
+                    } else if (selectArea === 'custom' && (inputArea.includes('قاهرة') || inputArea.includes('قاهره'))) {
+                        deliveryFee = 0;
+                    } else {
+                        deliveryFee = 2500;
+                    }
+                }
+
+                const total = Math.max(0, subtotal - discount) + deliveryFee;
+                const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
+
+                const orderObj = {
+                    orderId: orderId,
+                    customerName: name,
+                    customerPhone: phone,
+                    orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
+                    area: area,
+                    address: address || 'غير محدد',
+                    notes: notes,
+                    items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.price * i.qty, customNotes: i.customNotes || '' })),
+                    subtotal: subtotal,
+                    discount: discount,
+                    deliveryFee: deliveryFee,
+                    total: total,
+                    status: 'جديد',
+                    createdAt: new Date().toISOString()
+                };
+
+                localStorage.setItem('sys_last_order_id', orderId);
+
+                if (typeof db !== 'undefined' && db) {
+                    await db.collection('orders').add(orderObj).catch(e => console.warn(e));
+                }
+
+                let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
+                text += `🏷️ *رقم الطلب:* ${orderId}\n`;
+                text += `----------------------------------\n`;
+                text += `👤 *الزبون:* ${name}\n`;
+                text += `📞 *الهاتف:* ${phone}\n`;
+                text += `📌 *الخدمة:* ${type === 'delivery' ? '🛵 توصيل' : (type === 'takeaway' ? '🛍️ سفري' : '🍽️ داخل الصالة')}\n`;
+                if (type === 'delivery') {
+                    text += `📍 *المنطقة:* ${area}\n`;
+                    text += `🏠 *العنوان:* ${address}\n`;
+                }
+                if (notes && notes !== 'لا يوجد') text += `📝 *ملاحظات:* ${notes}\n`;
+                text += `----------------------------------\n`;
+                text += `🛒 *الوجبات والطلبات:*\n`;
+                cart.forEach(item => {
+                    text += `▫️ ${item.name}${item.customNotes ? ' ('+item.customNotes+')' : ''} × ${item.qty} = ${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('en-US')} د.ع\n`;
+                });
+                text += `----------------------------------\n`;
+                text += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString('en-US')} د.ع\n`;
+                if (discount > 0) text += `🏷️ *خصم الكوبون:* - ${discount.toLocaleString('en-US')} د.ع\n`;
+                if (type === 'delivery') text += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString('en-US') + ' د.ع'}\n`;
+                text += `💰 *المجموع الكلي:* ${total.toLocaleString('en-US')} د.ع\n`;
+
+                const waUrl = `https://api.whatsapp.com/send?phone=9647750008630&text=${encodeURIComponent(text)}`;
+
+                cart = [];
+                updateCartUI();
+                closeModal('cartModal');
+                
+                // تحويل مباشر وسريع للواتساب لضمان الفتح دون حجب المتصفح
+                window.location.href = waUrl;
+            } catch(err) {
+                alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
+            }
+        };
+
         window.loadPublicMenu = function() {
             const container = document.getElementById('menuSections');
             const navContainer = document.getElementById('categoriesNav');
@@ -1355,7 +1485,7 @@
                                         <div class="item-desc">${item.ingredients || item.desc || ''}</div>
                                     </div>
                                     <div class="item-footer">
-                                        <div class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</div>
+                                        <div class="item-price">${cleanPrice(item.price).toLocaleString('en-US')} د.ع</div>
                                         <button class="add-cart-btn ${isSoldOut ? 'disabled' : ''}" onclick="openItemCustomizationModal(${item.id})" ${isSoldOut ? 'disabled' : ''}>
                                             ${isSoldOut ? '✕' : '+'}
                                         </button>
@@ -1380,20 +1510,9 @@
             }
         }
 
-        // 🚀 الربط والاستدعاء المباشر والمضمون
+        // 🚀 الربط المباشر عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
-
-            // ربط أحداث زر الثلاث شخوط
-            const btn = document.getElementById('hamburgerBtn');
-            if (btn) {
-                btn.addEventListener('click', window.toggleSideDrawer);
-                btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    window.toggleSideDrawer();
-                });
-            }
-
             window.checkWorkingHoursStatus();
 
             try { if (typeof initData === 'function') initData(); } catch(e){}
