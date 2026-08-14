@@ -2121,51 +2121,48 @@ function cancelIncomingOrder(docId, orderId) {
         listenForIncomingOrders();
     }
 }
-
-// 1. دالة نقل الطلب الوارد مباشرة لكاشير المبيعات مع تحميل الوجبات للسلة وتغيير حالته
-function loadIncomingCallToPos(docId, orderId, phone, name, area, address, itemsJsonString) {
-    // أ. الانتقال لشاشة المبيعات المباشرة (POS)
+// 📥 دالة نقل الطلب الوارد لكاشير المبيعات مع دمج الوجبات والأسعار والملاحظات بسلة الكاشير بدقة
+function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
+    // 1. الانتقال لشاشة المبيعات المباشرة (POS)
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
 
-    // ب. تعبئة بيانات الزبون في حقل الكاشير
+    // 2. تعبئة بيانات الزبون في حقل الكاشير
     const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
     const custInput = document.getElementById('posCustName');
     if (custInput) custInput.value = infoText;
 
-    // ج. تفريغ سلة الوجبات الحالية في الكاشير وتعبئة وجبات الطلب الوارد إن وجدت
+    // 3. البحث عن الطلب الأصلي في الذاكرة (sys_live_orders) لجلب وجباته كاملة
+    let liveOrders = getData('sys_live_orders') || [];
+    let targetOrder = liveOrders.find(o => String(o.docId || o.id) === String(docId) || String(o.id) === String(orderId));
+
     posCart = [];
-    if (itemsJsonString && itemsJsonString !== '') {
-        try {
-            const parsedItems = JSON.parse(decodeURIComponent(itemsJsonString));
-            if (Array.isArray(parsedItems)) {
-                parsedItems.forEach(i => {
-                    posCart.push({
-                        id: i.id || Date.now(),
-                        name: i.name,
-                        price: cleanPrice(i.price),
-                        qty: cleanPrice(i.qty) || 1,
-                        itemNotes: i.customNotes ? [i.customNotes] : []
-                    });
-                });
-            }
-        } catch (e) {
-            console.error("Error parsing incoming items:", e);
-        }
+
+    if (targetOrder && Array.isArray(targetOrder.items) && targetOrder.items.length > 0) {
+        targetOrder.items.forEach(i => {
+            posCart.push({
+                id: i.id || Date.now() + Math.random(),
+                name: i.name,
+                price: cleanPrice(i.price),
+                qty: cleanPrice(i.qty) || 1,
+                itemNotes: i.customNotes ? [i.customNotes] : (i.itemNotes || [])
+            });
+        });
     }
+
+    // 4. رسم وتحديث سلة المبيعات (POS) بالوجبات والأسعار الحقيقية
     renderPosCart();
 
-    // د. حفظ وتحديث حالة الطلب في قاعدة البيانات السحابية والمحلية لكي يختفي من "الطلبات الواردة"
-    if (db && docId) {
+    // 5. تحديث حالة الطلب في السحابة والمحلي لكي يختفي من "الطلبات الواردة"
+    if (db && docId && !docId.startsWith('temp_')) {
         db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
           .catch(err => console.error("Error updating order status in cloud:", err));
     }
 
-    let liveOrders = getData('sys_live_orders') || [];
     liveOrders = liveOrders.filter(o => String(o.docId || o.id) !== String(docId) && String(o.id) !== String(orderId));
     setData('sys_live_orders', liveOrders);
 
-    // هـ. حذف الكارت بصرياً من واجهة الطلبات الواردة فوراً
+    // 6. إزالة الكارت من واجهة الطلبات الواردة بصرياً
     const cardEl = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
     if (cardEl) cardEl.remove();
 
@@ -2173,8 +2170,9 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address, items
         saveCustomerRecord(name, phone, area, address);
     }
 
-    alert(`✅ تم نقل الطلب ووجبات الزبون (${name}) إلى سلة المبيعات بنجاح!`);
+    alert(`✅ تم نقل الطلب ووجبات الزبون (${name}) إلى سلة المبيعات بنجاح مع الأسعار والملاحظات!`);
 }
+
 
 // 2. مولد كروت الطلبات الواردة مع التمييز بين (طلب المينيو الإلكتروني) و (مكالمة هاتفية)
 function generateOrderCardHTML(ord, docId) {
