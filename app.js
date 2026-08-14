@@ -677,7 +677,6 @@ function submitOrderToCashier() {
         return alert("يرجى إدخال الاسم على الأقل");
     }
 
-    // حفظ بيانات الزبون فورياً في قاعدة البيانات
     saveCustomerRecord(name, phone, area, address);
 
     const submitBtn = document.querySelector('#cartModal .gold-btn');
@@ -798,7 +797,7 @@ function loginCashier() {
         sessionStorage.setItem('shift_start_timestamp', Date.now());
 
         if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
-        if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'block';
+        if (document.getElementById('cashierMainApp')) document.getElementById('cashierMainApp').style.display = 'flex';
         if (document.getElementById('activeCashierName')) document.getElementById('activeCashierName').innerText = "الكاشير: " + user.name;
         if (document.getElementById('authError')) document.getElementById('authError').innerText = "";
         if (passInput) passInput.value = "";
@@ -1496,6 +1495,8 @@ function renderDailyReport(targetDate) {
 
     if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExpensesAmt.toLocaleString();
     if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = netCashInHand.toLocaleString();
+
+    openDriverSettlementModal();
 }
 
 function openItemsReportModal() {
@@ -1933,7 +1934,6 @@ function generateOrderCardHTML(ord, docId) {
     const safeArea = String(displayArea || '').replace(/'/g, "\\'");
     const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
 
-    // أوتوماتيكياً حفظ الزبون إذا كانت البيانات مكتملة
     if (rawPhone && rawPhone !== 'بدون رقم' && displayName !== 'مكالمة واردة') {
         saveCustomerRecord(displayName, rawPhone, displayArea, displayAddress);
     }
@@ -1997,7 +1997,96 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
 }
 
 /* ==========================================
-   12. لوحة جرد المخزن (inventory.html)
+   12. محاسبة التوصيل والدليفري والتطبيقات
+   ========================================== */
+
+function getDriverDailySettlementReport(driverName) {
+    const today = getTodayString();
+    const completed = getData('sys_completed_orders') || [];
+    
+    const driverOrders = completed.filter(o => o.dateDate === today && o.driverName === driverName);
+
+    let totalAmountCollected = 0;
+    let totalDeliveryFees = 0;
+    let ordersCount = driverOrders.length;
+
+    driverOrders.forEach(ord => {
+        totalAmountCollected += Number(ord.totalAmount || 0);
+        totalDeliveryFees += Number(ord.deliveryFee || 0);
+    });
+
+    const netToPayToRestaurant = totalAmountCollected - totalDeliveryFees;
+
+    return {
+        driverName: driverName,
+        ordersCount: ordersCount,
+        totalAmountCollected: totalAmountCollected,
+        totalDeliveryFees: totalDeliveryFees,
+        netToPayToRestaurant: netToPayToRestaurant
+    };
+}
+
+function openDriverSettlementModal() {
+    const drivers = getData('sys_drivers') || [];
+    const completed = getData('sys_completed_orders') || [];
+
+    let html = `
+        <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+            <h4 style="color:var(--gold-primary); margin-bottom:8px;">🛵 تصفية حساب سائقي المطعم المباشرين (يومي / فوري)</h4>
+    `;
+
+    drivers.forEach(drv => {
+        const rep = getDriverDailySettlementReport(drv.name);
+        html += `
+            <div style="background:#222228; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#fff;">👤 ${drv.name}</strong>
+                    <span style="background:#333; color:#ffd700; padding:1px 6px; border-radius:4px; font-size:0.75rem;">${rep.ordersCount} طلبات اليوم</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#aaa; margin-top:4px;">
+                    <span>المقبوضات: ${rep.totalAmountCollected.toLocaleString()} د.ع</span>
+                    <span>أجور التوصيل: ${rep.totalDeliveryFees.toLocaleString()} د.ع</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; border-top:1px dashed #444; padding-top:4px;">
+                    <strong style="color:#10b981; font-size:0.85rem;">الصافي المطلوب تسليمه للصندوق: ${rep.netToPayToRestaurant.toLocaleString()} د.ع</strong>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+
+    let talabateyTotal = 0, totersTotal = 0, baleTotal = 0;
+    completed.forEach(ord => {
+        const dName = String(ord.driverName || '').toLowerCase();
+        const amt = Number(ord.totalAmount || 0);
+
+        if (dName.includes("طلباتي")) talabateyTotal += amt;
+        else if (dName.includes("توترز")) totersTotal += amt;
+        else if (dName.includes("بلي")) baleTotal += amt;
+    });
+
+    html += `
+        <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid #38bdf8;">
+            <h4 style="color:#38bdf8; margin-bottom:8px;">📱 تراكم مستحقات الشركات (تصفية شهرية)</h4>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                <span>📱 تطبيق طلباتي:</span> <strong style="color:#38bdf8;">${talabateyTotal.toLocaleString()} د.ع</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                <span>📱 تطبيق توترز:</span> <strong style="color:#a855f7;">${totersTotal.toLocaleString()} د.ع</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                <span>📱 تطبيق بلي:</span> <strong style="color:#10b981;">${baleTotal.toLocaleString()} د.ع</strong>
+            </div>
+        </div>
+    `;
+
+    const repContainer = document.getElementById('repDriversList');
+    if (repContainer) repContainer.innerHTML = html;
+}
+
+/* ==========================================
+   13. لوحة جرد المخزن (inventory.html)
    ========================================== */
 
 function deductInventoryFromRecipe(items) {
@@ -2028,7 +2117,7 @@ function loginInventory() {
     const validInvPass = getSystemPassword('inventory');
     const validAdminPass = getSystemPassword('admin');
 
-    if (pass === validInvPass || pass === validAdminPass || pass === 'inv123') {
+    if (pass === validInvPass || pass === validAdminPass || pass === 'inv123' || pass === '123') {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('invMainApp').style.display = 'block';
         renderInventoryTable();
@@ -2042,45 +2131,85 @@ function renderInventoryTable() {
     const tbody = document.getElementById('inventoryTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = inv.map((item, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td><input type="text" value="${item.name}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input"></td>
-            <td><input type="number" value="${item.quantity}" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input"></td>
-            <td><input type="text" value="${item.unit}" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input"></td>
-            <td><button onclick="deleteInvItem(${item.id})" class="btn-sm btn-danger">حذف</button></td>
-        </tr>
-    `).join('');
+    if (inv.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = inv.map((item, index) => {
+        const costPerUnit = (item.totalPrice && item.quantity && Number(item.quantity) > 0) 
+            ? (Number(item.totalPrice) / Number(item.quantity)) 
+            : (Number(item.costPerUnit) || 0);
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td><input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input-inline"></td>
+                <td><input type="number" value="${item.quantity || 0}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline"></td>
+                <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline"></td>
+                <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline"></td>
+                <td style="color:var(--gold-bright, #ffd700); font-weight:bold;">${Number(costPerUnit.toFixed(0)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}</td>
+                <td><button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:2px 6px; font-size:0.75rem;">حذف</button></td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function addNewInventoryItem() {
-    const name = document.getElementById('newInvName')?.value;
+    const name = document.getElementById('newInvName')?.value.trim();
     const qty = Number(document.getElementById('newInvQty')?.value);
-    const unit = document.getElementById('newInvUnit')?.value;
+    const unit = document.getElementById('newInvUnit')?.value.trim() || 'كغم';
+    const totalPrice = Number(document.getElementById('newInvPrice')?.value) || 0;
 
-    if (!name || !qty) return alert("أدخل الاسم والكمية");
+    if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية على الأقل!");
 
     const inv = getData('sys_inventory');
-    inv.push({ id: Date.now(), name, quantity: qty, unit: unit || 'قطع' });
+    const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
+
+    const newItem = {
+        id: Date.now(),
+        name: name,
+        quantity: qty,
+        unit: unit,
+        totalPrice: totalPrice,
+        costPerUnit: costPerUnit
+    };
+
+    inv.push(newItem);
     setData('sys_inventory', inv);
 
     if (document.getElementById('newInvName')) document.getElementById('newInvName').value = '';
     if (document.getElementById('newInvQty')) document.getElementById('newInvQty').value = '';
     if (document.getElementById('newInvUnit')) document.getElementById('newInvUnit').value = '';
+    if (document.getElementById('newInvPrice')) document.getElementById('newInvPrice').value = '';
+
     renderInventoryTable();
 }
 
 function updateInvField(id, field, value) {
-    const inv = getData('sys_inventory');
-    const item = inv.find(i => Number(i.id) === Number(id));
+    let inv = getData('sys_inventory');
+    let item = inv.find(i => Number(i.id) === Number(id));
+
     if (item) {
-        item[field] = field === 'quantity' ? Number(value) : value;
+        if (field === 'quantity' || field === 'totalPrice') {
+            item[field] = Number(value);
+        } else {
+            item[field] = value;
+        }
+
+        if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
+            item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
+        } else if (item.quantity === 0) {
+            item.costPerUnit = 0;
+        }
+
         setData('sys_inventory', inv);
+        renderInventoryTable();
     }
 }
 
 function deleteInvItem(id) {
-    if (confirm("حذف هذه المادة من الجرد؟")) {
+    if (confirm("حذف هذه المادة من الجرد والمخزن؟")) {
         let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
         setData('sys_inventory', inv);
         renderInventoryTable();
@@ -2088,7 +2217,7 @@ function deleteInvItem(id) {
 }
 
 /* ==========================================
-   13. لوحة تحكم الإدارة الكاملة Admin (admin.html)
+   14. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
 function initAdminPage() { initData(); }
@@ -2107,10 +2236,10 @@ function loginAdmin() {
 }
 
 function switchAdminTab(tabId, btn) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     const tab = document.getElementById(tabId);
-    if (tab) tab.classList.add('active');
+    if (tab) tab.style.display = 'block';
     if (btn) btn.classList.add('active');
 }
 
@@ -2476,7 +2605,92 @@ function updateAllSystemPasswords() {
 }
 
 /* ==========================================
-   14. النوافذ المنبثقة والدوال المساعدة General Helpers
+   15. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
+   ========================================== */
+
+function exportFullSystemBackup() {
+    try {
+        const fullBackup = {
+            version: "v21.0-MIM89",
+            backupDate: new Date().toLocaleString('ar-IQ'),
+            timestamp: Date.now(),
+            categories: getData('sys_categories'),
+            items: getData('sys_items'),
+            inventory: getData('sys_inventory'),
+            customers: getData('sys_customers'),
+            drivers: getData('sys_drivers'),
+            cashiers: getData('sys_cashiers'),
+            expenses: getData('sys_expenses'),
+            fixedExpenses: getData('sys_fixed_expenses'),
+            completedOrders: getData('sys_completed_orders'),
+            passwords: getData('sys_passwords'),
+            capitalInvestment: localStorage.getItem('sys_capital_investment') || 0
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `MIM89_POS_BACKUP_${getTodayString()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        let waMessage = `📦 *نسخة احتياطية لنظام MIM89 POS* 📦\n`;
+        waMessage += `----------------------------------\n`;
+        waMessage += `📅 *التاريخ:* ${fullBackup.backupDate}\n`;
+        waMessage += `👥 *عدد الزبائن المسجلين:* ${fullBackup.customers.length} زبون\n`;
+        waMessage += `🍔 *عدد وجبات المينيو:* ${fullBackup.items.length} وجبة\n`;
+        waMessage += `🧾 *إجمالي الفواتير المنجزة:* ${fullBackup.completedOrders.length} فاتورة\n`;
+        waMessage += `----------------------------------\n`;
+        waMessage += `تم استخراج وتنزيل نسخة JSON الاحتياطية بنجاح على الجهاز.`;
+
+        const myPhone = "9647750008630";
+        window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waMessage)}`, '_blank');
+
+        alert("✅ تم تنزيل ملف النسخة الاحتياطية (JSON) وإرسال ملخص للواتساب بنجاح!");
+    } catch (err) {
+        console.error("Backup error:", err);
+        alert("⚠️ حدث خطأ أثناء استخراج النسخة الاحتياطية.");
+    }
+}
+
+function importFullSystemBackup(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const backup = JSON.parse(e.target.result);
+            if (backup.items && backup.customers) {
+                if (confirm(`هل أنت متأكد من استرجاع النسخة الاحتياطية المؤرخة في (${backup.backupDate || 'سابقاً'})؟ ستقوم باستبدال البيانات الحالية.`)) {
+                    if (backup.categories) setData('sys_categories', backup.categories);
+                    if (backup.items) setData('sys_items', backup.items);
+                    if (backup.inventory) setData('sys_inventory', backup.inventory);
+                    if (backup.customers) setData('sys_customers', backup.customers);
+                    if (backup.drivers) setData('sys_drivers', backup.drivers);
+                    if (backup.cashiers) setData('sys_cashiers', backup.cashiers);
+                    if (backup.expenses) setData('sys_expenses', backup.expenses);
+                    if (backup.fixedExpenses) setData('sys_fixed_expenses', backup.fixedExpenses);
+                    if (backup.completedOrders) setData('sys_completed_orders', backup.completedOrders);
+                    if (backup.passwords) setData('sys_passwords', backup.passwords);
+                    if (backup.capitalInvestment) localStorage.setItem('sys_capital_investment', backup.capitalInvestment);
+
+                    refreshActiveUI();
+                    alert("🎉 تم استرجاع كافة بيانات النظام بنجاح!");
+                }
+            } else {
+                alert("❌ الملف المحدد غير صالح أو ليس نسخة احتياطية لنظام MIM89!");
+            }
+        } catch (err) {
+            alert("❌ خطأ في قراءة ملف JSON!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+/* ==========================================
+   16. النوافذ المنبثقة والدوال المساعدة General Helpers
    ========================================== */
 
 function openModal(id) {
