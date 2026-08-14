@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- إعدادات الشاشة الكاملة للايباد والآيفون -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 POS">
@@ -72,21 +73,6 @@
             text-align: center;
             box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
         }
-
-        .gold-input {
-            width: 100%;
-            padding: 8px 10px;
-            margin: 4px 0;
-            background: #101014;
-            border: 1px solid var(--card-border);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 0.88rem;
-            text-align: center;
-            outline: none;
-            transition: 0.2s;
-        }
-        .gold-input:focus { border-color: var(--gold-primary); box-shadow: 0 0 6px rgba(245, 158, 11, 0.3); }
 
         .gold-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
@@ -226,7 +212,7 @@
             flex: 1 1 auto !important;
             overflow-y: auto !important;
             min-height: 70px;
-            max-height: 160px;
+            max-height: 180px;
             margin: 2px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
@@ -251,7 +237,9 @@
             padding-bottom: 6px;
             margin-bottom: 10px;
             -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none;
         }
+        .categories-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
             background: var(--card-bg);
@@ -433,16 +421,16 @@
         <div class="login-card">
             <h2 style="color:var(--gold-primary); margin-bottom:6px; font-weight:900;"><i class="fa-solid fa-cash-register"></i> MIM89 POS</h2>
             <p style="color:#aaa; font-size:0.8rem; margin-bottom:12px;">نظام إدارة الوجبات المباشرة ونقطة البيع</p>
-            <input type="password" id="cashierPassInput" class="gold-input" placeholder="••••••" onkeypress="if(event.key==='Enter') loginCashier()">
+            <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:6px;" onkeypress="if(event.key==='Enter') loginCashier()">
             <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:3px; font-weight:bold;"></p>
-            <button onclick="loginCashier()" class="gold-btn" style="margin-top:6px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
+            <button onclick="loginCashier()" class="gold-btn" style="margin-top:6px; padding:10px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
         </div>
     </div>
 
     <!-- 🖥️ التطبيق الرئيسي للكاشير -->
     <div id="cashierMainApp">
         <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])">
-            <i class="fa-solid fa-bell fa-bounce"></i> يوجد طلبات واردة جارية قيد التجهيز! (اضغط هنا للعرض المباشر)
+            <i class="fa-solid fa-bell fa-bounce"></i> يوجد طلبات أو مكالمات واردة جديدة! (اضغط هنا للمعاينة)
         </div>
 
         <header class="pos-header">
@@ -493,7 +481,7 @@
 
                             <div id="driverSelectBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
                                 <span class="section-label" style="color:var(--gold-bright); font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
-                                <select id="posDriverSelect" class="gold-input" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
+                                <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
                             </div>
 
                             <span class="section-label">طريقة الدفع:</span>
@@ -502,9 +490,10 @@
                                 <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
                             </div>
 
+                            <!-- حقل البحث التلقائي عن دليل الزبائن -->
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
-                                <input type="text" id="posCustName" class="gold-input" style="font-size:0.8rem; text-align:right; padding:6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(this.value)">
-                                <div id="phoneSearchResults" style="position:absolute; top:100%; left:0; width:100%; background:#1a1a20; border:1px solid var(--gold-primary); border-radius:6px; display:none; z-index:100; max-height:150px; overflow-y:auto; padding:4px; box-shadow:0 6px 15px rgba(0,0,0,0.8);"></div>
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <div id="phoneSearchResults" style="display:none;"></div>
                             </div>
 
                             <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
@@ -558,7 +547,7 @@
             <!-- 📦 القسم الأيسر: الأصناف والمنتجات والبحث -->
             <main class="pos-main-content">
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="posSearchInput" class="gold-input" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:6px;">
+                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
                 <div id="posCategoriesBar" class="categories-bar"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -576,7 +565,7 @@
             <p style="font-size:0.8rem; color:#aaa;">المبلغ الكلي المطلوب:</p>
             <h2 id="modalCashTotalReq" style="color:var(--gold-bright); font-size:1.6rem; margin-bottom:8px;">0 د.ع</h2>
             
-            <input type="number" id="cashGivenInput" class="gold-input" placeholder="المبلغ المستلم من الزبون..." style="font-size:1.1rem; margin-bottom:8px;" oninput="calculateCashChange()">
+            <input type="number" id="cashGivenInput" class="gold-input-inline" placeholder="المبلغ المستلم من الزبون..." style="font-size:1.1rem; text-align:center; padding:8px; margin-bottom:8px;" oninput="calculateCashChange()">
             
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px;">
                 <button onclick="setCashGiven(5000)" class="gold-btn" style="background:#222; color:#fff; border:1px solid #444; padding:6px;">5,000 د.ع</button>
@@ -642,12 +631,12 @@
 
             <div style="background:#121215; padding:8px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:10px;">
                 <label class="section-label">نوع الصرفية:</label>
-                <select id="expenseTypeSelect" class="gold-input" onchange="toggleExpenseTypeFields()" style="font-size:0.8rem; margin-bottom:5px;"></select>
-                <select id="expenseEmployeeSelect" class="gold-input" style="display:none; font-size:0.8rem; margin-bottom:5px;"></select>
+                <select id="expenseTypeSelect" class="gold-input-inline" onchange="toggleExpenseTypeFields()" style="font-size:0.8rem; margin-bottom:5px;"></select>
+                <select id="expenseEmployeeSelect" class="gold-input-inline" style="display:none; font-size:0.8rem; margin-bottom:5px;"></select>
                 <label class="section-label">المبلغ (د.ع):</label>
-                <input type="number" id="expenseAmountInput" class="gold-input" placeholder="أدخل المبلغ بالدينار..." style="font-size:0.85rem; margin-bottom:5px;">
+                <input type="number" id="expenseAmountInput" class="gold-input-inline" placeholder="أدخل المبلغ بالدينار..." style="font-size:0.85rem; margin-bottom:5px;">
                 <label class="section-label">ملاحظات / التفاصيل:</label>
-                <input type="text" id="expenseNoteInput" class="gold-input" placeholder="اكتب تفاصيل الصرفية هنا..." style="font-size:0.8rem; margin-bottom:6px;">
+                <input type="text" id="expenseNoteInput" class="gold-input-inline" placeholder="اكتب تفاصيل الصرفية هنا..." style="font-size:0.8rem; margin-bottom:6px;">
                 <button onclick="addNewExpenseRecord()" class="gold-btn" style="background:var(--danger); color:#fff;">تسجيل الصرفية وخصمها من الصندوق</button>
             </div>
             <h5 style="color:var(--gold-bright); margin-bottom:5px;">صرفيات اليوم المسجلة:</h5>
@@ -662,7 +651,7 @@
                 <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
             <div style="display:flex; gap:5px; margin-bottom:8px;">
-                <input type="date" id="reportDateInput" class="gold-input" style="flex:2;" onchange="renderDailyReport(this.value)">
+                <input type="date" id="reportDateInput" class="gold-input-inline" style="flex:2;" onchange="renderDailyReport(this.value)">
                 <button onclick="renderDailyReport(document.getElementById('reportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
             <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
@@ -691,7 +680,7 @@
                 <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
             <div style="display:flex; gap:5px; margin-bottom:8px;">
-                <input type="date" id="itemsReportDateInput" class="gold-input" style="flex:2;" onchange="renderItemsReport(this.value)">
+                <input type="date" id="itemsReportDateInput" class="gold-input-inline" style="flex:2;" onchange="renderItemsReport(this.value)">
                 <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
             </div>
             <div style="background:#121215; padding:6px; border-radius:6px; margin-bottom:8px; font-size:0.8rem;">
@@ -739,7 +728,7 @@
                 <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
             <div style="display:flex; gap:4px; margin-bottom:8px;">
-                <input type="text" id="newKitchenNoteInput" class="gold-input" placeholder="اكتب ملاحظة جديدة..." style="font-size:0.8rem; text-align:right;">
+                <input type="text" id="newKitchenNoteInput" class="gold-input-inline" placeholder="اكتب ملاحظة جديدة..." style="font-size:0.8rem; text-align:right;">
                 <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:5px 10px;">إضافة</button>
             </div>
             <div id="kitchenNotesListTable" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
