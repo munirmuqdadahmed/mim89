@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.2 Fixed & Optimized Version)
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 1)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -17,6 +17,7 @@ let cart = [];
 let activePendingPrintOrder = null;
 let lastCompletedOrder = null;
 let currentUploadedBase64 = "";
+let currentDetailItem = null;
 
 // 🧮 دالة عالمية لتنظيف أي سعر/رقم من الفواصل والنصوص والأرقام الشرقية وتحويله إلى رقم مجرد
 function cleanPrice(val) {
@@ -506,6 +507,77 @@ function deleteCustomerRecord(id) {
    4. المينيو الإلكتروني العام للزبائن (index.html)
    ========================================== */
 
+// 🍔 1. فتح نافذة التخصيص وتعبئة بيانات الوجبة
+window.openItemCustomizationModal = function(itemId) {
+    let items = getData('sys_items');
+    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
+    if (!item) return;
+
+    currentDetailItem = item;
+    
+    const titleEl = document.getElementById('detailTitle');
+    const ingEl = document.getElementById('detailIngredients');
+    const imgEl = document.getElementById('detailImg');
+
+    if (titleEl) titleEl.innerText = item.name;
+    if (ingEl) ingEl.innerText = item.ingredients || item.desc || 'وجبة طازجة تحضر فوراً حسب طلبكم.';
+    if (imgEl) imgEl.src = item.image || item.img || 'https://via.placeholder.com/300x200?text=MIM89+Fast+Food';
+
+    const normalRadio = document.querySelector('input[name="mealSizeRadio"][value="عادي"]');
+    if (normalRadio) normalRadio.checked = true;
+
+    document.querySelectorAll('.extra-item-cb').forEach(cb => cb.checked = false);
+    const notesInput = document.getElementById('detailSpecialNotes');
+    if (notesInput) notesInput.value = '';
+
+    recalculateItemDetailTotal();
+    openModal('itemDetailModal');
+};
+
+// 🧮 2. إعادة حساب السعر المباشر داخل النافذة
+window.recalculateItemDetailTotal = function() {
+    if (!currentDetailItem) return 0;
+    let total = cleanPrice(currentDetailItem.price) || 0;
+
+    const selectedSize = document.querySelector('input[name="mealSizeRadio"]:checked');
+    if (selectedSize) total += cleanPrice(selectedSize.getAttribute('data-extra-price')) || 0;
+
+    document.querySelectorAll('.extra-item-cb:checked').forEach(cb => {
+        total += cleanPrice(cb.getAttribute('data-price')) || 0;
+    });
+
+    const priceDisplay = document.getElementById('detailCalculatedPrice');
+    if (priceDisplay) priceDisplay.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+    return total;
+};
+
+// 🛒 3. إضافة الوجبة المخصصة لسلة الشراء
+window.addCustomizedItemToCart = function() {
+    if (!currentDetailItem) return;
+
+    const finalPrice = recalculateItemDetailTotal();
+    let notesArr = [];
+    
+    const selectedSize = document.querySelector('input[name="mealSizeRadio"]:checked')?.value;
+    if (selectedSize && selectedSize !== 'عادي') notesArr.push(`حجم: ${selectedSize}`);
+
+    document.querySelectorAll('.extra-item-cb:checked').forEach(cb => notesArr.push(`+ ${cb.value}`));
+    const customNotesInput = document.getElementById('detailSpecialNotes')?.value.trim();
+    if (customNotesInput) notesArr.push(`ملاحظة: ${customNotesInput}`);
+
+    cart.push({
+        id: currentDetailItem.id,
+        name: currentDetailItem.name,
+        price: cleanPrice(finalPrice),
+        qty: 1,
+        customNotes: notesArr.join(' | ')
+    });
+
+    updateCartBadge();
+    closeModal('itemDetailModal');
+};
+
+// 🍔 4. دالة عرض المينيو العام وتوجيه زر (+) للنافذة المنبثقة
 function loadPublicMenu() {
     const categories = getData('sys_categories');
     const items = getData('sys_items');
@@ -539,13 +611,14 @@ function loadPublicMenu() {
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemDetails(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
-                                <h3 class="item-name" onclick="openItemDetails(${item.id})">${item.name}</h3>
+                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
                                 <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <button class="add-cart-btn" onclick="addToCart(${item.id})" title="إضافة للسلة">+</button>
+                                    <!-- 🔥 زر الزائد المربوط بنافذة التخصيص والخيارات -->
+                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
                                 </div>
                             </div>
                         </div>
@@ -556,6 +629,10 @@ function loadPublicMenu() {
         }
     });
 }
+/* ==========================================================================
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 2)
+   صاحب النظام: منير مقداد
+   ========================================================================== */
 
 function filterCategory(catId, btnElement) {
     if (btnElement) {
@@ -568,36 +645,11 @@ function filterCategory(catId, btnElement) {
 }
 
 function openItemDetails(id) {
-    const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
-    if (!item) return;
-    const imgEl = document.getElementById('detailImg');
-    const titleEl = document.getElementById('detailTitle');
-    const priceEl = document.getElementById('detailPrice');
-    const ingEl = document.getElementById('detailIngredients');
-    const addBtn = document.getElementById('detailAddBtn');
-
-    if (imgEl) imgEl.src = item.image || item.img;
-    if (titleEl) titleEl.innerText = item.name;
-    if (priceEl) priceEl.innerText = cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع';
-    if (ingEl) ingEl.innerText = item.ingredients || item.desc || 'وجبة طازجة من MIM89';
-    if (addBtn) addBtn.onclick = () => { addToCart(item.id); closeModal('itemDetailModal'); };
-    
-    openModal('itemDetailModal');
+    openItemCustomizationModal(id);
 }
 
 function addToCart(itemId) {
-    const items = getData('sys_items');
-    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
-    if (!item) return;
-
-    const exist = cart.find(c => cleanPrice(c.id) === cleanPrice(itemId));
-
-    if (exist) {
-        exist.qty += 1;
-    } else {
-        cart.push({ ...item, price: cleanPrice(item.price), qty: 1 });
-    }
-    updateCartBadge();
+    openItemCustomizationModal(itemId);
 }
 
 function updateCartBadge() {
@@ -626,30 +678,37 @@ function renderCartModalItems() {
         return;
     }
 
-    container.innerHTML = cart.map(item => `
+    container.innerHTML = cart.map((item, idx) => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; background:#181820; padding:10px 12px; border-radius:10px; border:1px solid #282835;">
             <div>
-                <strong style="color:#fff; font-size:0.88rem;">${item.name}</strong><br>
-                <small style="color:var(--gold-bright, #ffd700);">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</small>
+                <strong style="color:#fff; font-size:0.88rem;">${item.name}</strong>
+                ${item.customNotes ? `<div style="font-size:0.72rem; color:var(--gold-bright, #ffd700); margin-top:2px;">🔹 ${item.customNotes}</div>` : ''}
+                <small style="color:var(--gold-bright, #ffd700); display:block; margin-top:2px;">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</small>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <button onclick="changeCartQty(${item.id}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+                <button onclick="changeCartIndexQty(${idx}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
                 <span style="color:#fff; font-weight:bold;">${item.qty}</span>
-                <button onclick="changeCartQty(${item.id}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
+                <button onclick="changeCartIndexQty(${idx}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
             </div>
         </div>
     `).join('');
 }
 
-function changeCartQty(id, change) {
-    const item = cart.find(c => cleanPrice(c.id) === cleanPrice(id));
-    if (item) {
-        item.qty += change;
-        if (item.qty <= 0) cart = cart.filter(c => cleanPrice(c.id) !== cleanPrice(id));
+function changeCartIndexQty(index, change) {
+    if (cart[index]) {
+        cart[index].qty += change;
+        if (cart[index].qty <= 0) cart.splice(index, 1);
     }
     updateCartBadge();
     renderCartModalItems();
     calculateDeliveryCost();
+}
+
+function changeCartQty(id, change) {
+    const idx = cart.findIndex(c => cleanPrice(c.id) === cleanPrice(id));
+    if (idx !== -1) {
+        changeCartIndexQty(idx, change);
+    }
 }
 
 function toggleDeliveryFields() {
@@ -678,7 +737,7 @@ function calculateDeliveryCost() {
     let deliveryFee = 0;
     if (orderType === 'delivery') {
         const normalizedInput = normalizeArabicArea(finalArea);
-        if (normalizedInput.includes("قاهره")) {
+        if (normalizedInput.includes("قاهره") || normalizedInput.includes("قاهرة")) {
             deliveryFee = 0;
         } else if (finalArea !== "") {
             const areas = getData('sys_areas');
@@ -701,133 +760,138 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
-// 🚀 إرسال الطلب المباشر - الإلزام حصراً بـ (الاسم، الهاتف، والمنطقة) وكل الحقول الأخرى اختيارية تماماً!
+// 🚀 إرسال الطلب المباشر - حل فتح الواتساب المباشر 100% على الآيفون والأندرويد
 window.submitOrderToCashier = function() {
-    if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
-    
-    const nameInput = document.getElementById('custName');
-    const phoneInput = document.getElementById('custPhone');
-    const typeSelect = document.getElementById('orderTypeSelect');
-    const areaInput = document.getElementById('custArea');
-    const areaSelect = document.getElementById('custAreaSelect');
-    const addressInput = document.getElementById('custAddress');
-    const notesInput = document.getElementById('orderNotes');
+    try {
+        if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
+        
+        const nameInput = document.getElementById('custName');
+        const phoneInput = document.getElementById('custPhone');
+        const typeSelect = document.getElementById('orderTypeSelect');
+        const areaInput = document.getElementById('custArea');
+        const areaSelect = document.getElementById('custAreaSelect');
+        const addressInput = document.getElementById('custAddress');
+        const notesInput = document.getElementById('orderNotes');
 
-    const name = nameInput ? nameInput.value.trim() : '';
-    const phone = phoneInput ? phoneInput.value.trim().replace(/\s+/g, '') : '';
-    const type = typeSelect ? typeSelect.value : 'delivery';
-    
-    let area = areaSelect ? areaSelect.value : 'القاهرة';
-    if (areaInput && areaInput.value.trim() !== '') {
-        area += ` - شارع: ${areaInput.value.trim()}`;
-    }
-
-    const address = addressInput ? addressInput.value.trim() : 'غير محدد';
-    const notes = notesInput ? notesInput.value.trim() : 'لا يوجد';
-
-    // 🔥 التحقق من الحقول المطلوبة حصراً
-    if (!name || name === '') {
-        return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
-    }
-
-    if (!phone || phone === '') {
-        return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
-    }
-
-    if (type === 'delivery') {
-        if (!area || area === '' || area === '-- اختر المنطقة --') {
-            return alert("⚠️ يرجى اختيار منطقة التوصيل!");
+        const name = nameInput ? nameInput.value.trim() : '';
+        const phone = phoneInput ? phoneInput.value.trim().replace(/\s+/g, '') : '';
+        const type = typeSelect ? typeSelect.value : 'delivery';
+        
+        let selectArea = areaSelect ? areaSelect.value : 'القاهرة';
+        let area = selectArea;
+        if (areaInput && areaInput.value.trim() !== '') {
+            area += ` - شارع: ${areaInput.value.trim()}`;
         }
+
+        const address = addressInput ? addressInput.value.trim() : 'غير محدد';
+        const notes = notesInput ? notesInput.value.trim() : 'لا يوجد';
+
+        if (!name || name === '') {
+            return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
+        }
+
+        if (!phone || phone === '') {
+            return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
+        }
+
+        if (type === 'delivery') {
+            if (!selectArea || selectArea === '' || selectArea === '-- اختر المنطقة --') {
+                return alert("⚠️ يرجى اختيار منطقة التوصيل!");
+            }
+        }
+
+        saveCustomerRecord(name, phone, area, address);
+
+        const submitBtn = document.getElementById('sendOrderBtn');
+        if (submitBtn) {
+            submitBtn.innerText = "⏳ جاري تحويل الطلب للكاشير والواتساب...";
+            submitBtn.disabled = true;
+        }
+
+        const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+        let deliveryFee = 0;
+        if (type === 'delivery') {
+            const normArea = normalizeArabicArea(area);
+            deliveryFee = (normArea.includes("قاهره") || area.includes("قاهرة") || area.includes("القاهرة")) ? 0 : 2500;
+        }
+        const totalAmount = subtotal + deliveryFee;
+        const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
+
+        const orderData = {
+            id: orderId,
+            orderId: orderId,
+            customerName: name,
+            phone: phone,
+            orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
+            area: area || 'غير محدد',
+            address: address || 'غير محدد',
+            notes: notes,
+            items: cart.map(i => ({ name: i.name, qty: cleanPrice(i.qty), price: cleanPrice(i.price), total: cleanPrice(i.price) * cleanPrice(i.qty), customNotes: i.customNotes || '' })),
+            subtotal: subtotal,
+            deliveryFee: deliveryFee,
+            totalAmount: totalAmount,
+            status: 'جديد',
+            dateDate: getTodayString(),
+            timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
+            createdTimestamp: Date.now()
+        };
+
+        saveOrderLocally(orderData);
+        if (db) {
+            db.collection("orders").add(orderData).catch(err => console.error("Firebase Order Sync Error:", err));
+        }
+
+        let typeText = '🛵 توصيل للمنزل';
+        if (type === 'takeaway') typeText = '🛍️ استلام سفري من المطعم';
+        if (type === 'dine_in') typeText = '🍽️ تناول داخل الصالة';
+
+        let itemsListText = cart.map(item => `▫️ ${item.name}${item.customNotes ? ' ('+item.customNotes+')' : ''} × ${item.qty} = ${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع`).join('\n');
+
+        let waMessage = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
+        waMessage += `🏷️ *رقم الطلب:* ${orderId}\n`;
+        waMessage += `----------------------------------\n`;
+        waMessage += `👤 *الزبون:* ${name}\n`;
+        waMessage += `📞 *الهاتف:* ${phone}\n`;
+        waMessage += `📌 *الخدمة:* ${typeText}\n`;
+        if (type === 'delivery') {
+            waMessage += `📍 *المنطقة والشارع:* ${area}\n`;
+            if (address && address !== 'غير محدد') waMessage += `🏠 *العنوان التفصيلي:* ${address}\n`;
+        }
+        if (notes && notes !== 'لا يوجد') {
+            waMessage += `📝 *ملاحظات:* ${notes}\n`;
+        }
+        waMessage += `----------------------------------\n`;
+        waMessage += `🛒 *الوجبات والطلبات:*\n${itemsListText}\n`;
+        waMessage += `----------------------------------\n`;
+        waMessage += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString('ar-IQ')} د.ع\n`;
+        if (type === 'delivery') {
+            waMessage += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString('ar-IQ') + ' د.ع'}\n`;
+        }
+        waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString('ar-IQ')} د.ع\n`;
+
+        const restaurantPhone = "9647750008630";
+        // 💬 تحويل عبر wa.me لضمان فتح التطبيق مباشرة في الآيفون دون حظر النوافذ المنبثقة
+        const waUrl = `https://wa.me/${restaurantPhone}?text=${encodeURIComponent(waMessage)}`;
+
+        localStorage.setItem('sys_last_order_id', orderId);
+
+        cart = [];
+        updateCartBadge();
+        closeModal('cartModal');
+
+        if (submitBtn) {
+            submitBtn.innerText = "تأكيد وإرسال الطلب عبر الواتساب 🚀";
+            submitBtn.disabled = false;
+        }
+
+        if (typeof listenToOrderTracking === 'function') {
+            listenToOrderTracking(orderId);
+        }
+
+        window.location.href = waUrl;
+    } catch (err) {
+        alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
     }
-
-    saveCustomerRecord(name, phone, area, address);
-
-    const submitBtn = document.getElementById('sendOrderBtn');
-    if (submitBtn) {
-        submitBtn.innerText = "⏳ جاري تحويل الطلب للكاشير والواتساب...";
-        submitBtn.disabled = true;
-    }
-
-    const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    let deliveryFee = 0;
-    if (type === 'delivery') {
-        const normArea = normalizeArabicArea(area);
-        deliveryFee = (normArea.includes("قاهره") || area.includes("قاهرة") || area.includes("القاهرة")) ? 0 : 2500;
-    }
-    const totalAmount = subtotal + deliveryFee;
-    const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
-
-    const orderData = {
-        id: orderId,
-        orderId: orderId,
-        customerName: name,
-        phone: phone,
-        orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
-        area: area || 'غير محدد',
-        address: address || 'غير محدد',
-        notes: notes,
-        items: cart.map(i => ({ name: i.name, qty: cleanPrice(i.qty), price: cleanPrice(i.price), total: cleanPrice(i.price) * cleanPrice(i.qty), customNotes: i.customNotes || '' })),
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        totalAmount: totalAmount,
-        status: 'جديد',
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
-        createdTimestamp: Date.now()
-    };
-
-    saveOrderLocally(orderData);
-    if (db) {
-        db.collection("orders").add(orderData).catch(err => console.error("Firebase Order Sync Error:", err));
-    }
-
-    let typeText = '🛵 توصيل للمنزل';
-    if (type === 'takeaway') typeText = '🛍️ استلام سفري من المطعم';
-    if (type === 'dine_in') typeText = '🍽️ تناول داخل الصالة';
-
-    let itemsListText = cart.map(item => `▫️ ${item.name}${item.customNotes ? ' ('+item.customNotes+')' : ''} × ${item.qty} = ${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع`).join('\n');
-
-    let waMessage = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
-    waMessage += `🏷️ *رقم الطلب:* ${orderId}\n`;
-    waMessage += `----------------------------------\n`;
-    waMessage += `👤 *الزبون:* ${name}\n`;
-    waMessage += `📞 *الهاتف:* ${phone}\n`;
-    waMessage += `📌 *الخدمة:* ${typeText}\n`;
-    if (type === 'delivery') {
-        waMessage += `📍 *المنطقة والشارع:* ${area}\n`;
-        if (address && address !== 'غير محدد') waMessage += `🏠 *العنوان التفصيلي:* ${address}\n`;
-    }
-    if (notes && notes !== 'لا يوجد') {
-        waMessage += `📝 *ملاحظات:* ${notes}\n`;
-    }
-    waMessage += `----------------------------------\n`;
-    waMessage += `🛒 *الوجبات والطلبات:*\n${itemsListText}\n`;
-    waMessage += `----------------------------------\n`;
-    waMessage += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString('ar-IQ')} د.ع\n`;
-    if (type === 'delivery') {
-        waMessage += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString('ar-IQ') + ' د.ع'}\n`;
-    }
-    waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString('ar-IQ')} د.ع\n`;
-
-    const restaurantPhone = "9647750008630";
-    const waUrl = `https://api.whatsapp.com/send?phone=${restaurantPhone}&text=${encodeURIComponent(waMessage)}`;
-
-    localStorage.setItem('sys_last_order_id', orderId);
-
-    cart = [];
-    updateCartBadge();
-    closeModal('cartModal');
-
-    if (submitBtn) {
-        submitBtn.innerText = "تأكيد وإرسال الطلب عبر الواتساب 🚀";
-        submitBtn.disabled = false;
-    }
-
-    if (typeof listenToOrderTracking === 'function') {
-        listenToOrderTracking(orderId);
-    }
-
-    window.location.href = waUrl;
 };
 
 function saveOrderLocally(orderData) {
@@ -1169,6 +1233,10 @@ function renderPosCart() {
         }
     }
 }
+/* ==========================================================================
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 3)
+   صاحب النظام: منير مقداد
+   ========================================================================== */
 
 // 6. حاسبة النقد والطباعة الإلزامية الآمنة
 function openQuickCashModal() {
@@ -2683,7 +2751,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v21.2-MIM89",
+            version: "v21.3-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
