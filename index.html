@@ -116,7 +116,7 @@
             100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }
         }
 
-        /* ✨ التلألؤ الذهبي العاكس للضوء (Gold Reflective Metallic Effect) */
+        /* ✨ التلألؤ الذهبي العاكس للضوء */
         .gold-reflective-text {
             background: linear-gradient(110deg, #d97706 0%, #fbbf24 25%, #ffffff 50%, #fbbf24 75%, #d97706 100%);
             background-size: 200% auto;
@@ -218,7 +218,7 @@
             50% { opacity: 0.3; }
         }
 
-        /* 🍔 البردة الجانبية المودرن (3 شخوط) - للزبون حصراً */
+        /* 🍔 البردة الجانبية المودرن (3 شخوط) */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -410,7 +410,6 @@
             font-size: 0.98rem;
         }
 
-        /* الزر الدائري الفاخر + */
         .add-cart-btn {
             background: var(--gold-gradient);
             color: #000;
@@ -430,7 +429,7 @@
 
         .add-cart-btn:active { transform: scale(0.88); }
 
-        /* 🛒 الشريط السفلي العائم الفخم المباشر */
+        /* 🛒 الشريط السفلي العائم */
         .floating-cart-bar {
             position: fixed;
             bottom: 14px;
@@ -484,7 +483,6 @@
             box-shadow: 0 0 8px var(--danger);
         }
 
-        /* زر إتمام الطلب الأخضر العريض */
         .checkout-green-btn {
             background: linear-gradient(135deg, #10b981, #059669);
             color: #fff;
@@ -526,11 +524,26 @@
             overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.9);
         }
+
+        .gold-input-inline {
+            background: #181820;
+            border: 1px solid #333;
+            color: #fff;
+            width: 100%;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary);
+        }
     </style>
 </head>
 <body class="public-menu-body">
 
-    <!-- 🎬 شاشة الانطلاقة الفاخرة (MIM89 Splash Screen) -->
+    <!-- 🎬 شاشة الانطلاقة الفاخرة -->
     <div id="splashScreen" class="splash-screen">
         <div class="splash-logo-box">
             <div class="splash-glow-ring"></div>
@@ -540,7 +553,7 @@
         </div>
     </div>
 
-    <!-- 👑 الهيدر العلوي مع الشعار الساطع العاكس -->
+    <!-- 👑 الهيدر العلوي -->
     <header class="public-header">
         <div class="brand-header-title">
             <h1 class="public-brand-title">
@@ -559,7 +572,7 @@
         </button>
     </header>
 
-    <!-- 🍔 البردة الجانبية المودرن (3 شخوط) - معلومات الزبائن فقط -->
+    <!-- 🍔 البردة الجانبية (3 شخوط) -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     
     <aside id="sideDrawer" class="side-drawer">
@@ -637,7 +650,7 @@
     <!-- 🏷️ شريط الأقسام السريع -->
     <div id="categoriesNav" class="categories-sticky-bar"></div>
 
-    <!-- 📱 شبكة الوجبات الرئيسية الفاخرة -->
+    <!-- 📱 شبكة الوجبات الرئيسية -->
     <main id="mainMenuTab">
         <div id="menuSections"></div>
     </main>
@@ -661,7 +674,7 @@
         </div>
     </div>
 
-    <!-- 🛒 نافذة السلة المنبثقة وتأكيد الطلب -->
+    <!-- 🛒 نافذة السلة المنبثقة وتأكيد الطلب المربوطة بالكاشير -->
     <div id="cartModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #333; padding-bottom:8px;">
@@ -674,21 +687,21 @@
             <!-- نموذج البيانات والتوصيل -->
             <div style="background:#16161c; padding:12px; border-radius:12px; border:1px solid #333; margin-bottom:12px;">
                 <label style="font-size:0.78rem; color:#aaa; display:block; margin-bottom:4px; font-weight:bold;">نوع الخدمة:</label>
-                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer;">
                     <option value="delivery">🛵 توصيل للمنزل / العمل</option>
                     <option value="takeaway">🛍️ استلام سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
 
-                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
-                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px;">
+                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px;">
 
                 <div id="deliveryFieldsGroup">
-                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px;">
                 </div>
 
-                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px;">
             </div>
 
             <!-- حساب المجموع والتوصيل -->
@@ -708,7 +721,8 @@
                 </div>
             </div>
 
-            <button onclick="submitOrderToCashier()" style="padding:14px; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 18px rgba(16, 185, 129, 0.45);">
+            <!-- زر التأكيد المربوط بالكاشير والواتساب -->
+            <button id="sendOrderBtn" onclick="submitOrderToCashier()" style="padding:14px; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 18px rgba(16, 185, 129, 0.45);">
                 تأكيد وإرسال الطلب عبر الواتساب 🚀
             </button>
         </div>
@@ -728,7 +742,7 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي الرئيسي -->
+    <!-- 🧠 المحرك البرمجي المباشر والموثوق -->
     <script src="app.js"></script>
     <script>
         function toggleSideDrawer() {
@@ -740,43 +754,90 @@
             }
         }
 
-        // ⏰ فحص أوقات العمل الرسمية
-        function checkWorkingHoursStatus() {
-            let workHours = { open: 10, close: 3 };
-            try {
-                const stored = localStorage.getItem('sys_work_hours');
-                if (stored) workHours = JSON.parse(stored);
-            } catch(e) {}
-
-            const now = new Date();
-            const currentHour = now.getHours();
-
-            let isOpen = false;
-            if (workHours.open > workHours.close) {
-                if (currentHour >= workHours.open || currentHour < workHours.close) {
-                    isOpen = true;
-                }
-            } else {
-                if (currentHour >= workHours.open && currentHour < workHours.close) {
-                    isOpen = true;
-                }
-            }
-
-            const badge = document.getElementById('storeStatusBadge');
-            const statusText = document.getElementById('storeStatusText');
-
-            if (badge && statusText) {
-                if (isOpen) {
-                    badge.className = 'status-badge open';
-                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
-                } else {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
-                }
-            }
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'none';
         }
 
-        // 🛒 تحديث حقيقي ولحظي للسلة والمجموع الذهبي
+        function openCartModal() {
+            renderCartModalItems();
+            calculateDeliveryCost();
+            const modal = document.getElementById('cartModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function toggleDeliveryFields() {
+            const type = document.getElementById('orderTypeSelect')?.value;
+            const group = document.getElementById('deliveryFieldsGroup');
+            const feeLine = document.getElementById('deliveryFeeLine');
+            if (group) group.style.display = (type === 'delivery') ? 'block' : 'none';
+            if (feeLine) feeLine.style.display = (type === 'delivery') ? 'flex' : 'none';
+            calculateDeliveryCost();
+        }
+
+        function calculateDeliveryCost() {
+            const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
+            const area = document.getElementById('custArea')?.value.trim() || '';
+            
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let fee = 0;
+
+            if (type === 'delivery') {
+                const areaLower = area.toLowerCase();
+                if (areaLower.includes('قاهرة') || areaLower.includes('القاهرة')) {
+                    fee = 0;
+                } else if (area !== '') {
+                    fee = 2500;
+                } else {
+                    fee = 0;
+                }
+            } else {
+                fee = 0;
+            }
+
+            const subtotalEl = document.getElementById('subtotalPrice');
+            const feeEl = document.getElementById('deliveryFeePrice');
+            const totalEl = document.getElementById('finalTotalPrice');
+
+            if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString() + ' د.ع';
+            if (feeEl) feeEl.innerText = (type === 'delivery' && fee === 0 && area !== '') ? 'مجاني 🎉' : fee.toLocaleString() + ' د.ع';
+            if (totalEl) totalEl.innerText = (subtotal + fee).toLocaleString() + ' د.ع';
+        }
+
+        function renderCartModalItems() {
+            const container = document.getElementById('cartItemsContainer');
+            if (!container) return;
+
+            if (!cart || cart.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:20px; color:#aaa;">
+                        <i class="fa-solid fa-basket-shopping" style="font-size:2rem; color:var(--gold-primary); margin-bottom:8px;"></i>
+                        <p>السلة فارغة حالياً</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#181820; padding:10px 12px; border-radius:10px; margin-bottom:8px; border:1px solid #282835;">
+                        <div style="flex-grow:1;">
+                            <h4 style="color:#fff; font-size:0.88rem; font-weight:800; margin-bottom:2px;">${item.name}</h4>
+                            <span style="color:var(--gold-bright); font-size:0.8rem; font-weight:700;">${itemTotal.toLocaleString()} د.ع</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button onclick="changeCartQty(${item.id}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">-</button>
+                            <span style="color:#fff; font-weight:800; font-size:0.9rem; min-width:18px; text-align:center;">${item.qty}</span>
+                            <button onclick="changeCartQty(${item.id}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:28px; height:28px; border-radius:6px; font-weight:bold; cursor:pointer;">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
         function updateCartUI() {
             const count = cart.reduce((sum, i) => sum + i.qty, 0);
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -813,7 +874,154 @@
             calculateDeliveryCost();
         };
 
-        // 🎬 التحكم بالشاشة الافتتاحية (Splash Screen timer)
+        // 🚀 دالة إرسال الطلب المباشرة للكاشير والواتساب
+        async function submitOrderToCashier() {
+            if (!cart || cart.length === 0) {
+                alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
+                return;
+            }
+
+            const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
+            const name = document.getElementById('custName')?.value.trim() || 'زبون كريم';
+            const phone = document.getElementById('custPhone')?.value.trim();
+            const area = document.getElementById('custArea')?.value.trim() || 'غير محدد';
+            const address = document.getElementById('custAddress')?.value.trim() || 'غير محدد';
+            const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
+
+            if (!phone) {
+                alert("⚠️ يرجى كتابة رقم الهاتف لتأكيد الطلب!");
+                document.getElementById('custPhone')?.focus();
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            let deliveryFee = 0;
+            if (type === 'delivery') {
+                const areaLower = area.toLowerCase();
+                if (areaLower.includes('قاهرة') || areaLower.includes('القاهرة')) {
+                    deliveryFee = 0;
+                } else if (area) {
+                    deliveryFee = 2500;
+                }
+            }
+            const total = subtotal + deliveryFee;
+
+            const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
+            const now = new Date();
+            const orderTime = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+
+            const orderObj = {
+                orderId: orderId,
+                customerName: name,
+                customerPhone: phone,
+                orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
+                area: area,
+                address: address,
+                notes: notes,
+                items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.price * i.qty })),
+                subtotal: subtotal,
+                deliveryFee: deliveryFee,
+                total: total,
+                status: 'جديد',
+                createdAt: new Date().toISOString()
+            };
+
+            // 1. الحفظ في فايربيس الكاشير Firebase Firestore
+            try {
+                if (typeof db !== 'undefined' && db) {
+                    await db.collection('orders').add(orderObj);
+                }
+            } catch (e) {
+                console.warn("Firestore save:", e);
+            }
+
+            // 2. الحفظ المحلي الاحتياطي
+            try {
+                let localOrders = JSON.parse(localStorage.getItem('sys_orders') || '[]');
+                localOrders.unshift(orderObj);
+                localStorage.setItem('sys_orders', JSON.stringify(localOrders));
+            } catch(e) {}
+
+            // 3. إنتاج نص الفاتورة وتحويلها لواتساب الكاشير
+            let typeText = type === 'delivery' ? '🛵 توصيل للمنزل' : (type === 'takeaway' ? '🛍️ استلام سفري' : '🍽️ تناول بالصالة');
+            
+            let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
+            text += `🏷️ *رقم الطلب:* ${orderId}\n`;
+            text += `----------------------------------\n`;
+            text += `👤 *الزبون:* ${name}\n`;
+            text += `📞 *الهاتف:* ${phone}\n`;
+            text += `📌 *الخدمة:* ${typeText}\n`;
+            if (type === 'delivery') {
+                text += `📍 *المنطقة:* ${area}\n`;
+                text += `🏠 *العنوان:* ${address}\n`;
+            }
+            if (notes && notes !== 'لا يوجد') {
+                text += `📝 *ملاحظات:* ${notes}\n`;
+            }
+            text += `----------------------------------\n`;
+            text += `🛒 *الوجبات والطلبات:*\n`;
+            cart.forEach(item => {
+                text += `▫️ ${item.name} × ${item.qty} = ${(item.price * item.qty).toLocaleString()} د.ع\n`;
+            });
+            text += `----------------------------------\n`;
+            text += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString()} د.ع\n`;
+            if (type === 'delivery') {
+                text += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString() + ' د.ع'}\n`;
+            }
+            text += `💰 *المجموع الكلي:* ${total.toLocaleString()} د.ع\n`;
+            text += `⏰ *الوقت:* ${orderTime}\n`;
+            text += `----------------------------------\n`;
+            text += `شكرًا لطلبكم من MIM89 FAST FOOD! ❤️`;
+
+            const cashierPhone = "9647750008630";
+            const waUrl = `https://api.whatsapp.com/send?phone=${cashierPhone}&text=${encodeURIComponent(text)}`;
+
+            // تفريغ السلة وتسكير النافذة
+            cart = [];
+            updateCartUI();
+            closeModal('cartModal');
+
+            // فتح الواتساب فوراً
+            window.location.href = waUrl;
+        }
+
+        // ⏰ فحص حالة أوقات الدوام
+        function checkWorkingHoursStatus() {
+            let workHours = { open: 10, close: 3 };
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) workHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            let isOpen = false;
+            if (workHours.open > workHours.close) {
+                if (currentHour >= workHours.open || currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            } else {
+                if (currentHour >= workHours.open && currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            }
+
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            if (badge && statusText) {
+                if (isOpen) {
+                    badge.className = 'status-badge open';
+                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                } else {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
             initData();
@@ -821,7 +1029,6 @@
             checkWorkingHoursStatus();
             updateCartUI();
 
-            // إخفاء الانترو بعد ثانية وربع بأسلوب انسيابي
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
                 if (splash) {
