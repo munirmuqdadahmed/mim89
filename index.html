@@ -54,7 +54,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 🎬 شاشة اللوكو: تختفي تلقائياً عبر CSS بعد 0.8 ثانية بدون اعتماد على الجافاسكريبت */
+        /* 🎬 شاشة الانطلاقة ذاتية الإخفاء التلقائي */
         .splash-screen {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -163,6 +163,8 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+            user-select: none;
+            touch-action: manipulation;
         }
 
         .hamburger-btn:active { transform: scale(0.92); }
@@ -225,7 +227,7 @@
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(6px);
-            z-index: 3000;
+            z-index: 10000;
             display: none;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -241,7 +243,7 @@
             height: 100%;
             background: #101014;
             border-left: 1px solid var(--gold-primary);
-            z-index: 3001;
+            z-index: 10001;
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
@@ -609,7 +611,7 @@
 </head>
 <body class="public-menu-body">
 
-    <!-- 🎬 شاشة الانطلاقة ذاتية الإخفاء والتلاشي سلفاً -->
+    <!-- 🎬 شاشة الانطلاقة -->
     <div id="splashScreen" class="splash-screen">
         <div class="splash-logo-box">
             <div class="splash-glow-ring"></div>
@@ -629,11 +631,11 @@
             
             <div id="storeStatusBadge" class="status-badge open">
                 <span class="status-dot"></span>
-                <span id="storeStatusText">جاري التحديث...</span>
+                <span id="storeStatusText">مفتوح الآن - نستقبل طلباتكم</span>
             </div>
         </div>
 
-        <button class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
+        <button id="hamburgerBtn" class="hamburger-btn" onclick="toggleSideDrawer()" title="القائمة المباشرة">
             <i class="fa-solid fa-bars"></i>
         </button>
     </header>
@@ -721,7 +723,7 @@
 
             <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
 
-            <!-- 🏷️ قسم كود الخصم (نظيف 100%) -->
+            <!-- 🏷️ قسم كود الخصم -->
             <div style="background:#161622; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:10px;">
                 <div style="display:flex; gap:6px;">
                     <input type="text" id="promoCodeInput" class="gold-input-inline" placeholder="أدخل كود الخصم إن وجد..." value="" style="padding:8px; font-size:0.82rem; text-transform:uppercase;">
@@ -900,8 +902,18 @@
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
 
-        // ⚡ 1. دالة التحديث اللحظي الفوري لأوقات الدوام
-        function checkWorkingHoursStatus() {
+        // 🍔 1. دالة فتح وإغلاق البردة الجانبية المضمونة عالمياً
+        window.toggleSideDrawer = function() {
+            const drawer = document.getElementById('sideDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (drawer && overlay) {
+                drawer.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        };
+
+        // ⚡ 2. دالة التحديث الفوري المباشر لحالة الدوام
+        window.checkWorkingHoursStatus = function() {
             try {
                 const stored = localStorage.getItem('sys_work_hours');
                 if (stored) globalWorkHours = JSON.parse(stored);
@@ -910,11 +922,11 @@
             const badge = document.getElementById('storeStatusBadge');
             const statusText = document.getElementById('storeStatusText');
 
+            if (!badge || !statusText) return { isOpen: true };
+
             if (globalWorkHours.isEmergencyClosed) {
-                if (badge && statusText) {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
-                }
+                badge.className = 'status-badge closed';
+                statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
                 return { isOpen: false, reason: 'emergency' };
             }
 
@@ -928,27 +940,16 @@
                 if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) isOpen = true;
             }
 
-            if (badge && statusText) {
-                if (isOpen) {
-                    badge.className = 'status-badge open';
-                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
-                } else {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${globalWorkHours.open}:00 ص حتى 0${globalWorkHours.close}:00 فجراً`;
-                }
+            if (isOpen) {
+                badge.className = 'status-badge open';
+                statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+            } else {
+                badge.className = 'status-badge closed';
+                statusText.innerText = `مغلق حالياً - أوقات العمل من ${globalWorkHours.open}:00 ص حتى 0${globalWorkHours.close}:00 فجراً`;
             }
 
             return { isOpen, reason: 'time', hours: globalWorkHours };
-        }
-
-        function toggleSideDrawer() {
-            const drawer = document.getElementById('sideDrawer');
-            const overlay = document.getElementById('drawerOverlay');
-            if (drawer && overlay) {
-                drawer.classList.toggle('active');
-                overlay.classList.toggle('active');
-            }
-        }
+        };
 
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -1458,13 +1459,19 @@
             }
         }
 
-        // 🟢 تنفيذ فوري ومستقل
-        checkWorkingHoursStatus();
-
+        // 🚀 ربط واستدعاء فوري عند اكتمال تحميل الصفحة
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
-            
-            // تهيئة النظام وعرض المينيو والفايربيس
+
+            // ربط زر الثلاث شخوط بأداة الاستماع لضمان الاستجابة
+            const btn = document.getElementById('hamburgerBtn');
+            if (btn) {
+                btn.addEventListener('click', window.toggleSideDrawer);
+            }
+
+            // فحص ساعات العمل فوراً
+            window.checkWorkingHoursStatus();
+
             try { if (typeof initData === 'function') initData(); } catch(e){}
             try { loadPublicMenu(); } catch(e){}
             try { syncWorkHoursWithFirebase(); } catch(e){}
