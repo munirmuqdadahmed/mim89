@@ -640,7 +640,7 @@
         </button>
     </header>
 
-    <!-- 🍔 البردة الجانبية (3 شخوط) -->
+    <!-- 🍔 البردة الجانبية (الثلاث شخوط) -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     
     <aside id="sideDrawer" class="side-drawer">
@@ -744,10 +744,11 @@
                 <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px;">
                 <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px;">
 
+                <!-- تقسيم منطقة التوصيل لشريطين مزدوجين (اختيار + كتابة) -->
                 <div id="deliveryFieldsGroup">
-                    <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل (اختر أو أكتب):</label>
+                    <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل والشارع:</label>
                     <div style="display:flex; gap:6px; margin-bottom:8px;">
-                        <select id="custAreaSelect" class="gold-input-inline" onchange="onSelectAreaDropdown(this.value)" style="flex:1; padding:8px; font-size:0.8rem; cursor:pointer; background:#101014;">
+                        <select id="custAreaSelect" class="gold-input-inline" onchange="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem; cursor:pointer; background:#101014;">
                             <option value="القاهرة">📍 القاهرة (مجاني 🎉)</option>
                             <option value="البنوك">📍 البنوك</option>
                             <option value="الشعب">📍 الشعب</option>
@@ -756,10 +757,10 @@
                             <option value="حي أور">📍 حي أور</option>
                             <option value="شارع فلسطين">📍 شارع فلسطين</option>
                             <option value="زيونة">📍 زيونة</option>
-                            <option value="custom">✏️ منطقة أخرى...</option>
+                            <option value="منطقة أخرى">✏️ منطقة أخرى...</option>
                         </select>
 
-                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem; display:none;">
+                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك/الشارع..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem;">
                     </div>
 
                     <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة / الشارع)..." style="margin-bottom:8px;">
@@ -795,7 +796,7 @@
         </div>
     </div>
 
-    <!-- 🍔 نافذة تخصيص الوجبة -->
+    <!-- 🍔 نافذة تخصيص الوجبة (تحويل إجباري) -->
     <div id="itemDetailModal" class="modal-overlay">
         <div class="modal-body" style="text-align:right;">
             <div style="position:relative;">
@@ -907,7 +908,7 @@
             return isNaN(num) ? 0 : num;
         }
 
-        // 🍔 1. إصلاح البردة الجانبية المباشرة
+        // 🍔 1. إصلاح البردة الجانبية المباشرة (الثلاث شخوط)
         window.toggleSideDrawer = function() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
@@ -995,21 +996,6 @@
             calculateDeliveryCost();
         }
 
-        // 📍 التحكم بالحقل النصي المباشر عند اختيار "منطقة أخرى"
-        function onSelectAreaDropdown(val) {
-            const input = document.getElementById('custArea');
-            if (!input) return;
-            if (val === 'custom') {
-                input.style.display = 'block';
-                input.value = '';
-                input.focus();
-            } else {
-                input.style.display = 'none';
-                input.value = '';
-            }
-            calculateDeliveryCost();
-        }
-
         // 🚗 3. التوصيل مجاني لقاهرة دائماً وحساب الأرقام بالأرقام الإنكليزية
         function calculateDeliveryCost() {
             const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
@@ -1026,16 +1012,12 @@
 
             let fee = 0;
             if (type === 'delivery') {
-                if (selectArea === 'القاهرة' || activeAppliedCoupon?.type === 'free_delivery') {
+                const normInput = inputArea.toLowerCase();
+                const isCairo = (selectArea === 'القاهرة') || normInput.includes('قاهرة') || normInput.includes('قاهره');
+
+                if (activeAppliedCoupon?.type === 'free_delivery' || isCairo) {
                     fee = 0;
-                } else if (selectArea === 'custom') {
-                    const normInput = inputArea.toLowerCase();
-                    if (normInput.includes('قاهرة') || normInput.includes('قاهره')) {
-                        fee = 0;
-                    } else if (normInput !== '') {
-                        fee = 2500;
-                    }
-                } else if (selectArea !== '') {
+                } else {
                     fee = 2500;
                 }
             }
@@ -1114,6 +1096,7 @@
             if (floatingTotal) floatingTotal.innerText = total.toLocaleString('en-US') + ' د.ع';
         }
 
+        // 🍔 4. فتح نافذة التخصيص وحساب سعر الوجبة فورياً بالإنكليزي
         window.openItemCustomizationModal = function(itemId) {
             let items = [];
             if (typeof getData === 'function') items = getData('sys_items');
@@ -1132,6 +1115,10 @@
             document.getElementById('detailTitle').innerText = item.name;
             document.getElementById('detailIngredients').innerText = item.ingredients || item.desc || 'وجبة طازجة تحضر فوراً حسب طلبكم.';
             document.getElementById('detailImg').src = item.image || item.img || 'https://via.placeholder.com/300x200?text=MIM89+Fast+Food';
+
+            // إرجاع خيارات الراديو والتشيك بوكس للوضع الافتراضي
+            const normalRadio = document.querySelector('input[name="mealSizeRadio"][value="عادي"]');
+            if (normalRadio) normalRadio.checked = true;
 
             document.querySelectorAll('.extra-item-cb').forEach(cb => cb.checked = false);
             document.getElementById('detailSpecialNotes').value = '';
@@ -1321,8 +1308,8 @@
             else alert("⚠️ لم تقم بإرسال أي طلب حتى الآن.");
         }
 
-        // 🚀 4. إرسال الطلب المباشر عبر الواتساب والفايربيس بالتحويل الفوري (مضمون 100%)
-        window.submitOrderToCashier = async function() {
+        // 🚀 5. إرسال الطلب للفايربيس (الكاشير) والواتساب فوراً
+        window.submitOrderToCashier = function() {
             try {
                 if (!cart || cart.length === 0) {
                     alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
@@ -1336,7 +1323,9 @@
                 let selectArea = document.getElementById('custAreaSelect')?.value || '';
                 let inputArea = document.getElementById('custArea')?.value.trim() || '';
 
-                let area = (selectArea && selectArea !== 'custom') ? selectArea : (inputArea || 'غير محدد');
+                let area = selectArea;
+                if (inputArea) area += ` (${inputArea})`;
+
                 const address = document.getElementById('custAddress')?.value.trim();
                 const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
 
@@ -1349,10 +1338,6 @@
                     return;
                 }
                 if (type === 'delivery') {
-                    if (!area || area === 'غير محدد') {
-                        alert("⚠️ يرجى اختيار منطقة التوصيل!");
-                        return;
-                    }
                     if (!address) {
                         alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
                         return;
@@ -1369,13 +1354,10 @@
 
                 let deliveryFee = 0;
                 if (type === 'delivery') {
-                    if (selectArea === 'القاهرة' || activeAppliedCoupon?.type === 'free_delivery') {
-                        deliveryFee = 0;
-                    } else if (selectArea === 'custom' && (inputArea.includes('قاهرة') || inputArea.includes('قاهره'))) {
-                        deliveryFee = 0;
-                    } else {
-                        deliveryFee = 2500;
-                    }
+                    const normInput = inputArea.toLowerCase();
+                    const isCairo = (selectArea === 'القاهرة') || normInput.includes('قاهرة') || normInput.includes('قاهره');
+                    if (activeAppliedCoupon?.type === 'free_delivery' || isCairo) deliveryFee = 0;
+                    else deliveryFee = 2500;
                 }
 
                 const total = Math.max(0, subtotal - discount) + deliveryFee;
@@ -1400,10 +1382,12 @@
 
                 localStorage.setItem('sys_last_order_id', orderId);
 
+                // إرسال الطلب إلى قاعدة بيانات الفايربيس للـ Cashier
                 if (typeof db !== 'undefined' && db) {
-                    await db.collection('orders').add(orderObj).catch(e => console.warn(e));
+                    db.collection('orders').add(orderObj).catch(e => console.warn("Firebase Order Error:", e));
                 }
 
+                // تجهيز نص رسالة الواتساب بالأرقام الإنكليزية
                 let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
                 text += `🏷️ *رقم الطلب:* ${orderId}\n`;
                 text += `----------------------------------\n`;
@@ -1431,8 +1415,8 @@
                 cart = [];
                 updateCartUI();
                 closeModal('cartModal');
-                
-                // تحويل مباشر وسريع للواتساب لضمان الفتح دون حجب المتصفح
+
+                // التحويل المباشر للواتساب
                 window.location.href = waUrl;
             } catch(err) {
                 alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
@@ -1486,6 +1470,7 @@
                                     </div>
                                     <div class="item-footer">
                                         <div class="item-price">${cleanPrice(item.price).toLocaleString('en-US')} د.ع</div>
+                                        <!-- زر الزائد يفتح نافذة التخصيص إجبارياً -->
                                         <button class="add-cart-btn ${isSoldOut ? 'disabled' : ''}" onclick="openItemCustomizationModal(${item.id})" ${isSoldOut ? 'disabled' : ''}>
                                             ${isSoldOut ? '✕' : '+'}
                                         </button>
