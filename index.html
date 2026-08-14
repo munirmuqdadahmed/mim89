@@ -54,6 +54,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* 🎬 شاشة الانطلاقة المحسّنة مع إلغاء اللمس تلقائياً */
         .splash-screen {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -62,12 +63,19 @@
             justify-content: center;
             align-items: center;
             z-index: 99999;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            display: none !important;
         }
 
         .splash-logo-box {
             text-align: center;
-            animation: splashPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: splashPop 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             position: relative;
         }
 
@@ -751,7 +759,7 @@
         </div>
     </aside>
 
-    <!-- 🏷️ شريط الأقسام السريع الديناميكي -->
+    <!-- 🏷️ شريط الأقسام السريع -->
     <div id="categoriesNav" class="categories-sticky-bar"></div>
 
     <!-- 📱 شبكة الوجبات الرئيسية -->
@@ -788,7 +796,7 @@
 
             <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
 
-            <!-- 🏷️ قسم إدخال كود الخصم (نظيف وفارغ 100%) -->
+            <!-- 🏷️ قسم كود الخصم (نظيف 100%) -->
             <div style="background:#161622; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:10px;">
                 <div style="display:flex; gap:6px;">
                     <input type="text" id="promoCodeInput" class="gold-input-inline" placeholder="أدخل كود الخصم إن وجد..." value="" style="padding:8px; font-size:0.82rem; text-transform:uppercase;">
@@ -825,7 +833,7 @@
                             <option value="custom">✏️ منطقة أخرى...</option>
                         </select>
 
-                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك هنا..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem;">
+                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem;">
                     </div>
 
                     <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px;">
@@ -834,7 +842,7 @@
                 <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب العام..." style="margin-bottom:4px;">
             </div>
 
-            <!-- حساب المجموع والخصومات والتوصيل -->
+            <!-- حساب المجموع -->
             <div style="background:#16161c; padding:12px 16px; border-radius:12px; font-size:0.9rem; margin-bottom:14px; border:1px solid #282835;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span>مجموع الوجبات:</span>
@@ -861,7 +869,7 @@
         </div>
     </div>
 
-    <!-- 🍔 نافذة تفاصيل وتخصيص الوجبة -->
+    <!-- 🍔 نافذة تخصيص الوجبة -->
     <div id="itemDetailModal" class="modal-overlay">
         <div class="modal-body" style="text-align:right;">
             <div style="position:relative;">
@@ -897,7 +905,7 @@
             </div>
 
             <div style="margin-bottom:12px;">
-                <input type="text" id="detailSpecialNotes" class="gold-input-inline" placeholder="توجيهات خاصة للطباخ (مثلاً: محمصة زياده...)" style="font-size:0.8rem;">
+                <input type="text" id="detailSpecialNotes" class="gold-input-inline" placeholder="توجيهات خاصة للطباخ..." style="font-size:0.8rem;">
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:10px 14px; border-radius:12px; margin-bottom:12px; border:1px solid var(--gold-primary);">
@@ -905,13 +913,13 @@
                 <strong id="detailCalculatedPrice" style="color:var(--gold-bright); font-size:1.2rem;">0 د.ع</strong>
             </div>
 
-            <button id="detailAddBtn" onclick="addCustomizedItemToCart()" style="width:100%; padding:14px; background:var(--gold-gradient); color:#000; border:none; border-radius:12px; font-weight:900; cursor:pointer; font-size:1.05rem; box-shadow:0 4px 15px rgba(245,158,11,0.4);">
+            <button id="detailAddBtn" onclick="addCustomizedItemToCart()" style="width:100%; padding:14px; background:var(--gold-gradient); color:#000; border:none; border-radius:12px; font-weight:900; cursor:pointer; font-size:1.05rem;">
                 إضافة للسلة 🛒
             </button>
         </div>
     </div>
 
-    <!-- 🛵 نافذة تتبع حالة الطلب المباشر -->
+    <!-- 🛵 نافذة التتبع -->
     <div id="orderTrackerModal" class="modal-overlay">
         <div class="modal-body" style="text-align:center; max-width:420px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:8px; margin-bottom:12px;">
@@ -949,16 +957,16 @@
             </div>
 
             <div id="trackStatusMsgBox" style="background:#16161c; padding:12px; border-radius:10px; font-size:0.85rem; color:#fff; margin-bottom:14px; border:1px solid #2a2a35; line-height:1.5;">
-                جاري جلب حالة الطلب من الكاشير...
+                جاري جلب حالة الطلب...
             </div>
 
             <a id="trackWhatsappBtn" href="#" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px;">
-                <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i> الاستفسار من الكاشير عبر الواتساب
+                <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i> الاستفسار عبر الواتساب
             </a>
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي المباشر مع استدعاء النظام الأصلي -->
+    <!-- 🧠 المحرك البرمجي المباشر والموثوق -->
     <script src="app.js"></script>
     <script>
         let cart = [];
@@ -966,6 +974,59 @@
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
+
+        // 🟢 1. دالة فحص وتحديث شارة ساعات العمل فوراً (تقرأ المحلي قبل أي انتظر للفايربيس)
+        function checkWorkingHoursStatus() {
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) globalWorkHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            if (globalWorkHours.isEmergencyClosed) {
+                if (badge && statusText) {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
+                }
+                return { isOpen: false, reason: 'emergency' };
+            }
+
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            let isOpen = false;
+            if (globalWorkHours.open > globalWorkHours.close) {
+                if (currentHour >= globalWorkHours.open || currentHour < globalWorkHours.close) {
+                    isOpen = true;
+                }
+            } else {
+                if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) {
+                    isOpen = true;
+                }
+            }
+
+            if (badge && statusText) {
+                if (isOpen) {
+                    badge.className = 'status-badge open';
+                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                } else {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${globalWorkHours.open}:00 ص حتى 0${globalWorkHours.close}:00 فجراً`;
+                }
+            }
+
+            return { isOpen, reason: 'time', hours: globalWorkHours };
+        }
+
+        // 🎬 2. دالة إخفاء الشاشة الافتتاحية مع حظر اللمس نهائياً
+        function hideSplashScreenNow() {
+            const splash = document.getElementById('splashScreen');
+            if (splash) {
+                splash.classList.add('hidden');
+            }
+        }
 
         function toggleSideDrawer() {
             const drawer = document.getElementById('sideDrawer');
@@ -981,8 +1042,12 @@
             if (modal) modal.style.display = 'none';
         }
 
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'flex';
+        }
+
         function openCartModal() {
-            // تفريغ وتصفير حقل الكوبون تماماً لمنع الخصم التلقائي
             activeAppliedCoupon = null;
             const promoInput = document.getElementById('promoCodeInput');
             const promoStatus = document.getElementById('promoCodeStatus');
@@ -991,8 +1056,7 @@
 
             renderCartModalItems();
             calculateDeliveryCost();
-            const modal = document.getElementById('cartModal');
-            if (modal) modal.style.display = 'flex';
+            openModal('cartModal');
         }
 
         function toggleDeliveryFields() {
@@ -1107,9 +1171,11 @@
             if (floatingTotal) floatingTotal.innerText = total.toLocaleString() + ' د.ع';
         }
 
-        // 🍔 جلب الوجبات الأصلية من النظام
         window.openItemCustomizationModal = function(itemId) {
-            const items = getData('sys_items');
+            let items = [];
+            if (typeof getData === 'function') items = getData('sys_items');
+            else try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e) {}
+
             const item = items.find(i => Number(i.id) === Number(itemId));
             if (!item) return;
 
@@ -1181,7 +1247,6 @@
             calculateDeliveryCost();
         };
 
-        // 🏷️ تطبيق كود الخصم (منظف ومؤكد)
         function applyPromoCode() {
             const codeInput = document.getElementById('promoCodeInput')?.value.trim().toUpperCase();
             const statusEl = document.getElementById('promoCodeStatus');
@@ -1223,13 +1288,7 @@
             }
         }
 
-        // 📡 المزامنة مع الفايربيس
         function syncWorkHoursWithFirebase() {
-            try {
-                const stored = localStorage.getItem('sys_work_hours');
-                if (stored) globalWorkHours = JSON.parse(stored);
-            } catch(e) {}
-
             if (typeof db !== 'undefined' && db) {
                 db.collection('settings').doc('work_hours').onSnapshot((doc) => {
                     if (doc.exists) {
@@ -1251,47 +1310,9 @@
                         loadPublicMenu();
                     }
                 });
-            } else {
-                checkWorkingHoursStatus();
             }
         }
 
-        function checkWorkingHoursStatus() {
-            const badge = document.getElementById('storeStatusBadge');
-            const statusText = document.getElementById('storeStatusText');
-
-            if (globalWorkHours.isEmergencyClosed) {
-                if (badge && statusText) {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
-                }
-                return { isOpen: false, reason: 'emergency' };
-            }
-
-            const now = new Date();
-            const currentHour = now.getHours();
-
-            let isOpen = false;
-            if (globalWorkHours.open > globalWorkHours.close) {
-                if (currentHour >= globalWorkHours.open || currentHour < globalWorkHours.close) isOpen = true;
-            } else {
-                if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) isOpen = true;
-            }
-
-            if (badge && statusText) {
-                if (isOpen) {
-                    badge.className = 'status-badge open';
-                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
-                } else {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${globalWorkHours.open}:00 ص حتى 0${globalWorkHours.close}:00 فجراً`;
-                }
-            }
-
-            return { isOpen, reason: 'time', hours: globalWorkHours };
-        }
-
-        // 🛵 تتبع حالة الطلب المباشر
         function listenToOrderTracking(orderId) {
             document.getElementById('trackOrderIdDisplay').innerText = orderId;
             openModal('orderTrackerModal');
@@ -1355,7 +1376,6 @@
             else alert("⚠️ لم تقم بإرسال أي طلب حتى الآن.");
         }
 
-        // 🚀 إرسال الطلب للمطبخ والكاشير
         async function submitOrderToCashier() {
             const status = checkWorkingHoursStatus();
             if (!status.isOpen) {
@@ -1454,17 +1474,26 @@
             window.open(waUrl, '_blank');
         }
 
-        // 🍔 عرض المينيو الأصلي بناءً على بيانات app.js
         window.loadPublicMenu = function() {
             const container = document.getElementById('menuSections');
             const navContainer = document.getElementById('categoriesNav');
             if (!container) return;
 
-            const items = getData('sys_items');
-            const cats = getData('sys_categories');
+            let items = [];
+            let cats = [];
+
+            if (typeof getData === 'function') {
+                items = getData('sys_items');
+                cats = getData('sys_categories');
+            } else {
+                try {
+                    items = JSON.parse(localStorage.getItem('sys_items')) || [];
+                    cats = JSON.parse(localStorage.getItem('sys_categories')) || [];
+                } catch(e) {}
+            }
+
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
-            // 1. بناء شريط الأقسام العلوي
             if (navContainer && cats && cats.length > 0) {
                 let navHtml = `<button class="category-tab active" onclick="scrollToCategory('all')">الكل 🍔</button>`;
                 cats.forEach(c => {
@@ -1473,7 +1502,6 @@
                 navContainer.innerHTML = navHtml;
             }
 
-            // 2. بناء شبكة الوجبات الأصلية
             let html = '';
             cats.forEach(c => {
                 const catItems = items.filter(i => Number(i.catId) === Number(c.id));
@@ -1517,23 +1545,21 @@
             }
         }
 
+        // 🚀 بداية التشغيل المنظم والسريع
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
-            
-            // تهيئة بيانات النظام الأصلية المعتادة
-            if (typeof initData === 'function') initData();
-            
-            loadPublicMenu();
-            syncWorkHoursWithFirebase();
-            updateCartUI();
 
-            setTimeout(() => {
-                const splash = document.getElementById('splashScreen');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    splash.style.visibility = 'hidden';
-                }
-            }, 1000);
+            // 1. فحص وتحديد حالة الدوام فوراً بآلية محلية فائقة السرعة
+            checkWorkingHoursStatus();
+
+            // 2. إخفاء اللوكو مضموناً وبدون تعليق بعد 600ms
+            setTimeout(hideSplashScreenNow, 600);
+
+            // 3. تهيئة البيانات الآمنة
+            try { if (typeof initData === 'function') initData(); } catch(e) { console.warn(e); }
+            try { loadPublicMenu(); } catch(e) { console.warn(e); }
+            try { syncWorkHoursWithFirebase(); } catch(e) { console.warn(e); }
+            try { updateCartUI(); } catch(e) { console.warn(e); }
         });
     </script>
 </body>
