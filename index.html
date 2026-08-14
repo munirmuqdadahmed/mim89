@@ -674,7 +674,7 @@
         </div>
     </div>
 
-    <!-- 🛒 نافذة السلة المنبثقة وتأكيد الطلب المربوطة بالكاشير -->
+    <!-- 🛒 نافذة السلة المنبثقة وتأكيد الطلب -->
     <div id="cartModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #333; padding-bottom:8px;">
@@ -721,7 +721,7 @@
                 </div>
             </div>
 
-            <!-- زر التأكيد المربوط بالكاشير والواتساب -->
+            <!-- زر التأكيد المربوط بالكاشير والواتساب مع فحص أوقات الدوام -->
             <button id="sendOrderBtn" onclick="submitOrderToCashier()" style="padding:14px; font-size:1.05rem; font-weight:900; background:linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; border-radius:10px; cursor:pointer; width:100%; box-shadow:0 4px 18px rgba(16, 185, 129, 0.45);">
                 تأكيد وإرسال الطلب عبر الواتساب 🚀
             </button>
@@ -874,8 +874,55 @@
             calculateDeliveryCost();
         };
 
-        // 🚀 دالة إرسال الطلب المباشرة للكاشير والواتساب
+        // ⏰ دالة التحقق الذكية من حالة الدوام
+        function checkWorkingHoursStatus() {
+            let workHours = { open: 10, close: 3 }; // 10:00 AM to 03:00 AM
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) workHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            let isOpen = false;
+            if (workHours.open > workHours.close) {
+                if (currentHour >= workHours.open || currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            } else {
+                if (currentHour >= workHours.open && currentHour < workHours.close) {
+                    isOpen = true;
+                }
+            }
+
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            if (badge && statusText) {
+                if (isOpen) {
+                    badge.className = 'status-badge open';
+                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                } else {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
+                }
+            }
+
+            return { isOpen, workHours };
+        }
+
+        // 🚀 دالة إرسال الطلب المباشرة مع الفحص الحازم لأوقات الدوام
         async function submitOrderToCashier() {
+            // 🛑 1. فحص هل المطعم مفتوح الآن أم مغلق؟
+            const { isOpen, workHours } = checkWorkingHoursStatus();
+            
+            if (!isOpen) {
+                alert(`⚠️ أهلاً بك! المطعم مغلق حالياً وللأسف لا نستقبل الطلبات في هذا الوقت.\n\n⏰ أوقات العمل الرسمية: يومياً من الساعة ${workHours.open}:00 صباحاً وحتى الساعة 0${workHours.close}:00 بعد منتصف الليل.`);
+                return; // إيقاف العملية نهائياً وعدم إرسال الطلب!
+            }
+
+            // 🛑 2. فحص السلة
             if (!cart || cart.length === 0) {
                 alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
                 return;
@@ -984,42 +1031,6 @@
 
             // فتح الواتساب فوراً
             window.location.href = waUrl;
-        }
-
-        // ⏰ فحص حالة أوقات الدوام
-        function checkWorkingHoursStatus() {
-            let workHours = { open: 10, close: 3 };
-            try {
-                const stored = localStorage.getItem('sys_work_hours');
-                if (stored) workHours = JSON.parse(stored);
-            } catch(e) {}
-
-            const now = new Date();
-            const currentHour = now.getHours();
-
-            let isOpen = false;
-            if (workHours.open > workHours.close) {
-                if (currentHour >= workHours.open || currentHour < workHours.close) {
-                    isOpen = true;
-                }
-            } else {
-                if (currentHour >= workHours.open && currentHour < workHours.close) {
-                    isOpen = true;
-                }
-            }
-
-            const badge = document.getElementById('storeStatusBadge');
-            const statusText = document.getElementById('storeStatusText');
-
-            if (badge && statusText) {
-                if (isOpen) {
-                    badge.className = 'status-badge open';
-                    statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
-                } else {
-                    badge.className = 'status-badge closed';
-                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
-                }
-            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
