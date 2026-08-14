@@ -14,7 +14,6 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -222,7 +221,7 @@
             50% { opacity: 0.3; }
         }
 
-        /* 🍔 إصلاح طبقة البردة الجانبية */
+        /* 🍔 البردة الجانبية */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -728,7 +727,7 @@
             <div style="background:#161622; padding:10px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:10px;">
                 <div style="display:flex; gap:6px;">
                     <input type="text" id="promoCodeInput" class="gold-input-inline" placeholder="أدخل كود الخصم إن وجد..." value="" style="padding:8px; font-size:0.82rem; text-transform:uppercase;">
-                    <button type="button" onclick="applyPromoCode()" class="gold-btn" style="width:auto; padding:8px 14px; font-size:0.8rem; background:var(--gold-primary); color:#000;">تطبيق</button>
+                    <button type="button" onclick="applyPromoCode()" class="gold-btn" style="width:auto; padding:8px 14px; font-size:0.8rem; background:var(--gold-primary); color:#000; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">تطبيق</button>
                 </div>
                 <div id="promoCodeStatus" style="font-size:0.75rem; margin-top:4px; font-weight:bold; display:none;"></div>
             </div>
@@ -888,7 +887,7 @@
                 جاري جلب حالة الطلب...
             </div>
 
-            <a id="trackWhatsappBtn" href="#" target="_blank" class="gold-btn" style="background:#25D366; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px;">
+            <a id="trackWhatsappBtn" href="#" target="_blank" style="background:#25D366; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; font-weight:bold; font-size:0.9rem;">
                 <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i> الاستفسار عبر الواتساب
             </a>
         </div>
@@ -897,7 +896,6 @@
     <!-- 🧠 المحرك البرمجي المباشر والموثوق -->
     <script src="app.js"></script>
     <script>
-        let cart = [];
         let globalWorkHours = { open: 10, close: 3, isEmergencyClosed: false };
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
@@ -937,7 +935,7 @@
 
             if (globalWorkHours.isEmergencyClosed) {
                 badge.className = 'status-badge closed';
-                statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
+                statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدحام';
                 return { isOpen: false, reason: 'emergency' };
             }
 
@@ -1010,7 +1008,7 @@
             const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
             const areaInput = document.getElementById('custArea')?.value.trim() || document.getElementById('custAreaSelect')?.value || '';
             
-            const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty)), 0);
+            const subtotal = cart.reduce((sum, item) => sum + (cleanPrice(item.price) * cleanPrice(item.qty)), 0);
             
             let discount = 0;
             if (activeAppliedCoupon) {
@@ -1072,7 +1070,7 @@
 
             let html = '';
             cart.forEach((item, index) => {
-                const itemTotal = Number(item.price) * Number(item.qty);
+                const itemTotal = cleanPrice(item.price) * cleanPrice(item.qty);
                 html += `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:#181820; padding:10px 12px; border-radius:10px; margin-bottom:8px; border:1px solid #282835;">
                         <div style="flex-grow:1;">
@@ -1091,10 +1089,10 @@
             container.innerHTML = html;
         }
 
-        // 🛒 3. إصلاح احتساب وتحديث مجموع السلة اللحظي
+        // 🛒 3. تحديث مجموع وحسابات السلة
         function updateCartUI() {
-            const count = cart.reduce((sum, i) => sum + Number(i.qty), 0);
-            const total = cart.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0);
+            const count = cart.reduce((sum, i) => sum + cleanPrice(i.qty), 0);
+            const total = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
 
             const badge = document.getElementById('cartBadgeCount');
             const floatingTotal = document.getElementById('floatingCartTotal');
@@ -1108,19 +1106,19 @@
             if (typeof getData === 'function') items = getData('sys_items');
             else try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e) {}
 
-            const item = items.find(i => Number(i.id) === Number(itemId));
+            const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
             if (!item) return;
 
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
-            if (soldOutItems.includes(Number(itemId))) {
+            if (soldOutItems.includes(cleanPrice(itemId))) {
                 alert("⚠️ نعتذر منكم! هذه الوجبة نفدت حالياً من المطعم.");
                 return;
             }
 
             currentDetailItem = item;
             document.getElementById('detailTitle').innerText = item.name;
-            document.getElementById('detailIngredients').innerText = item.desc || 'وجبة طازجة تحضر فوراً حسب طلبكم.';
-            document.getElementById('detailImg').src = item.img || 'https://via.placeholder.com/300x200?text=MIM89+Fast+Food';
+            document.getElementById('detailIngredients').innerText = item.ingredients || item.desc || 'وجبة طازجة تحضر فوراً حسب طلبكم.';
+            document.getElementById('detailImg').src = item.image || item.img || 'https://via.placeholder.com/300x200?text=MIM89+Fast+Food';
 
             document.querySelectorAll('.extra-item-cb').forEach(cb => cb.checked = false);
             document.getElementById('detailSpecialNotes').value = '';
@@ -1131,13 +1129,13 @@
 
         function recalculateItemDetailTotal() {
             if (!currentDetailItem) return 0;
-            let total = Number(currentDetailItem.price) || 0;
+            let total = cleanPrice(currentDetailItem.price) || 0;
 
             const selectedSize = document.querySelector('input[name="mealSizeRadio"]:checked');
-            if (selectedSize) total += Number(selectedSize.getAttribute('data-extra-price')) || 0;
+            if (selectedSize) total += cleanPrice(selectedSize.getAttribute('data-extra-price')) || 0;
 
             document.querySelectorAll('.extra-item-cb:checked').forEach(cb => {
-                total += Number(cb.getAttribute('data-price')) || 0;
+                total += cleanPrice(cb.getAttribute('data-price')) || 0;
             });
 
             document.getElementById('detailCalculatedPrice').innerText = total.toLocaleString('ar-IQ') + ' د.ع';
@@ -1160,7 +1158,7 @@
             cart.push({
                 id: currentDetailItem.id,
                 name: currentDetailItem.name,
-                price: Number(finalPrice),
+                price: cleanPrice(finalPrice),
                 qty: 1,
                 customNotes: notesArr.join(' | ')
             });
@@ -1226,8 +1224,8 @@
                     if (doc.exists) {
                         const data = doc.data();
                         globalWorkHours = {
-                            open: Number(data.open ?? 10),
-                            close: Number(data.close ?? 3),
+                            open: cleanPrice(data.open ?? 10),
+                            close: cleanPrice(data.close ?? 3),
                             isEmergencyClosed: !!data.isEmergencyClosed
                         };
                         localStorage.setItem('sys_work_hours', JSON.stringify(globalWorkHours));
@@ -1276,6 +1274,8 @@
             const bar = document.getElementById('trackProgressBar');
             const msg = document.getElementById('trackStatusMsgBox');
 
+            if (!s1 || !s2 || !s3 || !s4 || !bar) return;
+
             s1.className = 'step-item completed';
             s2.className = 'step-item';
             s3.className = 'step-item';
@@ -1309,124 +1309,6 @@
         }
 
         // 🚀 4. إصلاح إرسال وتصدير الطلب للواتساب والفايربيس
-        async function submitOrderToCashier() {
-            const status = checkWorkingHoursStatus();
-            if (!status.isOpen) {
-                if (status.reason === 'emergency') {
-                    alert("⚠️ نعتذر منكم جداً! المطعم مغلق مؤقتاً في الوقت الحالي بسبب الازدهام الشديد.");
-                } else {
-                    alert(`⚠️ أهلاً بك! المطعم مغلق حالياً وللأسف لا نستقبل الطلبات في هذا الوقت.`);
-                }
-                return;
-            }
-
-            if (!cart || cart.length === 0) {
-                alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
-                return;
-            }
-
-            const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
-            const name = document.getElementById('custName')?.value.trim();
-            const phone = document.getElementById('custPhone')?.value.trim();
-            
-            // جلب المنطقة بدقة سواء من الحقل النصي أو المنسدلة
-            let inputArea = document.getElementById('custArea')?.value.trim();
-            let selectArea = document.getElementById('custAreaSelect')?.value;
-            let area = (inputArea && inputArea !== '') ? inputArea : ((selectArea && selectArea !== 'custom') ? selectArea : 'غير محدد');
-
-            const address = document.getElementById('custAddress')?.value.trim();
-            const notes = document.getElementById('orderNotes')?.value.trim() || 'لا يوجد';
-
-            // الفحص الدقيق والذكي للحقول المطلوبة
-            if (!name || name === '') {
-                alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
-                return;
-            }
-            if (!phone || phone === '') {
-                alert("⚠️ يرجى كتابة رقم الهاتف لتأكيد الطلب!");
-                return;
-            }
-            if (type === 'delivery') {
-                if (!area || area === 'غير محدد' || area === '-- اختر المنطقة --') {
-                    alert("⚠️ يرجى اختيار أو كتابة منطقة التوصيل!");
-                    return;
-                }
-                if (!address || address === '') {
-                    alert("⚠️ يرجى كتابة العنوان التفصيلي (أقرب نقطة دالة)!");
-                    return;
-                }
-            }
-
-            const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty)), 0);
-            
-            let discount = 0;
-            if (activeAppliedCoupon) {
-                if (activeAppliedCoupon.type === 'percent') discount = Math.round(subtotal * (activeAppliedCoupon.value / 100));
-                else if (activeAppliedCoupon.type === 'amount') discount = activeAppliedCoupon.value;
-            }
-
-            let deliveryFee = 0;
-            if (type === 'delivery') {
-                if (activeAppliedCoupon?.type === 'free_delivery' || area.includes('قاهرة') || area.includes('قاهره')) deliveryFee = 0;
-                else if (area) deliveryFee = 2500;
-            }
-            const total = Math.max(0, subtotal - discount) + deliveryFee;
-            const orderId = "MIM-" + Math.floor(1000 + Math.random() * 9000);
-
-            const orderObj = {
-                orderId: orderId,
-                customerName: name,
-                customerPhone: phone,
-                orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
-                area: area,
-                address: address || 'غير محدد',
-                notes: notes,
-                items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price, total: i.price * i.qty, customNotes: i.customNotes || '' })),
-                subtotal: subtotal,
-                discount: discount,
-                deliveryFee: deliveryFee,
-                total: total,
-                status: 'جديد',
-                createdAt: new Date().toISOString()
-            };
-
-            localStorage.setItem('sys_last_order_id', orderId);
-
-            if (typeof db !== 'undefined' && db) {
-                await db.collection('orders').add(orderObj).catch(e => console.warn(e));
-            }
-
-            let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
-            text += `🏷️ *رقم الطلب:* ${orderId}\n`;
-            text += `----------------------------------\n`;
-            text += `👤 *الزبون:* ${name}\n`;
-            text += `📞 *الهاتف:* ${phone}\n`;
-            text += `📌 *الخدمة:* ${type === 'delivery' ? '🛵 توصيل' : (type === 'takeaway' ? '🛍️ سفري' : '🍽️ داخل الصالة')}\n`;
-            if (type === 'delivery') {
-                text += `📍 *المنطقة:* ${area}\n`;
-                text += `🏠 *العنوان:* ${address}\n`;
-            }
-            if (notes && notes !== 'لا يوجد') text += `📝 *ملاحظات:* ${notes}\n`;
-            text += `----------------------------------\n`;
-            text += `🛒 *الوجبات والطلبات:*\n`;
-            cart.forEach(item => {
-                text += `▫️ ${item.name}${item.customNotes ? ' ('+item.customNotes+')' : ''} × ${item.qty} = ${(item.price * item.qty).toLocaleString('ar-IQ')} د.ع\n`;
-            });
-            text += `----------------------------------\n`;
-            text += `💵 *مجموع الوجبات:* ${subtotal.toLocaleString('ar-IQ')} د.ع\n`;
-            if (discount > 0) text += `🏷️ *خصم الكوبون:* - ${discount.toLocaleString('ar-IQ')} د.ع\n`;
-            if (type === 'delivery') text += `🛵 *أجور التوصيل:* ${deliveryFee === 0 ? 'مجاني 🎉' : deliveryFee.toLocaleString('ar-IQ') + ' د.ع'}\n`;
-            text += `💰 *المجموع الكلي:* ${total.toLocaleString('ar-IQ')} د.ع\n`;
-
-            const waUrl = `https://api.whatsapp.com/send?phone=9647750008630&text=${encodeURIComponent(text)}`;
-
-            cart = [];
-            updateCartUI();
-            closeModal('cartModal');
-            listenToOrderTracking(orderId);
-            window.open(waUrl, '_blank');
-        }
-
         window.loadPublicMenu = function() {
             const container = document.getElementById('menuSections');
             const navContainer = document.getElementById('categoriesNav');
@@ -1457,23 +1339,23 @@
 
             let html = '';
             cats.forEach(c => {
-                const catItems = items.filter(i => Number(i.catId) === Number(c.id));
+                const catItems = items.filter(i => (cleanPrice(i.categoryId) || cleanPrice(i.catId)) === cleanPrice(c.id));
                 if (catItems.length > 0) {
                     html += `<div id="cat_${c.id}"><h2 class="category-header" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;">${c.name}</h2>`;
                     html += `<div class="items-grid">`;
                     catItems.forEach(item => {
-                        const isSoldOut = soldOutItems.includes(Number(item.id));
+                        const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
                         html += `
                             <div class="item-card ${isSoldOut ? 'sold-out' : ''}">
                                 ${isSoldOut ? '<span class="sold-out-badge">نفدت الكمية 🚫</span>' : ''}
-                                <img src="${item.img || 'https://via.placeholder.com/180x135'}" class="item-img" onclick="openItemCustomizationModal(${item.id})">
+                                <img src="${item.image || item.img || 'https://via.placeholder.com/180x135'}" class="item-img" onclick="openItemCustomizationModal(${item.id})">
                                 <div class="item-details">
                                     <div>
                                         <div class="item-name">${item.name}</div>
-                                        <div class="item-desc">${item.desc || ''}</div>
+                                        <div class="item-desc">${item.ingredients || item.desc || ''}</div>
                                     </div>
                                     <div class="item-footer">
-                                        <div class="item-price">${Number(item.price).toLocaleString('ar-IQ')} د.ع</div>
+                                        <div class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</div>
                                         <button class="add-cart-btn ${isSoldOut ? 'disabled' : ''}" onclick="openItemCustomizationModal(${item.id})" ${isSoldOut ? 'disabled' : ''}>
                                             ${isSoldOut ? '✕' : '+'}
                                         </button>
