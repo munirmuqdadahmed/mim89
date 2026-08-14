@@ -2122,20 +2122,120 @@ function cancelIncomingOrder(docId, orderId) {
     }
 }
 
-function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
+// 1. دالة نقل الطلب الوارد مباشرة لكاشير المبيعات مع تحميل الوجبات للسلة وتغيير حالته
+function loadIncomingCallToPos(docId, orderId, phone, name, area, address, itemsJsonString) {
+    // أ. الانتقال لشاشة المبيعات المباشرة (POS)
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
 
+    // ب. تعبئة بيانات الزبون في حقل الكاشير
     const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
     const custInput = document.getElementById('posCustName');
     if (custInput) custInput.value = infoText;
+
+    // ج. تفريغ سلة الوجبات الحالية في الكاشير وتعبئة وجبات الطلب الوارد إن وجدت
+    posCart = [];
+    if (itemsJsonString && itemsJsonString !== '') {
+        try {
+            const parsedItems = JSON.parse(decodeURIComponent(itemsJsonString));
+            if (Array.isArray(parsedItems)) {
+                parsedItems.forEach(i => {
+                    posCart.push({
+                        id: i.id || Date.now(),
+                        name: i.name,
+                        price: cleanPrice(i.price),
+                        qty: cleanPrice(i.qty) || 1,
+                        itemNotes: i.customNotes ? [i.customNotes] : []
+                    });
+                });
+            }
+        } catch (e) {
+            console.error("Error parsing incoming items:", e);
+        }
+    }
+    renderPosCart();
+
+    // د. حفظ وتحديث حالة الطلب في قاعدة البيانات السحابية والمحلية لكي يختفي من "الطلبات الواردة"
+    if (db && docId) {
+        db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
+          .catch(err => console.error("Error updating order status in cloud:", err));
+    }
+
+    let liveOrders = getData('sys_live_orders') || [];
+    liveOrders = liveOrders.filter(o => String(o.docId || o.id) !== String(docId) && String(o.id) !== String(orderId));
+    setData('sys_live_orders', liveOrders);
+
+    // هـ. حذف الكارت بصرياً من واجهة الطلبات الواردة فوراً
+    const cardEl = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
+    if (cardEl) cardEl.remove();
 
     if (phone && phone !== 'بدون رقم') {
         saveCustomerRecord(name, phone, area, address);
     }
 
-    alert(`تم جلب بيانات الزبون (${name}) لشاشة المبيعات بنجاح! اختر الوجبات من القائمة للمحاسبة.`);
+    alert(`✅ تم نقل الطلب ووجبات الزبون (${name}) إلى سلة المبيعات بنجاح!`);
 }
+
+// 2. مولد كروت الطلبات الواردة مع التمييز بين (طلب المينيو الإلكتروني) و (مكالمة هاتفية)
+function generateOrderCardHTML(ord, docId) {
+    const itemsList = Array.isArray(ord.items) ? ord.items : [];
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
+
+    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
+    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
+    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
+
+    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
+        ? rawName 
+        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
+
+    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
+    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
+
+    const safeDocId = String(docId || '');
+    const safeOrderId = String(ord.id || docId || '');
+    const safePhone = String(rawPhone || '');
+    const safeName = String(displayName || '').replace(/'/g, "\\'");
+    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
+    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
+    
+    // ترميز الوجبات لنقلها بشكل سليم لدالة الكاشير
+    const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
+
+    // 🏷️ تمييز مصدر الطلب بناءً على وجود وجبات مرفقة (طلب من المينيو) أو مكالمة هاتفية صرفة
+    const isWebMenuOrder = itemsList.length > 0;
+    const sourceBadge = isWebMenuOrder 
+        ? `<span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">🌐 طلب مباشر من المينيو الإلكتروني</span>`
+        : `<span style="background:#f59e0b; color:#000; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">📞 مكالمة هاتفية واردة</span>`;
+
+    return `
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+            ${sourceBadge}
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
+                <strong>👤 ${displayName} (${rawPhone})</strong>
+                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : (ord.orderType === 'سفري' ? '🛍️ سفري' : '🍽️ صالة')}</span>
+            </div>
+            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
+            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
+            <hr style="border-color:#333; margin:6px 0;">
+            <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
+                ${itemsList.length > 0 
+                    ? itemsList.map(i => `<li>${i.name} × ${i.qty} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
+                    : '<li style="color:#aaa;">(مكالمة هاتفية - اختر الوجبات يدوياً في الكاشير)</li>'}
+            </ul>
+            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع الكلي: ${total} د.ع</strong>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل لكاشير المبيعات</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 
 /* ==========================================
    12. محاسبة التوصيل والدليفري والتطبيقات
