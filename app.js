@@ -368,14 +368,17 @@ async function globalSystemSync(btnElement) {
    3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
 
+// 🛠️ دالة حفظ الزبون المحسنة الآمنة ضد أخطاء المصفوفات
 function saveCustomerRecord(name, phone, area, address) {
     if (!phone || phone === '-' || phone === 'بدون رقم') return;
     
     const cleanPhone = String(phone).replace(/[^0-9]/g, '');
     if (cleanPhone.length < 5) return;
 
-    let customers = getData('sys_customers') || [];
-    let existingIndex = customers.findIndex(c => String(c.phone).replace(/[^0-9]/g, '') === cleanPhone);
+    let rawData = getData('sys_customers');
+    let customers = Array.isArray(rawData) ? rawData : [];
+    
+    let existingIndex = customers.findIndex(c => c && c.phone && String(c.phone).replace(/[^0-9]/g, '') === cleanPhone);
 
     const customerData = {
         id: existingIndex !== -1 ? customers[existingIndex].id : 'CUST_' + Date.now(),
