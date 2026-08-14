@@ -133,7 +133,7 @@
             border: 1px solid var(--gold-primary);
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.85);
-            width: 250px;
+            width: 260px;
             z-index: 200;
             overflow: hidden;
         }
@@ -441,6 +441,7 @@
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
                     <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
                     <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
@@ -557,6 +558,41 @@
 
     <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
+
+    <!-- ⏰ نافذة تحديد أوقات العمل والدوام للمينيو الإلكتروني -->
+    <div id="workingHoursModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:380px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-primary); font-size:0.95rem;"><i class="fa-solid fa-clock"></i> أوقات استلام الطلبات من المينيو</h4>
+                <button onclick="closeModal('workingHoursModal')" class="gold-btn" style="width:auto; padding:2px 8px;">✕</button>
+            </div>
+            
+            <div style="background:#121215; padding:12px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px; line-height:1.5;">
+                    حدد ساعات العمل الرسمية لاستلام الطلبات الإلكترونية المباشرة من المينيو. عند الإغلاق، سيقوم المينيو بمنع وحظر إرسال الطلبات تلقائياً.
+                </p>
+
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1;">
+                        <label class="section-label">ساعة الفتح (صباحاً):</label>
+                        <input type="number" id="cashierWorkOpenHour" class="gold-input-inline" min="0" max="23" value="10" placeholder="10" style="padding:8px; text-align:center;">
+                    </div>
+                    <div style="flex:1;">
+                        <label class="section-label">ساعة الإغلاق (فجراً):</label>
+                        <input type="number" id="cashierWorkCloseHour" class="gold-input-inline" min="0" max="23" value="3" placeholder="3" style="padding:8px; text-align:center;">
+                    </div>
+                </div>
+
+                <div id="workingHoursStatusInfo" style="text-align:center; padding:8px; border-radius:6px; font-size:0.8rem; font-weight:bold; margin-bottom:10px; background:#181820; color:var(--gold-bright);">
+                    حالة الاستلام الحالية: ...
+                </div>
+
+                <button onclick="saveWorkingHoursFromCashier()" class="gold-btn" style="background:var(--success); color:#fff; font-weight:800; padding:10px; width:100%;">
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ وتحديث أوقات الدوام فوراً
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 📊 النوافذ المنبثقة الإجبارية -->
     <div id="quickCashModal" class="modal-overlay">
@@ -760,6 +796,77 @@
         function closeModal(modalId) {
             const m = document.getElementById(modalId);
             if (m) m.style.display = 'none';
+        }
+
+        // ⏰ فتح وحساب نافذة أوقات العمل للدوام
+        function openWorkingHoursModal() {
+            let workHours = { open: 10, close: 3 };
+            try {
+                const stored = localStorage.getItem('sys_work_hours');
+                if (stored) workHours = JSON.parse(stored);
+            } catch(e) {}
+
+            const openInput = document.getElementById('cashierWorkOpenHour');
+            const closeInput = document.getElementById('cashierWorkCloseHour');
+            if (openInput) openInput.value = workHours.open;
+            if (closeInput) closeInput.value = workHours.close;
+
+            updateWorkingHoursModalStatusInfo(workHours.open, workHours.close);
+            openModal('workingHoursModal');
+        }
+
+        function updateWorkingHoursModalStatusInfo(openH, closeH) {
+            const now = new Date();
+            const currentHour = now.getHours();
+            let isOpen = false;
+
+            if (openH > closeH) {
+                if (currentHour >= openH || currentHour < closeH) isOpen = true;
+            } else {
+                if (currentHour >= openH && currentHour < closeH) isOpen = true;
+            }
+
+            const infoBox = document.getElementById('workingHoursStatusInfo');
+            if (infoBox) {
+                if (isOpen) {
+                    infoBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                    infoBox.style.color = 'var(--success)';
+                    infoBox.style.border = '1px solid var(--success)';
+                    infoBox.innerHTML = '🟢 المينيو مفتوح الآن ويستقبل الطلبات';
+                } else {
+                    infoBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                    infoBox.style.color = 'var(--danger)';
+                    infoBox.style.border = '1px solid var(--danger)';
+                    infoBox.innerHTML = `🔴 المينيو مغلق حالياً (من ${openH}:00 ص إلى 0${closeH}:00 فجراً)`;
+                }
+            }
+        }
+
+        // 💾 حفظ أوقات الدوام من الكاشير وتعديل المينيو فوراً
+        function saveWorkingHoursFromCashier() {
+            const openVal = Number(document.getElementById('cashierWorkOpenHour').value) || 10;
+            const closeVal = Number(document.getElementById('cashierWorkCloseHour').value) || 3;
+
+            const hoursObj = { open: openVal, close: closeVal };
+
+            localStorage.setItem('sys_work_hours', JSON.stringify(hoursObj));
+
+            if (typeof db !== 'undefined' && db) {
+                db.collection('settings').doc('work_hours').set(hoursObj).then(() => {
+                    alert("✅ تم حفظ وتحديث أوقات الدوام بنجاح في المينيو!");
+                    updateWorkingHoursModalStatusInfo(openVal, closeVal);
+                    closeModal('workingHoursModal');
+                }).catch(err => {
+                    console.warn("Firestore save error:", err);
+                    alert("✅ تم الحفظ محلياً بنجاح!");
+                    updateWorkingHoursModalStatusInfo(openVal, closeVal);
+                    closeModal('workingHoursModal');
+                });
+            } else {
+                alert("✅ تم الحفظ بنجاح!");
+                updateWorkingHoursModalStatusInfo(openVal, closeVal);
+                closeModal('workingHoursModal');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
