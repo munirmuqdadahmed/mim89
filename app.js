@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v20.0 Complete Uncut Master Version)
-   مشروع الفايربيس: mim89-ff938 | نظام الكاشير والمبيعات المباشرة والمطبخ الشبكي
+   MIM89 FAST FOOD - Master Core Engine (v21.0 Complete Uncut Master Version)
+   مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
 
@@ -163,6 +163,7 @@ function initData() {
     if (!localStorage.getItem('sys_quick_kitchen_notes')) localStorage.setItem('sys_quick_kitchen_notes', JSON.stringify(DEFAULT_DATA.quickKitchenNotes));
     if (!localStorage.getItem('sys_expenses')) localStorage.setItem('sys_expenses', JSON.stringify([]));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
+    if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify([]));
 
     setupCloudRealtimeSync();
 }
@@ -255,6 +256,15 @@ function setupCloudRealtimeSync() {
             }
         }
     }, err => console.log("Category sync fallback:", err));
+
+    db.collection("customers").onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+            let cloudCustomers = [];
+            snapshot.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
+            setData('sys_customers', cloudCustomers);
+            if (document.getElementById('adminCustomersTableBody')) renderAdminCustomers();
+        }
+    }, err => console.log("Customers sync fallback:", err));
 }
 
 function refreshActiveUI() {
@@ -266,6 +276,7 @@ function refreshActiveUI() {
     } else if (document.getElementById('adminItemsTable')) {
         if (typeof renderAdminItems === 'function') renderAdminItems();
         if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
+        if (typeof renderAdminCustomers === 'function') renderAdminCustomers();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
@@ -301,6 +312,13 @@ async function globalSystemSync(btnElement) {
                 orderSnap.forEach(doc => cloudOrders.push({ ...doc.data(), docId: doc.id }));
                 setData('sys_live_orders', cloudOrders);
             }
+
+            const custSnap = await db.collection("customers").get();
+            if (!custSnap.empty) {
+                let cloudCustomers = [];
+                custSnap.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
+                setData('sys_customers', cloudCustomers);
+            }
         }
         refreshActiveUI();
         alert("✅ تم مزامنة وتحديث النظام بنجاح من السحابة!");
@@ -319,7 +337,146 @@ async function globalSystemSync(btnElement) {
 }
 
 /* ==========================================
-   3. المينيو الإلكتروني العام للزبائن (index.html)
+   3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
+   ========================================== */
+
+function saveCustomerRecord(name, phone, area, address) {
+    if (!phone || phone === '-' || phone === 'بدون رقم') return;
+    
+    const cleanPhone = String(phone).replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 5) return;
+
+    let customers = getData('sys_customers') || [];
+    let existingIndex = customers.findIndex(c => String(c.phone).replace(/[^0-9]/g, '') === cleanPhone);
+
+    const customerData = {
+        id: existingIndex !== -1 ? customers[existingIndex].id : 'CUST_' + Date.now(),
+        name: (name && name !== 'مكالمة واردة' && name !== 'زبون مباشر') ? name : (existingIndex !== -1 ? customers[existingIndex].name : 'زبون هاتف'),
+        phone: cleanPhone,
+        area: area || (existingIndex !== -1 ? customers[existingIndex].area : ''),
+        address: address || (existingIndex !== -1 ? customers[existingIndex].address : ''),
+        lastOrderDate: getTodayString(),
+        updatedAt: Date.now()
+    };
+
+    if (existingIndex !== -1) {
+        customers[existingIndex] = { ...customers[existingIndex], ...customerData };
+    } else {
+        customers.unshift(customerData);
+    }
+
+    setData('sys_customers', customers);
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("customers").doc(cleanPhone).set(customerData, { merge: true })
+            .catch(err => console.error("Customer cloud sync error:", err));
+    }
+}
+
+function autoSearchCustomerByPhone(phoneInput) {
+    const cleanPhone = String(phoneInput || '').replace(/[^0-9]/g, '');
+    const resultsBox = document.getElementById('phoneSearchResults');
+    if (!resultsBox) return;
+
+    if (cleanPhone.length < 3) {
+        resultsBox.style.display = 'none';
+        return;
+    }
+
+    const customers = getData('sys_customers') || [];
+    const completed = getData('sys_completed_orders') || [];
+
+    let matches = customers.filter(c => c.phone.includes(cleanPhone));
+
+    if (matches.length === 0) {
+        completed.forEach(o => {
+            if (o.phone && o.phone !== '-' && String(o.phone).includes(cleanPhone)) {
+                if (!matches.some(m => m.phone === o.phone)) {
+                    matches.push({
+                        name: o.customerName || 'زبون سابق',
+                        phone: o.phone,
+                        area: o.area || '',
+                        address: o.address || ''
+                    });
+                }
+            }
+        });
+    }
+
+    if (matches.length === 0) {
+        resultsBox.innerHTML = '<div style="padding:8px; color:#aaa; font-size:0.8rem; text-align:center;">🆕 زبون جديد (غير مسجل سابقاً)</div>';
+        resultsBox.style.display = 'block';
+        return;
+    }
+
+    resultsBox.innerHTML = matches.slice(0, 4).map(cust => `
+        <div onclick="fillCustomerData('${(cust.name || 'زبون').replace(/'/g, "\\'")}', '${cust.phone}', '${(cust.area || '').replace(/'/g, "\\'")}', '${(cust.address || '').replace(/'/g, "\\'")}')" 
+             style="padding:8px 12px; background:#22222a; border-bottom:1px solid #333; cursor:pointer; border-radius:6px; margin-bottom:4px;">
+            <strong style="color:var(--gold-bright, #ffd700); font-size:0.85rem;">👤 ${cust.name}</strong> 
+            <small style="color:#aaa;">(${cust.phone})</small><br>
+            <span style="font-size:0.75rem; color:#ccc;">📍 ${cust.area || 'بدون منطقة'} ${cust.address ? '- ' + cust.address : ''}</span>
+        </div>
+    `).join('');
+    resultsBox.style.display = 'block';
+}
+
+function fillCustomerData(name, phone, area, address) {
+    const nameInput = document.getElementById('posCustName');
+    if (nameInput) {
+        nameInput.value = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
+    }
+    const resultsBox = document.getElementById('phoneSearchResults');
+    if (resultsBox) resultsBox.style.display = 'none';
+}
+
+function renderAdminCustomers() {
+    const tbody = document.getElementById('adminCustomersTableBody');
+    if (!tbody) return;
+
+    const customers = getData('sys_customers') || [];
+    const searchVal = document.getElementById('adminCustomerSearchInput')?.value.toLowerCase() || '';
+
+    const filtered = customers.filter(c => 
+        (c.name && c.name.toLowerCase().includes(searchVal)) || 
+        (c.phone && c.phone.includes(searchVal)) ||
+        (c.area && c.area.toLowerCase().includes(searchVal))
+    );
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:15px;">لا يوجد زبائن مسجلون حالياً</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map((c, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td><strong>👤 ${c.name}</strong></td>
+            <td><strong style="color:var(--gold-bright, #ffd700);">${c.phone}</strong></td>
+            <td>${c.area || '-'}</td>
+            <td>${c.address || '-'}</td>
+            <td>
+                <button class="gold-btn btn-danger btn-sm" onclick="deleteCustomerRecord('${c.id}')" style="padding:3px 8px; font-size:0.75rem;">حذف</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deleteCustomerRecord(id) {
+    if (confirm("هل أنت متأكد من حذف هذا الزبون من الدليل؟")) {
+        let customers = getData('sys_customers') || [];
+        const targetCust = customers.find(c => c.id === id);
+        customers = customers.filter(c => c.id !== id);
+        setData('sys_customers', customers);
+
+        if (targetCust && db) {
+            db.collection("customers").doc(targetCust.phone).delete().catch(console.error);
+        }
+        renderAdminCustomers();
+    }
+}
+
+/* ==========================================
+   4. المينيو الإلكتروني العام للزبائن (index.html)
    ========================================== */
 
 function loadPublicMenu() {
@@ -520,6 +677,9 @@ function submitOrderToCashier() {
         return alert("يرجى إدخال الاسم على الأقل");
     }
 
+    // حفظ بيانات الزبون فورياً في قاعدة البيانات
+    saveCustomerRecord(name, phone, area, address);
+
     const submitBtn = document.querySelector('#cartModal .gold-btn');
     if (submitBtn) {
         submitBtn.innerText = "⏳ جاري إرسال الطلب للكاشير والواتساب...";
@@ -608,7 +768,7 @@ function saveOrderLocally(orderData) {
 }
 
 /* ==========================================
-   4. نقطة البيع POS والدليفري والتطبيقات (cashier.html)
+   5. نقطة البيع POS والدليفري والتطبيقات (cashier.html)
    ========================================== */
 
 function initCashierPage() { 
@@ -743,59 +903,6 @@ function filterPosProducts() {
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${Number(item.price).toLocaleString()} د.ع</span>
         </div>
     `).join('');
-}
-
-function autoSearchCustomerByPhone(phoneInput) {
-    const cleanPhone = String(phoneInput || '').replace(/[^0-9]/g, '');
-    const resultsBox = document.getElementById('phoneSearchResults');
-    if (!resultsBox) return;
-
-    if (cleanPhone.length < 4) {
-        resultsBox.style.display = 'none';
-        return;
-    }
-
-    const completed = getData('sys_completed_orders');
-    const matches = completed.filter(o => {
-        if (!o.phone || o.phone === '-' || o.phone === 'بدون رقم') return false;
-        const p = String(o.phone).replace(/[^0-9]/g, '');
-        return p.includes(cleanPhone) && o.customerName && o.customerName !== 'زبون مباشر';
-    });
-
-    const uniqueCustomers = [];
-    const map = new Map();
-    for (const item of matches) {
-        const p = String(item.phone).replace(/[^0-9]/g, '');
-        if(!map.has(p)){
-            map.set(p, true);
-            uniqueCustomers.push(item);
-        }
-    }
-
-    if (uniqueCustomers.length === 0) {
-        resultsBox.innerHTML = '<div style="padding:6px; color:#aaa; font-size:0.8rem;">🆕 زبون جديد (غير مسجل سابقاً)</div>';
-        resultsBox.style.display = 'block';
-        return;
-    }
-
-    resultsBox.innerHTML = uniqueCustomers.slice(0, 3).map(cust => `
-        <div onclick="fillCustomerData('${cust.customerName.replace(/'/g, "\\'")}', '${cust.phone}', '${(cust.area || '').replace(/'/g, "\\'")}', '${(cust.address || '').replace(/'/g, "\\\'")}')" 
-             style="padding:8px; background:#222; border-bottom:1px solid #333; cursor:pointer; border-radius:6px; margin-bottom:4px;">
-            <strong style="color:var(--gold-bright, #ffd700); font-size:0.85rem;">👤 ${cust.customerName}</strong> 
-            <small style="color:#aaa;">(${cust.phone})</small><br>
-            <span style="font-size:0.75rem; color:#ccc;">📍 ${cust.area || ''} ${cust.address ? '- ' + cust.address : ''}</span>
-        </div>
-    `).join('');
-    resultsBox.style.display = 'block';
-}
-
-function fillCustomerData(name, phone, area, address) {
-    const nameInput = document.getElementById('posCustName');
-    if (nameInput) {
-        nameInput.value = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
-    }
-    const resultsBox = document.getElementById('phoneSearchResults');
-    if (resultsBox) resultsBox.style.display = 'none';
 }
 
 function addToPosCart(itemId) {
@@ -994,7 +1101,7 @@ function renderPosCart() {
     }
 }
 
-// 5. حاسبة النقد والطباعة الإلزامية الآمنة
+// 6. حاسبة النقد والطباعة الإلزامية الآمنة
 function openQuickCashModal() {
     if (posCart.length === 0) {
         alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
@@ -1127,6 +1234,10 @@ function saveCompletedOrder(order) {
     let completed = getData('sys_completed_orders');
     completed.unshift(order);
     setData('sys_completed_orders', completed);
+
+    if (order.customerName && order.phone && order.phone !== '-') {
+        saveCustomerRecord(order.customerName, order.phone, order.area, order.address);
+    }
 }
 
 function openCompletedOrdersModal() {
@@ -1177,7 +1288,7 @@ function clearCompletedOrdersHistory() {
 }
 
 /* ==========================================
-   6. إدارة الصرفيات وسُلف الموظفين
+   7. إدارة الصرفيات وسُلف الموظفين
    ========================================== */
 
 function openExpenseManagerModal() {
@@ -1284,7 +1395,7 @@ function deleteExpenseRecord(expId) {
 }
 
 /* ==========================================
-   7. إدارة ملاحظات المطبخ السريعة
+   8. إدارة ملاحظات المطبخ السريعة
    ========================================== */
 
 function openKitchenNotesManagerModal() {
@@ -1334,7 +1445,7 @@ function deleteKitchenNoteItem(idx) {
 }
 
 /* ==========================================
-   8. التقارير اليومية والكشوفات المالية
+   9. التقارير اليومية والكشوفات المالية
    ========================================== */
 
 function openDailyReportModal() {
@@ -1542,7 +1653,7 @@ function confirmCloseShiftAndLogout() {
 }
 
 /* ==========================================
-   9. الطباعة الحرارية للفواتير والمطبخ
+   10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
 
 function printCustomerInvoiceOnly(event, customOrder) {
@@ -1644,7 +1755,7 @@ function createThermalPrintContainer() {
 }
 
 /* ==========================================
-   10. التنبيهات الصوتية ومراقبة الطلبات الواردة
+   11. التنبيهات الصوتية ومراقبة الطلبات الواردة
    ========================================== */
 
 let knownOrderIds = new Set();
@@ -1713,7 +1824,11 @@ function getCustomerHistoryByPhone(phone) {
     const cleanPhone = String(phone).replace(/[^0-9]/g, '');
     if (!cleanPhone || cleanPhone.length < 5) return null;
 
-    const completed = getData('sys_completed_orders');
+    const customers = getData('sys_customers') || [];
+    const foundCust = customers.find(c => c.phone.includes(cleanPhone) || cleanPhone.includes(c.phone));
+    if (foundCust) return { customerName: foundCust.name, area: foundCust.area, address: foundCust.address };
+
+    const completed = getData('sys_completed_orders') || [];
     return completed.find(o => {
         if (!o.phone) return false;
         const oPhone = String(o.phone).replace(/[^0-9]/g, '');
@@ -1818,6 +1933,11 @@ function generateOrderCardHTML(ord, docId) {
     const safeArea = String(displayArea || '').replace(/'/g, "\\'");
     const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
 
+    // أوتوماتيكياً حفظ الزبون إذا كانت البيانات مكتملة
+    if (rawPhone && rawPhone !== 'بدون رقم' && displayName !== 'مكالمة واردة') {
+        saveCustomerRecord(displayName, rawPhone, displayArea, displayAddress);
+    }
+
     return `
         <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright, #ffd700)' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
@@ -1869,11 +1989,15 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address) {
     const custInput = document.getElementById('posCustName');
     if (custInput) custInput.value = infoText;
 
+    if (phone && phone !== 'بدون رقم') {
+        saveCustomerRecord(name, phone, area, address);
+    }
+
     alert(`تم جلب بيانات الزبون (${name}) لشاشة المبيعات بنجاح! اختر الوجبات من القائمة للمحاسبة.`);
 }
 
 /* ==========================================
-   11. لوحة جرد المخزن (inventory.html)
+   12. لوحة جرد المخزن (inventory.html)
    ========================================== */
 
 function deductInventoryFromRecipe(items) {
@@ -1964,7 +2088,7 @@ function deleteInvItem(id) {
 }
 
 /* ==========================================
-   12. لوحة تحكم الإدارة الكاملة Admin (admin.html)
+   13. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
 function initAdminPage() { initData(); }
@@ -1996,6 +2120,7 @@ function loadAdminTabsData() {
     renderAdminDrivers();
     renderAdminCashiers();
     renderAdminAreas();
+    renderAdminCustomers();
     loadPrinterSettings();
 }
 
@@ -2351,7 +2476,7 @@ function updateAllSystemPasswords() {
 }
 
 /* ==========================================
-   13. النوافذ المنبثقة والدوال المساعدة General Helpers
+   14. النوافذ المنبثقة والدوال المساعدة General Helpers
    ========================================== */
 
 function openModal(id) {
