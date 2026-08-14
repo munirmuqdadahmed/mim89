@@ -2,178 +2,308 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIM89 - إدارة المخزن والجرد التلقائي</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- إعدادات الشاشة الكاملة للآيباد والآيفون -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MIM89 Inventory">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <title>MIM89 POS - إدارة المخزن والجرد التلقائي</title>
+
+    <!-- Google Fonts, FontAwesome & CSS الموحد -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         :root {
-            --bg-main: #121214;
-            --bg-card: #1e1e24;
-            --gold-primary: #d4af37;
-            --gold-bright: #f59e0b;
+            --bg-main: #0f0f12;
+            --bg-card: #18181c;
+            --gold-primary: #f59e0b;
+            --gold-bright: #fbbf24;
             --text-light: #f3f4f6;
             --danger: #ef4444;
             --success: #10b981;
-            --border: #2d2d35;
+            --border: #2a2a32;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-light); padding: 20px; font-size: 14px; }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Tajawal', 'Segoe UI', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .container { max-width: 1100px; margin: 0 auto; }
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-light); 
+            padding: 15px; 
+            font-size: 14px; 
+            user-select: none;
+        }
+
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
         
         .header-title { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            margin-bottom: 25px; 
+            margin-bottom: 20px; 
             border-bottom: 2px solid var(--gold-primary); 
-            padding-bottom: 15px; 
+            padding-bottom: 12px; 
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .header-title h1 { color: var(--gold-primary); font-size: 1.6rem; }
 
         .card { 
             background: var(--bg-card); 
             border: 1px solid var(--border); 
-            border-radius: 10px; 
-            padding: 20px; 
-            margin-bottom: 25px; 
-        }
-        .card-title { 
-            color: var(--gold-primary); 
-            font-size: 1.1rem; 
-            margin-bottom: 15px; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
+            border-radius: 12px; 
+            padding: 18px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
-        .add-box { 
+        .add-grid { 
             display: grid; 
-            grid-template-columns: 2fr 1fr 1fr 1.5fr auto; 
+            grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr auto; 
             gap: 10px; 
             align-items: center; 
         }
-        @media (max-width: 768px) {
-            .add-box { grid-template-columns: 1fr; }
+
+        @media (max-width: 900px) {
+            .add-grid { grid-template-columns: 1fr 1fr; }
         }
 
-        input, select, button { 
-            background: #121214; 
-            border: 1px solid var(--border); 
-            color: #fff; 
-            padding: 10px 12px; 
-            border-radius: 6px; 
-            font-size: 0.9rem; 
+        @media (max-width: 550px) {
+            .add-grid { grid-template-columns: 1fr; }
         }
-        input:focus { border-color: var(--gold-primary); outline: none; }
 
-        .gold-input { border-color: #333; width: 100%; }
-        .gold-input:focus { border-color: var(--gold-primary); }
-
-        .btn-gold { 
-            background: var(--gold-primary); 
-            color: #000; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border: none; 
-            padding: 10px 18px; 
-            border-radius: 6px; 
+        .gold-input-inline {
+            background: #101014;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            width: 100%;
+            outline: none;
+            transition: 0.2s;
         }
-        .btn-gold:hover { background: var(--gold-bright); }
-        .btn-danger { background: var(--danger); color: #fff; border: none; cursor: pointer; padding: 6px 12px; border-radius: 4px; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: right; padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        th { color: var(--gold-primary); background: #16161a; font-size: 0.85rem; }
-
-        /* Lock Modal */
-        #authOverlay { 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 9999; 
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
         }
-        .auth-box { 
-            background: var(--bg-card); 
-            padding: 30px; 
-            border-radius: 12px; 
-            border: 1px solid var(--gold-primary); 
-            text-align: center; 
-            width: 320px; 
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .kpi-card h5 {
+            color: #aaa;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+        }
+
+        .kpi-card .val {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--gold-bright);
+        }
+
+        /* شاشة الدخول */
+        .auth-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 14, 0.96);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-primary);
+            padding: 25px 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+        }
+
+        .low-stock-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .normal-stock-badge {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
         }
     </style>
 </head>
-<body>
+<body class="admin-body">
 
     <!-- 🔐 شاشة الدخول للمخزن -->
-    <div id="authOverlay">
-        <div class="auth-box">
-            <h2 style="color:var(--gold-primary); margin-bottom:15px;"><i class="fa-solid fa-boxes-stacked"></i> مخزن MIM89</h2>
-            <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">ادخل رمز الدخول للمخزن</p>
-            <input type="password" id="invPassInput" placeholder="كلمة المرور" style="width:100%; text-align:center; font-size:1.2rem; margin-bottom:15px;">
-            <button onclick="loginInventory()" class="btn-gold" style="width:100%;">دخول للنظام</button>
-            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin-top:10px;"></p>
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 style="color:var(--gold-primary); margin-bottom:10px; font-weight:900;">
+                <i class="fa-solid fa-boxes-stacked"></i> مخزن MIM89
+            </h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور المخزن أو الأدمن للوصول</p>
+            <input type="password" id="invPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') loginInventory()">
+            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin:5px 0; font-weight:bold;"></p>
+            <button onclick="loginInventory()" class="gold-btn btn-block" style="margin-top:10px; padding:12px; width:100%;">دخول لوحة المخزن 🚀</button>
         </div>
     </div>
 
     <!-- 📦 الواجهة الرئيسية للمخزن -->
     <div class="container" id="invMainApp" style="display:none;">
         
-        <div class="header-title">
-            <h1><i class="fa-solid fa-boxes-stacked"></i> MIM89 - إدارة المخزن وحساب كلفة الشراء</h1>
-            <button onclick="location.reload()" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+        <header class="header-title">
+            <div>
+                <h1 style="color:var(--gold-primary); font-size:1.4rem; font-weight:900;">
+                    <i class="fa-solid fa-boxes-stacked"></i> MIM89 - إدارة المخزن والخصم الآلي
+                </h1>
+                <p style="color:#aaa; font-size:0.78rem; margin-top:3px;">متابعة الكميات، أسعار الشراء، والحد الأدنى للنواقص</p>
+            </div>
+            
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none; padding:8px 12px;">
+                    <i class="fa-solid fa-rotate"></i> تحديث ومزامنة 🔄
+                </button>
+                <a href="admin.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
+                    <i class="fa-solid fa-user-shield"></i> الأدمن
+                </a>
+                <a href="costing.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
+                    <i class="fa-solid fa-vault"></i> الخزينة
+                </a>
+                <a href="cashier.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
+                    <i class="fa-solid fa-cash-register"></i> الكاشير
+                </a>
+                <button onclick="location.reload()" class="gold-btn btn-danger btn-sm" style="padding:8px 12px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+            </div>
+        </header>
+
+        <!-- 📊 كروت مؤشرات المخزن -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h5>إجمالي القيمة النقدية للمخزون</h5>
+                <div class="val" id="kpiTotalInvValue">0 د.ع</div>
+            </div>
+            <div class="kpi-card">
+                <h5>إجمالي عدد المواد الأولية</h5>
+                <div class="val" id="kpiTotalInvItems">0 مادة</div>
+            </div>
+            <div class="kpi-card" style="border-color:var(--danger);">
+                <h5>مواد أوشكت على النفاد</h5>
+                <div class="val" id="kpiLowStockCount" style="color:var(--danger);">0 مادة</div>
+            </div>
+        </div>
+
+        <!-- ⚠️ شريط تنبيه النواقص المباشر -->
+        <div id="lowStockAlertBanner" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid var(--danger); padding:10px 14px; border-radius:8px; margin-bottom:15px; color:#fff; font-size:0.85rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger); font-size:1rem; margin-left:6px;"></i>
+            <strong>تنبيه المخزون:</strong> يوجد مواد انخفضت عن الحد الأدنى، يرجى إعادة التجهيز فوراً!
         </div>
 
         <!-- ➕ إضافة مادة جديدة للمخزن -->
         <div class="card">
-            <div class="card-title"><i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة للمخزن</div>
-            <div class="add-box">
-                <input type="text" id="newInvName" placeholder="اسم المادة (مثلاً: صدور دجاج)">
-                <input type="number" id="newInvQty" placeholder="الكمية الكلية">
-                <input type="text" id="newInvUnit" placeholder="الوحدة (كغم/قطعة)">
-                <input type="number" id="newInvPrice" placeholder="إجمالي مبلغ الشراء (د.ع)">
-                <button onclick="addNewInventoryItem()" class="btn-gold"><i class="fa-solid fa-save"></i> حفظ المادة</button>
+            <h4 style="color:var(--gold-primary); margin-bottom:12px; font-size:1.05rem;">
+                <i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة للجرد
+            </h4>
+            <div class="add-grid">
+                <input type="text" id="newInvName" class="gold-input-inline" placeholder="اسم المادة (مثلاً: صدور دجاج طازجة)">
+                <input type="number" id="newInvQty" class="gold-input-inline" placeholder="الكمية الكلية">
+                <input type="text" id="newInvUnit" class="gold-input-inline" placeholder="الوحدة (كغم/قطعة/علبة)">
+                <input type="number" id="newInvPrice" class="gold-input-inline" placeholder="إجمالي الشراء (د.ع)">
+                <input type="number" id="newInvMinLimit" class="gold-input-inline" placeholder="حد التنبيه (مثلاً 10)" value="10">
+                <button onclick="addNewInventoryItem()" class="gold-btn" style="padding:9px 16px; font-weight:bold; white-space:nowrap; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:6px; cursor:pointer;">
+                    <i class="fa-solid fa-save"></i> حفظ المادة
+                </button>
             </div>
         </div>
 
         <!-- 📋 جدول المواد المسجلة وحساب كلفة الوحدة -->
         <div class="card">
-            <div class="card-title"><i class="fa-solid fa-list-check"></i> قائمة المواد والتقسيم التلقائي للكلفة (تعديل مباشر)</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 30%;">اسم المادة الأولية</th>
-                        <th style="width: 15%;">الكمية الكلية</th>
-                        <th style="width: 15%;">الوحدة</th>
-                        <th style="width: 20%;">إجمالي الشراء (د.ع)</th>
-                        <th style="width: 15%;">كلفة الوحدة (تلقائي)</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryTableBody"></tbody>
-            </table>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h4 style="color:var(--gold-primary); margin:0; font-size:1.05rem;">
+                        <i class="fa-solid fa-list-check"></i> قائمة مواد المخزن والتكلفة التلقائية (تعديل مباشر)
+                    </h4>
+                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتحدث سعر الكيلو/القطعة آلياً عند تغيير الكمية أو المبلغ الكلي</span>
+                </div>
+                
+                <div style="width:230px;">
+                    <input type="text" id="invSearchInput" class="gold-input-inline" placeholder="🔍 بحث في المواد..." onkeyup="filterInventoryTable(this.value)">
+                </div>
+            </div>
+            
+            <div style="overflow-x:auto;">
+                <table class="data-table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#121216; color:var(--gold-primary); font-size:0.85rem; border-bottom:1px solid var(--border);">
+                            <th style="padding:10px; text-align:right; width: 4%;">#</th>
+                            <th style="padding:10px; text-align:right; width: 22%;">اسم المادة الأولية</th>
+                            <th style="padding:10px; text-align:right; width: 14%;">الكمية المتبقية</th>
+                            <th style="padding:10px; text-align:right; width: 10%;">الوحدة</th>
+                            <th style="padding:10px; text-align:right; width: 18%;">إجمالي الشراء (د.ع)</th>
+                            <th style="padding:10px; text-align:right; width: 16%;">كلفة الوحدة (تلقائي)</th>
+                            <th style="padding:10px; text-align:right; width: 10%;">حالة المخزون</th>
+                            <th style="padding:10px; text-align:center; width: 6%;">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+            </div>
         </div>
 
     </div>
 
+    <!-- المحرك البرمجي الرئيسي -->
+    <script src="app.js"></script>
     <script>
-        // التهيئة وقراءة البيانات
-        function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
-        function setData(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-
-        // تسجيل الدخول الخاص بالمخزن
         function loginInventory() {
             const pass = document.getElementById('invPassInput').value.trim();
-            const sysPasses = getData('sys_passwords');
-            const adminPass = sysPasses.admin || "admin123";
-            const invPass = sysPasses.inventory || "inv123";
+            const validInvPass = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
+            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
 
-            if (pass === invPass || pass === adminPass || pass === "123") {
+            if (pass === validInvPass || pass === validAdminPass || pass === "inv123" || pass === "123") {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('invMainApp').style.display = 'block';
                 renderInventoryTable();
@@ -182,48 +312,94 @@
             }
         }
 
-        // عرض جدول المخزن مع امكانية التعديل المباشر وبدون زر حذف
-        function renderInventoryTable() {
-            const inv = getData('sys_inventory');
+        function filterInventoryTable(query) {
+            const q = query.toLowerCase();
+            const inv = getData('sys_inventory') || [];
+            const filtered = inv.filter(i => (i.name || '').toLowerCase().includes(q));
+            renderInventoryTableCustom(filtered);
+        }
+
+        function renderInventoryTableCustom(invList) {
             const tbody = document.getElementById('inventoryTableBody');
             if (!tbody) return;
 
-            if (inv.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
+            if (!invList || invList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مواد مطابقة للبحث</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = inv.map((item, index) => {
-                // التقسيم التلقائي: سعر الوحدة = المبلغ الكلي ÷ الكمية
-                const costPerUnit = (item.totalPrice && item.quantity && Number(item.quantity) > 0) 
-                    ? (Number(item.totalPrice) / Number(item.quantity)) 
+            let totalVal = 0;
+            let lowCount = 0;
+
+            tbody.innerHTML = invList.map((item, index) => {
+                const qty = Number(item.quantity) || 0;
+                const totalPrice = Number(item.totalPrice) || 0;
+                const minLimit = Number(item.minLimit) || 10;
+                
+                totalVal += totalPrice;
+
+                const costPerUnit = (totalPrice > 0 && qty > 0) 
+                    ? (totalPrice / qty) 
                     : (Number(item.costPerUnit) || 0);
 
+                const isLow = qty <= minLimit;
+                if (isLow) lowCount++;
+
                 return `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td><input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input"></td>
-                        <td><input type="number" value="${item.quantity || 0}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input"></td>
-                        <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input"></td>
-                        <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input"></td>
-                        <td style="color:var(--gold-bright); font-weight:bold;">${Number(costPerUnit.toFixed(2)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}</td>
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:10px;">${index + 1}</td>
+                        <td style="padding:10px;">
+                            <input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input-inline" style="font-weight:bold;">
+                        </td>
+                        <td style="padding:10px;">
+                            <input type="number" value="${qty}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline" style="${isLow ? 'color:var(--danger); font-weight:bold;' : ''}">
+                        </td>
+                        <td style="padding:10px;">
+                            <input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline">
+                        </td>
+                        <td style="padding:10px;">
+                            <input type="number" value="${totalPrice}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline">
+                        </td>
+                        <td style="padding:10px; color:var(--gold-bright); font-weight:bold;">
+                            ${Number(costPerUnit.toFixed(0)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}
+                        </td>
+                        <td style="padding:10px;">
+                            ${isLow ? '<span class="low-stock-badge">⚠️ منخفض</span>' : '<span class="normal-stock-badge">✅ ممتازة</span>'}
+                        </td>
+                        <td style="padding:10px; text-align:center;">
+                            <button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem; background:var(--danger); color:#fff; border:none; border-radius:4px; cursor:pointer;">حذف</button>
+                        </td>
                     </tr>
                 `;
             }).join('');
+
+            // تحديث الكروت العلوية
+            const totalValEl = document.getElementById('kpiTotalInvValue');
+            const totalCountEl = document.getElementById('kpiTotalInvItems');
+            const lowCountEl = document.getElementById('kpiLowStockCount');
+            const alertBanner = document.getElementById('lowStockAlertBanner');
+
+            if (totalValEl) totalValEl.innerText = totalVal.toLocaleString() + ' د.ع';
+            if (totalCountEl) totalCountEl.innerText = invList.length + ' مادة';
+            if (lowCountEl) lowCountEl.innerText = lowCount + ' مادة';
+            if (alertBanner) alertBanner.style.display = lowCount > 0 ? 'block' : 'none';
         }
 
-        // إضافة مادة جديدة للمخزن
+        function renderInventoryTable() {
+            const inv = getData('sys_inventory') || [];
+            renderInventoryTableCustom(inv);
+        }
+
         function addNewInventoryItem() {
             const name = document.getElementById('newInvName').value.trim();
             const qty = Number(document.getElementById('newInvQty').value);
             const unit = document.getElementById('newInvUnit').value.trim() || 'كغم';
             const totalPrice = Number(document.getElementById('newInvPrice').value) || 0;
+            const minLimit = Number(document.getElementById('newInvMinLimit').value) || 10;
 
-            if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية على الأقل!");
+            if (!name || isNaN(qty)) return alert("يرجى إدخال اسم المادة والكمية الكلية!");
 
-            const inv = getData('sys_inventory');
-            
-            // حساب سعر الكيلو/القطعة فوراً عند الإضافة
+            const inv = getData('sys_inventory') || [];
             const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
 
             const newItem = {
@@ -232,34 +408,33 @@
                 quantity: qty,
                 unit: unit,
                 totalPrice: totalPrice,
-                costPerUnit: costPerUnit
+                costPerUnit: costPerUnit,
+                minLimit: minLimit
             };
 
             inv.push(newItem);
             setData('sys_inventory', inv);
 
-            // تفريغ الحقول بعد الإضافة
             document.getElementById('newInvName').value = '';
             document.getElementById('newInvQty').value = '';
             document.getElementById('newInvUnit').value = '';
             document.getElementById('newInvPrice').value = '';
 
             renderInventoryTable();
+            alert("✅ تم إدخال المادة للمخزن بنجاح!");
         }
 
-        // تحديث حقل المادة وتحديث سعر الوحدة لحظياً
         function updateInvField(id, field, value) {
-            let inv = getData('sys_inventory');
+            let inv = getData('sys_inventory') || [];
             let item = inv.find(i => Number(i.id) === Number(id));
 
             if (item) {
-                if (field === 'quantity' || field === 'totalPrice') {
+                if (field === 'quantity' || field === 'totalPrice' || field === 'minLimit') {
                     item[field] = Number(value);
                 } else {
                     item[field] = value;
                 }
 
-                // إعادة حساب سعر الوحدة تلقائياً عند تغيير الكمية أو المبلغ الكلي
                 if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
                     item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
                 } else if (item.quantity === 0) {
@@ -270,6 +445,18 @@
                 renderInventoryTable();
             }
         }
+
+        function deleteInvItem(id) {
+            if (confirm("هل أنت متأكد من حذف هذه المادة الأولية من المخزن والجرد؟")) {
+                let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
+                setData('sys_inventory', inv);
+                renderInventoryTable();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initData();
+        });
     </script>
 </body>
 </html>
