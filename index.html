@@ -56,7 +56,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 🎬 شاشة الانطلاقة (Splash Intro Screen) */
+        /* 🎬 شاشة الانطلاقة السينمائية */
         .splash-screen {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -696,8 +696,28 @@
                 <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px;">
                 <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px;">
 
+                <!-- 📍 شريط اختيار المنطقة المقسم (اختيار سريع + كتابة يدوية) -->
                 <div id="deliveryFieldsGroup">
-                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px;">
+                    <label style="font-size:0.75rem; color:var(--gold-bright); display:block; margin-bottom:3px; font-weight:bold;">📍 منطقة التوصيل (اختر أو أكتب):</label>
+                    <div style="display:flex; gap:6px; margin-bottom:8px;">
+                        <!-- النصف الأول: القائمة المنسدلة المباشرة -->
+                        <select id="custAreaSelect" class="gold-input-inline" onchange="onSelectAreaDropdown(this.value)" style="flex:1; padding:8px; font-size:0.8rem; cursor:pointer; background:#101014;">
+                            <option value="">-- اختر المنطقة --</option>
+                            <option value="القاهرة">📍 القاهرة (مجاني 🎉)</option>
+                            <option value="البنوك">📍 البنوك</option>
+                            <option value="الشعب">📍 الشعب</option>
+                            <option value="الأعظمية">📍 الأعظمية</option>
+                            <option value="صليخ">📍 صليخ</option>
+                            <option value="حي أور">📍 حي أور</option>
+                            <option value="شارع فلسطين">📍 شارع فلسطين</option>
+                            <option value="زيونة">📍 زيونة</option>
+                            <option value="custom">✏️ منطقة أخرى...</option>
+                        </select>
+
+                        <!-- النصف الثاني: كتابة اسم المنطقة يدوياً -->
+                        <input type="text" id="custArea" class="gold-input-inline" placeholder="أو أكتب منطقتك هنا..." oninput="calculateDeliveryCost()" style="flex:1; padding:8px; font-size:0.8rem;">
+                    </div>
+
                     <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px;">
                 </div>
 
@@ -745,6 +765,8 @@
     <!-- 🧠 المحرك البرمجي المباشر والموثوق -->
     <script src="app.js"></script>
     <script>
+        let globalWorkHours = { open: 10, close: 3, isEmergencyClosed: false };
+
         function toggleSideDrawer() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
@@ -775,18 +797,43 @@
             calculateDeliveryCost();
         }
 
+        // عند اختيار منطقة من القائمة المنسدلة السريعة
+        function onSelectAreaDropdown(val) {
+            const input = document.getElementById('custArea');
+            if (!input) return;
+
+            if (val && val !== 'custom') {
+                input.value = val;
+            } else if (val === 'custom') {
+                input.value = '';
+                input.focus();
+            }
+            calculateDeliveryCost();
+        }
+
+        // 🧠 دالة المعالجة والتنظيف للنصوص العربية (الهاء والتاء المربوطة والهمزات)
+        function normalizeArabicText(str) {
+            if (!str) return '';
+            return str.toLowerCase()
+                .trim()
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ه/g, 'ة')
+                .replace(/\s+/g, '');
+        }
+
         function calculateDeliveryCost() {
             const type = document.getElementById('orderTypeSelect')?.value || 'delivery';
-            const area = document.getElementById('custArea')?.value.trim() || '';
+            const areaInput = document.getElementById('custArea')?.value || '';
             
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             let fee = 0;
 
             if (type === 'delivery') {
-                const areaLower = area.toLowerCase();
-                if (areaLower.includes('قاهرة') || areaLower.includes('القاهرة')) {
+                const normArea = normalizeArabicText(areaInput);
+                // فحص مرن يشمل (قاهرة، القاهرة، قاهره، القاهره)
+                if (normArea.includes('قاهرة') || normArea.includes('قاهره')) {
                     fee = 0;
-                } else if (area !== '') {
+                } else if (areaInput.trim() !== '') {
                     fee = 2500;
                 } else {
                     fee = 0;
@@ -800,7 +847,14 @@
             const totalEl = document.getElementById('finalTotalPrice');
 
             if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString() + ' د.ع';
-            if (feeEl) feeEl.innerText = (type === 'delivery' && fee === 0 && area !== '') ? 'مجاني 🎉' : fee.toLocaleString() + ' د.ع';
+            if (feeEl) {
+                const normArea = normalizeArabicText(areaInput);
+                if (type === 'delivery' && (normArea.includes('قاهرة') || normArea.includes('قاهره'))) {
+                    feeEl.innerText = 'مجاني 🎉';
+                } else {
+                    feeEl.innerText = fee.toLocaleString() + ' د.ع';
+                }
+            }
             if (totalEl) totalEl.innerText = (subtotal + fee).toLocaleString() + ' د.ع';
         }
 
@@ -874,30 +928,61 @@
             calculateDeliveryCost();
         };
 
-        // ⏰ دالة التحقق الذكية من حالة الدوام
-        function checkWorkingHoursStatus() {
-            let workHours = { open: 10, close: 3 }; // 10:00 AM to 03:00 AM
+        // 📡 المزامنة اللحظية الحية لأوقات الدوام مع الفايربيس
+        function syncWorkHoursWithFirebase() {
             try {
                 const stored = localStorage.getItem('sys_work_hours');
-                if (stored) workHours = JSON.parse(stored);
+                if (stored) globalWorkHours = JSON.parse(stored);
             } catch(e) {}
 
+            if (typeof db !== 'undefined' && db) {
+                db.collection('settings').doc('work_hours').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        globalWorkHours = {
+                            open: Number(data.open ?? 10),
+                            close: Number(data.close ?? 3),
+                            isEmergencyClosed: !!data.isEmergencyClosed
+                        };
+                        localStorage.setItem('sys_work_hours', JSON.stringify(globalWorkHours));
+                        checkWorkingHoursStatus();
+                    }
+                }, (err) => {
+                    console.warn("Firebase sync hours warning:", err);
+                });
+            } else {
+                checkWorkingHoursStatus();
+            }
+        }
+
+        // ⏰ دالة التحقق الذكية من حالة الدوام
+        function checkWorkingHoursStatus() {
+            const badge = document.getElementById('storeStatusBadge');
+            const statusText = document.getElementById('storeStatusText');
+
+            // 🛑 1. فحص الإغلاق الطارئ من الكاشير
+            if (globalWorkHours.isEmergencyClosed) {
+                if (badge && statusText) {
+                    badge.className = 'status-badge closed';
+                    statusText.innerText = '🔴 مغلق مؤقتاً لحين انتهاء الازدهام';
+                }
+                return { isOpen: false, reason: 'emergency' };
+            }
+
+            // ⏰ 2. فحص الساعات
             const now = new Date();
             const currentHour = now.getHours();
 
             let isOpen = false;
-            if (workHours.open > workHours.close) {
-                if (currentHour >= workHours.open || currentHour < workHours.close) {
+            if (globalWorkHours.open > globalWorkHours.close) {
+                if (currentHour >= globalWorkHours.open || currentHour < globalWorkHours.close) {
                     isOpen = true;
                 }
             } else {
-                if (currentHour >= workHours.open && currentHour < workHours.close) {
+                if (currentHour >= globalWorkHours.open && currentHour < globalWorkHours.close) {
                     isOpen = true;
                 }
             }
-
-            const badge = document.getElementById('storeStatusBadge');
-            const statusText = document.getElementById('storeStatusText');
 
             if (badge && statusText) {
                 if (isOpen) {
@@ -905,21 +990,24 @@
                     statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
                 } else {
                     badge.className = 'status-badge closed';
-                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
+                    statusText.innerText = `مغلق حالياً - أوقات العمل من ${globalWorkHours.open}:00 ص حتى 0${globalWorkHours.close}:00 فجراً`;
                 }
             }
 
-            return { isOpen, workHours };
+            return { isOpen, reason: 'time', hours: globalWorkHours };
         }
 
-        // 🚀 دالة إرسال الطلب المباشرة مع الفحص الحازم لأوقات الدوام
+        // 🚀 دالة إرسال الطلب المباشرة مع الفحص الحازم والتوجيه السريع للواتساب
         async function submitOrderToCashier() {
-            // 🛑 1. فحص هل المطعم مفتوح الآن أم مغلق؟
-            const { isOpen, workHours } = checkWorkingHoursStatus();
-            
-            if (!isOpen) {
-                alert(`⚠️ أهلاً بك! المطعم مغلق حالياً وللأسف لا نستقبل الطلبات في هذا الوقت.\n\n⏰ أوقات العمل الرسمية: يومياً من الساعة ${workHours.open}:00 صباحاً وحتى الساعة 0${workHours.close}:00 بعد منتصف الليل.`);
-                return; // إيقاف العملية نهائياً وعدم إرسال الطلب!
+            // 🛑 1. فحص حالة الدوام
+            const status = checkWorkingHoursStatus();
+            if (!status.isOpen) {
+                if (status.reason === 'emergency') {
+                    alert("⚠️ نعتذر منكم جداً! المطعم مغلق مؤقتاً في الوقت الحالي بسبب الازدهام الشديد ولضمان جودة الوجبات.\n\nيرجى إعادة المحاولة بعد قليل!");
+                } else {
+                    alert(`⚠️ أهلاً بك! المطعم مغلق حالياً وللأسف لا نستقبل الطلبات في هذا الوقت.\n\n⏰ أوقات العمل الرسمية: يومياً من الساعة ${globalWorkHours.open}:00 صباحاً وحتى الساعة 0${globalWorkHours.close}:00 بعد منتصف الليل.`);
+                }
+                return;
             }
 
             // 🛑 2. فحص السلة
@@ -945,8 +1033,8 @@
             
             let deliveryFee = 0;
             if (type === 'delivery') {
-                const areaLower = area.toLowerCase();
-                if (areaLower.includes('قاهرة') || areaLower.includes('القاهرة')) {
+                const normArea = normalizeArabicText(area);
+                if (normArea.includes('قاهرة') || normArea.includes('قاهره')) {
                     deliveryFee = 0;
                 } else if (area) {
                     deliveryFee = 2500;
@@ -974,14 +1062,15 @@
                 createdAt: new Date().toISOString()
             };
 
-            // 1. الحفظ في فايربيس الكاشير Firebase Firestore
-            try {
+            // 1. الحفظ في فايربيس مع مهلة آمنة (2.5 ثانية) لمنع تعليق الزبون عند ضعف النت
+            const firebasePromise = (async () => {
                 if (typeof db !== 'undefined' && db) {
                     await db.collection('orders').add(orderObj);
                 }
-            } catch (e) {
-                console.warn("Firestore save:", e);
-            }
+            })();
+
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2500));
+            await Promise.race([firebasePromise, timeoutPromise]).catch(e => console.warn(e));
 
             // 2. الحفظ المحلي الاحتياطي
             try {
@@ -990,7 +1079,7 @@
                 localStorage.setItem('sys_orders', JSON.stringify(localOrders));
             } catch(e) {}
 
-            // 3. إنتاج نص الفاتورة وتحويلها لواتساب الكاشير
+            // 3. بناء الفاتورة وتحويل الزبون لواتساب الكاشير فوراً
             let typeText = type === 'delivery' ? '🛵 توصيل للمنزل' : (type === 'takeaway' ? '🛍️ استلام سفري' : '🍽️ تناول بالصالة');
             
             let text = `🔥 *طلب جديد - MIM89 FAST FOOD* 🔥\n`;
@@ -1029,7 +1118,7 @@
             updateCartUI();
             closeModal('cartModal');
 
-            // فتح الواتساب فوراً
+            // فتح الواتساب
             window.location.href = waUrl;
         }
 
@@ -1037,7 +1126,7 @@
             document.body.classList.add('public-menu-body');
             initData();
             loadPublicMenu();
-            checkWorkingHoursStatus();
+            syncWorkHoursWithFirebase();
             updateCartUI();
 
             setTimeout(() => {
