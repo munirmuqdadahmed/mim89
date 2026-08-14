@@ -7,9 +7,9 @@
     <!-- إعدادات الشاشة الكاملة للهواتف والآيباد -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MIM89 Menu">
+    <meta name="apple-mobile-web-app-title" content="MIM89 Fast Food">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0a0a0d">
+    <meta name="theme-color" content="#060608">
 
     <title>MIM89 FAST FOOD - المينيو الإلكتروني الفاخر</title>
 
@@ -26,16 +26,17 @@
         :root {
             --gold-primary: #f59e0b;
             --gold-bright: #fbbf24;
+            --gold-glow: #fef08a;
             --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --bg-dark: #0a0a0d;
-            --card-bg: #141419;
-            --card-border: rgba(245, 158, 11, 0.2);
+            --bg-dark: #070709;
+            --card-bg: #121217;
+            --card-border: rgba(245, 158, 11, 0.22);
             --text-main: #f3f4f6;
             --danger: #ef4444;
             --success: #10b981;
         }
 
-        /* 🚀 إصلاح حركة السحب والتمرير */
+        /* 🚀 حركة السحب والتمرير السلسة */
         html, body {
             height: auto !important;
             min-height: 100%;
@@ -47,7 +48,7 @@
             font-family: 'Tajawal', sans-serif;
             margin: 0;
             padding: 0;
-            padding-bottom: 120px; /* مساحة حرة للشريط العائم */
+            padding-bottom: 120px;
         }
 
         * {
@@ -55,9 +56,84 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* 🎬 شاشة الانطلاقة (Splash Intro Screen) */
+        .splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #181824 0%, #060608 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+        }
+
+        .splash-logo-box {
+            text-align: center;
+            animation: splashPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+        }
+
+        .splash-glow-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px; height: 140px;
+            background: rgba(245, 158, 11, 0.25);
+            filter: blur(35px);
+            border-radius: 50%;
+            animation: pulseGlow 1.2s infinite alternate;
+        }
+
+        .splash-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(110deg, #d97706 0%, #fbbf24 30%, #ffffff 50%, #fbbf24 70%, #d97706 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shineSweep 1.5s linear infinite;
+            text-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+            margin-top: 5px;
+        }
+
+        .splash-sub {
+            color: #aaa;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            font-weight: 800;
+            margin-top: -5px;
+        }
+
+        @keyframes splashPop {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.9; }
+        }
+
+        /* ✨ التلألؤ الذهبي العاكس للضوء (Gold Reflective Metallic Effect) */
+        .gold-reflective-text {
+            background: linear-gradient(110deg, #d97706 0%, #fbbf24 25%, #ffffff 50%, #fbbf24 75%, #d97706 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shineSweep 2.8s linear infinite;
+            display: inline-block;
+            filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.4));
+        }
+
+        @keyframes shineSweep {
+            to { background-position: 200% center; }
+        }
+
         /* 👑 هيدر المينيو الملكي */
         .public-header {
-            background: rgba(20, 20, 25, 0.95);
+            background: rgba(18, 18, 23, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--card-border);
@@ -66,7 +142,7 @@
             align-items: center;
             justify-content: space-between;
             position: relative;
-            box-shadow: 0 4px 25px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 25px rgba(0,0,0,0.85);
             z-index: 50;
         }
 
@@ -94,11 +170,9 @@
         }
 
         .public-brand-title {
-            color: var(--gold-bright);
-            font-size: 1.4rem;
+            font-size: 1.45rem;
             font-weight: 900;
             letter-spacing: 0.5px;
-            text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
         }
 
         /* شارة حالة الدوام */
@@ -144,7 +218,7 @@
             50% { opacity: 0.3; }
         }
 
-        /* 🍔 البردة الجانبية المودرن (3 شخوط) */
+        /* 🍔 البردة الجانبية المودرن (3 شخوط) - للزبون حصراً */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -164,7 +238,7 @@
             right: -320px;
             width: 300px;
             height: 100%;
-            background: #121217;
+            background: #101014;
             border-left: 1px solid var(--gold-primary);
             z-index: 3001;
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -176,7 +250,7 @@
         .side-drawer.active { right: 0; }
 
         .drawer-header {
-            background: #0a0a0d;
+            background: #08080a;
             padding: 20px 16px;
             border-bottom: 1px solid var(--card-border);
             display: flex;
@@ -184,7 +258,7 @@
             align-items: center;
         }
 
-        .drawer-header h3 { color: var(--gold-bright); font-size: 1.15rem; font-weight: 900; }
+        .drawer-header h3 { font-size: 1.15rem; font-weight: 900; }
         .close-drawer-btn { background: none; border: none; color: #aaa; font-size: 1.4rem; cursor: pointer; }
 
         .drawer-content { padding: 16px; overflow-y: auto; flex-grow: 1; }
@@ -197,7 +271,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            border-bottom: 1px solid #24242e;
+            border-bottom: 1px solid #22222a;
             padding-bottom: 6px;
         }
 
@@ -207,7 +281,7 @@
             gap: 12px;
             width: 100%;
             padding: 12px;
-            background: #181820;
+            background: #16161c;
             border: 1px solid var(--card-border);
             border-radius: 10px;
             color: #fff;
@@ -215,13 +289,14 @@
             font-size: 0.88rem;
             font-weight: 700;
             margin-bottom: 8px;
+            transition: 0.2s;
         }
 
         /* 🏷️ شريط الأقسام السريع واللاصق */
         .categories-sticky-bar {
             position: sticky;
             top: 0;
-            background: rgba(10, 10, 13, 0.95);
+            background: rgba(7, 7, 9, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 100;
@@ -235,7 +310,7 @@
         .categories-sticky-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
-            background: #181820;
+            background: #141419;
             border: 1px solid var(--card-border);
             color: #ccc;
             padding: 9px 20px;
@@ -361,7 +436,7 @@
             bottom: 14px;
             left: 14px;
             right: 14px;
-            background: rgba(20, 20, 26, 0.96);
+            background: rgba(18, 18, 24, 0.96);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--gold-primary);
@@ -405,7 +480,7 @@
             font-weight: bold;
             border-radius: 50%;
             padding: 2px 7px;
-            border: 2px solid #141419;
+            border: 2px solid #121217;
             box-shadow: 0 0 8px var(--danger);
         }
 
@@ -441,7 +516,7 @@
         }
 
         .modal-body {
-            background: #141419;
+            background: #121217;
             border: 1px solid var(--gold-primary);
             padding: 20px;
             border-radius: 18px;
@@ -455,10 +530,23 @@
 </head>
 <body class="public-menu-body">
 
-    <!-- 👑 الهيدر العلوي -->
+    <!-- 🎬 شاشة الانطلاقة الفاخرة (MIM89 Splash Screen) -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-logo-box">
+            <div class="splash-glow-ring"></div>
+            <i class="fa-solid fa-fire-flame-curry" style="font-size: 3rem; color: var(--gold-bright); text-shadow: 0 0 20px var(--gold-primary);"></i>
+            <h1 class="splash-title">MIM89</h1>
+            <p class="splash-sub">FAST FOOD</p>
+        </div>
+    </div>
+
+    <!-- 👑 الهيدر العلوي مع الشعار الساطع العاكس -->
     <header class="public-header">
         <div class="brand-header-title">
-            <h1 class="public-brand-title"><i class="fa-solid fa-fire-flame-curry"></i> MIM89 FAST FOOD</h1>
+            <h1 class="public-brand-title">
+                <i class="fa-solid fa-fire-flame-curry" style="color:var(--gold-primary);"></i> 
+                <span class="gold-reflective-text">MIM89 FAST FOOD</span>
+            </h1>
             
             <div id="storeStatusBadge" class="status-badge open">
                 <span class="status-dot"></span>
@@ -471,12 +559,15 @@
         </button>
     </header>
 
-    <!-- 🍔 البردة الجانبية المودرن (3 شخوط) -->
+    <!-- 🍔 البردة الجانبية المودرن (3 شخوط) - معلومات الزبائن فقط -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     
     <aside id="sideDrawer" class="side-drawer">
         <div class="drawer-header">
-            <h3><i class="fa-solid fa-utensils"></i> MIM89 FAST FOOD</h3>
+            <h3>
+                <i class="fa-solid fa-utensils" style="color:var(--gold-primary);"></i> 
+                <span class="gold-reflective-text">MIM89 FAST FOOD</span>
+            </h3>
             <button onclick="toggleSideDrawer()" class="close-drawer-btn">✕</button>
         </div>
 
@@ -486,11 +577,10 @@
                 <i class="fa-solid fa-clock"></i> أوقات استلام الطلبات
             </div>
             
-            <div style="background:#181820; padding:12px; border-radius:12px; border:1px solid var(--card-border); margin-bottom:12px;">
-                <p style="font-size:0.8rem; color:#aaa; margin-bottom:8px;">أوقات العمل الرسمية: من <strong>10:00 صباحاً</strong> حتى <strong>03:00 فجراً</strong></p>
-                <button onclick="openWorkingHoursAdminPrompt()" style="width:100%; padding:9px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); border-radius:8px; font-size:0.8rem; font-weight:bold; cursor:pointer;">
-                    ⚙️ تعديل ساعات العمل (للأدمن)
-                </button>
+            <div style="background:#16161c; padding:12px; border-radius:12px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <p style="font-size:0.83rem; color:#ccc; line-height:1.5;">
+                    📍 نستقبل جميع الطلبات يومياً من الساعة <strong>10:00 صباحاً</strong> وحتى الساعة <strong>03:00 بعد منتصف الليل</strong>.
+                </p>
             </div>
 
             <div class="drawer-section-title">
@@ -547,7 +637,7 @@
     <!-- 🏷️ شريط الأقسام السريع -->
     <div id="categoriesNav" class="categories-sticky-bar"></div>
 
-    <!-- 📱 شبكة الوجبات الرئيسية الفاخرة (تتحرك بسلاسة) -->
+    <!-- 📱 شبكة الوجبات الرئيسية الفاخرة -->
     <main id="mainMenuTab">
         <div id="menuSections"></div>
     </main>
@@ -582,27 +672,27 @@
             <div id="cartItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:12px;"></div>
 
             <!-- نموذج البيانات والتوصيل -->
-            <div style="background:#181820; padding:12px; border-radius:12px; border:1px solid #333; margin-bottom:12px;">
+            <div style="background:#16161c; padding:12px; border-radius:12px; border:1px solid #333; margin-bottom:12px;">
                 <label style="font-size:0.78rem; color:#aaa; display:block; margin-bottom:4px; font-weight:bold;">نوع الخدمة:</label>
-                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <select id="orderTypeSelect" class="gold-input-inline" onchange="toggleDeliveryFields()" style="margin-bottom:8px; cursor:pointer; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
                     <option value="delivery">🛵 توصيل للمنزل / العمل</option>
                     <option value="takeaway">🛍️ استلام سفري من المطعم</option>
                     <option value="dine_in">🍽️ تناول داخل الصالة</option>
                 </select>
 
-                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
-                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <input type="text" id="custName" class="gold-input-inline" placeholder="اسمك الكريم..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <input type="tel" id="custPhone" class="gold-input-inline" placeholder="رقم الهاتف (077...)..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
 
                 <div id="deliveryFieldsGroup">
-                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
-                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                    <input type="text" id="custArea" class="gold-input-inline" placeholder="المنطقة (مثلاً: القاهرة، البنوك...)" oninput="calculateDeliveryCost()" style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                    <input type="text" id="custAddress" class="gold-input-inline" placeholder="العنوان التفصيلي (أقرب نقطة دالة)..." style="margin-bottom:8px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
                 </div>
 
-                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px; padding:10px; background:#141419; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
+                <input type="text" id="orderNotes" class="gold-input-inline" placeholder="ملاحظات الطلب (بدون ثوم، سبايسي...)" style="margin-bottom:4px; padding:10px; background:#101014; border:1px solid #333; color:#fff; width:100%; border-radius:8px;">
             </div>
 
             <!-- حساب المجموع والتوصيل -->
-            <div style="background:#181820; padding:12px 16px; border-radius:12px; font-size:0.9rem; margin-bottom:14px; border:1px solid #282835;">
+            <div style="background:#16161c; padding:12px 16px; border-radius:12px; font-size:0.9rem; margin-bottom:14px; border:1px solid #282835;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                     <span>مجموع الوجبات:</span>
                     <strong id="subtotalPrice" style="color:#fff;">0 د.ع</strong>
@@ -650,9 +740,9 @@
             }
         }
 
-        // ⏰ فحص أوقات العمل
+        // ⏰ فحص أوقات العمل الرسمية
         function checkWorkingHoursStatus() {
-            let workHours = { open: 10, close: 3 }; // 10:00 AM to 03:00 AM
+            let workHours = { open: 10, close: 3 };
             try {
                 const stored = localStorage.getItem('sys_work_hours');
                 if (stored) workHours = JSON.parse(stored);
@@ -683,25 +773,6 @@
                     badge.className = 'status-badge closed';
                     statusText.innerText = `مغلق حالياً - أوقات العمل من ${workHours.open}:00 ص حتى 0${workHours.close}:00 فجراً`;
                 }
-            }
-        }
-
-        function openWorkingHoursAdminPrompt() {
-            const pass = prompt("أدخل كلمة مرور الأدمن للتعديل:");
-            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
-
-            if (pass === validAdminPass || pass === '123') {
-                const newOpen = prompt("أدخل ساعة بداية الدوام (مثلاً 10 لـ 10 صباحاً):", "10");
-                const newClose = prompt("أدخل ساعة نهاية الدوام (مثلاً 3 لـ 3 فجراً):", "3");
-
-                if (newOpen !== null && newClose !== null) {
-                    const hoursObj = { open: Number(newOpen), close: Number(newClose) };
-                    localStorage.setItem('sys_work_hours', JSON.stringify(hoursObj));
-                    checkWorkingHoursStatus();
-                    alert("✅ تم تعديل وساعات الدوام بنجاح!");
-                }
-            } else {
-                alert("❌ كلمة المرور غير صحيحة!");
             }
         }
 
@@ -742,12 +813,22 @@
             calculateDeliveryCost();
         };
 
+        // 🎬 التحكم بالشاشة الافتتاحية (Splash Screen timer)
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
             initData();
             loadPublicMenu();
             checkWorkingHoursStatus();
             updateCartUI();
+
+            // إخفاء الانترو بعد ثانية وربع بأسلوب انسيابي
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    splash.style.visibility = 'hidden';
+                }
+            }, 1250);
         });
     </script>
 </body>
