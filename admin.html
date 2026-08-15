@@ -206,6 +206,10 @@
                 </div>
                 
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <!-- 🖨️ زر استخراج وطباعة المينيو الورقي المضاف حديثاً -->
+                    <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
+                        <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
+                    </button>
                     <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
                         <i class="fa-solid fa-rotate"></i> مزامنة السحابة 🔄
                     </button>
@@ -473,88 +477,89 @@
         document.addEventListener('DOMContentLoaded', () => {
             initAdminPage();
         });
-    </script>
-</body>
-</html>
-// 🖨️ دالة استخراج وترتيب المينيو الورقي مع الأسماء والأسعار الحقيقية والمكونات للطباعة
-function printPaperMenu() {
-    const categories = getData('sys_categories') || [];
-    const items = getData('sys_items') || [];
 
-    if (items.length === 0) {
-        return alert("⚠️ لا توجد أصناف في المينيو حالياً!");
-    }
+        // 🖨️ دالة استخراج وترتيب المينيو الورقي مع الأسماء والأسعار الحقيقية والمكونات للطباعة
+        function printPaperMenu() {
+            const categories = getData('sys_categories') || [];
+            const items = getData('sys_items') || [];
 
-    let menuHtml = `
-        <div style="direction: rtl; font-family: 'Tajawal', sans-serif; padding: 20px; color: #000; background: #fff; max-width: 800px; margin: 0 auto;">
-            <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
-                <h1 style="margin: 0; font-size: 26px; font-weight: 900;">MIM89 FAST FOOD</h1>
-                <p style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold;">قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
-            </div>
-    `;
+            if (items.length === 0) {
+                return alert("⚠️ لا توجد أصناف في المينيو حالياً!");
+            }
 
-    categories.forEach(cat => {
-        const catItems = items.filter(i => cleanPrice(i.categoryId) === cleanPrice(cat.id));
-        if (catItems.length > 0) {
-            menuHtml += `
-                <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                    <h2 style="background: #222; color: #ffd700; padding: 6px 12px; font-size: 16px; border-radius: 4px; margin-bottom: 10px;">${cat.name}</h2>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid #000; text-align: right;">
-                                <th style="padding: 6px; width: 40%;">اسم الوجبة</th>
-                                <th style="padding: 6px; width: 45%;">المكونات والوصف</th>
-                                <th style="padding: 6px; width: 15%; text-align: left;">السعر</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            let menuHtml = `
+                <div style="direction: rtl; font-family: 'Tajawal', sans-serif; padding: 20px; color: #000; background: #fff; max-width: 800px; margin: 0 auto;">
+                    <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
+                        <h1 style="margin: 0; font-size: 26px; font-weight: 900;">MIM89 FAST FOOD</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold;">قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
+                    </div>
             `;
 
-            catItems.forEach(item => {
-                const priceFormatted = cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع';
-                const ingredientsText = item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب';
-                menuHtml += `
-                    <tr style="border-bottom: 1px dashed #ccc;">
-                        <td style="padding: 8px 6px; font-weight: bold;">${item.name}</td>
-                        <td style="padding: 8px 6px; color: #444; font-size: 12px;">${ingredientsText}</td>
-                        <td style="padding: 8px 6px; font-weight: bold; text-align: left; color: #b8860b;">${priceFormatted}</td>
-                    </tr>
-                `;
+            categories.forEach(cat => {
+                const catItems = items.filter(i => cleanPrice(i.categoryId) === cleanPrice(cat.id));
+                if (catItems.length > 0) {
+                    menuHtml += `
+                        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+                            <h2 style="background: #222; color: #ffd700; padding: 6px 12px; font-size: 16px; border-radius: 4px; margin-bottom: 10px;">${cat.name}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #000; text-align: right;">
+                                        <th style="padding: 6px; width: 40%;">اسم الوجبة</th>
+                                        <th style="padding: 6px; width: 45%;">المكونات والوصف</th>
+                                        <th style="padding: 6px; width: 15%; text-align: left;">السعر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    catItems.forEach(item => {
+                        const priceFormatted = cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع';
+                        const ingredientsText = item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب';
+                        menuHtml += `
+                            <tr style="border-bottom: 1px dashed #ccc;">
+                                <td style="padding: 8px 6px; font-weight: bold;">${item.name}</td>
+                                <td style="padding: 8px 6px; color: #444; font-size: 12px;">${ingredientsText}</td>
+                                <td style="padding: 8px 6px; font-weight: bold; text-align: left; color: #b8860b;">${priceFormatted}</td>
+                            </tr>
+                        `;
+                    });
+
+                    menuHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
             });
 
             menuHtml += `
-                        </tbody>
-                    </table>
+                    <div style="text-align: center; margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; font-size: 12px; font-weight: bold;">
+                        <span>صحتين وهنا من مطعم MIM89 - خدمة التوصيل السريع متاحة</span>
+                    </div>
                 </div>
             `;
+
+            // إنشاء نافذة منبثقة للطباعة أو الحفظ كـ PDF
+            const printWindow = window.open('', '_blank', 'width=900,height=700');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>طباعة المينيو الورقي - MIM89</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+                </head>
+                <body>
+                    ${menuHtml}
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
-    });
-
-    menuHtml += `
-            <div style="text-align: center; margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; font-size: 12px; font-weight: bold;">
-                <span>صحتين وهنا من مطعم MIM89 - خدمة التوصيل السريع متاحة</span>
-            </div>
-        </div>
-    `;
-
-    // إنشاء نافذة منبثقة للطباعة أو الحفظ كـ PDF
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    printWindow.document.write(`
-        <html lang="ar" dir="rtl">
-        <head>
-            <meta charset="UTF-8">
-            <title>طباعة المينيو الورقي - MIM89</title>
-            <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-        </head>
-        <body>
-            ${menuHtml}
-            <script>
-                window.onload = function() {
-                    window.print();
-                }
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-}
+    </script>
+</body>
+</html>
