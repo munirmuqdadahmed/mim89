@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIM89 FAST FOOD - المينيو الورقي للطباعة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @page { size: A4 portrait; margin: 10mm; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            direction: rtl;
+            background: #fff !important;
+            color: #000 !important;
+            margin: 0;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px double #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 900;
+            color: #000;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+        }
+        .cat-box {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .cat-title {
+            background: #222 !important;
+            color: #ffd700 !important;
+            padding: 6px 12px;
+            font-size: 15px;
+            font-weight: 900;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 8px 6px;
+            text-align: right;
+        }
+        th {
+            border-bottom: 2px solid #000;
+        }
+        tr.item-row {
+            border-bottom: 1px dashed #ccc;
+        }
+        .item-name {
+            font-weight: bold;
+            color: #000;
+        }
+        .item-desc {
+            color: #444;
+            font-size: 11px;
+        }
+        .item-price {
+            font-weight: bold;
+            text-align: left;
+            color: #000;
+            white-space: nowrap;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 25px;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="menuContainer" style="text-align: center; padding: 50px; font-weight: bold; font-size: 18px;">
+        جاري تحضير المينيو للطباعة...
+    </div>
 
+    <script>
+        function cleanPrice(val) {
+            if (val === null || val === undefined) return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            let str = String(val).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
+            let num = parseInt(str, 10);
+            return isNaN(num) ? 0 : num;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let categories = [];
+            let items = [];
+
+            try {
+                categories = JSON.parse(localStorage.getItem('sys_categories')) || [];
+                items = JSON.parse(localStorage.getItem('sys_items')) || [];
+            } catch (e) {}
+
+            if (!items || items.length === 0) {
+                document.getElementById('menuContainer').innerHTML = '<h2 style="color:red;">⚠️ لم يتم العثور على وجبات في الذاكرة المحليّة! سَجّل الدخول لوحة الأدمن أولاً.</h2>';
+                return;
+            }
+
+            let html = `
+                <div class="header">
+                    <h1>MIM89 FAST FOOD</h1>
+                    <p>قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
+                </div>
+            `;
+
+            categories.forEach(cat => {
+                let catItems = items.filter(i => {
+                    let catId = i.categoryId !== undefined ? i.categoryId : (i.catId !== undefined ? i.catId : i.category);
+                    return cleanPrice(catId) === cleanPrice(cat.id) || String(catId) === String(cat.id);
+                });
+
+                if (catItems.length > 0) {
+                    html += `
+                        <div class="cat-box">
+                            <div class="cat-title">${cat.name}</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%;">اسم الوجبة</th>
+                                        <th style="width: 45%;">المكونات والوصف</th>
+                                        <th style="width: 15%; text-align: left;">السعر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    catItems.forEach(item => {
+                        let pNum = cleanPrice(item.price);
+                        let priceFormatted = pNum.toLocaleString('ar-IQ') + ' د.ع';
+                        let ingredientsText = item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب';
+                        html += `
+                            <tr class="item-row">
+                                <td class="item-name">${item.name}</td>
+                                <td class="item-desc">${ingredientsText}</td>
+                                <td class="item-price">${priceFormatted}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            });
+
+            html += `
+                <div class="footer-note">
+                    صحتين وهنا من مطعم MIM89 - خدمة التوصيل السريع متاحة
+                </div>
+            `;
+
+            document.getElementById('menuContainer').innerHTML = html;
+
+            setTimeout(() => {
+                window.print();
+            }, 400);
+        });
+    </script>
+</body>
+</html>
