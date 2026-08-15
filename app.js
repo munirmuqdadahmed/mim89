@@ -155,28 +155,40 @@ function normalizeArabicArea(str) {
         .toLowerCase();
 }
 
+// 🔒 دالة التهيئة المحدثة: تمنع مسح أو كتابة الأسعار القديمة فوق الفايربيس نهائياً
 function initData() {
     let currentItems = getData('sys_items');
 
-    if (!currentItems || currentItems.length < 5) {
-        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-
+    // إذا كانت الذاكرة المحلية فارغة، نجلب البيانات من الفايربيس أولاً ولا نرفض البيانات الجديدة
+    if (!currentItems || !Array.isArray(currentItems) || currentItems.length === 0) {
         if (db) {
-            try {
-                const batch = db.batch();
-                DEFAULT_DATA.items.forEach(item => {
-                    batch.set(db.collection("menu_items").doc(String(item.id)), item);
-                });
-                DEFAULT_DATA.categories.forEach(cat => {
-                    batch.set(db.collection("menu_categories").doc(String(cat.id)), cat);
-                });
-                batch.commit().then(() => console.log("تم تحديث الفايربيس بالكامل بنجاح!")).catch(console.error);
-            } catch (err) {
-                console.error("Batch error:", err);
-            }
+            db.collection("menu_items").get().then(snapshot => {
+                if (!snapshot.empty) {
+                    let cloudItems = [];
+                    snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
+                    setData('sys_items', cloudItems);
+                    refreshActiveUI();
+                } else {
+                    // فقط إذا كان الفايربيس فارغاً تماماً بأول مرة تشغيل
+                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+                }
+            }).catch(err => console.error("Error fetching initial cloud data:", err));
         }
     }
+
+    if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
+    if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
+    if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
+    if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
+    if (!localStorage.getItem('sys_employees')) localStorage.setItem('sys_employees', JSON.stringify(DEFAULT_DATA.employees));
+    if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
+    if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+
+    setupCloudRealtimeSync();
+}
+
 
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
