@@ -59,15 +59,6 @@
             background: #000;
         }
 
-        .live-kpi-card {
-            background: #18181c;
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
         .admin-header {
             background: #14141c;
             border: 1px solid var(--card-border);
@@ -180,6 +171,30 @@
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-block { width: 100%; display: block; }
         .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+        /* 🖨️ تنسيق حاوية الطباعة الخاصة بسفاري لحل مشكلة الحظر */
+        #paperMenuPrintArea {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            #paperMenuPrintArea, #paperMenuPrintArea * {
+                visibility: visible !important;
+            }
+            #paperMenuPrintArea {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+                color: #000 !important;
+                padding: 10px !important;
+            }
+        }
     </style>
 </head>
 <body class="admin-body">
@@ -206,7 +221,7 @@
                 </div>
                 
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                    <!-- 🖨️ زر استخراج وطباعة المينيو الورقي المضاف حديثاً -->
+                    <!-- 🖨️ زر استخراج وطباعة المينيو المباشر المتوافق مع سفاري -->
                     <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
                         <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
                     </button>
@@ -230,17 +245,11 @@
         <!-- تبويبات التحكم -->
         <div class="admin-tabs">
             <button class="tab-btn active" onclick="switchAdminTab('tabMenuControl', this)"><i class="fa-solid fa-utensils"></i> الأصناف والمينيو</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabCustomersControl', this)" style="color:var(--gold-bright); font-weight:bold;"><i class="fa-solid fa-address-book"></i> 📋 دليل الزبائن (CRM)</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabDriversControl', this)"><i class="fa-solid fa-motorcycle"></i> الدليفري والتطبيقات</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabAreasControl', this)"><i class="fa-solid fa-map-location-dot"></i> مناطق التوصيل</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
-
             <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية والكلمات السرية</button>
         </div>
 
@@ -261,7 +270,6 @@
 
                 <div style="margin:12px 0; background:#121215; padding:12px; border-radius:10px; border:1px dashed var(--card-border); text-align:center;">
                     <label style="font-size:0.85rem; color:var(--gold-primary); display:block; margin-bottom:8px; font-weight:bold;">📸 صورة الصنف:</label>
-                    
                     <label for="itemImgFile" class="gold-btn" style="cursor:pointer; font-size:0.85rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); display:inline-block; width:auto; padding:8px 16px;">
                         📷 التقاط صورة / اختيار من الاستوديو
                     </label>
@@ -314,7 +322,6 @@
                         <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-address-book"></i> دليل وقاعدة بيانات الزبائن (CRM)</h4>
                         <p style="color:#aaa; font-size:0.78rem; margin-top:3px; margin-bottom:0;">سجل زبائن المينيو والدليفري والتطبيقات المحفوظين لسهولة الوصول المباشر عند الكاشير</p>
                     </div>
-                    
                     <div style="width:100%; max-width:300px;">
                         <input type="text" id="adminCustomerSearchInput" placeholder="🔍 ابحث بالاسم، الرقم، أو المنطقة..." oninput="renderAdminCustomers()" class="gold-input-inline" style="padding:8px 12px;">
                     </div>
@@ -471,37 +478,54 @@
 
     </div>
 
+    <!-- 🖨️ الحاوية المباشرة للطباعة (تظهر فقط وقت أمر الطباعة لتجاوز حظر النوافذ في سفاري) -->
+    <div id="paperMenuPrintArea"></div>
+
     <!-- المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            initAdminPage();
+            if (typeof initAdminPage === 'function') initAdminPage();
         });
 
-        // 🖨️ دالة استخراج وترتيب المينيو الورقي مع الأسماء والأسعار الحقيقية والمكونات للطباعة
+        // 🖨️ دالة طباعة واستخراج المينيو الورقي المباشرة (متوافقة 100% مع Safari iOS)
         function printPaperMenu() {
-            const categories = getData('sys_categories') || [];
-            const items = getData('sys_items') || [];
+            const categories = (typeof getData === 'function' ? getData('sys_categories') : JSON.parse(localStorage.getItem('sys_categories'))) || [];
+            const items = (typeof getData === 'function' ? getData('sys_items') : JSON.parse(localStorage.getItem('sys_items'))) || [];
 
-            if (items.length === 0) {
+            if (!items || items.length === 0) {
                 return alert("⚠️ لا توجد أصناف في المينيو حالياً!");
             }
 
+            let printArea = document.getElementById('paperMenuPrintArea');
+            if (!printArea) {
+                printArea = document.createElement('div');
+                printArea.id = 'paperMenuPrintArea';
+                document.body.appendChild(printArea);
+            }
+
             let menuHtml = `
-                <div style="direction: rtl; font-family: 'Tajawal', sans-serif; padding: 20px; color: #000; background: #fff; max-width: 800px; margin: 0 auto;">
+                <div style="direction: rtl; font-family: 'Tajawal', sans-serif; padding: 15px; color: #000; background: #fff; width: 100%; box-sizing: border-box;">
                     <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
-                        <h1 style="margin: 0; font-size: 26px; font-weight: 900;">MIM89 FAST FOOD</h1>
-                        <p style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold;">قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
+                        <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #000;">MIM89 FAST FOOD</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold; color: #333;">قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
                     </div>
             `;
 
             categories.forEach(cat => {
-                const catItems = items.filter(i => cleanPrice(i.categoryId) === cleanPrice(cat.id));
+                const catItems = items.filter(i => {
+                    let catId = i.categoryId !== undefined ? i.categoryId : i.catId;
+                    let targetId = cat.id;
+                    return typeof cleanPrice === 'function' 
+                        ? cleanPrice(catId) === cleanPrice(targetId) 
+                        : String(catId) === String(targetId);
+                });
+
                 if (catItems.length > 0) {
                     menuHtml += `
                         <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                            <h2 style="background: #222; color: #ffd700; padding: 6px 12px; font-size: 16px; border-radius: 4px; margin-bottom: 10px;">${cat.name}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <h2 style="background: #222; color: #ffd700; padding: 6px 12px; font-size: 15px; border-radius: 4px; margin-bottom: 10px; -webkit-print-color-adjust: exact;">${cat.name}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                 <thead>
                                     <tr style="border-bottom: 2px solid #000; text-align: right;">
                                         <th style="padding: 6px; width: 40%;">اسم الوجبة</th>
@@ -513,13 +537,14 @@
                     `;
 
                     catItems.forEach(item => {
-                        const priceFormatted = cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع';
+                        let pNum = typeof cleanPrice === 'function' ? cleanPrice(item.price) : parseInt(item.price || 0);
+                        const priceFormatted = pNum.toLocaleString('ar-IQ') + ' د.ع';
                         const ingredientsText = item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب';
                         menuHtml += `
                             <tr style="border-bottom: 1px dashed #ccc;">
-                                <td style="padding: 8px 6px; font-weight: bold;">${item.name}</td>
-                                <td style="padding: 8px 6px; color: #444; font-size: 12px;">${ingredientsText}</td>
-                                <td style="padding: 8px 6px; font-weight: bold; text-align: left; color: #b8860b;">${priceFormatted}</td>
+                                <td style="padding: 8px 6px; font-weight: bold; color: #000;">${item.name}</td>
+                                <td style="padding: 8px 6px; color: #444; font-size: 11px;">${ingredientsText}</td>
+                                <td style="padding: 8px 6px; font-weight: bold; text-align: left; color: #000;">${priceFormatted}</td>
                             </tr>
                         `;
                     });
@@ -533,32 +558,18 @@
             });
 
             menuHtml += `
-                    <div style="text-align: center; margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; font-size: 12px; font-weight: bold;">
+                    <div style="text-align: center; margin-top: 25px; border-top: 1px solid #000; padding-top: 10px; font-size: 12px; font-weight: bold; color: #000;">
                         <span>صحتين وهنا من مطعم MIM89 - خدمة التوصيل السريع متاحة</span>
                     </div>
                 </div>
             `;
 
-            // إنشاء نافذة منبثقة للطباعة أو الحفظ كـ PDF
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            printWindow.document.write(`
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>طباعة المينيو الورقي - MIM89</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
-                </head>
-                <body>
-                    ${menuHtml}
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            printArea.innerHTML = menuHtml;
+
+            // استدعاء نافذة طباعة المتصفح مباشرة دون نوافذ منبثقة
+            setTimeout(() => {
+                window.print();
+            }, 150);
         }
     </script>
 </body>
