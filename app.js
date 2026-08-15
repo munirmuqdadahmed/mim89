@@ -206,7 +206,6 @@ function initData() {
     if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify([]));
 
     setupCloudRealtimeSync();
-}
 
 function getData(key) {
     try {
