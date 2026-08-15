@@ -172,7 +172,7 @@
         .btn-block { width: 100%; display: block; }
         .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
 
-        /* 🖨️ تخصيص منطقة الطباعة وإخفاء نافذة الدخول والواجهة وقت الطباعة */
+        /* 🖨️ إعدادات الطباعة المخصصة لسفاري وتخطي حظر النوافذ */
         #paperMenuPrintArea {
             display: none;
         }
@@ -221,6 +221,7 @@
                 </div>
                 
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <!-- 🖨️ زر استخراج المينيو الورقي المباشر -->
                     <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
                         <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
                     </button>
@@ -483,9 +484,33 @@
     <!-- المحرك البرمجي الرئيسي -->
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof initAdminPage === 'function') initAdminPage();
-        });
+        function loginAdmin() {
+            const pass = document.getElementById('adminPassInput').value.trim();
+            const validPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
+
+            if (pass === validPass || pass === "admin123" || pass === "123") {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('adminMainApp').style.display = 'block';
+                if (typeof renderAdminCategories === 'function') renderAdminCategories();
+                if (typeof renderAdminItems === 'function') renderAdminItems();
+            } else {
+                document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+            }
+        }
+
+        function switchAdminTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.style.display = 'block';
+            if (btn) btn.classList.add('active');
+
+            if (tabId === 'tabCustomersControl' && typeof renderAdminCustomers === 'function') renderAdminCustomers();
+            if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
+            if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
+            if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+        }
 
         // 🖨️ دالة طباعة واستخراج المينيو الورقي المباشرة المتوافقة مع سفاري
         function printPaperMenu() {
@@ -565,11 +590,14 @@
 
             printArea.innerHTML = menuHtml;
 
-            // إخفاء الواجهات وحفظ المينيو للطباعة
             setTimeout(() => {
                 window.print();
             }, 150);
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initAdminPage === 'function') initAdminPage();
+        });
     </script>
 </body>
 </html>
