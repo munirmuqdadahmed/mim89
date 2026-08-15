@@ -3029,3 +3029,78 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+function saveItem() {
+    const editId = document.getElementById('editItemId').value;
+    const id = editId ? String(editId) : String(Date.now());
+    const name = document.getElementById('itemName').value.trim();
+    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice').value) : parseInt(document.getElementById('itemPrice').value || 0);
+    const categoryId = String(document.getElementById('itemCategory').value);
+    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients').value.trim();
+
+    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
+
+    const itemData = { 
+        id: id, 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients 
+    };
+
+    let items = getData('sys_items') || [];
+    const index = items.findIndex(i => String(i.id) === String(id));
+    if (index !== -1) items[index] = itemData;
+    else items.push(itemData);
+
+    try {
+        setData('sys_items', items);
+    } catch (e) {
+        return alert("⚠️ حجم الصورة كبير جداً، اختر صورة أصغر أو استخدم رابط خارجي!");
+    }
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
+            .then(() => console.log("✅ تم التحديث في السحابة"))
+            .catch(err => console.error("❌ خطأ سحابي:", err));
+    }
+
+    resetItemForm();
+    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    alert("✅ تم حفظ وتعديل الصنف بنجاح في الأدمن والكاشير!");
+}
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300; // تصغير العرض ليناسب المينيو
+            const scaleFactor = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleFactor;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // تحويل الصورة لمضغوطة بحجم صغير جداً (< 50KB)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('imgPreview').src = compressedBase64;
+            document.getElementById('itemImage').value = compressedBase64;
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+// تحديث واجهة الكاشير تلقائياً عند التعديل من تبويب الأدمن
+window.addEventListener('storage', (event) => {
+    if (event.key === 'sys_items' || event.key === 'sys_categories') {
+        if (typeof renderCashierItems === 'function') renderCashierItems();
+        if (typeof renderAdminItems === 'function') renderAdminItems();
+    }
+});
