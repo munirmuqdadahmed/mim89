@@ -1,3 +1,17 @@
+// منع القائمة عند الضغط بالزر الأيمن
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// منع اختصارات أدوات المطورين
+document.addEventListener('keydown', event => {
+  if (
+    event.key === 'F12' || 
+    (event.ctrlKey && event.shiftKey && ['I', 'J', 'C'].includes(event.key.toUpperCase())) ||
+    (event.ctrlKey && event.key.toUpperCase() === 'U')
+  ) {
+    event.preventDefault();
+  }
+});
+
 /* ==========================================================================
    MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 1)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
