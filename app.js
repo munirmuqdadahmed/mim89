@@ -3130,3 +3130,25 @@ window.addEventListener('storage', (event) => {
         if (typeof renderAdminItems === 'function') renderAdminItems();
     }
 });
+// 🔢 العداد الذكي للطلبات - يمنع ثبات الرقم على 141
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
+    
+    // إذا كان المسجل سابقاً 141 أو غير موجود، ابدأ من 142
+    if (isNaN(lastNum) || lastNum < 141) {
+        lastNum = 141;
+    }
+
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
+
+    // مزامنة العداد مع الفايربيس
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err));
+    }
+
+    return nextNum;
+}
