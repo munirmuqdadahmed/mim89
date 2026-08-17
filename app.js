@@ -2728,46 +2728,57 @@ function renderAdminItems() {
         `;
     }).join('');
 }
+function saveItem() {
+    const editId = document.getElementById('editItemId')?.value;
+    const id = editId ? String(editId) : '';
+    const name = document.getElementById('itemName')?.value.trim();
+    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice')?.value) : parseInt(document.getElementById('itemPrice')?.value || 0);
+    const categoryId = String(document.getElementById('itemCategory')?.value);
+    const ingredients = document.getElementById('itemIngredients')?.value.trim();
 
- // تنظيف رابط الصورة تلقائياً واستخراج URL المباشر
-let rawImageInput = document.getElementById('itemImage').value.trim();
-if (rawImageInput.includes('src=')) {
-    const match = rawImageInput.match(/src=["']([^"']+)["']/);
-    if (match && match[1]) rawImageInput = match[1];
-}
-const image = rawImageInput || 'https://via.placeholder.com/150';
+    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
 
+    // تنظيف رابط الصورة تلقائياً واستخراج URL مباشر
+    let rawImageInput = document.getElementById('itemImage')?.value.trim() || '';
+    if (rawImageInput.includes('src=')) {
+        const match = rawImageInput.match(/src=["']([^"']+)["']/);
+        if (match && match[1]) rawImageInput = match[1];
+    }
+    const image = rawImageInput || 'https://via.placeholder.com/150';
 
-    let items = getData('sys_items');
-    let newItemData = { 
-        id: id ? cleanPrice(id) : Date.now(), 
-        name: name, 
-        price: price, 
-        categoryId: categoryId, 
-        image: image, 
-        ingredients: ingredients, 
-        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : [] 
+    let items = getData('sys_items') || [];
+    let existingItem = items.find(i => String(i.id) === String(id));
+
+    let newItemData = {
+        id: id ? cleanPrice(id) : Date.now(),
+        name: name,
+        price: price,
+        categoryId: categoryId,
+        image: image,
+        ingredients: ingredients,
+        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : []
     };
 
     if (id) {
-        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? { ...i, ...newItemData } : i);
+        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? newItemData : i);
     } else {
         items.push(newItemData);
     }
 
     setData('sys_items', items);
 
-    if (db) {
-        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData)
-            .then(() => console.log("Cloud sync item success"))
-            .catch(err => console.error("Cloud sync item error:", err));
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData, { merge: true })
+            .then(() => console.log("Cloud sync successful"))
+            .catch(err => console.error("Cloud sync error:", err));
     }
 
     resetItemForm();
-    renderAdminItems();
-    refreshActiveUI();
+    if (typeof renderAdminItems === 'function') renderAdminItems();
+    if (typeof refreshActiveUI === 'function') refreshActiveUI();
     alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
 }
+
 
 function editItem(id) {
     const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
