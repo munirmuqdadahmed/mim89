@@ -2729,23 +2729,14 @@ function renderAdminItems() {
     }).join('');
 }
 
-function saveItem() {
-    const id = document.getElementById('editItemId').value;
-    const name = document.getElementById('itemName').value.trim();
-    const price = cleanPrice(document.getElementById('itemPrice').value);
-    const categoryId = cleanPrice(document.getElementById('itemCategory').value);
-    const ingredients = document.getElementById('itemIngredients').value.trim();
+ // تنظيف رابط الصورة تلقائياً واستخراج URL المباشر
+let rawImageInput = document.getElementById('itemImage').value.trim();
+if (rawImageInput.includes('src=')) {
+    const match = rawImageInput.match(/src=["']([^"']+)["']/);
+    if (match && match[1]) rawImageInput = match[1];
+}
+const image = rawImageInput || 'https://via.placeholder.com/150';
 
-    let existingItem = id ? getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id)) : null;
-
-    let image = currentUploadedBase64 
-        || (document.getElementById('itemImage') ? document.getElementById('itemImage').value.trim() : '')
-        || (existingItem ? (existingItem.image || existingItem.img) : '') 
-        || 'https://via.placeholder.com/300?text=MIM89';
-
-    if (!name || !price) {
-        return alert("❌ يرجى إدخال اسم الصنف والسعر على الأقل!");
-    }
 
     let items = getData('sys_items');
     let newItemData = { 
