@@ -44,7 +44,7 @@ function cleanPrice(val) {
 
 // 🍔 دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط) المباشرة
 window.toggleSideDrawer = function() {
-    const drawer = document.getElementById('sideDrawer');
+    const orderNumber = getNextOrderNumber();
     const overlay = document.getElementById('drawerOverlay');
     if (!drawer || !overlay) return;
 
@@ -201,6 +201,13 @@ function initData() {
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
 
     setupCloudRealtimeSync();
+if (typeof db !== 'undefined' && db) {
+    db.collection("settings").doc("order_counter").get().then(doc => {
+        if (doc.exists && doc.data().lastNum) {
+            localStorage.setItem('sys_last_order_num', doc.data().lastNum);
+        }
+    });
+}
 }
 
 
@@ -3064,17 +3071,20 @@ function saveItem() {
         image: image, 
         ingredients: ingredients 
     };
+// 🔢 دالة زيادة رقم الطلب تلقائياً
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num') || '141', 10);
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
 
-    let items = getData('sys_items') || [];
-    const index = items.findIndex(i => String(i.id) === String(id));
-    if (index !== -1) items[index] = itemData;
-    else items.push(itemData);
-
-    try {
-        setData('sys_items', items);
-    } catch (e) {
-        return alert("⚠️ حجم الصورة كبير جداً، اختر صورة أصغر أو استخدم رابط خارجي!");
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({ 
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
     }
+    return nextNum;
+}
 
     if (typeof db !== 'undefined' && db) {
         db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
