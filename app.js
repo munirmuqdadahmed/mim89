@@ -2728,57 +2728,55 @@ function renderAdminItems() {
         `;
     }).join('');
 }
+
 function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : '';
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice')?.value) : parseInt(document.getElementById('itemPrice')?.value || 0);
-    const categoryId = String(document.getElementById('itemCategory')?.value);
-    const ingredients = document.getElementById('itemIngredients')?.value.trim();
+    const id = document.getElementById('editItemId').value;
+    const name = document.getElementById('itemName').value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice').value);
+    const categoryId = cleanPrice(document.getElementById('itemCategory').value);
+    const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
+    let existingItem = id ? getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id)) : null;
 
-    // تنظيف رابط الصورة تلقائياً واستخراج URL مباشر
-    let rawImageInput = document.getElementById('itemImage')?.value.trim() || '';
-    if (rawImageInput.includes('src=')) {
-        const match = rawImageInput.match(/src=["']([^"']+)["']/);
-        if (match && match[1]) rawImageInput = match[1];
+    let image = currentUploadedBase64 
+        || (document.getElementById('itemImage') ? document.getElementById('itemImage').value.trim() : '')
+        || (existingItem ? (existingItem.image || existingItem.img) : '') 
+        || 'https://via.placeholder.com/300?text=MIM89';
+
+    if (!name || !price) {
+        return alert("❌ يرجى إدخال اسم الصنف والسعر على الأقل!");
     }
-    const image = rawImageInput || 'https://via.placeholder.com/150';
 
-    let items = getData('sys_items') || [];
-    let existingItem = items.find(i => String(i.id) === String(id));
-
-    let newItemData = {
-        id: id ? cleanPrice(id) : Date.now(),
-        name: name,
-        price: price,
-        categoryId: categoryId,
-        image: image,
-        ingredients: ingredients,
-        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : []
+    let items = getData('sys_items');
+    let newItemData = { 
+        id: id ? cleanPrice(id) : Date.now(), 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients, 
+        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : [] 
     };
 
     if (id) {
-        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? newItemData : i);
+        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? { ...i, ...newItemData } : i);
     } else {
         items.push(newItemData);
     }
 
     setData('sys_items', items);
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData, { merge: true })
-            .then(() => console.log("Cloud sync successful"))
-            .catch(err => console.error("Cloud sync error:", err));
+    if (db) {
+        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData)
+            .then(() => console.log("Cloud sync item success"))
+            .catch(err => console.error("Cloud sync item error:", err));
     }
 
     resetItemForm();
-    if (typeof renderAdminItems === 'function') renderAdminItems();
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    renderAdminItems();
+    refreshActiveUI();
     alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
 }
-
 
 function editItem(id) {
     const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
