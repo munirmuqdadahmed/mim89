@@ -577,7 +577,16 @@
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
                     <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
-                <div id="posCategoriesBar" class="categories-bar"></div>
+                <!-- شريط التناقل السريع بين الأقسام بضغطة واحدة -->
+<div id="posCategoriesBar" class="categories-bar">
+    <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">بركر اللحم 🥩</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">بركر الدجاج 🍗</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">الشاورما 🌯</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">الريزو 🍚</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">الكنتاكي 🍗</button>
+    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات', this)">الصوصات 🥣</button>
+</div>
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
         </div>
