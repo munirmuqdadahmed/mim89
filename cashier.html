@@ -324,16 +324,10 @@
             max-height: 90vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch !important;
-        }<!-- حقل البحث التلقائي عن دليل الزبائن مع زر الإلغاء السريع -->
-<div style="position:relative; margin: 2px 0; flex-shrink:0;">
-    <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
-    <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
-            style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
-        ✖
-    </button>
-    <div id="phoneSearchResults" style="display:none;"></div>
-</div>
+        }
 
+        .toggle-group {
+            display: flex;
             gap: 3px;
             margin-bottom: 2px;
             flex-shrink: 0;
@@ -373,7 +367,7 @@
             font-weight: 700;
         }
 
-        /* 📴 شارة شبكة الأوفلاين (Point 4: Offline Status) */
+        /* 📴 شارة شبكة الأوفلاين */
         .offline-status-badge {
             background: rgba(239, 68, 68, 0.2);
             border: 1px solid var(--danger);
@@ -480,7 +474,6 @@
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-                <!-- شارة وضع الأوفلاين الشبكي (Point 4) -->
                 <div id="offlineStatusBadge" class="offline-status-badge">
                     <i class="fa-solid fa-wifi"></i> أوفلاين (حفظ محلي)
                 </div>
@@ -518,9 +511,13 @@
                                 <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
                             </div>
 
-                            <!-- حقل البحث التلقائي عن دليل الزبائن -->
+                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن مع زر الإلغاء السريع المحدث -->
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
-                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
+                                        style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
+                                    ✖
+                                </button>
                                 <div id="phoneSearchResults" style="display:none;"></div>
                             </div>
 
@@ -564,7 +561,7 @@
                     </div>
                 </div>
 
-                <!-- 🛵 تبويب الطلبات المباشرة الواردة من المينيو مع إمكانية تحديث الحالة (Point 3) -->
+                <!-- 🛵 تبويب الطلبات المباشرة الواردة من المينيو -->
                 <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
                     <div id="liveOrdersContainer">
                         <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
@@ -577,16 +574,18 @@
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
                     <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
-                <!-- شريط التناقل السريع بين الأقسام بضغطة واحدة -->
-<div id="posCategoriesBar" class="categories-bar">
-    <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">بركر اللحم 🥩</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">بركر الدجاج 🍗</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">الشاورما 🌯</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">الريزو 🍚</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">الكنتاكي 🍗</button>
-    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات', this)">الصوصات 🥣</button>
-</div>
+
+                <!-- 🍔 شريط التناقل السريع بين الأقسام المحدث -->
+                <div id="posCategoriesBar" class="categories-bar">
+                    <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">بركر اللحم 🥩</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">بركر الدجاج 🍗</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">الشاورما 🌯</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">الريزو 🍚</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">الكنتاكي 🍗</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات', this)">الصوصات 🥣</button>
+                </div>
+
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
         </div>
@@ -595,7 +594,7 @@
     <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
-    <!-- 🚫 نافذة إدارة النفاد والوجبات المنتهية (Point 6: Sold Out Manager) -->
+    <!-- 🚫 نافذة إدارة النفاد والوجبات المنتهية -->
     <div id="soldOutManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -607,7 +606,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ نافذة إدارة الكوبونات وأكواد الخصم (Point 7: Promo Coupons Manager) -->
+    <!-- 🏷️ نافذة إدارة الكوبونات وأكواد الخصم -->
     <div id="couponsManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -882,7 +881,6 @@
             if (m) m.style.display = 'none';
         }
 
-        // 📴 مراقبة حالة الأوفلاين الشبكي (Point 4: Offline Mode Listener)
         function initOfflineNetworkMonitor() {
             const badge = document.getElementById('offlineStatusBadge');
             
@@ -899,7 +897,6 @@
             updateOnlineStatus();
         }
 
-        // ⏰ فتح وحساب نافذة أوقات العمل للدوام
         function openWorkingHoursModal() {
             try {
                 const stored = localStorage.getItem('sys_work_hours');
@@ -999,7 +996,6 @@
             }
         }
 
-        // 🚫 إدارة نفاد الوجبات (Point 6: Sold Out Items)
         function openSoldOutManagerModal() {
             const container = document.getElementById('soldOutItemsListTable');
             if (!container) return;
@@ -1048,7 +1044,6 @@
             if (typeof renderPosProducts === 'function') renderPosProducts();
         }
 
-        // 🏷️ إدارة الكوبونات وأكواد الخصم (Point 7: Coupons Manager)
         function openCouponsManagerModal() {
             renderCouponsList();
             openModal('couponsManagerModal');
@@ -1127,7 +1122,6 @@
             }
         }
 
-        // 🛵 استماع وتحديث حالات الطلبات الواردة المباشرة (Point 3)
         function initLiveOnlineOrdersListener() {
             const container = document.getElementById('liveOrdersContainer');
             const badge = document.getElementById('liveOrdersBadge');
@@ -1167,7 +1161,6 @@
                                     <span>المجموع: ${(o.total || 0).toLocaleString()} د.ع</span>
                                 </div>
                                 
-                                <!-- أزرار تحديث الحالة المباشرة لتنعكس في هاتف الزبون (Point 3) -->
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
                                     <button onclick="updateOrderStatusInFirebase('${docId}', 'قيد التحضير')" class="gold-btn" style="background:#3b82f6; color:#fff; font-size:0.72rem; padding:4px;">🍳 بالتحضير</button>
                                     <button onclick="updateOrderStatusInFirebase('${docId}', 'خرج للتوصيل')" class="gold-btn" style="background:#a855f7; color:#fff; font-size:0.72rem; padding:4px;">🛵 بالتوصيل</button>
