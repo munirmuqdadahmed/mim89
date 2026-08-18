@@ -324,10 +324,16 @@
             max-height: 90vh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch !important;
-        }
+        }<!-- حقل البحث التلقائي عن دليل الزبائن مع زر الإلغاء السريع -->
+<div style="position:relative; margin: 2px 0; flex-shrink:0;">
+    <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+    <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
+            style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
+        ✖
+    </button>
+    <div id="phoneSearchResults" style="display:none;"></div>
+</div>
 
-        .toggle-group {
-            display: flex;
             gap: 3px;
             margin-bottom: 2px;
             flex-shrink: 0;
