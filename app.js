@@ -1002,17 +1002,15 @@ function loadPosDirectMenu(catId = 'all') {
 
     catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="filterPosProductsByCategory('all', this)">الكل</button>`;
     categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="filterPosProductsByCategory('${c.name}', this)">${c.name}</button>`;
+        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="filterPosProductsByCategory('${c.id}', this)">${c.name}</button>`;
     });
 
-    const filtered = catId === 'all' ? items : items.filter(i => cleanPrice(i.categoryId) === cleanPrice(catId));
-
-    if (filtered.length === 0) {
-        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
+    if (items.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات مسجلة في النظام</p>`;
         return;
     }
 
-    grid.innerHTML = filtered.map(item => `
+    grid.innerHTML = items.map(item => `
         <div class="pos-product-card" data-category="${item.categoryId || ''}" onclick="addToPosCart(${item.id})">
             <button onclick="event.stopPropagation(); showItemDetailsModal('${item.name}', '${item.ingredients || ''}')" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.8); color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 5px; font-size:10px; z-index:10; cursor:pointer;">ℹ️ تفاصيل</button>
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
@@ -1020,6 +1018,26 @@ function loadPosDirectMenu(catId = 'all') {
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
     `).join('');
+
+    filterPosProductsByCategory(catId, null);
+}
+
+function filterPosProductsByCategory(catId, btnEl) {
+    if (btnEl) {
+        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(btn => btn.classList.remove('active'));
+        btnEl.classList.add('active');
+    }
+
+    const cards = document.querySelectorAll('#posProductsGrid .pos-product-card');
+    cards.forEach(card => {
+        const itemCategory = card.getAttribute('data-category') || '';
+
+        if (catId === 'all' || cleanPrice(itemCategory) === cleanPrice(catId)) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
 
 // 🎯 1. دالة التناقل السريع بين الأقسام بضغطة واحدة
@@ -2456,18 +2474,62 @@ function savePrinterSettings() {
     alert("تم حفظ إعدادات جميع الطابعات بنجاح!");
 }
 
-function renderAdminAreas() {
-    const areas = getData('sys_areas');
-    const tbody = document.getElementById('adminAreasTable');
+function renderAdminCategories() {
+    const categories = getData('sys_categories');
+    const tbody = document.getElementById('adminCategoriesTable');
     if (!tbody) return;
-    tbody.innerHTML = areas.map((a, idx) => `
+
+    if (categories.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#888; padding:15px;">لا توجد أقسام مسجلة</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = categories.map((c, idx) => `
         <tr>
             <td>${idx + 1}</td>
-            <td><strong>${a.name}</strong></td>
-            <td>${cleanPrice(a.price) === 0 ? 'مجاني 🎉' : cleanPrice(a.price).toLocaleString('ar-IQ') + ' د.ع'}</td>
-            <td><button class="gold-btn btn-danger btn-sm" onclick="deleteArea('${a.name}')">حذف</button></td>
+            <td>
+                <input type="text" value="${c.name}" class="gold-input-inline" onchange="updateCategoryInline('${c.id}', this.value)" style="font-weight:bold;">
+            </td>
+            <td>
+                <button onclick="deleteCategory('${c.id}')" class="gold-btn btn-danger btn-sm" style="padding:2px 8px; font-size:0.75rem;">حذف</button>
+            </td>
         </tr>
     `).join('');
+}
+
+function saveCategory() {
+    const nameInput = document.getElementById('categoryNameInput');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) return alert("أدخل اسم القسم");
+
+    let categories = getData('sys_categories');
+    const newCat = { id: Date.now(), name: name };
+    categories.push(newCat);
+    setData('sys_categories', categories);
+
+    if (nameInput) nameInput.value = '';
+    renderAdminCategories();
+    refreshActiveUI();
+    alert("✅ تم إضافة القسم بنجاح!");
+}
+
+function updateCategoryInline(id, newName) {
+    let categories = getData('sys_categories');
+    let cat = categories.find(c => cleanPrice(c.id) === cleanPrice(id));
+    if (cat) {
+        cat.name = newName.trim();
+        setData('sys_categories', categories);
+        refreshActiveUI();
+    }
+}
+
+function deleteCategory(id) {
+    if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+        let categories = getData('sys_categories').filter(c => cleanPrice(c.id) !== cleanPrice(id));
+        setData('sys_categories', categories);
+        renderAdminCategories();
+        refreshActiveUI();
+    }
 }
 
 function saveDeliveryArea() {
