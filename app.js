@@ -3152,3 +3152,27 @@ function getNextOrderNumber() {
 
     return nextNum;
 }
+// 🎯 1. دالة التناقل السريع بين الأقسام بضغطة واحدة
+function filterPosProductsByCategory(categoryName, btnEl) {
+    // تحديث الشكل النشط للأزرار
+    document.querySelectorAll('#posCategoriesBar .category-tab').forEach(btn => btn.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+
+    const cards = document.querySelectorAll('#posProductsGrid .pos-product-card');
+    cards.forEach(card => {
+        const itemCategory = card.getAttribute('data-category') || '';
+        const itemName = card.innerText || '';
+
+        if (categoryName === 'all' || itemCategory.includes(categoryName) || itemName.includes(categoryName)) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// ℹ️ 2. دالة إظهار نافذة مكونات الوجبة والتفاصيل
+function showItemDetailsModal(name, ingredients) {
+    const details = ingredients && ingredients.trim() !== '' ? ingredients : 'لا توجد تفاصيل أو مكونات مسجلة لهذه الوجبة.';
+    alert(`📋 تفاصيل ومكونات (${name}):\n\n${details}`);
+}
