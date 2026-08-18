@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 1)
+   MIM89 FAST FOOD - Master Core Engine (v22.0 Master Cleaned - Part 1)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -33,7 +33,7 @@ let lastCompletedOrder = null;
 let currentUploadedBase64 = "";
 let currentDetailItem = null;
 
-// 🧮 دالة عالمية لتنظيف أي سعر/رقم من الفواصل والنصوص والأرقام الشرقية وتحويله إلى رقم مجرد
+// 🧮 دالة عالمية لتنظيف الأرقام والأشعار
 function cleanPrice(val) {
     if (val === null || val === undefined) return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -42,9 +42,27 @@ function cleanPrice(val) {
     return isNaN(num) ? 0 : num;
 }
 
-// 🍔 دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط) المباشرة
+// 🔢 العداد الذكي التلقائي لرقم الطلب (يضمن عدم تكرار 141)
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num') || '141', 10);
+    if (isNaN(lastNum) || lastNum < 141) lastNum = 141;
+
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err));
+    }
+
+    return nextNum;
+}
+
+// 🍔 دالة فتح وإغلاق القائمة الجانبية
 window.toggleSideDrawer = function() {
-    const orderNumber = getNextOrderNumber();
+    const drawer = document.getElementById('sideDrawer');
     const overlay = document.getElementById('drawerOverlay');
     if (!drawer || !overlay) return;
 
@@ -86,24 +104,10 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
-// 2. البيانات الأساسية الكاملة لمطعم MIM89 (شاورما دجاج فقط)
 const DEFAULT_DATA = {
-    passwords: { 
-        admin: "admin123", 
-        inventory: "inv123",
-        costing: "1278900",
-        cashier: "123"
-    },
-    printerSettings: {
-        enableIpPrinting: true,
-        cashierIp: "192.168.0.218",
-        kitchen1Ip: "192.168.0.200",
-        kitchen2Ip: "192.168.0.202",
-        port: "9100"
-    },
-    cashiers: [
-        { id: "c1", name: "الكاشير الرئيسي", password: "123" }
-    ],
+    passwords: { admin: "admin123", inventory: "inv123", costing: "1278900", cashier: "123" },
+    printerSettings: { enableIpPrinting: true, cashierIp: "192.168.0.218", kitchen1Ip: "192.168.0.200", kitchen2Ip: "192.168.0.202", port: "9100" },
+    cashiers: [{ id: "c1", name: "الكاشير الرئيسي", password: "123" }],
     employees: [
         { id: "emp_1", name: "أحمد - شيف شاورما" },
         { id: "emp_2", name: "علي - كاشير ومساعد" },
@@ -114,20 +118,15 @@ const DEFAULT_DATA = {
         { id: "drv_1", name: "أحمد دليفري", phone: "07700000001" },
         { id: "drv_2", name: "مصطفى دليفري", phone: "07700000002" }
     ],
-    quickKitchenNotes: [
-        "بدون ثوم 🧄",
-        "سبايسي 🌶️",
-        "صوص زيادة 🧀",
-        "بدون مخلل 🥒"
-    ],
+    quickKitchenNotes: ["بدون ثوم 🧄", "سبايسي 🌶️", "صوص زيادة 🧀", "بدون مخلل 🥒"],
     categories: [
         { id: 1, name: "🔥 العروض المميزة" },
         { id: 2, name: "🍔 بركر اللحم والبركر" },
         { id: 3, name: "🌯 قسم الشاورما (دجاج)" },
-        { id: 4, name: "🥖 قسم السندويشات والصاج (زنجر، سكالوب، فاهيتا)" },
-        { id: 5, name: "🍗 قسم الكنتاكي والريزو والوجبات" },
+        { id: 4, name: "🥖 قسم السندويشات والصاج" },
+        { id: 5, name: "🍗 قسم الكنتاكي والريزو" },
         { id: 6, name: "🍟 الفنكر والمقبلات" },
-        { id: 7, name: "➕ قسم الإضافات" }
+        { id: 7, name: "➕ قسم الإضافات والصوصات" }
     ],
     deliveryAreas: [
         { name: "القاهرة", price: 0 },
@@ -135,45 +134,18 @@ const DEFAULT_DATA = {
         { name: "الأعظمية", price: 3000 },
         { name: "الشعب", price: 2500 }
     ],
-    inventory: [
-        { id: 1, name: "صدور دجاج طازجة", quantity: 100, unit: "كغم", totalPrice: 500000, costPerUnit: 5000 },
-        { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع", totalPrice: 40000, costPerUnit: 200 },
-        { id: 3, name: "بطاطس", quantity: 150, unit: "كغم", totalPrice: 150000, costPerUnit: 1000 },
-        { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة", totalPrice: 30000, costPerUnit: 1000 },
-        { id: 5, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 },
-        { id: 6, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
-        { id: 7, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
-    ],
-    items: [
-        { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
-        { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-        { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
-        { id: 302, categoryId: 3, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
-        { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
-        { id: 304, categoryId: 3, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
-        { id: 305, categoryId: 3, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
-        { id: 306, categoryId: 3, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
-        { id: 307, categoryId: 3, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
-        { id: 308, categoryId: 3, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
-        { id: 309, categoryId: 3, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
-    ]
+    inventory: [],
+    items: []
 };
 
 function normalizeArabicArea(str) {
     if (!str) return '';
-    return str.toString()
-        .replace(/[أإآ]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/^ال/, '')
-        .trim()
-        .toLowerCase();
+    return str.toString().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/^ال/, '').trim().toLowerCase();
 }
 
-// 🔒 دالة التهيئة المحدثة: تمنع مسح أو كتابة الأسعار القديمة فوق الفايربيس نهائياً
 function initData() {
     let currentItems = getData('sys_items');
 
-    // إذا كانت الذاكرة المحلية فارغة، نجلب البيانات من الفايربيس أولاً ولا نرفض البيانات الجديدة
     if (!currentItems || !Array.isArray(currentItems) || currentItems.length === 0) {
         if (db) {
             db.collection("menu_items").get().then(snapshot => {
@@ -182,34 +154,10 @@ function initData() {
                     snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
                     setData('sys_items', cloudItems);
                     refreshActiveUI();
-                } else {
-                    // فقط إذا كان الفايربيس فارغاً تماماً بأول مرة تشغيل
-                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
         }
     }
-
-    if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-    if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
-    if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
-    if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
-    if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
-    if (!localStorage.getItem('sys_employees')) localStorage.setItem('sys_employees', JSON.stringify(DEFAULT_DATA.employees));
-    if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
-    if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
-
-    setupCloudRealtimeSync();
-if (typeof db !== 'undefined' && db) {
-    db.collection("settings").doc("order_counter").get().then(doc => {
-        if (doc.exists && doc.data().lastNum) {
-            localStorage.setItem('sys_last_order_num', doc.data().lastNum);
-        }
-    });
-}
-}
-
 
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
@@ -228,6 +176,15 @@ if (typeof db !== 'undefined' && db) {
 
     setupCloudRealtimeSync();
 
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").get().then(doc => {
+            if (doc.exists && doc.data().lastNum) {
+                localStorage.setItem('sys_last_order_num', doc.data().lastNum);
+            }
+        });
+    }
+}
+
 function getData(key) {
     try {
         const data = localStorage.getItem(key);
@@ -237,8 +194,24 @@ function getData(key) {
     }
 }
 
+// 🛡️ دالة الحفظ الذكي الآمنة من الامتلاء
 function setData(key, val) {
-    localStorage.setItem(key, JSON.stringify(val));
+    try {
+        localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {
+        console.warn("⚠️ الذاكرة المحلية ممتلئة! جاري تنظيف الصور للحفاظ على الأسعار...");
+        if (Array.isArray(val)) {
+            const cleanItems = val.map(item => {
+                let copy = { ...item };
+                if (copy.image && copy.image.length > 1000 && copy.image.startsWith('data:image')) {
+                    copy.image = 'https://via.placeholder.com/150';
+                }
+                return copy;
+            });
+            try { localStorage.setItem(key, JSON.stringify(cleanItems)); } catch (err) {}
+        }
+    }
+
     if (db) {
         try {
             db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: new Date() });
@@ -254,42 +227,9 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-function getOrderSequence(customOrder) {
-    if (customOrder) {
-        if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
-        if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
-    }
-    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
-    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
-    return seqNum;
-}
-
-function incrementOrderSequence() {
-    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
-    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
-    let nextSeq = (seqNum >= 999) ? 101 : seqNum + 1;
-    localStorage.setItem('mim89_daily_order_seq', nextSeq);
-}
-
 function getSystemPassword(type) {
     const sysPasses = getData('sys_passwords') || {};
     return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
-}
-
-function calculateItemCost(item) {
-    const inventory = getData('sys_inventory');
-    if (!item || !item.recipe || !Array.isArray(item.recipe)) return 0;
-
-    let totalCost = 0;
-    item.recipe.forEach(ingredient => {
-        const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ingredient.invId));
-        if (stockItem) {
-            const costPerUnit = stockItem.costPerUnit 
-                || (cleanPrice(stockItem.quantity) > 0 ? (cleanPrice(stockItem.totalPrice) / cleanPrice(stockItem.quantity)) : 0);
-            totalCost += (costPerUnit * cleanPrice(ingredient.qty || 0));
-        }
-    });
-    return totalCost;
 }
 
 function setupCloudRealtimeSync() {
@@ -299,23 +239,12 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            if (cloudItems.length >= 5) {
+            if (cloudItems.length >= 1) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
             }
         }
     }, err => console.log("Menu sync fallback:", err));
-
-    db.collection("menu_categories").onSnapshot(snapshot => {
-        if (!snapshot.empty) {
-            let cloudCategories = [];
-            snapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-            if (cloudCategories.length >= 3) {
-                setData('sys_categories', cloudCategories);
-                refreshActiveUI();
-            }
-        }
-    }, err => console.log("Category sync fallback:", err));
 
     db.collection("customers").onSnapshot(snapshot => {
         if (!snapshot.empty) {
@@ -337,8 +266,6 @@ function refreshActiveUI() {
         if (typeof renderAdminItems === 'function') renderAdminItems();
         if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
         if (typeof renderAdminCustomers === 'function') renderAdminCustomers();
-    } else if (document.getElementById('inventoryTableBody')) {
-        if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
 }
 
@@ -356,28 +283,7 @@ async function globalSystemSync(btnElement) {
             if (!itemSnap.empty) {
                 let cloudItems = [];
                 itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 5) setData('sys_items', cloudItems);
-            }
-
-            const catSnap = await db.collection("menu_categories").get();
-            if (!catSnap.empty) {
-                let cloudCategories = [];
-                catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-                if (cloudCategories.length >= 3) setData('sys_categories', cloudCategories);
-            }
-
-            const orderSnap = await db.collection("orders").get();
-            if (!orderSnap.empty) {
-                let cloudOrders = [];
-                orderSnap.forEach(doc => cloudOrders.push({ ...doc.data(), docId: doc.id }));
-                setData('sys_live_orders', cloudOrders);
-            }
-
-            const custSnap = await db.collection("customers").get();
-            if (!custSnap.empty) {
-                let cloudCustomers = [];
-                custSnap.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
-                setData('sys_customers', cloudCustomers);
+                if (cloudItems.length >= 1) setData('sys_items', cloudItems);
             }
         }
         refreshActiveUI();
@@ -385,7 +291,7 @@ async function globalSystemSync(btnElement) {
     } catch (error) {
         console.error("Global sync error:", error);
         refreshActiveUI();
-        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابة.");
+        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابية.");
     } finally {
         if (btnElement) {
             setTimeout(() => {
@@ -397,10 +303,9 @@ async function globalSystemSync(btnElement) {
 }
 
 /* ==========================================
-   3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
+   2. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
 
-// 🛠️ دالة حفظ الزبون المحسنة الآمنة ضد أخطاء المصفوفات
 function saveCustomerRecord(name, phone, area, address) {
     if (!phone || phone === '-' || phone === 'بدون رقم') return;
     
@@ -447,24 +352,7 @@ function autoSearchCustomerByPhone(phoneInput) {
     }
 
     const customers = getData('sys_customers') || [];
-    const completed = getData('sys_completed_orders') || [];
-
-    let matches = customers.filter(c => c.phone.includes(cleanPhone));
-
-    if (matches.length === 0) {
-        completed.forEach(o => {
-            if (o.phone && o.phone !== '-' && String(o.phone).includes(cleanPhone)) {
-                if (!matches.some(m => m.phone === o.phone)) {
-                    matches.push({
-                        name: o.customerName || 'زبون سابق',
-                        phone: o.phone,
-                        area: o.area || '',
-                        address: o.address || ''
-                    });
-                }
-            }
-        });
-    }
+    let matches = customers.filter(c => c.phone && c.phone.includes(cleanPhone));
 
     if (matches.length === 0) {
         resultsBox.innerHTML = '<div style="padding:8px; color:#aaa; font-size:0.8rem; text-align:center;">🆕 زبون جديد (غير مسجل سابقاً)</div>';
@@ -537,9 +425,8 @@ function deleteCustomerRecord(id) {
         renderAdminCustomers();
     }
 }
-
 /* ==========================================
-   4. المينيو الإلكتروني العام للزبائن (index.html)
+   3. المينيو الإلكتروني العام للزبائن (index.html)
    ========================================== */
 
 // 🍔 1. فتح نافذة التخصيص وتعبئة بيانات الوجبة
@@ -646,13 +533,12 @@ function loadPublicMenu() {
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+Fast+Food'">
                             <div class="item-details">
                                 <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
                                 <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <!-- 🔥 زر الزائد المربوط بنافذة التخصيص والخيارات -->
                                     <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
                                 </div>
                             </div>
@@ -664,10 +550,6 @@ function loadPublicMenu() {
         }
     });
 }
-/* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 2)
-   صاحب النظام: منير مقداد
-   ========================================================================== */
 
 function filterCategory(catId, btnElement) {
     if (btnElement) {
@@ -677,14 +559,6 @@ function filterCategory(catId, btnElement) {
     document.querySelectorAll('.menu-section').forEach(sec => {
         sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
     });
-}
-
-function openItemDetails(id) {
-    openItemCustomizationModal(id);
-}
-
-function addToCart(itemId) {
-    openItemCustomizationModal(itemId);
 }
 
 function updateCartBadge() {
@@ -739,28 +613,6 @@ function changeCartIndexQty(index, change) {
     calculateDeliveryCost();
 }
 
-function changeCartQty(id, change) {
-    const idx = cart.findIndex(c => cleanPrice(c.id) === cleanPrice(id));
-    if (idx !== -1) {
-        changeCartIndexQty(idx, change);
-    }
-}
-
-function toggleDeliveryFields() {
-    const typeSelect = document.getElementById('orderTypeSelect');
-    const type = typeSelect ? typeSelect.value : 'delivery';
-    const group = document.getElementById('deliveryFieldsGroup');
-    const feeLine = document.getElementById('deliveryFeeLine');
-    if (type === 'delivery') {
-        if(group) group.style.display = 'block';
-        if(feeLine) feeLine.style.display = 'flex';
-    } else {
-        if(group) group.style.display = 'none';
-        if(feeLine) feeLine.style.display = 'none';
-    }
-    calculateDeliveryCost();
-}
-
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -795,7 +647,6 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
-// 🚀 إرسال الطلب المباشر - حل فتح الواتساب المباشر 100% على الآيفون والأندرويد
 window.submitOrderToCashier = function() {
     try {
         if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
@@ -821,18 +672,10 @@ window.submitOrderToCashier = function() {
         const address = addressInput ? addressInput.value.trim() : 'غير محدد';
         const notes = notesInput ? notesInput.value.trim() : 'لا يوجد';
 
-        if (!name || name === '') {
-            return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
-        }
-
-        if (!phone || phone === '') {
-            return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
-        }
-
-        if (type === 'delivery') {
-            if (!selectArea || selectArea === '' || selectArea === '-- اختر المنطقة --') {
-                return alert("⚠️ يرجى اختيار منطقة التوصيل!");
-            }
+        if (!name) return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
+        if (!phone) return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
+        if (type === 'delivery' && (!selectArea || selectArea === '-- اختر المنطقة --')) {
+            return alert("⚠️ يرجى اختيار منطقة التوصيل!");
         }
 
         saveCustomerRecord(name, phone, area, address);
@@ -905,7 +748,6 @@ window.submitOrderToCashier = function() {
         waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString('ar-IQ')} د.ع\n`;
 
         const restaurantPhone = "9647750008630";
-        // 💬 تحويل عبر wa.me لضمان فتح التطبيق مباشرة في الآيفون دون حظر النوافذ المنبثقة
         const waUrl = `https://wa.me/${restaurantPhone}?text=${encodeURIComponent(waMessage)}`;
 
         localStorage.setItem('sys_last_order_id', orderId);
@@ -919,10 +761,6 @@ window.submitOrderToCashier = function() {
             submitBtn.disabled = false;
         }
 
-        if (typeof listenToOrderTracking === 'function') {
-            listenToOrderTracking(orderId);
-        }
-
         window.location.href = waUrl;
     } catch (err) {
         alert("حدث خطأ أثناء إرسال الطلب: " + err.message);
@@ -934,9 +772,8 @@ function saveOrderLocally(orderData) {
     orders.push(orderData);
     setData('sys_live_orders', orders);
 }
-
 /* ==========================================
-   5. نقطة البيع POS والدليفري والتطبيقات (cashier.html)
+   4. نقطة البيع POS والتطبيقات (cashier.html)
    ========================================== */
 
 function initCashierPage() { 
@@ -1036,9 +873,9 @@ function loadPosDirectMenu(catId = 'all') {
 
     if (!catBar || !grid) return;
 
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل</button>`;
+    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="filterPosProductsByCategory('all', this)">الكل</button>`;
     categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
+        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="filterPosProductsByCategory('${c.name}', this)">${c.name}</button>`;
     });
 
     const filtered = catId === 'all' ? items : items.filter(i => cleanPrice(i.categoryId) === cleanPrice(catId));
@@ -1049,23 +886,8 @@ function loadPosDirectMenu(catId = 'all') {
     }
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-        </div>
-    `).join('');
-}
-
-function filterPosProducts() {
-    const query = document.getElementById('posSearchInput') ? document.getElementById('posSearchInput').value.toLowerCase() : '';
-    const items = getData('sys_items');
-    const grid = document.getElementById('posProductsGrid');
-    if (!grid) return;
-    
-    const filtered = items.filter(i => i.name.toLowerCase().includes(query));
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+        <div class="pos-product-card" data-category="${item.categoryId || ''}" onclick="addToPosCart(${item.id})">
+            <button onclick="event.stopPropagation(); showItemDetailsModal('${item.name}', '${item.ingredients || ''}')" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.8); color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 5px; font-size:10px; z-index:10; cursor:pointer;">ℹ️ تفاصيل</button>
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
@@ -1268,17 +1090,13 @@ function renderPosCart() {
         }
     }
 }
-/* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 3)
-   صاحب النظام: منير مقداد
-   ========================================================================== */
 
-// 6. حاسبة النقد والطباعة الإلزامية الآمنة
+/* ==========================================
+   5. حاسبة النقد والطباعة الحرارية
+   ========================================== */
+
 function openQuickCashModal() {
-    if (posCart.length === 0) {
-        alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
-        return;
-    }
+    if (posCart.length === 0) return alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
 
     const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const finalTotal = Math.max(0, subtotal - posDiscountAmount);
@@ -1345,7 +1163,7 @@ function prepareAndOpenPrintModal() {
 
     const pendingOrder = {
         id: 'POS_' + Date.now(),
-        orderNum: getOrderSequence(),
+        orderNum: getNextOrderNumber(),
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
@@ -1393,7 +1211,6 @@ function tryFinalizeAndClearOrder() {
     if (ord) {
         saveCompletedOrder(ord);
         deductInventoryFromRecipe(ord.items);
-        incrementOrderSequence();
     }
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
@@ -1411,424 +1228,6 @@ function saveCompletedOrder(order) {
         saveCustomerRecord(order.customerName, order.phone, order.area, order.address);
     }
 }
-
-function openCompletedOrdersModal() {
-    const list = document.getElementById('completedOrdersList');
-    const completed = getData('sys_completed_orders');
-
-    if (!list) return;
-
-    if (!completed || completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">لا توجد فواتير سابقة مطبوعة</p>`;
-    } else {
-        list.innerHTML = completed.map(ord => {
-            const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
-            return `
-                <div style="background:#222; border:1px solid #444; border-radius:8px; padding:8px; margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:#ffd700;">
-                        <strong>👤 ${ord.customerName || 'زبون'} ${ord.driverName ? ' - 🛵 ' + ord.driverName : ''}</strong>
-                        <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
-                    </div>
-                    <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
-                        <strong style="color:#ffd700; font-size:0.9rem;">${cleanPrice(ord.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</strong>
-                        <button class="gold-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="reprintCompletedOrder('${ord.id}')">🖨️ إعادة طباعة</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    openModal('completedOrdersModal');
-}
-
-function reprintCompletedOrder(orderId) {
-    const completed = getData('sys_completed_orders');
-    const order = completed.find(o => o.id === orderId);
-    if (order) {
-        window.activePendingPrintOrder = order;
-        closeModal('completedOrdersModal');
-        printCustomerInvoiceOnly(null, order);
-    }
-}
-
-function clearCompletedOrdersHistory() {
-    if (confirm("مسح جميع الفواتير من السجل؟")) {
-        setData('sys_completed_orders', []);
-        openCompletedOrdersModal();
-    }
-}
-
-/* ==========================================
-   7. إدارة الصرفيات وسُلف الموظفين
-   ========================================== */
-
-function openExpenseManagerModal() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-
-    if (typeSelect) {
-        typeSelect.innerHTML = `
-            <option value="عامة">🔴 صرفيات عامة للمطعم</option>
-            <option value="سلفة موظف">👤 سلفة / مسحوبات موظف</option>
-            <option value="مشتريات طارئة">🛒 مشتريات وسوق طارئ</option>
-        `;
-    }
-
-    if (empSelect) {
-        const employees = getData('sys_employees') || DEFAULT_DATA.employees;
-        empSelect.innerHTML = employees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('');
-    }
-
-    renderExpensesTable();
-    openModal('expenseManagerModal');
-}
-
-function toggleExpenseTypeFields() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-    if (typeSelect && empSelect) {
-        empSelect.style.display = (typeSelect.value === 'سلفة موظف') ? 'block' : 'none';
-    }
-}
-
-function addNewExpenseRecord() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-    const amtInput = document.getElementById('expenseAmountInput');
-    const noteInput = document.getElementById('expenseNoteInput');
-
-    const amount = cleanPrice(amtInput ? amtInput.value : 0);
-    if (!amount || amount <= 0) return alert("⚠️ أدخل مبلغ الصرفية بشكل صحيح!");
-
-    const expType = typeSelect ? typeSelect.value : 'عامة';
-    let details = noteInput ? noteInput.value.trim() : '';
-
-    if (expType === 'سلفة موظف' && empSelect) {
-        details = `سلفة للموظف (${empSelect.value}) - ${details}`;
-    }
-
-    const newExpense = {
-        id: 'EXP_' + Date.now(),
-        type: expType,
-        amount: amount,
-        note: details || 'صرفية يومية',
-        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
-        createdTimestamp: Date.now()
-    };
-
-    let expenses = getData('sys_expenses') || [];
-    expenses.unshift(newExpense);
-    setData('sys_expenses', expenses);
-
-    if (amtInput) amtInput.value = '';
-    if (noteInput) noteInput.value = '';
-
-    renderExpensesTable();
-    alert("✅ تم تسجيل الصرفية وخصمها من الصندوق بنجاح!");
-}
-
-function renderExpensesTable() {
-    const tableEl = document.getElementById('expensesListTable');
-    if (!tableEl) return;
-
-    const expenses = getData('sys_expenses') || [];
-    const today = getTodayString();
-    const todayExpenses = expenses.filter(e => e.dateDate === today);
-
-    if (todayExpenses.length === 0) {
-        tableEl.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد صرفيات مسجلة اليوم</p>`;
-        return;
-    }
-
-    tableEl.innerHTML = todayExpenses.map(exp => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#222; border-bottom:1px solid #333; padding:6px; margin-bottom:4px; border-radius:4px;">
-            <div>
-                <strong style="color:#ff4d4d; font-size:0.8rem;">${exp.type}</strong>
-                <div style="font-size:0.75rem; color:#aaa;">${exp.note} (${exp.timestamp})</div>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <strong style="color:#ffd700; font-size:0.85rem;">${cleanPrice(exp.amount).toLocaleString('ar-IQ')} د.ع</strong>
-                <button onclick="deleteExpenseRecord('${exp.id}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.8rem;">✕</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function deleteExpenseRecord(expId) {
-    if (confirm("هل تريد إلغاء وحذف هذه الصرفية؟")) {
-        let expenses = getData('sys_expenses') || [];
-        expenses = expenses.filter(e => e.id !== expId);
-        setData('sys_expenses', expenses);
-        renderExpensesTable();
-    }
-}
-
-/* ==========================================
-   8. إدارة ملاحظات المطبخ السريعة
-   ========================================== */
-
-function openKitchenNotesManagerModal() {
-    renderKitchenNotesTable();
-    openModal('kitchenNotesManagerModal');
-}
-
-function renderKitchenNotesTable() {
-    const listEl = document.getElementById('kitchenNotesListTable');
-    if (!listEl) return;
-
-    const notes = getData('sys_quick_kitchen_notes') || [];
-    if (notes.length === 0) {
-        listEl.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد ملاحظات سريعة مسجلة</p>`;
-        return;
-    }
-
-    listEl.innerHTML = notes.map((note, idx) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#222; border-bottom:1px solid #333; padding:6px; margin-bottom:4px; border-radius:4px;">
-            <span style="color:#fff; font-size:0.85rem;">● ${note}</span>
-            <button onclick="deleteKitchenNoteItem(${idx})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.85rem;">✕ حذف</button>
-        </div>
-    `).join('');
-}
-
-function addKitchenNoteItem() {
-    const input = document.getElementById('newKitchenNoteInput');
-    const text = input ? input.value.trim() : '';
-    if (!text) return alert("⚠️ أدخل نص الملاحظة!");
-
-    let notes = getData('sys_quick_kitchen_notes') || [];
-    if (!notes.includes(text)) {
-        notes.push(text);
-        setData('sys_quick_kitchen_notes', notes);
-        renderKitchenNotesTable();
-        renderPosCart();
-    }
-    if (input) input.value = '';
-}
-
-function deleteKitchenNoteItem(idx) {
-    let notes = getData('sys_quick_kitchen_notes') || [];
-    notes.splice(idx, 1);
-    setData('sys_quick_kitchen_notes', notes);
-    renderKitchenNotesTable();
-    renderPosCart();
-}
-
-/* ==========================================
-   9. التقارير اليومية والكشوفات المالية
-   ========================================== */
-
-function openDailyReportModal() {
-    const dateInput = document.getElementById('reportDateInput');
-    const today = getTodayString();
-    if (dateInput) dateInput.value = today;
-    renderDailyReport(today);
-    openModal('dailyReportModal');
-}
-
-function renderDailyReport(targetDate) {
-    const completed = getData('sys_completed_orders');
-    const expenses = getData('sys_expenses');
-
-    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
-    const filteredExpenses = expenses.filter(e => e.dateDate === targetDate);
-
-    let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, subtotalFood = 0;
-    let totalExpensesAmt = 0;
-
-    filteredOrders.forEach(ord => {
-        const orderTotal = cleanPrice(ord.totalAmount || 0);
-        totalSales += orderTotal;
-        totalDelivery += cleanPrice(ord.deliveryFee || 0);
-        subtotalFood += cleanPrice(ord.subtotal || 0);
-
-        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
-            totalVisa += orderTotal;
-        } else {
-            totalCash += orderTotal;
-        }
-    });
-
-    filteredExpenses.forEach(exp => {
-        totalExpensesAmt += cleanPrice(exp.amount || 0);
-    });
-
-    const netCashInHand = Math.max(0, totalCash - totalExpensesAmt);
-
-    if (document.getElementById('reportDateText')) document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
-    if (document.getElementById('reportCashierText')) document.getElementById('reportCashierText').innerText = "الكاشير: " + (activeCashierUser ? activeCashierUser.name : "الرئيسي");
-    if (document.getElementById('repTotalSales')) document.getElementById('repTotalSales').innerText = totalSales.toLocaleString('ar-IQ');
-    if (document.getElementById('repOrdersCount')) document.getElementById('repOrdersCount').innerText = filteredOrders.length;
-    if (document.getElementById('repTotalCash')) document.getElementById('repTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
-    if (document.getElementById('repTotalVisa')) document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
-    if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString('ar-IQ');
-    if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = subtotalFood.toLocaleString('ar-IQ');
-
-    if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExpensesAmt.toLocaleString('ar-IQ');
-    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = netCashInHand.toLocaleString('ar-IQ');
-
-    openDriverSettlementModal();
-}
-
-function openItemsReportModal() {
-    const dateInput = document.getElementById('itemsReportDateInput');
-    const today = getTodayString();
-    if (dateInput) dateInput.value = today;
-    renderItemsReport(today);
-    openModal('itemsReportModal');
-}
-
-function renderItemsReport(targetDate) {
-    const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
-
-    let itemsSoldMap = {};
-    let totalItemsQtyCount = 0;
-
-    filteredOrders.forEach(ord => {
-        if (ord.items && Array.isArray(ord.items)) {
-            ord.items.forEach(item => {
-                const qty = cleanPrice(item.qty || 0);
-                const price = cleanPrice(item.price || 0);
-                if (!itemsSoldMap[item.name]) {
-                    itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
-                }
-                itemsSoldMap[item.name].qty += qty;
-                itemsSoldMap[item.name].totalPrice += (price * qty);
-                totalItemsQtyCount += qty;
-            });
-        }
-    });
-
-    if (document.getElementById('itemsReportDateText')) document.getElementById('itemsReportDateText').innerText = "تاريخ جرد الوجبات: " + targetDate;
-    if (document.getElementById('repTotalItemsQty')) document.getElementById('repTotalItemsQty').innerText = totalItemsQtyCount.toLocaleString('ar-IQ') + " قطعة";
-
-    const itemsListEl = document.getElementById('repItemsSoldListDetail');
-    if (itemsListEl) {
-        const itemNames = Object.keys(itemsSoldMap);
-        if (itemNames.length === 0) {
-            itemsListEl.innerHTML = `<p style="text-align:center; color:#777; padding:15px 0;">لا توجد مبيعات وجبات مسجلة اليوم</p>`;
-        } else {
-            itemsListEl.innerHTML = itemNames.map(name => `
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:6px 0; align-items:center;">
-                    <span>● <strong>${name}</strong></span>
-                    <div>
-                        <span style="background:#333; color:#ffd700; padding:2px 8px; border-radius:4px; font-size:0.8rem; margin-left:6px;">العدد: ${itemsSoldMap[name].qty}</span>
-                        <strong style="color:#10b981; font-size:0.85rem;">${itemsSoldMap[name].totalPrice.toLocaleString('ar-IQ')} د.ع</strong>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-}
-
-function exportItemsReportPDFAndWhatsApp() {
-    const dateInput = document.getElementById('itemsReportDateInput');
-    const targetDate = dateInput ? dateInput.value : getTodayString();
-    
-    const completed = getData('sys_completed_orders');
-    const filteredOrders = completed.filter(o => o.dateDate === targetDate);
-
-    let itemsSoldMap = {};
-    let totalItemsQtyCount = 0;
-
-    filteredOrders.forEach(ord => {
-        if (ord.items && Array.isArray(ord.items)) {
-            ord.items.forEach(item => {
-                const qty = cleanPrice(item.qty || 0);
-                const price = cleanPrice(item.price || 0);
-                if (!itemsSoldMap[item.name]) {
-                    itemsSoldMap[item.name] = { qty: 0, totalPrice: 0 };
-                }
-                itemsSoldMap[item.name].qty += qty;
-                itemsSoldMap[item.name].totalPrice += (price * qty);
-                totalItemsQtyCount += qty;
-            });
-        }
-    });
-
-    const itemNames = Object.keys(itemsSoldMap);
-    if (itemNames.length === 0) return alert("لا توجد مبيعات وجبات لتصديرها لهذا اليوم!");
-
-    let waText = `📦 *جرد الوجبات المباعة - MIM89 FAST FOOD* 📦\n`;
-    waText += `----------------------------------\n`;
-    waText += `📅 *التاريخ:* ${targetDate}\n`;
-    waText += `📊 *إجمالي القطع المباعة:* ${totalItemsQtyCount} قطعة\n`;
-    waText += `----------------------------------\n`;
-
-    itemNames.forEach(name => {
-        waText += `• *${name}:* ${itemsSoldMap[name].qty} قطعة (${itemsSoldMap[name].totalPrice.toLocaleString('ar-IQ')} د.ع)\n`;
-    });
-
-    waText += `----------------------------------\n`;
-    waText += `تم استخراج هذا التقرير آلياً من نظام الكاشير MIM89.`;
-
-    const myPhone = "9647750008630";
-    window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waText)}`, '_blank');
-}
-
-function openShiftReportModal() {
-    const activeUser = activeCashierUser || JSON.parse(sessionStorage.getItem('active_cashier') || '{"name":"الرئيسي"}');
-    const shiftStartTs = Number(sessionStorage.getItem('shift_start_timestamp') || 0);
-    const shiftStartStr = sessionStorage.getItem('shift_start_time') || "بداية الشيفت";
-
-    const completed = getData('sys_completed_orders');
-    const expenses = getData('sys_expenses');
-
-    const shiftOrders = completed.filter(ord => {
-        const orderTs = ord.createdTimestamp || 0;
-        return orderTs >= shiftStartTs && (ord.cashierName === activeUser.name || !ord.cashierName);
-    });
-
-    const shiftExpenses = expenses.filter(exp => {
-        const expTs = exp.createdTimestamp || 0;
-        return expTs >= shiftStartTs;
-    });
-
-    let totalCash = 0, totalVisa = 0, grandTotal = 0, totalExpAmt = 0;
-
-    shiftOrders.forEach(ord => {
-        const amt = cleanPrice(ord.totalAmount || 0);
-        grandTotal += amt;
-        if (ord.paymentMethod && ord.paymentMethod.includes("فيزا")) {
-            totalVisa += amt;
-        } else {
-            totalCash += amt;
-        }
-    });
-
-    shiftExpenses.forEach(e => {
-        totalExpAmt += cleanPrice(e.amount || 0);
-    });
-
-    const netCashInDrawer = Math.max(0, totalCash - totalExpAmt);
-
-    if (document.getElementById('shiftCashierName')) document.getElementById('shiftCashierName').innerText = activeUser.name;
-    if (document.getElementById('shiftStartTime')) document.getElementById('shiftStartTime').innerText = shiftStartStr;
-    if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExpAmt.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = netCashInDrawer.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftOrdersCount')) document.getElementById('shiftOrdersCount').innerText = shiftOrders.length;
-    if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = grandTotal.toLocaleString('ar-IQ');
-
-    openModal('shiftReportModal');
-}
-
-function confirmCloseShiftAndLogout() {
-    if (confirm("هل أنت متأكد من تقفيل الشيفت وتصفير الصندوق وتسليمه للكاشير القادم؟")) {
-        sessionStorage.removeItem('active_cashier');
-        sessionStorage.removeItem('shift_start_time');
-        sessionStorage.removeItem('shift_start_timestamp');
-        location.reload();
-    }
-}
-
-/* ==========================================
-   10. الطباعة الحرارية للفواتير والمطبخ
-   ========================================== */
 
 function printCustomerInvoiceOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
@@ -1929,86 +1328,12 @@ function createThermalPrintContainer() {
 }
 
 /* ==========================================
-   11. التنبيهات الصوتية ومراقبة الطلبات الواردة
+   6. التنبيهات الصوتية ومراقبة الطلبات الواردة
    ========================================== */
 
 let knownOrderIds = new Set();
 let continuousAlertTimer = null;
 let globalAudioCtx = null;
-
-function unlockIpadAudio() {
-    try {
-        if (!globalAudioCtx) {
-            globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (globalAudioCtx.state === 'suspended') {
-            globalAudioCtx.resume();
-        }
-        const osc = globalAudioCtx.createOscillator();
-        const gain = globalAudioCtx.createGain();
-        gain.gain.value = 0.01;
-        osc.connect(gain);
-        gain.connect(globalAudioCtx.destination);
-        osc.start(0);
-        osc.stop(0.1);
-        alert("🔔 تم تفعيل جرس التنبيهات بنجاح على الجهاز!");
-    } catch (e) {
-        console.log("Audio unlock:", e);
-    }
-}
-
-document.addEventListener('touchstart', () => { if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume(); }, { once: true });
-document.addEventListener('click', () => { if (globalAudioCtx && globalAudioCtx.state === 'suspended') globalAudioCtx.resume(); }, { once: true });
-
-function startContinuousAlert() {
-    if (continuousAlertTimer) return;
-    playSingleBeep();
-    continuousAlertTimer = setInterval(() => playSingleBeep(), 1000);
-}
-
-function stopContinuousAlert() {
-    if (continuousAlertTimer) {
-        clearInterval(continuousAlertTimer);
-        continuousAlertTimer = null;
-    }
-}
-
-function playSingleBeep() {
-    try {
-        if (!globalAudioCtx) {
-            globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (globalAudioCtx.state === 'suspended') {
-            globalAudioCtx.resume();
-        }
-        const osc = globalAudioCtx.createOscillator();
-        const gain = globalAudioCtx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880, globalAudioCtx.currentTime);
-        gain.gain.setValueAtTime(0.4, globalAudioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(globalAudioCtx.destination);
-        osc.start();
-        osc.stop(globalAudioCtx.currentTime + 0.3);
-    } catch (e) {}
-}
-
-function getCustomerHistoryByPhone(phone) {
-    if (!phone || phone === 'بدون رقم' || phone === '-') return null;
-    const cleanPhone = String(phone).replace(/[^0-9]/g, '');
-    if (!cleanPhone || cleanPhone.length < 5) return null;
-
-    const customers = getData('sys_customers') || [];
-    const foundCust = customers.find(c => c.phone.includes(cleanPhone) || cleanPhone.includes(c.phone));
-    if (foundCust) return { customerName: foundCust.name, area: foundCust.area, address: foundCust.address };
-
-    const completed = getData('sys_completed_orders') || [];
-    return completed.find(o => {
-        if (!o.phone) return false;
-        const oPhone = String(o.phone).replace(/[^0-9]/g, '');
-        return oPhone && (oPhone.includes(cleanPhone) || cleanPhone.includes(oPhone)) && o.customerName && o.customerName !== 'زبون مباشر';
-    }) || null;
-}
 
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
@@ -2016,57 +1341,19 @@ function listenForIncomingOrders() {
     const processOrdersList = (ordersList) => {
         let unhandledCount = 0;
         let html = '';
-        let lastIncomingCall = null;
 
         ordersList.forEach(ord => {
-            const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending' || ord.status === '';
+            const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending';
             
             if (isUnhandled) {
                 unhandledCount++;
                 const orderKey = ord.docId || ord.id || ('temp_' + Math.random());
-                if (!knownOrderIds.has(orderKey)) {
-                    knownOrderIds.add(orderKey);
-                }
                 html += generateOrderCardHTML(ord, orderKey);
-                lastIncomingCall = ord;
             }
         });
 
         if (container) {
-            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات أو مكالمات جارية حالياً</p>';
-        }
-        
-        const badge = document.getElementById('liveOrdersBadge');
-        const alertBanner = document.getElementById('pendingOrdersAlertBanner');
-
-        if (unhandledCount > 0) {
-            if (badge) { 
-                badge.innerText = unhandledCount; 
-                badge.style.display = 'inline-block'; 
-            }
-            
-            if (alertBanner && lastIncomingCall) {
-                const phone = String(lastIncomingCall.phone || 'رقم غير معروف');
-                const name = String(lastIncomingCall.customerName || 'مكالمة واردة');
-                const docId = String(lastIncomingCall.docId || lastIncomingCall.id || '');
-                const safeName = name.replace(/'/g, "\\'");
-
-                alertBanner.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px;">
-                        <span>📞 <strong>مكالمة واردة جديدة:</strong> ${name} (${phone})</span>
-                        <button class="gold-btn btn-sm" style="background:#000; color:#fff; font-size:0.75rem;" 
-                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id || ''}', '${phone}', '${safeName}', '', '')">
-                            📥 نقل لكاشير المبيعات
-                        </button>
-                    </div>
-                `;
-                alertBanner.style.display = 'block';
-            }
-            startContinuousAlert();
-        } else {
-            if (badge) badge.style.display = 'none';
-            if (alertBanner) alertBanner.style.display = 'none';
-            stopContinuousAlert();
+            container.innerHTML = html || '<p style="color:#aaa; text-align:center; padding:20px; font-size:0.85rem;">لا توجد طلبات واردة حالياً</p>';
         }
     };
 
@@ -2089,82 +1376,47 @@ function generateOrderCardHTML(ord, docId) {
     const itemsList = Array.isArray(ord.items) ? ord.items : [];
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
 
-    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
-    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
-    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
-
-    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
-        ? rawName 
-        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
-
-    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
-    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
-
+    const rawPhone = String(ord.phone || 'بدون رقم');
+    const rawName = String(ord.customerName || 'مكالمة واردة');
     const safeDocId = String(docId || '');
     const safeOrderId = String(ord.id || docId || '');
     const safePhone = String(rawPhone || '');
-    const safeName = String(displayName || '').replace(/'/g, "\\'");
-    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
-    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
-
-    if (rawPhone && rawPhone !== 'بدون رقم' && displayName !== 'مكالمة واردة') {
-        saveCustomerRecord(displayName, rawPhone, displayArea, displayAddress);
-    }
+    const safeName = String(rawName || '').replace(/'/g, "\\'");
+    const safeArea = String(ord.area || '').replace(/'/g, "\\'");
+    const safeAddress = String(ord.address || '').replace(/'/g, "\\'");
+    
+    const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
+    const isWebMenuOrder = itemsList.length > 0;
 
     return `
-        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright, #ffd700)' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
-                <strong>📞 ${displayName} (${rawPhone})</strong>
+                <strong>👤 ${rawName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
             </div>
-            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
-            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
+            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${ord.area ? 'المنطقة: ' + ord.area : ''}</p>
             <hr style="border-color:#333; margin:6px 0;">
-            <ul style="padding-right:12px; font-size:0.8rem;">
+            <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
                 ${itemsList.length > 0 
                     ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
-                    : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً في الفاتورة المباشرة)</li>'}
+                    : '<li style="color:#aaa;">(مكالمة هاتفية)</li>'}
             </ul>
-            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع: ${total} د.ع</strong>
-                </div>
-                <div style="display:flex; gap:4px;">
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:#ffd700; border:1px solid #ffd700; flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
-                </div>
+            <div style="display:flex; gap:4px; margin-top:8px;">
+                <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل للكاشير</button>
+                <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء</button>
             </div>
         </div>
     `;
 }
 
-function cancelIncomingOrder(docId, orderId) {
-    if (confirm("هل أنت متأكد من إلغاء وحذف هذا الطلب؟")) {
-        if (db) {
-            db.collection("orders").doc(docId).delete().catch(err => console.error("Error deleting order:", err));
-        }
-        let orders = getData('sys_live_orders');
-        orders = orders.filter(o => o.id !== orderId);
-        setData('sys_live_orders', orders);
-        
-        const card = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
-        if (card) card.remove();
-        
-        listenForIncomingOrders();
-    }
-}
-// 1. دالة نقل الطلب الوارد مباشرة لكاشير المبيعات مع جلب الوجبات وتفريغ الكارت
 function loadIncomingCallToPos(docId, orderId, phone, name, area, address, itemsEncodedStr) {
-    // أ. الانتقال لشاشة المبيعات المباشرة (POS)
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
 
-    // ب. تعبئة بيانات الزبون في حقل الكاشير
     const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
     const custInput = document.getElementById('posCustName');
     if (custInput) custInput.value = infoText;
 
-    // ج. فك تشفير وتعبئة الوجبات في سلة المبيعات (posCart)
     posCart = [];
     if (itemsEncodedStr && itemsEncodedStr !== '') {
         try {
@@ -2180,21 +1432,15 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address, items
                     });
                 });
             }
-        } catch (e) {
-            console.error("Error decoding items for pos:", e);
-        }
+        } catch (e) {}
     }
     
-    // رسم السلة
     renderPosCart();
 
-    // د. تحديث حالة الطلب في السحابة لكي يختفي من الطلبات الواردة
     if (db && docId && !docId.startsWith('temp_')) {
-        db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
-          .catch(err => console.error("Cloud update error:", err));
+        db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' }).catch(console.error);
     }
 
-    // هـ. تحديث المخزن المحلي وحذف الكارت بصرياً
     let liveOrders = getData('sys_live_orders') || [];
     liveOrders = liveOrders.filter(o => String(o.docId || o.id) !== String(docId) && String(o.id) !== String(orderId));
     setData('sys_live_orders', liveOrders);
@@ -2202,173 +1448,45 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address, items
     const cardEl = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
     if (cardEl) cardEl.remove();
 
-    if (phone && phone !== 'بدون رقم') {
-        saveCustomerRecord(name, phone, area, address);
+    alert(`✅ تم نقل طلب الزبون (${name}) وسلته للكاشير!`);
+}
+
+function cancelIncomingOrder(docId, orderId) {
+    if (confirm("إلغاء الطلب؟")) {
+        if (db) db.collection("orders").doc(docId).delete().catch(console.error);
+        let orders = getData('sys_live_orders').filter(o => o.id !== orderId);
+        setData('sys_live_orders', orders);
+        listenForIncomingOrders();
     }
-
-    alert(`✅ تم نقل طلب الزبون (${name}) وجميع وجباته إلى الكاشير بنجاح!`);
 }
-
-// 2. مولد كروت الطلبات الواردة مع إرسال الوجبات سليمة للدالة
-function generateOrderCardHTML(ord, docId) {
-    const itemsList = Array.isArray(ord.items) ? ord.items : [];
-    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
-
-    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
-    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
-    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
-
-    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
-        ? rawName 
-        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
-
-    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
-    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
-
-    const safeDocId = String(docId || '');
-    const safeOrderId = String(ord.id || docId || '');
-    const safePhone = String(rawPhone || '');
-    const safeName = String(displayName || '').replace(/'/g, "\\'");
-    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
-    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
-    
-    // ترميز الوجبات بالكامل لتمريرها بسلاسة زر النقل
-    const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
-
-    const isWebMenuOrder = itemsList.length > 0;
-    const sourceBadge = isWebMenuOrder 
-        ? `<span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">🌐 طلب مباشر من المينيو الإلكتروني</span>`
-        : `<span style="background:#f59e0b; color:#000; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">📞 مكالمة هاتفية واردة</span>`;
-
-    return `
-        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
-            ${sourceBadge}
-            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
-                <strong>👤 ${displayName} (${rawPhone})</strong>
-                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : (ord.orderType === 'سفري' ? '🛍️ سفري' : '🍽️ صالة')}</span>
-            </div>
-            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
-            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
-            <hr style="border-color:#333; margin:6px 0;">
-            <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
-                ${itemsList.length > 0 
-                    ? itemsList.map(i => `<li>${i.name} × ${i.qty} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
-                    : '<li style="color:#aaa;">(مكالمة هاتفية - اختر الوجبات يدوياً في الكاشير)</li>'}
-            </ul>
-            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع الكلي: ${total} د.ع</strong>
-                </div>
-                <div style="display:flex; gap:4px;">
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل لكاشير المبيعات</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-
-
-// 2. مولد كروت الطلبات الواردة مع التمييز بين (طلب المينيو الإلكتروني) و (مكالمة هاتفية)
-function generateOrderCardHTML(ord, docId) {
-    const itemsList = Array.isArray(ord.items) ? ord.items : [];
-    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
-
-    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
-    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
-    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
-
-    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
-        ? rawName 
-        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
-
-    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
-    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
-
-    const safeDocId = String(docId || '');
-    const safeOrderId = String(ord.id || docId || '');
-    const safePhone = String(rawPhone || '');
-    const safeName = String(displayName || '').replace(/'/g, "\\'");
-    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
-    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
-    
-    // ترميز الوجبات لنقلها بشكل سليم لدالة الكاشير
-    const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
-
-    // 🏷️ تمييز مصدر الطلب بناءً على وجود وجبات مرفقة (طلب من المينيو) أو مكالمة هاتفية صرفة
-    const isWebMenuOrder = itemsList.length > 0;
-    const sourceBadge = isWebMenuOrder 
-        ? `<span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">🌐 طلب مباشر من المينيو الإلكتروني</span>`
-        : `<span style="background:#f59e0b; color:#000; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">📞 مكالمة هاتفية واردة</span>`;
-
-    return `
-        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
-            ${sourceBadge}
-            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
-                <strong>👤 ${displayName} (${rawPhone})</strong>
-                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : (ord.orderType === 'سفري' ? '🛍️ سفري' : '🍽️ صالة')}</span>
-            </div>
-            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
-            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
-            <hr style="border-color:#333; margin:6px 0;">
-            <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
-                ${itemsList.length > 0 
-                    ? itemsList.map(i => `<li>${i.name} × ${i.qty} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
-                    : '<li style="color:#aaa;">(مكالمة هاتفية - اختر الوجبات يدوياً في الكاشير)</li>'}
-            </ul>
-            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع الكلي: ${total} د.ع</strong>
-                </div>
-                <div style="display:flex; gap:4px;">
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل لكاشير المبيعات</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-
 /* ==========================================
-   12. محاسبة التوصيل والدليفري والتطبيقات
+   7. محاسبة التوصيل والدليفري وتصفية الحسابات
    ========================================== */
 
 function getDriverDailySettlementReport(driverName) {
     const today = getTodayString();
     const completed = getData('sys_completed_orders') || [];
-    
     const driverOrders = completed.filter(o => o.dateDate === today && o.driverName === driverName);
 
-    let totalAmountCollected = 0;
-    let totalDeliveryFees = 0;
-    let ordersCount = driverOrders.length;
-
+    let totalAmountCollected = 0, totalDeliveryFees = 0;
     driverOrders.forEach(ord => {
         totalAmountCollected += cleanPrice(ord.totalAmount || 0);
         totalDeliveryFees += cleanPrice(ord.deliveryFee || 0);
     });
 
-    const netToPayToRestaurant = totalAmountCollected - totalDeliveryFees;
-
     return {
         driverName: driverName,
-        ordersCount: ordersCount,
+        ordersCount: driverOrders.length,
         totalAmountCollected: totalAmountCollected,
         totalDeliveryFees: totalDeliveryFees,
-        netToPayToRestaurant: netToPayToRestaurant
+        netToPayToRestaurant: totalAmountCollected - totalDeliveryFees
     };
 }
 
 function openDriverSettlementModal() {
     const drivers = getData('sys_drivers') || [];
-    const completed = getData('sys_completed_orders') || [];
-
-    let html = `
-        <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
-            <h4 style="color:var(--gold-primary); margin-bottom:8px;">🛵 تصفية حساب سائقي المطعم المباشرين (يومي / فوري)</h4>
-    `;
+    let html = `<div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+        <h4 style="color:var(--gold-primary); margin-bottom:8px;">🛵 تصفية حساب سائقي المطعم</h4>`;
 
     drivers.forEach(drv => {
         const rep = getDriverDailySettlementReport(drv.name);
@@ -2388,40 +1506,15 @@ function openDriverSettlementModal() {
             </div>
         `;
     });
-
     html += `</div>`;
-
-    let talabateyTotal = 0, totersTotal = 0, baleTotal = 0;
-    completed.forEach(ord => {
-        const dName = String(ord.driverName || '').toLowerCase();
-        const amt = cleanPrice(ord.totalAmount || 0);
-
-        if (dName.includes("طلباتي")) talabateyTotal += amt;
-        else if (dName.includes("توترز")) totersTotal += amt;
-        else if (dName.includes("بلي")) baleTotal += amt;
-    });
-
-    html += `
-        <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid #38bdf8;">
-            <h4 style="color:#38bdf8; margin-bottom:8px;">📱 تراكم مستحقات الشركات (تصفية شهرية)</h4>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق طلباتي:</span> <strong style="color:#38bdf8;">${talabateyTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق توترز:</span> <strong style="color:#a855f7;">${totersTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                <span>📱 تطبيق بلي:</span> <strong style="color:#10b981;">${baleTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-        </div>
-    `;
 
     const repContainer = document.getElementById('repDriversList');
     if (repContainer) repContainer.innerHTML = html;
+    openModal('driverSettlementModal');
 }
 
 /* ==========================================
-   13. لوحة جرد المخزن (inventory.html)
+   8. لوحة جرد المخزن (inventory.html)
    ========================================== */
 
 function deductInventoryFromRecipe(items) {
@@ -2467,7 +1560,7 @@ function renderInventoryTable() {
     if (!tbody) return;
 
     if (inv.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن، قم بإضافة مواد جديدة أعلاه.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:20px;">لا توجد مواد في المخزن</td></tr>`;
         return;
     }
 
@@ -2480,9 +1573,9 @@ function renderInventoryTable() {
             <tr>
                 <td>${index + 1}</td>
                 <td><input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input-inline"></td>
-                <td><input type="number" value="${item.quantity || 0}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline"></td>
-                <td><input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline"></td>
-                <td><input type="number" value="${item.totalPrice || 0}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline"></td>
+                <td><input type="number" value="${item.quantity || 0}" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline"></td>
+                <td><input type="text" value="${item.unit || 'كغم'}" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline"></td>
+                <td><input type="number" value="${item.totalPrice || 0}" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline"></td>
                 <td style="color:var(--gold-bright, #ffd700); font-weight:bold;">${cleanPrice(costPerUnit.toFixed(0)).toLocaleString('ar-IQ')} د.ع / ${item.unit || 'وحدة'}</td>
                 <td><button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:2px 6px; font-size:0.75rem;">حذف</button></td>
             </tr>
@@ -2496,21 +1589,19 @@ function addNewInventoryItem() {
     const unit = document.getElementById('newInvUnit')?.value.trim() || 'كغم';
     const totalPrice = cleanPrice(document.getElementById('newInvPrice')?.value) || 0;
 
-    if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية على الأقل!");
+    if (!name || !qty) return alert("يرجى إدخال اسم المادة والكمية الكلية!");
 
     const inv = getData('sys_inventory');
     const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
 
-    const newItem = {
+    inv.push({
         id: Date.now(),
         name: name,
         quantity: qty,
         unit: unit,
         totalPrice: totalPrice,
         costPerUnit: costPerUnit
-    };
-
-    inv.push(newItem);
+    });
     setData('sys_inventory', inv);
 
     if (document.getElementById('newInvName')) document.getElementById('newInvName').value = '';
@@ -2526,25 +1617,17 @@ function updateInvField(id, field, value) {
     let item = inv.find(i => cleanPrice(i.id) === cleanPrice(id));
 
     if (item) {
-        if (field === 'quantity' || field === 'totalPrice') {
-            item[field] = cleanPrice(value);
-        } else {
-            item[field] = value;
-        }
-
+        item[field] = (field === 'quantity' || field === 'totalPrice') ? cleanPrice(value) : value;
         if (item.totalPrice && item.quantity && cleanPrice(item.quantity) > 0) {
             item.costPerUnit = cleanPrice(item.totalPrice) / cleanPrice(item.quantity);
-        } else if (cleanPrice(item.quantity) === 0) {
-            item.costPerUnit = 0;
         }
-
         setData('sys_inventory', inv);
         renderInventoryTable();
     }
 }
 
 function deleteInvItem(id) {
-    if (confirm("حذف هذه المادة من الجرد والمخزن؟")) {
+    if (confirm("حذف هذه المادة من المخزن؟")) {
         let inv = getData('sys_inventory').filter(i => cleanPrice(i.id) !== cleanPrice(id));
         setData('sys_inventory', inv);
         renderInventoryTable();
@@ -2552,7 +1635,7 @@ function deleteInvItem(id) {
 }
 
 /* ==========================================
-   14. لوحة تحكم الإدارة الكاملة Admin (admin.html)
+   9. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
 function initAdminPage() { initData(); }
@@ -2579,7 +1662,6 @@ function switchAdminTab(tabId, btn) {
 }
 
 function loadAdminTabsData() {
-    renderAdminCategories();
     renderAdminItems();
     renderAdminDrivers();
     renderAdminCashiers();
@@ -2591,24 +1673,21 @@ function loadAdminTabsData() {
 function loadPrinterSettings() {
     const settings = getData('sys_printer_settings');
     if (!settings) return;
-    
     if (document.getElementById('enableIpPrinting')) document.getElementById('enableIpPrinting').checked = !!settings.enableIpPrinting;
     if (document.getElementById('cashierPrinterIp')) document.getElementById('cashierPrinterIp').value = settings.cashierIp || '192.168.0.218';
     if (document.getElementById('kitchenPrinter1Ip')) document.getElementById('kitchenPrinter1Ip').value = settings.kitchen1Ip || '192.168.0.200';
-    if (document.getElementById('kitchenPrinter2Ip')) document.getElementById('kitchenPrinter2Ip').value = settings.kitchen2Ip || '';
     if (document.getElementById('printerPort')) document.getElementById('printerPort').value = settings.port || '9100';
 }
 
 function savePrinterSettings() {
-    const enableIpPrinting = document.getElementById('enableIpPrinting').checked;
-    const cashierIp = document.getElementById('cashierPrinterIp').value.trim();
-    const kitchen1Ip = document.getElementById('kitchenPrinter1Ip').value.trim();
-    const kitchen2Ip = document.getElementById('kitchenPrinter2Ip').value.trim();
-    const port = document.getElementById('printerPort').value.trim() || '9100';
-
-    const settings = { enableIpPrinting, cashierIp, kitchen1Ip, kitchen2Ip, port };
+    const settings = {
+        enableIpPrinting: document.getElementById('enableIpPrinting')?.checked || false,
+        cashierIp: document.getElementById('cashierPrinterIp')?.value.trim() || '192.168.0.218',
+        kitchen1Ip: document.getElementById('kitchenPrinter1Ip')?.value.trim() || '192.168.0.200',
+        port: document.getElementById('printerPort')?.value.trim() || '9100'
+    };
     setData('sys_printer_settings', settings);
-    alert("تم حفظ إعدادات جميع الطابعات بنجاح!");
+    alert("تم حفظ إعدادات الطابعات بنجاح!");
 }
 
 function renderAdminAreas() {
@@ -2626,16 +1705,16 @@ function renderAdminAreas() {
 }
 
 function saveDeliveryArea() {
-    const name = document.getElementById('areaNameInput').value.trim();
-    const price = cleanPrice(document.getElementById('areaPriceInput').value);
+    const name = document.getElementById('areaNameInput')?.value.trim();
+    const price = cleanPrice(document.getElementById('areaPriceInput')?.value);
     if (!name) return alert("أدخل اسم المنطقة");
 
     let areas = getData('sys_areas');
     areas.push({ name, price });
     setData('sys_areas', areas);
 
-    document.getElementById('areaNameInput').value = '';
-    document.getElementById('areaPriceInput').value = '';
+    if (document.getElementById('areaNameInput')) document.getElementById('areaNameInput').value = '';
+    if (document.getElementById('areaPriceInput')) document.getElementById('areaPriceInput').value = '';
     renderAdminAreas();
 }
 
@@ -2645,210 +1724,9 @@ function deleteArea(name) {
     renderAdminAreas();
 }
 
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            currentUploadedBase64 = e.target.result;
-            const preview = document.getElementById('imgPreview');
-            if (preview) preview.src = currentUploadedBase64;
-            const urlInput = document.getElementById('itemImage');
-            if (urlInput) urlInput.value = "";
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function triggerInlineImageUpload(itemId) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                updateItemInline(itemId, 'image', evt.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-}
-
-function updateItemInline(id, field, value) {
-    let items = getData('sys_items');
-    let item = items.find(i => cleanPrice(i.id) === cleanPrice(id));
-
-    if (item) {
-        if (field === 'price') {
-            item.price = cleanPrice(value) || 0;
-        } else {
-            item[field] = value.trim();
-        }
-
-        setData('sys_items', items);
-
-        if (typeof db !== 'undefined' && db) {
-            db.collection("menu_items").doc(String(id)).update({
-                [field]: item[field]
-            }).then(() => console.log(`تم تحديث ${field} فوراً في السحابة`))
-              .catch(err => console.error("Cloud inline update error:", err));
-        }
-
-        refreshActiveUI();
-    }
-}
-
-function renderAdminItems() {
-    const items = getData('sys_items');
-    const categories = getData('sys_categories');
-    const tbody = document.getElementById('adminItemsTable');
-    const select = document.getElementById('itemCategory');
-
-    if (select) select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    if (!tbody) return;
-
-    tbody.innerHTML = items.map(item => {
-        const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(item.categoryId));
-        return `
-            <tr>
-                <td style="text-align:center;">
-                    <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة">
-                </td>
-                <td>
-                    <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'name', this.value)" style="font-weight:bold;">
-                </td>
-                <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
-                <td>
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <input type="number" value="${cleanPrice(item.price)}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
-                        <small style="color:#aaa;">د.ع</small>
-                    </div>
-                </td>
-                <td>
-                    <button onclick="editItem(${item.id})" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل كامل</button>
-                    <button onclick="deleteItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : '';
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice')?.value) : parseInt(document.getElementById('itemPrice')?.value || 0);
-    const categoryId = String(document.getElementById('itemCategory')?.value);
-    const ingredients = document.getElementById('itemIngredients')?.value.trim();
-
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
-
-    // تنظيف رابط الصورة تلقائياً واستخراج URL مباشر
-    let rawImageInput = document.getElementById('itemImage')?.value.trim() || '';
-    if (rawImageInput.includes('src=')) {
-        const match = rawImageInput.match(/src=["']([^"']+)["']/);
-        if (match && match[1]) rawImageInput = match[1];
-    }
-    const image = rawImageInput || 'https://via.placeholder.com/150';
-
-    let items = getData('sys_items') || [];
-    let existingItem = items.find(i => String(i.id) === String(id));
-
-    let newItemData = {
-        id: id ? cleanPrice(id) : Date.now(),
-        name: name,
-        price: price,
-        categoryId: categoryId,
-        image: image,
-        ingredients: ingredients,
-        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : []
-    };
-
-    if (id) {
-        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? newItemData : i);
-    } else {
-        items.push(newItemData);
-    }
-
-    setData('sys_items', items);
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData, { merge: true })
-            .then(() => console.log("Cloud sync successful"))
-            .catch(err => console.error("Cloud sync error:", err));
-    }
-
-    resetItemForm();
-    if (typeof renderAdminItems === 'function') renderAdminItems();
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
-    alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
-}
-
-
-function editItem(id) {
-    const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
-    if (!item) return;
-
-    document.getElementById('editItemId').value = item.id;
-    document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPrice').value = cleanPrice(item.price);
-    document.getElementById('itemCategory').value = item.categoryId;
-    document.getElementById('itemIngredients').value = item.ingredients || item.desc || '';
-
-    const itemImg = item.image || item.img || '';
-
-    if (itemImg && itemImg.startsWith('data:image')) {
-        currentUploadedBase64 = itemImg;
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
-    } else {
-        currentUploadedBase64 = '';
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = itemImg;
-    }
-
-    const preview = document.getElementById('imgPreview');
-    if (preview) preview.src = itemImg || 'https://via.placeholder.com/150';
-    
-    document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function resetItemForm() {
-    document.getElementById('editItemId').value = '';
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemPrice').value = '';
-    if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
-    document.getElementById('itemIngredients').value = '';
-    
-    const fileInput = document.getElementById('itemImgFile');
-    if (fileInput) fileInput.value = '';
-    currentUploadedBase64 = '';
-    
-    const preview = document.getElementById('imgPreview');
-    if (preview) preview.src = 'https://via.placeholder.com/150?text=معاينة+الصورة';
-    
-    document.getElementById('itemFormTitle').innerText = "إضافة / تعديل صنف للمينيو";
-}
-
-function deleteItem(id) {
-    if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
-        let items = getData('sys_items').filter(i => cleanPrice(i.id) !== cleanPrice(id));
-        setData('sys_items', items);
-        
-        if (db) {
-            db.collection("menu_items").doc(String(id)).delete();
-        }
-        renderAdminItems();
-        refreshActiveUI();
-    }
-}
-
-function renderAdminCategories() {}
-
 function saveDeliveryDriver() {
-    const name = document.getElementById('driverNameInput').value.trim();
-    const phone = document.getElementById('driverPhoneInput').value.trim();
+    const name = document.getElementById('driverNameInput')?.value.trim();
+    const phone = document.getElementById('driverPhoneInput')?.value.trim();
 
     if (!name) return alert("يرجى إدخال اسم السائق");
 
@@ -2856,8 +1734,8 @@ function saveDeliveryDriver() {
     drivers.push({ id: 'drv_' + Date.now(), name, phone });
     setData('sys_drivers', drivers);
 
-    document.getElementById('driverNameInput').value = '';
-    document.getElementById('driverPhoneInput').value = '';
+    if (document.getElementById('driverNameInput')) document.getElementById('driverNameInput').value = '';
+    if (document.getElementById('driverPhoneInput')) document.getElementById('driverPhoneInput').value = '';
     renderAdminDrivers();
 }
 
@@ -2867,7 +1745,7 @@ function renderAdminDrivers() {
     if (!tbody) return;
 
     if (drivers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">لا يوجد سائقون مسجلون حالياً</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">لا يوجد سائقون مسجلون</td></tr>`;
         return;
     }
 
@@ -2905,16 +1783,16 @@ function renderAdminCashiers() {
 }
 
 function saveCashier() {
-    const name = document.getElementById('cashierNameInput').value;
-    const pass = document.getElementById('cashierPassNew').value;
+    const name = document.getElementById('cashierNameInput')?.value;
+    const pass = document.getElementById('cashierPassNew')?.value;
     if (!name || !pass) return alert("أدخل الاسم وكلمة المرور");
 
     const cashiers = getData('sys_cashiers');
     cashiers.push({ id: 'c_' + Date.now(), name, password: pass });
     setData('sys_cashiers', cashiers);
 
-    document.getElementById('cashierNameInput').value = '';
-    document.getElementById('cashierPassNew').value = '';
+    if (document.getElementById('cashierNameInput')) document.getElementById('cashierNameInput').value = '';
+    if (document.getElementById('cashierPassNew')) document.getElementById('cashierPassNew').value = '';
     renderAdminCashiers();
 }
 
@@ -2926,31 +1804,14 @@ function deleteCashier(id) {
     }
 }
 
-function updateAllSystemPasswords() {
-    const adminPass = document.getElementById('newAdminPass').value.trim();
-    const costingPass = document.getElementById('newCostingPass').value.trim();
-    const invPass = document.getElementById('newInvPass').value.trim();
-    const cashierPass = document.getElementById('newCashierPass').value.trim();
-
-    let passes = getData('sys_passwords') || {};
-
-    if (adminPass) passes.admin = adminPass;
-    if (costingPass) passes.costing = costingPass;
-    if (invPass) passes.inventory = invPass;
-    if (cashierPass) passes.cashier = cashierPass;
-
-    setData('sys_passwords', passes);
-    alert("🔒 تم تحديث وتأمين كلمات المرور لكل أقسام النظام بنجاح!");
-}
-
 /* ==========================================
-   15. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
+   10. التصدير والاسترجاع والنسخ الاحتياطية
    ========================================== */
 
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v21.3-MIM89",
+            version: "v22.0-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -2960,10 +1821,8 @@ function exportFullSystemBackup() {
             drivers: getData('sys_drivers'),
             cashiers: getData('sys_cashiers'),
             expenses: getData('sys_expenses'),
-            fixedExpenses: getData('sys_fixed_expenses'),
             completedOrders: getData('sys_completed_orders'),
-            passwords: getData('sys_passwords'),
-            capitalInvestment: localStorage.getItem('sys_capital_investment') || 0
+            passwords: getData('sys_passwords')
         };
 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
@@ -2974,21 +1833,8 @@ function exportFullSystemBackup() {
         downloadAnchor.click();
         downloadAnchor.remove();
 
-        let waMessage = `📦 *نسخة احتياطية لنظام MIM89 POS* 📦\n`;
-        waMessage += `----------------------------------\n`;
-        waMessage += `📅 *التاريخ:* ${fullBackup.backupDate}\n`;
-        waMessage += `👥 *عدد الزبائن المسجلين:* ${fullBackup.customers.length} زبون\n`;
-        waMessage += `🍔 *عدد وجبات المينيو:* ${fullBackup.items.length} وجبة\n`;
-        waMessage += `🧾 *إجمالي الفواتير المنجزة:* ${fullBackup.completedOrders.length} فاتورة\n`;
-        waMessage += `----------------------------------\n`;
-        waMessage += `تم استخراج وتنزيل نسخة JSON الاحتياطية بنجاح على الجهاز.`;
-
-        const myPhone = "9647750008630";
-        window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waMessage)}`, '_blank');
-
-        alert("✅ تم تنزيل ملف النسخة الاحتياطية (JSON) وإرسال ملخص للواتساب بنجاح!");
+        alert("✅ تم تنزيل النسخة الاحتياطية بنجاح!");
     } catch (err) {
-        console.error("Backup error:", err);
         alert("⚠️ حدث خطأ أثناء استخراج النسخة الاحتياطية.");
     }
 }
@@ -3002,7 +1848,7 @@ function importFullSystemBackup(fileInput) {
         try {
             const backup = JSON.parse(e.target.result);
             if (backup.items && backup.customers) {
-                if (confirm(`هل أنت متأكد من استرجاع النسخة الاحتياطية المؤرخة في (${backup.backupDate || 'سابقاً'})؟ ستقوم باستبدال البيانات الحالية.`)) {
+                if (confirm(`هل أنت متأكد من استرجاع النسخة الاحتياطية المؤرخة في (${backup.backupDate || 'سابقاً'})؟`)) {
                     if (backup.categories) setData('sys_categories', backup.categories);
                     if (backup.items) setData('sys_items', backup.items);
                     if (backup.inventory) setData('sys_inventory', backup.inventory);
@@ -3010,16 +1856,11 @@ function importFullSystemBackup(fileInput) {
                     if (backup.drivers) setData('sys_drivers', backup.drivers);
                     if (backup.cashiers) setData('sys_cashiers', backup.cashiers);
                     if (backup.expenses) setData('sys_expenses', backup.expenses);
-                    if (backup.fixedExpenses) setData('sys_fixed_expenses', backup.fixedExpenses);
                     if (backup.completedOrders) setData('sys_completed_orders', backup.completedOrders);
-                    if (backup.passwords) setData('sys_passwords', backup.passwords);
-                    if (backup.capitalInvestment) localStorage.setItem('sys_capital_investment', backup.capitalInvestment);
 
                     refreshActiveUI();
-                    alert("🎉 تم استرجاع كافة بيانات النظام بنجاح!");
+                    alert("🎉 تم استرجاع البيانات بنجاح!");
                 }
-            } else {
-                alert("❌ الملف المحدد غير صالح أو ليس نسخة احتياطية لنظام MIM89!");
             }
         } catch (err) {
             alert("❌ خطأ في قراءة ملف JSON!");
@@ -3029,7 +1870,7 @@ function importFullSystemBackup(fileInput) {
 }
 
 /* ==========================================
-   16. النوافذ المنبثقة والدوال المساعدة General Helpers
+   11. النوافذ المنبثقة والدوال المساعدة العامة
    ========================================== */
 
 function openModal(id) {
@@ -3042,137 +1883,15 @@ function closeModal(id) {
     if (modal) modal.style.display = 'none';
 }
 
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     initData();
     if (document.body.classList.contains('public-menu-body')) {
         loadPublicMenu();
     }
 });
-function saveItem() {
-    const editId = document.getElementById('editItemId').value;
-    const id = editId ? String(editId) : String(Date.now());
-    const name = document.getElementById('itemName').value.trim();
-    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice').value) : parseInt(document.getElementById('itemPrice').value || 0);
-    const categoryId = String(document.getElementById('itemCategory').value);
-    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/150';
-    const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
-
-    const itemData = { 
-        id: id, 
-        name: name, 
-        price: price, 
-        categoryId: categoryId, 
-        image: image, 
-        ingredients: ingredients 
-    };
-// 🔢 دالة زيادة رقم الطلب تلقائياً
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num') || '141', 10);
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({ 
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true });
-    }
-    return nextNum;
-}
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => console.log("✅ تم التحديث في السحابة"))
-            .catch(err => console.error("❌ خطأ سحابي:", err));
-    }
-
-    resetItemForm();
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
-    alert("✅ تم حفظ وتعديل الصنف بنجاح في الأدمن والكاشير!");
-}
-
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 300; // تصغير العرض ليناسب المينيو
-            const scaleFactor = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleFactor;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            // تحويل الصورة لمضغوطة بحجم صغير جداً (< 50KB)
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            document.getElementById('imgPreview').src = compressedBase64;
-            document.getElementById('itemImage').value = compressedBase64;
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-// تحديث واجهة الكاشير تلقائياً عند التعديل من تبويب الأدمن
 window.addEventListener('storage', (event) => {
     if (event.key === 'sys_items' || event.key === 'sys_categories') {
-        if (typeof renderCashierItems === 'function') renderCashierItems();
-        if (typeof renderAdminItems === 'function') renderAdminItems();
+        refreshActiveUI();
     }
 });
-// 🔢 العداد الذكي للطلبات - يمنع ثبات الرقم على 141
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
-    
-    // إذا كان المسجل سابقاً 141 أو غير موجود، ابدأ من 142
-    if (isNaN(lastNum) || lastNum < 141) {
-        lastNum = 141;
-    }
-
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
-
-    // مزامنة العداد مع الفايربيس
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error(err));
-    }
-
-    return nextNum;
-}
-// 🎯 1. دالة التناقل السريع بين الأقسام بضغطة واحدة
-function filterPosProductsByCategory(categoryName, btnEl) {
-    // تحديث الشكل النشط للأزرار
-    document.querySelectorAll('#posCategoriesBar .category-tab').forEach(btn => btn.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
-
-    const cards = document.querySelectorAll('#posProductsGrid .pos-product-card');
-    cards.forEach(card => {
-        const itemCategory = card.getAttribute('data-category') || '';
-        const itemName = card.innerText || '';
-
-        if (categoryName === 'all' || itemCategory.includes(categoryName) || itemName.includes(categoryName)) {
-            card.style.display = 'flex';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// ℹ️ 2. دالة إظهار نافذة مكونات الوجبة والتفاصيل
-function showItemDetailsModal(name, ingredients) {
-    const details = ingredients && ingredients.trim() !== '' ? ingredients : 'لا توجد تفاصيل أو مكونات مسجلة لهذه الوجبة.';
-    alert(`📋 تفاصيل ومكونات (${name}):\n\n${details}`);
-}
