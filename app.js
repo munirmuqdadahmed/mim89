@@ -44,7 +44,7 @@ function cleanPrice(val) {
 
 // 🍔 دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط) المباشرة
 window.toggleSideDrawer = function() {
-    const orderNumber = getNextOrderNumber();
+    const drawer = document.getElementById('sideDrawer');
     const overlay = document.getElementById('drawerOverlay');
     if (!drawer || !overlay) return;
 
@@ -201,13 +201,6 @@ function initData() {
     if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
 
     setupCloudRealtimeSync();
-if (typeof db !== 'undefined' && db) {
-    db.collection("settings").doc("order_counter").get().then(doc => {
-        if (doc.exists && doc.data().lastNum) {
-            localStorage.setItem('sys_last_order_num', doc.data().lastNum);
-        }
-    });
-}
 }
 
 
@@ -1827,81 +1820,95 @@ function confirmCloseShiftAndLogout() {
 }
 
 /* ==========================================
-   🔥 طباعة أمر المطبخ المباشرة والمضمونة 100%
+   10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
-function executeKitchenPrintOnly() {
-    try {
-        let order = window.activePendingPrintOrder;
-        
-        // جلب البيانات من السلة الحالية في حال عدم وجود طلب معلق
-        if (!order || !order.items || order.items.length === 0) {
-            if (typeof posCart !== 'undefined' && posCart.length > 0) {
-                order = {
-                    orderNum: typeof getOrderSequence === 'function' ? getOrderSequence() : '89',
-                    customerName: document.getElementById('posCustName')?.value || 'زبون مباشر',
-                    items: JSON.parse(JSON.stringify(posCart)),
-                    area: typeof selectedPosOrderType !== 'undefined' ? (selectedPosOrderType === 'takeaway' ? 'سفري' : (selectedPosOrderType === 'delivery' ? 'توصيل' : 'صالة')) : 'صالة',
-                    notes: document.getElementById('posOrderNotesInput')?.value || '',
-                    timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-                };
-            }
-        }
 
-        if (!order || !order.items || order.items.length === 0) {
-            alert("⚠️ السلة فارغة! اضف وجبات أولاً لطباعة المطبخ.");
-            return;
-        }
+function printCustomerInvoiceOnly(event, customOrder) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const order = customOrder || window.activePendingPrintOrder;
+    if (!order) return alert('⚠️ لا توجد بيانات للطباعة!');
 
-        // بناء تجهيز ورقة المطبخ الحرارية
-        let itemsHtml = '';
-        order.items.forEach(i => {
-            let notesArr = [];
-            if (i.itemNotes && Array.isArray(i.itemNotes)) notesArr.push(...i.itemNotes);
-            if (i.customNotes) notesArr.push(i.customNotes);
-
-            let notesDisplay = notesArr.length > 0 ? `<br><span style="font-size:14px; font-weight:900; color:#000;">⚠️ [${notesArr.join(' ، ')}]</span>` : '';
-
-            itemsHtml += `
-                <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>- ${i.name || 'وجبة'}</span>
-                        <span>[x${i.qty || 1}]</span>
-                    </div>
-                    ${notesDisplay}
-                </div>`;
-        });
-
-        const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
-        printBox.innerHTML = `
-            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
-                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
-                    <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
-                    <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp || ''}</div>
+    let itemsHtml = '';
+    order.items.forEach(i => {
+        const itemTotal = cleanPrice(i.price) * cleanPrice(i.qty);
+        let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><small style="color:#000; font-weight:bold;">★ ملاحظة: ${i.itemNotes.join(' - ')}</small>` : '';
+        itemsHtml += `
+            <div style="font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>${i.name} (x${i.qty})</span>
+                    <span>${itemTotal.toLocaleString('ar-IQ')} د.ع</span>
                 </div>
-                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
-                    <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
-                    <div style="font-size:38px; font-weight:900;">#${order.orderNum || order.orderId || '89'}</div>
-                </div>
-                <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
-                    <div>الخدمة: ${order.area || order.orderType || 'صالة'}</div>
-                    <div>الزبون: ${order.customerName || 'زبون'}</div>
-                    ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
-                </div>
-                <div style="padding:4px 0;">${itemsHtml}</div>
+                ${notesText}
             </div>`;
+    });
 
-        // إرسال أمر الطباعة المباشر
-        window.print();
+    const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
+    printBox.innerHTML = `
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+            <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
+                <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
+                <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة كاشير</div>
+            </div>
+            <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
+                <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
+                <div style="font-size:28px; font-weight:900; color:#000;">#${order.orderNum}</div>
+            </div>
+            <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
+                <div>التاريخ: ${order.dateDate} - ${order.timestamp}</div>
+                <div>اسم الزبون: ${order.customerName}</div>
+                <div>نوع الخدمة: ${order.area} | الدفع: ${order.paymentMethod}</div>
+                ${order.notes ? `<div style="font-size:12px; font-weight:900; margin-top:2px;">ملاحظة عامة: ${order.notes}</div>` : ''}
+            </div>
+            <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
+            <div style="font-size:12px; margin-top:4px;">
+                <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${cleanPrice(order.subtotal || 0).toLocaleString('ar-IQ')} د.ع</span></div>
+                ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم:</span> <span>- ${cleanPrice(order.discount).toLocaleString('ar-IQ')} د.ع</span></div>` : ''}
+                <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
+                    <span>المجموع الكلي:</span> <span>${cleanPrice(order.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</span>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
+        </div>`;
+    setTimeout(() => { window.print(); }, 150);
+}
 
-        // تحديث حالة الشارة في الشاشة
-        const badge = document.getElementById('kitchenPrintBadge');
-        if (badge) { 
-            badge.innerText = ' (تمت الطباعة ✅)'; 
-            badge.style.color = '#10b981'; 
-        }
-    } catch (err) {
-        alert("⚠️ تنبيه طباعة المطبخ: " + err.message);
-    }
+function printKitchenTicketOnly(event, customOrder) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const order = customOrder || window.activePendingPrintOrder;
+    if (!order) return alert('⚠️ لا توجد بيانات للطباعة!');
+
+    let itemsKitchenHtml = '';
+    order.items.forEach(i => {
+        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="font-size:14px; color:#000; font-weight:900;">⚠️ [${i.itemNotes.join(' ، ')}]</span>` : '';
+        itemsKitchenHtml += `
+            <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>- ${i.name}</span>
+                    <span>[x${i.qty}]</span>
+                </div>
+                ${itemNotesStr}
+            </div>`;
+    });
+
+    const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
+    printBox.innerHTML = `
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
+                <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
+            </div>
+            <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
+                <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
+            </div>
+            <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
+                <div>الخدمة: ${order.area}</div>
+                <div>الزبون: ${order.customerName}</div>
+                ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
+            </div>
+            <div style="padding:4px 0;">${itemsKitchenHtml}</div>
+        </div>`;
+    setTimeout(() => { window.print(); }, 150);
 }
 
 function createThermalPrintContainer() {
@@ -2721,57 +2728,55 @@ function renderAdminItems() {
         `;
     }).join('');
 }
+
 function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : '';
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice')?.value) : parseInt(document.getElementById('itemPrice')?.value || 0);
-    const categoryId = String(document.getElementById('itemCategory')?.value);
-    const ingredients = document.getElementById('itemIngredients')?.value.trim();
+    const id = document.getElementById('editItemId').value;
+    const name = document.getElementById('itemName').value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice').value);
+    const categoryId = cleanPrice(document.getElementById('itemCategory').value);
+    const ingredients = document.getElementById('itemIngredients').value.trim();
 
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
+    let existingItem = id ? getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id)) : null;
 
-    // تنظيف رابط الصورة تلقائياً واستخراج URL مباشر
-    let rawImageInput = document.getElementById('itemImage')?.value.trim() || '';
-    if (rawImageInput.includes('src=')) {
-        const match = rawImageInput.match(/src=["']([^"']+)["']/);
-        if (match && match[1]) rawImageInput = match[1];
+    let image = currentUploadedBase64 
+        || (document.getElementById('itemImage') ? document.getElementById('itemImage').value.trim() : '')
+        || (existingItem ? (existingItem.image || existingItem.img) : '') 
+        || 'https://via.placeholder.com/300?text=MIM89';
+
+    if (!name || !price) {
+        return alert("❌ يرجى إدخال اسم الصنف والسعر على الأقل!");
     }
-    const image = rawImageInput || 'https://via.placeholder.com/150';
 
-    let items = getData('sys_items') || [];
-    let existingItem = items.find(i => String(i.id) === String(id));
-
-    let newItemData = {
-        id: id ? cleanPrice(id) : Date.now(),
-        name: name,
-        price: price,
-        categoryId: categoryId,
-        image: image,
-        ingredients: ingredients,
-        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : []
+    let items = getData('sys_items');
+    let newItemData = { 
+        id: id ? cleanPrice(id) : Date.now(), 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients, 
+        recipe: (existingItem && existingItem.recipe) ? existingItem.recipe : [] 
     };
 
     if (id) {
-        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? newItemData : i);
+        items = items.map(i => cleanPrice(i.id) === cleanPrice(id) ? { ...i, ...newItemData } : i);
     } else {
         items.push(newItemData);
     }
 
     setData('sys_items', items);
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData, { merge: true })
-            .then(() => console.log("Cloud sync successful"))
-            .catch(err => console.error("Cloud sync error:", err));
+    if (db) {
+        db.collection("menu_items").doc(String(newItemData.id)).set(newItemData)
+            .then(() => console.log("Cloud sync item success"))
+            .catch(err => console.error("Cloud sync item error:", err));
     }
 
     resetItemForm();
-    if (typeof renderAdminItems === 'function') renderAdminItems();
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    renderAdminItems();
+    refreshActiveUI();
     alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
 }
-
 
 function editItem(id) {
     const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
@@ -3057,20 +3062,17 @@ function saveItem() {
         image: image, 
         ingredients: ingredients 
     };
-// 🔢 دالة زيادة رقم الطلب تلقائياً
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num') || '141', 10);
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({ 
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true });
+    let items = getData('sys_items') || [];
+    const index = items.findIndex(i => String(i.id) === String(id));
+    if (index !== -1) items[index] = itemData;
+    else items.push(itemData);
+
+    try {
+        setData('sys_items', items);
+    } catch (e) {
+        return alert("⚠️ حجم الصورة كبير جداً، اختر صورة أصغر أو استخدم رابط خارجي!");
     }
-    return nextNum;
-}
 
     if (typeof db !== 'undefined' && db) {
         db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
@@ -3114,78 +3116,5 @@ window.addEventListener('storage', (event) => {
     if (event.key === 'sys_items' || event.key === 'sys_categories') {
         if (typeof renderCashierItems === 'function') renderCashierItems();
         if (typeof renderAdminItems === 'function') renderAdminItems();
-    }
-});
-// 🔢 العداد الذكي للطلبات - يمنع ثبات الرقم على 141
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
-    
-    // إذا كان المسجل سابقاً 141 أو غير موجود، ابدأ من 142
-    if (isNaN(lastNum) || lastNum < 141) {
-        lastNum = 141;
-    }
-
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
-
-    // مزامنة العداد مع الفايربيس
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error(err));
-    }
-
-    return nextNum;
-}
-// 🔢 العداد الذكي للطلبات
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
-    if (isNaN(lastNum) || lastNum < 141) lastNum = 141;
-
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error(err));
-    }
-
-    return nextNum;
-}
-
-// 🖼️ معالجة ورفع ضغط الصور
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 300;
-            const scaleFactor = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleFactor;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            if (document.getElementById('imgPreview')) document.getElementById('imgPreview').src = compressedBase64;
-            if (document.getElementById('itemImage')) document.getElementById('itemImage').value = compressedBase64;
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-// 🔄 تحديث الواجهات تلقائياً
-window.addEventListener('storage', (event) => {
-    if (event.key === 'sys_items' || event.key === 'sys_categories') {
-        if (typeof refreshActiveUI === 'function') refreshActiveUI();
     }
 });
