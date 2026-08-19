@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v22.5 Full Expanded Version - Part 1)
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 1)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -42,30 +42,9 @@ function cleanPrice(val) {
     return isNaN(num) ? 0 : num;
 }
 
-// 🔢 العداد الذكي التلقائي لرقم الطلب - يمنع الثبات على 141
-function getNextOrderNumber() {
-    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
-    
-    if (isNaN(lastNum) || lastNum < 141) {
-        lastNum = 141;
-    }
-
-    let nextNum = lastNum + 1;
-    localStorage.setItem('sys_last_order_num', nextNum.toString());
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").set({
-            lastNum: nextNum,
-            updatedAt: new Date().toISOString()
-        }, { merge: true }).catch(err => console.error(err));
-    }
-
-    return nextNum;
-}
-
 // 🍔 دالة فتح وإغلاق البردة الجانبية (الثلاث شخوط) المباشرة
 window.toggleSideDrawer = function() {
-    const drawer = document.getElementById('sideDrawer');
+    const orderNumber = getNextOrderNumber();
     const overlay = document.getElementById('drawerOverlay');
     if (!drawer || !overlay) return;
 
@@ -194,6 +173,7 @@ function normalizeArabicArea(str) {
 function initData() {
     let currentItems = getData('sys_items');
 
+    // إذا كانت الذاكرة المحلية فارغة، نجلب البيانات من الفايربيس أولاً ولا نرفض البيانات الجديدة
     if (!currentItems || !Array.isArray(currentItems) || currentItems.length === 0) {
         if (db) {
             db.collection("menu_items").get().then(snapshot => {
@@ -203,12 +183,33 @@ function initData() {
                     setData('sys_items', cloudItems);
                     refreshActiveUI();
                 } else {
+                    // فقط إذا كان الفايربيس فارغاً تماماً بأول مرة تشغيل
                     localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
                     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
         }
     }
+
+    if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
+    if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
+    if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
+    if (!localStorage.getItem('sys_cashiers')) localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
+    if (!localStorage.getItem('sys_employees')) localStorage.setItem('sys_employees', JSON.stringify(DEFAULT_DATA.employees));
+    if (!localStorage.getItem('sys_drivers')) localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
+    if (!localStorage.getItem('sys_areas')) localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+
+    setupCloudRealtimeSync();
+if (typeof db !== 'undefined' && db) {
+    db.collection("settings").doc("order_counter").get().then(doc => {
+        if (doc.exists && doc.data().lastNum) {
+            localStorage.setItem('sys_last_order_num', doc.data().lastNum);
+        }
+    });
+}
+}
+
 
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
@@ -227,15 +228,6 @@ function initData() {
 
     setupCloudRealtimeSync();
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection("settings").doc("order_counter").get().then(doc => {
-            if (doc.exists && doc.data().lastNum) {
-                localStorage.setItem('sys_last_order_num', doc.data().lastNum);
-            }
-        });
-    }
-}
-
 function getData(key) {
     try {
         const data = localStorage.getItem(key);
@@ -245,24 +237,8 @@ function getData(key) {
     }
 }
 
-// 🛡️ دالة الحفظ الذكي الآمنة من الامتلاء - حماية ضد كثرة الصور
 function setData(key, val) {
-    try {
-        localStorage.setItem(key, JSON.stringify(val));
-    } catch (e) {
-        console.warn("⚠️ الذاكرة المحلية ممتلئة! جاري تنظيف الصور الحجم الكبير...");
-        if (Array.isArray(val)) {
-            const cleanItems = val.map(item => {
-                let copy = { ...item };
-                if (copy.image && copy.image.length > 1000 && copy.image.startsWith('data:image')) {
-                    copy.image = 'https://via.placeholder.com/150';
-                }
-                return copy;
-            });
-            try { localStorage.setItem(key, JSON.stringify(cleanItems)); } catch (err) {}
-        }
-    }
-
+    localStorage.setItem(key, JSON.stringify(val));
     if (db) {
         try {
             db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: new Date() });
@@ -276,6 +252,23 @@ function getTodayString() {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+function getOrderSequence(customOrder) {
+    if (customOrder) {
+        if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
+        if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
+    }
+    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
+    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
+    return seqNum;
+}
+
+function incrementOrderSequence() {
+    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
+    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
+    let nextSeq = (seqNum >= 999) ? 101 : seqNum + 1;
+    localStorage.setItem('mim89_daily_order_seq', nextSeq);
 }
 
 function getSystemPassword(type) {
@@ -306,7 +299,7 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            if (cloudItems.length >= 1) {
+            if (cloudItems.length >= 5) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
             }
@@ -317,7 +310,7 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudCategories = [];
             snapshot.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-            if (cloudCategories.length >= 1) {
+            if (cloudCategories.length >= 3) {
                 setData('sys_categories', cloudCategories);
                 refreshActiveUI();
             }
@@ -363,14 +356,14 @@ async function globalSystemSync(btnElement) {
             if (!itemSnap.empty) {
                 let cloudItems = [];
                 itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 1) setData('sys_items', cloudItems);
+                if (cloudItems.length >= 5) setData('sys_items', cloudItems);
             }
 
             const catSnap = await db.collection("menu_categories").get();
             if (!catSnap.empty) {
                 let cloudCategories = [];
                 catSnap.forEach(doc => cloudCategories.push({ ...doc.data(), docId: doc.id }));
-                if (cloudCategories.length >= 1) setData('sys_categories', cloudCategories);
+                if (cloudCategories.length >= 3) setData('sys_categories', cloudCategories);
             }
 
             const orderSnap = await db.collection("orders").get();
@@ -392,7 +385,7 @@ async function globalSystemSync(btnElement) {
     } catch (error) {
         console.error("Global sync error:", error);
         refreshActiveUI();
-        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابية.");
+        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابة.");
     } finally {
         if (btnElement) {
             setTimeout(() => {
@@ -407,6 +400,7 @@ async function globalSystemSync(btnElement) {
    3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
 
+// 🛠️ دالة حفظ الزبون المحسنة الآمنة ضد أخطاء المصفوفات
 function saveCustomerRecord(name, phone, area, address) {
     if (!phone || phone === '-' || phone === 'بدون رقم') return;
     
@@ -455,7 +449,7 @@ function autoSearchCustomerByPhone(phoneInput) {
     const customers = getData('sys_customers') || [];
     const completed = getData('sys_completed_orders') || [];
 
-    let matches = customers.filter(c => c.phone && c.phone.includes(cleanPhone));
+    let matches = customers.filter(c => c.phone.includes(cleanPhone));
 
     if (matches.length === 0) {
         completed.forEach(o => {
@@ -543,6 +537,7 @@ function deleteCustomerRecord(id) {
         renderAdminCustomers();
     }
 }
+
 /* ==========================================
    4. المينيو الإلكتروني العام للزبائن (index.html)
    ========================================== */
@@ -625,8 +620,7 @@ function loadPublicMenu() {
     const sectionsContainer = document.getElementById('menuSections');
 
     if (!navContainer || !sectionsContainer) return;
-    navContainer.innerHTML = ''; 
-    sectionsContainer.innerHTML = '';
+    navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
@@ -652,12 +646,13 @@ function loadPublicMenu() {
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+Fast+Food'">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
                                 <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
                                 <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                    <!-- 🔥 زر الزائد المربوط بنافذة التخصيص والخيارات -->
                                     <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
                                 </div>
                             </div>
@@ -669,6 +664,10 @@ function loadPublicMenu() {
         }
     });
 }
+/* ==========================================================================
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 2)
+   صاحب النظام: منير مقداد
+   ========================================================================== */
 
 function filterCategory(catId, btnElement) {
     if (btnElement) {
@@ -678,6 +677,14 @@ function filterCategory(catId, btnElement) {
     document.querySelectorAll('.menu-section').forEach(sec => {
         sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
     });
+}
+
+function openItemDetails(id) {
+    openItemCustomizationModal(id);
+}
+
+function addToCart(itemId) {
+    openItemCustomizationModal(itemId);
 }
 
 function updateCartBadge() {
@@ -732,6 +739,28 @@ function changeCartIndexQty(index, change) {
     calculateDeliveryCost();
 }
 
+function changeCartQty(id, change) {
+    const idx = cart.findIndex(c => cleanPrice(c.id) === cleanPrice(id));
+    if (idx !== -1) {
+        changeCartIndexQty(idx, change);
+    }
+}
+
+function toggleDeliveryFields() {
+    const typeSelect = document.getElementById('orderTypeSelect');
+    const type = typeSelect ? typeSelect.value : 'delivery';
+    const group = document.getElementById('deliveryFieldsGroup');
+    const feeLine = document.getElementById('deliveryFeeLine');
+    if (type === 'delivery') {
+        if(group) group.style.display = 'block';
+        if(feeLine) feeLine.style.display = 'flex';
+    } else {
+        if(group) group.style.display = 'none';
+        if(feeLine) feeLine.style.display = 'none';
+    }
+    calculateDeliveryCost();
+}
+
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -766,7 +795,7 @@ function calculateDeliveryCost() {
     if (totalEl) totalEl.innerText = (subtotal + deliveryFee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
-// 🚀 إرسال الطلب عبر الواتساب المباشر والتزامن مع السحابة
+// 🚀 إرسال الطلب المباشر - حل فتح الواتساب المباشر 100% على الآيفون والأندرويد
 window.submitOrderToCashier = function() {
     try {
         if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
@@ -800,8 +829,10 @@ window.submitOrderToCashier = function() {
             return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
         }
 
-        if (type === 'delivery' && (!selectArea || selectArea === '' || selectArea === '-- اختر المنطقة --')) {
-            return alert("⚠️ يرجى اختيار منطقة التوصيل!");
+        if (type === 'delivery') {
+            if (!selectArea || selectArea === '' || selectArea === '-- اختر المنطقة --') {
+                return alert("⚠️ يرجى اختيار منطقة التوصيل!");
+            }
         }
 
         saveCustomerRecord(name, phone, area, address);
@@ -874,6 +905,7 @@ window.submitOrderToCashier = function() {
         waMessage += `💰 *المجموع الكلي:* ${totalAmount.toLocaleString('ar-IQ')} د.ع\n`;
 
         const restaurantPhone = "9647750008630";
+        // 💬 تحويل عبر wa.me لضمان فتح التطبيق مباشرة في الآيفون دون حظر النوافذ المنبثقة
         const waUrl = `https://wa.me/${restaurantPhone}?text=${encodeURIComponent(waMessage)}`;
 
         localStorage.setItem('sys_last_order_id', orderId);
@@ -885,6 +917,10 @@ window.submitOrderToCashier = function() {
         if (submitBtn) {
             submitBtn.innerText = "تأكيد وإرسال الطلب عبر الواتساب 🚀";
             submitBtn.disabled = false;
+        }
+
+        if (typeof listenToOrderTracking === 'function') {
+            listenToOrderTracking(orderId);
         }
 
         window.location.href = waUrl;
@@ -1000,9 +1036,9 @@ function loadPosDirectMenu(catId = 'all') {
 
     if (!catBar || !grid) return;
 
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="filterPosProductsByCategory('all', this)">الكل</button>`;
+    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل</button>`;
     categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="filterPosProductsByCategory('${c.name}', this)">${c.name}</button>`;
+        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
     });
 
     const filtered = catId === 'all' ? items : items.filter(i => cleanPrice(i.categoryId) === cleanPrice(catId));
@@ -1013,8 +1049,7 @@ function loadPosDirectMenu(catId = 'all') {
     }
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" data-category="${item.categoryId || ''}" onclick="addToPosCart(${item.id})">
-            <button onclick="event.stopPropagation(); showItemDetailsModal('${item.name}', '${item.ingredients || ''}')" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.8); color:#fbbf24; border:1px solid #fbbf24; border-radius:4px; padding:2px 5px; font-size:10px; z-index:10; cursor:pointer;">ℹ️ تفاصيل</button>
+        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
@@ -1022,28 +1057,20 @@ function loadPosDirectMenu(catId = 'all') {
     `).join('');
 }
 
-// 🎯 1. دالة التناقل السريع بين الأقسام بضغطة واحدة
-function filterPosProductsByCategory(categoryName, btnEl) {
-    document.querySelectorAll('#posCategoriesBar .category-tab').forEach(btn => btn.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
-
-    const cards = document.querySelectorAll('#posProductsGrid .pos-product-card');
-    cards.forEach(card => {
-        const itemCategory = card.getAttribute('data-category') || '';
-        const itemName = card.innerText || '';
-
-        if (categoryName === 'all' || itemCategory.includes(categoryName) || itemName.includes(categoryName)) {
-            card.style.display = 'flex';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-// ℹ️ 2. دالة إظهار نافذة مكونات الوجبة والتفاصيل
-function showItemDetailsModal(name, ingredients) {
-    const details = ingredients && ingredients.trim() !== '' ? ingredients : 'لا توجد تفاصيل أو مكونات مسجلة لهذه الوجبة.';
-    alert(`📋 تفاصيل ومكونات (${name}):\n\n${details}`);
+function filterPosProducts() {
+    const query = document.getElementById('posSearchInput') ? document.getElementById('posSearchInput').value.toLowerCase() : '';
+    const items = getData('sys_items');
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
+    
+    const filtered = items.filter(i => i.name.toLowerCase().includes(query));
+    grid.innerHTML = filtered.map(item => `
+        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+        </div>
+    `).join('');
 }
 
 function addToPosCart(itemId) {
@@ -1241,10 +1268,12 @@ function renderPosCart() {
         }
     }
 }
-/* ==========================================
-   6. حاسبة النقد والطباعة الإلزامية والطلبات السابقة
-   ========================================== */
+/* ==========================================================================
+   MIM89 FAST FOOD - Master Core Engine (v21.3 Updated & Fixed Version - Part 3)
+   صاحب النظام: منير مقداد
+   ========================================================================== */
 
+// 6. حاسبة النقد والطباعة الإلزامية الآمنة
 function openQuickCashModal() {
     if (posCart.length === 0) {
         alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
@@ -1316,7 +1345,7 @@ function prepareAndOpenPrintModal() {
 
     const pendingOrder = {
         id: 'POS_' + Date.now(),
-        orderNum: getNextOrderNumber(),
+        orderNum: getOrderSequence(),
         customerName: custName,
         phone: "-",
         orderType: selectedPosOrderType,
@@ -1364,6 +1393,7 @@ function tryFinalizeAndClearOrder() {
     if (ord) {
         saveCompletedOrder(ord);
         deductInventoryFromRecipe(ord.items);
+        incrementOrderSequence();
     }
     clearPosCart();
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
@@ -2076,7 +2106,133 @@ function generateOrderCardHTML(ord, docId) {
     const safeName = String(displayName || '').replace(/'/g, "\\'");
     const safeArea = String(displayArea || '').replace(/'/g, "\\'");
     const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
+
+    if (rawPhone && rawPhone !== 'بدون رقم' && displayName !== 'مكالمة واردة') {
+        saveCustomerRecord(displayName, rawPhone, displayArea, displayAddress);
+    }
+
+    return `
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${pastCustomer ? 'var(--gold-bright, #ffd700)' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
+                <strong>📞 ${displayName} (${rawPhone})</strong>
+                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : '🛍️ سفري'}</span>
+            </div>
+            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
+            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
+            <hr style="border-color:#333; margin:6px 0;">
+            <ul style="padding-right:12px; font-size:0.8rem;">
+                ${itemsList.length > 0 
+                    ? itemsList.map(i => `<li>${i.name} × ${i.qty}</li>`).join('') 
+                    : '<li style="color:#aaa;">(طلب هاتف - اختر الوجبات يدوياً في الفاتورة المباشرة)</li>'}
+            </ul>
+            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع: ${total} د.ع</strong>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#333; color:#ffd700; border:1px solid #ffd700; flex:1;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}')">📥 نقل لكاشير</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function cancelIncomingOrder(docId, orderId) {
+    if (confirm("هل أنت متأكد من إلغاء وحذف هذا الطلب؟")) {
+        if (db) {
+            db.collection("orders").doc(docId).delete().catch(err => console.error("Error deleting order:", err));
+        }
+        let orders = getData('sys_live_orders');
+        orders = orders.filter(o => o.id !== orderId);
+        setData('sys_live_orders', orders);
+        
+        const card = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
+        if (card) card.remove();
+        
+        listenForIncomingOrders();
+    }
+}
+// 1. دالة نقل الطلب الوارد مباشرة لكاشير المبيعات مع جلب الوجبات وتفريغ الكارت
+function loadIncomingCallToPos(docId, orderId, phone, name, area, address, itemsEncodedStr) {
+    // أ. الانتقال لشاشة المبيعات المباشرة (POS)
+    const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
+    switchCashierTab('tabPosDirect', btnDirect);
+
+    // ب. تعبئة بيانات الزبون في حقل الكاشير
+    const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
+    const custInput = document.getElementById('posCustName');
+    if (custInput) custInput.value = infoText;
+
+    // ج. فك تشفير وتعبئة الوجبات في سلة المبيعات (posCart)
+    posCart = [];
+    if (itemsEncodedStr && itemsEncodedStr !== '') {
+        try {
+            const decodedItems = JSON.parse(decodeURIComponent(itemsEncodedStr));
+            if (Array.isArray(decodedItems)) {
+                decodedItems.forEach(i => {
+                    posCart.push({
+                        id: i.id || Date.now() + Math.random(),
+                        name: i.name,
+                        price: cleanPrice(i.price),
+                        qty: cleanPrice(i.qty) || 1,
+                        itemNotes: i.customNotes ? [i.customNotes] : (i.itemNotes || [])
+                    });
+                });
+            }
+        } catch (e) {
+            console.error("Error decoding items for pos:", e);
+        }
+    }
     
+    // رسم السلة
+    renderPosCart();
+
+    // د. تحديث حالة الطلب في السحابة لكي يختفي من الطلبات الواردة
+    if (db && docId && !docId.startsWith('temp_')) {
+        db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
+          .catch(err => console.error("Cloud update error:", err));
+    }
+
+    // هـ. تحديث المخزن المحلي وحذف الكارت بصرياً
+    let liveOrders = getData('sys_live_orders') || [];
+    liveOrders = liveOrders.filter(o => String(o.docId || o.id) !== String(docId) && String(o.id) !== String(orderId));
+    setData('sys_live_orders', liveOrders);
+
+    const cardEl = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
+    if (cardEl) cardEl.remove();
+
+    if (phone && phone !== 'بدون رقم') {
+        saveCustomerRecord(name, phone, area, address);
+    }
+
+    alert(`✅ تم نقل طلب الزبون (${name}) وجميع وجباته إلى الكاشير بنجاح!`);
+}
+
+// 2. مولد كروت الطلبات الواردة مع إرسال الوجبات سليمة للدالة
+function generateOrderCardHTML(ord, docId) {
+    const itemsList = Array.isArray(ord.items) ? ord.items : [];
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
+
+    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
+    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
+    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
+
+    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
+        ? rawName 
+        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
+
+    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
+    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
+
+    const safeDocId = String(docId || '');
+    const safeOrderId = String(ord.id || docId || '');
+    const safePhone = String(rawPhone || '');
+    const safeName = String(displayName || '').replace(/'/g, "\\'");
+    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
+    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
+    
+    // ترميز الوجبات بالكامل لتمريرها بسلاسة زر النقل
     const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
 
     const isWebMenuOrder = itemsList.length > 0;
@@ -2112,70 +2268,69 @@ function generateOrderCardHTML(ord, docId) {
     `;
 }
 
-function cancelIncomingOrder(docId, orderId) {
-    if (confirm("هل أنت متأكد من إلغاء وحذف هذا الطلب؟")) {
-        if (db) {
-            db.collection("orders").doc(docId).delete().catch(err => console.error("Error deleting order:", err));
-        }
-        let orders = getData('sys_live_orders');
-        orders = orders.filter(o => o.id !== orderId);
-        setData('sys_live_orders', orders);
-        
-        const card = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
-        if (card) card.remove();
-        
-        listenForIncomingOrders();
-    }
-}
 
-function loadIncomingCallToPos(docId, orderId, phone, name, area, address, itemsEncodedStr) {
-    const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
-    switchCashierTab('tabPosDirect', btnDirect);
 
-    const infoText = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
-    const custInput = document.getElementById('posCustName');
-    if (custInput) custInput.value = infoText;
+// 2. مولد كروت الطلبات الواردة مع التمييز بين (طلب المينيو الإلكتروني) و (مكالمة هاتفية)
+function generateOrderCardHTML(ord, docId) {
+    const itemsList = Array.isArray(ord.items) ? ord.items : [];
+    const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
 
-    posCart = [];
-    if (itemsEncodedStr && itemsEncodedStr !== '') {
-        try {
-            const decodedItems = JSON.parse(decodeURIComponent(itemsEncodedStr));
-            if (Array.isArray(decodedItems)) {
-                decodedItems.forEach(i => {
-                    posCart.push({
-                        id: i.id || Date.now() + Math.random(),
-                        name: i.name,
-                        price: cleanPrice(i.price),
-                        qty: cleanPrice(i.qty) || 1,
-                        itemNotes: i.customNotes ? [i.customNotes] : (i.itemNotes || [])
-                    });
-                });
-            }
-        } catch (e) {
-            console.error("Error decoding items for pos:", e);
-        }
-    }
+    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
+    const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
+    const pastCustomer = getCustomerHistoryByPhone(rawPhone);
+
+    const displayName = (rawName && rawName !== 'مكالمة' && rawName !== 'مكالمة واردة')
+        ? rawName 
+        : (pastCustomer && pastCustomer.customerName ? pastCustomer.customerName : 'زبون جديد (غير مسجل)');
+
+    const displayArea = ord.area || (pastCustomer && pastCustomer.area) || '';
+    const displayAddress = ord.address || (pastCustomer && pastCustomer.address) || '';
+
+    const safeDocId = String(docId || '');
+    const safeOrderId = String(ord.id || docId || '');
+    const safePhone = String(rawPhone || '');
+    const safeName = String(displayName || '').replace(/'/g, "\\'");
+    const safeArea = String(displayArea || '').replace(/'/g, "\\'");
+    const safeAddress = String(displayAddress || '').replace(/'/g, "\\'");
     
-    renderPosCart();
+    // ترميز الوجبات لنقلها بشكل سليم لدالة الكاشير
+    const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
 
-    if (db && docId && !docId.startsWith('temp_')) {
-        db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
-          .catch(err => console.error("Cloud update error:", err));
-    }
+    // 🏷️ تمييز مصدر الطلب بناءً على وجود وجبات مرفقة (طلب من المينيو) أو مكالمة هاتفية صرفة
+    const isWebMenuOrder = itemsList.length > 0;
+    const sourceBadge = isWebMenuOrder 
+        ? `<span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">🌐 طلب مباشر من المينيو الإلكتروني</span>`
+        : `<span style="background:#f59e0b; color:#000; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">📞 مكالمة هاتفية واردة</span>`;
 
-    let liveOrders = getData('sys_live_orders') || [];
-    liveOrders = liveOrders.filter(o => String(o.docId || o.id) !== String(docId) && String(o.id) !== String(orderId));
-    setData('sys_live_orders', liveOrders);
-
-    const cardEl = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
-    if (cardEl) cardEl.remove();
-
-    if (phone && phone !== 'بدون رقم') {
-        saveCustomerRecord(name, phone, area, address);
-    }
-
-    alert(`✅ تم نقل طلب الزبون (${name}) وجميع وجباته إلى الكاشير بنجاح!`);
+    return `
+        <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
+            ${sourceBadge}
+            <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
+                <strong>👤 ${displayName} (${rawPhone})</strong>
+                <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : (ord.orderType === 'سفري' ? '🛍️ سفري' : '🍽️ صالة')}</span>
+            </div>
+            ${pastCustomer ? '<span style="background:#ffd700; color:#000; font-size:0.7rem; font-weight:bold; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">⭐ زبون مسجل سابقاً</span>' : '<span style="background:#444; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:4px; margin-top:2px; display:inline-block;">🆕 متصل جديد</span>'}
+            <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">${displayArea ? 'المنطقة: ' + displayArea : ''} ${displayAddress ? '- ' + displayAddress : ''}</p>
+            <hr style="border-color:#333; margin:6px 0;">
+            <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
+                ${itemsList.length > 0 
+                    ? itemsList.map(i => `<li>${i.name} × ${i.qty} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
+                    : '<li style="color:#aaa;">(مكالمة هاتفية - اختر الوجبات يدوياً في الكاشير)</li>'}
+            </ul>
+            <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#ffd700; font-size:0.85rem;">المجموع الكلي: ${total} د.ع</strong>
+                </div>
+                <div style="display:flex; gap:4px;">
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل لكاشير المبيعات</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                </div>
+            </div>
+        </div>
+    `;
 }
+
+
 /* ==========================================
    12. محاسبة التوصيل والدليفري والتطبيقات
    ========================================== */
@@ -2495,27 +2650,11 @@ function handleImageUpload(event) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 300; // تصغير العرض لتوفير مساحة في الـ localStorage
-                const scaleFactor = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scaleFactor;
-
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                // تحويل الصورة لمضغوطة بحجم صغير جداً (< 50KB)
-                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                
-                currentUploadedBase64 = compressedBase64;
-                const preview = document.getElementById('imgPreview');
-                if (preview) preview.src = currentUploadedBase64;
-                const urlInput = document.getElementById('itemImage');
-                if (urlInput) urlInput.value = currentUploadedBase64;
-            };
-            img.src = e.target.result;
+            currentUploadedBase64 = e.target.result;
+            const preview = document.getElementById('imgPreview');
+            if (preview) preview.src = currentUploadedBase64;
+            const urlInput = document.getElementById('itemImage');
+            if (urlInput) urlInput.value = "";
         };
         reader.readAsDataURL(file);
     }
@@ -2530,21 +2669,7 @@ function triggerInlineImageUpload(itemId) {
         if (file) {
             const reader = new FileReader();
             reader.onload = function(evt) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 300;
-                    const scaleFactor = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleFactor;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    updateItemInline(itemId, 'image', compressedBase64);
-                };
-                img.src = evt.target.result;
+                updateItemInline(itemId, 'image', evt.target.result);
             };
             reader.readAsDataURL(file);
         }
@@ -2610,19 +2735,17 @@ function renderAdminItems() {
         `;
     }).join('');
 }
-
-// 💾 دالة حفظ الصنف الوحيدة والسليمة والموحدة
 function saveItem() {
     const editId = document.getElementById('editItemId')?.value;
     const id = editId ? String(editId) : '';
     const name = document.getElementById('itemName')?.value.trim();
     const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice')?.value) : parseInt(document.getElementById('itemPrice')?.value || 0);
-    const categoryId = String(document.getElementById('itemCategory')?.value || '1');
+    const categoryId = String(document.getElementById('itemCategory')?.value);
     const ingredients = document.getElementById('itemIngredients')?.value.trim();
 
     if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
 
-    // استخراج مباشر لرابط الصورة
+    // تنظيف رابط الصورة تلقائياً واستخراج URL مباشر
     let rawImageInput = document.getElementById('itemImage')?.value.trim() || '';
     if (rawImageInput.includes('src=')) {
         const match = rawImageInput.match(/src=["']([^"']+)["']/);
@@ -2663,6 +2786,7 @@ function saveItem() {
     alert("🎉 تم حفظ الصنف بنجاح ومزامنته فوراً!");
 }
 
+
 function editItem(id) {
     const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
     if (!item) return;
@@ -2677,7 +2801,7 @@ function editItem(id) {
 
     if (itemImg && itemImg.startsWith('data:image')) {
         currentUploadedBase64 = itemImg;
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = itemImg;
+        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
     } else {
         currentUploadedBase64 = '';
         if (document.getElementById('itemImage')) document.getElementById('itemImage').value = itemImg;
@@ -2826,7 +2950,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v22.5-MIM89",
+            version: "v21.3-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -2922,19 +3046,109 @@ function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// تشغيل النظام فور تحميل الصفحة
 document.addEventListener('DOMContentLoaded', () => {
     initData();
     if (document.body.classList.contains('public-menu-body')) {
-        if (typeof loadPublicMenu === 'function') loadPublicMenu();
+        loadPublicMenu();
     }
 });
+function saveItem() {
+    const editId = document.getElementById('editItemId').value;
+    const id = editId ? String(editId) : String(Date.now());
+    const name = document.getElementById('itemName').value.trim();
+    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice').value) : parseInt(document.getElementById('itemPrice').value || 0);
+    const categoryId = String(document.getElementById('itemCategory').value);
+    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients').value.trim();
 
+    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
+
+    const itemData = { 
+        id: id, 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients 
+    };
+// 🔢 دالة زيادة رقم الطلب تلقائياً
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num') || '141', 10);
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({ 
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+    }
+    return nextNum;
+}
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
+            .then(() => console.log("✅ تم التحديث في السحابة"))
+            .catch(err => console.error("❌ خطأ سحابي:", err));
+    }
+
+    resetItemForm();
+    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    alert("✅ تم حفظ وتعديل الصنف بنجاح في الأدمن والكاشير!");
+}
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300; // تصغير العرض ليناسب المينيو
+            const scaleFactor = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleFactor;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // تحويل الصورة لمضغوطة بحجم صغير جداً (< 50KB)
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('imgPreview').src = compressedBase64;
+            document.getElementById('itemImage').value = compressedBase64;
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 // تحديث واجهة الكاشير تلقائياً عند التعديل من تبويب الأدمن
 window.addEventListener('storage', (event) => {
     if (event.key === 'sys_items' || event.key === 'sys_categories') {
         if (typeof renderCashierItems === 'function') renderCashierItems();
         if (typeof renderAdminItems === 'function') renderAdminItems();
-        if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
     }
 });
+// 🔢 العداد الذكي للطلبات - يمنع ثبات الرقم على 141
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
+    
+    // إذا كان المسجل سابقاً 141 أو غير موجود، ابدأ من 142
+    if (isNaN(lastNum) || lastNum < 141) {
+        lastNum = 141;
+    }
+
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
+
+    // مزامنة العداد مع الفايربيس
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err));
+    }
+
+    return nextNum;
+}
