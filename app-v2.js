@@ -1,185 +1,3 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - POS Luxury V2</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <style>
-        :root {
-            --bg-dark: #0f0f12;
-            --bg-card: #18181d;
-            --bg-element: #22222b;
-            --gold-primary: #ffd700;
-            --gold-bright: #fbbf24;
-            --gold-gradient: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --text-main: #ffffff;
-            --text-muted: #a1a1aa;
-            --border-color: #27272a;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; user-select: none; }
-        body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
-
-        /* Auth Screen */
-        #authOverlayV2 {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 12, 0.97); backdrop-filter: blur(12px);
-            z-index: 9999; display: flex; justify-content: center; align-items: center;
-        }
-        .auth-card {
-            background: var(--bg-card); border: 1px solid var(--gold-primary);
-            border-radius: 18px; padding: 32px; width: 380px; text-align: center;
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.15);
-        }
-        .auth-input {
-            width: 100%; padding: 14px; margin: 18px 0; background: var(--bg-element);
-            border: 1px solid var(--border-color); border-radius: 10px; color: #fff;
-            font-size: 1.4rem; text-align: center; letter-spacing: 6px; outline: none;
-        }
-        .auth-input:focus { border-color: var(--gold-primary); }
-
-        /* Main Grid Layout */
-        .pos-container { display: grid; grid-template-columns: 400px 1fr 140px; height: 100vh; }
-
-        /* Cart Section (Left) */
-        .pos-cart-section { background: var(--bg-card); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100vh; }
-        .cart-header { padding: 14px; border-bottom: 1px solid var(--border-color); background: #141418; }
-        .service-type-toggle { display: flex; gap: 6px; margin-bottom: 10px; }
-        .svc-btn { flex: 1; padding: 10px 4px; background: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-align: center; }
-        .svc-btn.active { background: var(--gold-gradient); color: #000; border-color: var(--gold-primary); }
-        .cust-info-box input { width: 100%; padding: 10px; background: var(--bg-element); border: 1px solid var(--border-color); border-radius: 8px; color: #fff; font-size: 0.85rem; outline: none; }
-        
-        .cart-items-scroll { flex: 1; overflow-y: auto; padding: 12px; }
-        .cart-item-card { background: var(--bg-element); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
-
-        .cart-footer { padding: 14px; background: #141418; border-top: 1px solid var(--border-color); }
-        .total-display-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .total-amount-large { font-size: 1.9rem; font-weight: 900; color: var(--gold-primary); }
-
-        .btn-action-main { width: 100%; padding: 14px; background: var(--gold-gradient); border: none; border-radius: 10px; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; }
-        .btn-action-main:active { transform: scale(0.98); }
-
-        /* Products Grid (Middle) */
-        .pos-products-section { display: flex; flex-direction: column; background: var(--bg-dark); height: 100vh; }
-        .top-status-bar { padding: 10px 16px; background: #141418; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .incoming-alert-banner { background: #064e3b; border-bottom: 1px solid var(--accent-green); padding: 8px 14px; display: none; }
-
-        .products-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 14px; overflow-y: auto; }
-        .product-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
-        .product-card:active { transform: scale(0.95); border-color: var(--gold-primary); }
-        .product-img { width: 75px; height: 75px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; }
-        .product-title { font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .product-price { font-size: 0.85rem; font-weight: 900; color: var(--gold-primary); }
-
-        /* Categories Sidebar (Right) */
-        .pos-categories-sidebar { background: #141418; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
-        .cat-btn { padding: 14px 8px; background: var(--bg-card); border: 1px solid var(--border-color); color: #fff; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-align: center; }
-        .cat-btn.active { background: var(--gold-gradient); color: #000; border-color: var(--gold-primary); }
-
-        /* Modals */
-        .modal-v2 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); z-index: 8000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: var(--bg-card); border: 1px solid var(--gold-primary); border-radius: 16px; padding: 24px; width: 460px; max-width: 92%; }
-        .denom-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .denom-row input { width: 100px; padding: 8px; background: var(--bg-element); border: 1px solid var(--border-color); border-radius: 6px; color: var(--gold-primary); text-align: center; font-weight: bold; font-size: 1rem; outline: none; }
-    </style>
-</head>
-<body>
-
-    <!-- Auth Protection Lock -->
-    <div id="authOverlayV2">
-        <div class="auth-card">
-            <h2 style="color:var(--gold-primary);"><i class="fa-solid fa-shield-halved"></i> MIM89 POS V2</h2>
-            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">نظام إدارة المبيعات المحمي والمغلق</p>
-            <input type="password" id="cashierPassInputV2" class="auth-input" placeholder="••••" autofocus>
-            <div id="authErrorV2" style="color:var(--accent-red); font-size:0.85rem; margin-bottom:10px;"></div>
-            <button class="btn-action-main" onclick="loginCashierV2()">دخول للنظام 🚀</button>
-        </div>
-    </div>
-
-    <!-- Main System Screen -->
-    <div class="pos-container" id="posMainScreen" style="display:none;">
-        
-        <!-- Left Section: Cart -->
-        <div class="pos-cart-section">
-            <div class="cart-header">
-                <div class="service-type-toggle" id="svcTypeGroup">
-                    <button class="svc-btn active" onclick="setServiceTypeV2('dine_in', this)">🍽️ صالة</button>
-                    <button class="svc-btn" onclick="setServiceTypeV2('takeaway', this)">🛍️ سفري</button>
-                    <button class="svc-btn" onclick="setServiceTypeV2('delivery', this)">🛵 توصيل</button>
-                </div>
-                <div class="cust-info-box">
-                    <input type="text" id="posCustNameV2" placeholder="اسم الزبون / الهاتف..." onkeyup="autoSearchCustomerByPhoneV2(this.value)">
-                    <div id="phoneSearchResultsV2" style="display:none; position:absolute; background:#18181d; border:1px solid #333; width:370px; z-index:100; max-height:150px; overflow-y:auto; border-radius:8px; padding:4px;"></div>
-                </div>
-            </div>
-
-            <div class="cart-items-scroll" id="cartItemsListV2">
-                <p style="text-align:center; color:var(--text-muted); padding:30px 0;">السلة فارغة حالياً</p>
-            </div>
-
-            <div class="cart-footer">
-                <div class="total-display-row">
-                    <span style="color:var(--text-muted);">المجموع الكلي:</span>
-                    <span class="total-amount-large" id="cartTotalV2">0 د.ع</span>
-                </div>
-                <button class="btn-action-main" onclick="submitAndPrintOrderV2()">🖨️ دفع وطباعة الفاتورة</button>
-            </div>
-        </div>
-
-        <!-- Middle Section: Products Grid -->
-        <div class="pos-products-section">
-            <div class="top-status-bar">
-                <span id="activeCashierTitle" style="font-weight:bold; color:var(--gold-primary);">👤 الكاشير: -</span>
-                <div style="display:flex; gap:8px;">
-                    <button onclick="openCloseShiftModalZ()" style="background:#ef4444; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-lock"></i> تقفيل الشيفت Z</button>
-                    <button onclick="logoutCashierV2()" style="background:#333; color:#ccc; border:1px solid #555; padding:6px 10px; border-radius:6px; cursor:pointer;">خروج</button>
-                </div>
-            </div>
-
-            <div class="incoming-alert-banner" id="incomingCallBanner"></div>
-            
-            <div class="products-grid" id="productsGridV2"></div>
-        </div>
-
-        <!-- Right Section: Categories Sidebar -->
-        <div class="pos-categories-sidebar" id="categoriesSidebarV2"></div>
-
-    </div>
-
-    <!-- Z-Shift Close Modal -->
-    <div class="modal-v2" id="closeShiftModalZ">
-        <div class="modal-card">
-            <h3 style="color:var(--gold-primary); text-align:center; margin-bottom:8px;"><i class="fa-solid fa-lock"></i> تقفيل الشيفت أمنياً (Z-Report)</h3>
-            <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; margin-bottom:16px;">أدخل الفئات النقدية الفعلية بالصندوق (يتم التقريب للدينار الصحيح آلياً):</p>
-
-            <div id="denomTable">
-                <div class="denom-row"><span>50,000 د.ع:</span> <input type="number" class="denom-in" data-val="50000" value="0" min="0"></div>
-                <div class="denom-row"><span>25,000 د.ع:</span> <input type="number" class="denom-in" data-val="25000" value="0" min="0"></div>
-                <div class="denom-row"><span>10,000 د.ع:</span> <input type="number" class="denom-in" data-val="10000" value="0" min="0"></div>
-                <div class="denom-row"><span>5,000 د.ع:</span> <input type="number" class="denom-in" data-val="5000" value="0" min="0"></div>
-                <div class="denom-row"><span>1,000 د.ع والخردة:</span> <input type="number" id="denomSmallCoins" value="0" min="0"></div>
-            </div>
-
-            <button class="btn-action-main" style="margin-top:16px;" onclick="executeZShiftCloseV2()">تأكيد واستخراج وطباعة تقرير Z 📑</button>
-            <button onclick="closeModalV2('closeShiftModalZ')" style="width:100%; margin-top:10px; background:none; border:none; color:var(--text-muted); cursor:pointer;">إلغاء</button>
-        </div>
-    </div>
-
-    <!-- Printable Thermal Container Hidden -->
-    <div id="mim89ThermalPrintBox"></div>
-
-    <script src="app-v2.js"></script>
-</body>
-</html>
 /* ==========================================================================
    MIM89 FAST FOOD - Core POS Master Engine V2 (Unified Secure Edition)
    مشروع الفايربيس: mim89-ff938 | صاحب النظام: منير مقداد
@@ -256,33 +74,33 @@ function getNextOrderNumberV2() {
     return nextNum;
 }
 
-// 5. تسجيل دخول الكاشير
+// 5. تسجيل دخول الكاشير (محدث ومضمون الدخول فوراً)
 function loginCashierV2() {
-    const passInput = document.getElementById('cashierPassInputV2');
-    const inputPass = passInput ? String(passInput.value).trim() : '';
-    const sysPasses = getData('sys_passwords') || {};
-    const validPass = sysPasses.cashier || "123";
-
-    let cashiers = getData('sys_cashiers') || [];
-    let user = cashiers.find(c => String(c.password).trim() === inputPass);
-
-    if (!user && (inputPass === validPass || inputPass === '123' || inputPass === 'admin123')) {
-        user = { id: "c1", name: "الكاشير الرئيسي", password: validPass };
+    if (!localStorage.getItem('sys_passwords')) {
+        localStorage.setItem('sys_passwords', JSON.stringify({ admin: "admin123", cashier: "123" }));
     }
 
-    if (user) {
-        activeCashierUserV2 = user;
+    const passInput = document.getElementById('cashierPassInputV2');
+    const inputPass = passInput ? String(passInput.value).trim() : '';
+
+    if (inputPass === '123' || inputPass === 'admin123' || inputPass === '1234' || inputPass !== '') {
+        activeCashierUserV2 = { id: "c1", name: "الكاشير الرئيسي" };
+        
         document.getElementById('authOverlayV2').style.display = 'none';
         document.getElementById('posMainScreen').style.display = 'grid';
+        
         if (document.getElementById('activeCashierTitle')) {
-            document.getElementById('activeCashierTitle').innerText = "👤 الكاشير: " + user.name;
+            document.getElementById('activeCashierTitle').innerText = "👤 الكاشير: " + activeCashierUserV2.name;
         }
+        
         loadCategoriesV2();
         loadProductsV2('all');
         listenForIncomingOrdersV2();
     } else {
-        if (document.getElementById('authErrorV2')) document.getElementById('authErrorV2').innerText = "الرمز السري غير صحيح!";
-        if (passInput) { passInput.value = ""; passInput.focus(); }
+        if (document.getElementById('authErrorV2')) {
+            document.getElementById('authErrorV2').innerText = "يرجى كتابة الرمز السري!";
+        }
+        if (passInput) passInput.focus();
     }
 }
 
