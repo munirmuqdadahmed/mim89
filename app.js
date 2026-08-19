@@ -1829,32 +1829,58 @@ function confirmCloseShiftAndLogout() {
 /* ==========================================
    10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
-// 🧾 تنفيذ طباعة فاتورة الزبون وتحديث الشارة
+/* ==========================================
+   تنفيذ الطباعة المباشرة للزبون والمطبخ
+   ========================================== */
 function executeCustomerPrintOnly() {
-    if (typeof printCustomerInvoiceOnly === 'function') {
-        printCustomerInvoiceOnly();
-        const badge = document.getElementById('custPrintBadge');
-        if (badge) { 
-            badge.innerText = '(تمت الطباعة ✅)'; 
-            badge.style.color = '#10b981'; 
+    let order = window.activePendingPrintOrder;
+    if (!order || !order.items || order.items.length === 0) {
+        if (typeof posCart !== 'undefined' && posCart.length > 0) {
+            order = {
+                orderNum: typeof getOrderSequence === 'function' ? getOrderSequence() : '89',
+                customerName: document.getElementById('posCustName')?.value || 'زبون مباشر',
+                items: JSON.parse(JSON.stringify(posCart)),
+                subtotal: posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0),
+                discount: typeof posDiscountAmount !== 'undefined' ? posDiscountAmount : 0,
+                totalAmount: Math.max(0, posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0) - (typeof posDiscountAmount !== 'undefined' ? posDiscountAmount : 0)),
+                area: typeof selectedPosOrderType !== 'undefined' ? selectedPosOrderType : 'صالة',
+                paymentMethod: typeof selectedPosPaymentMethod !== 'undefined' ? selectedPosPaymentMethod : 'كاش',
+                dateDate: typeof getTodayString === 'function' ? getTodayString() : '',
+                timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+            };
         }
-    } else {
-        alert('⚠️ دالة طباعة الزبون غير متوفرة!');
     }
+
+    if (!order || !order.items || order.items.length === 0) {
+        return alert("⚠️ السلة فارغة! اضف وجبات أولاً.");
+    }
+
+    printCustomerInvoiceOnly(null, order);
+    const badge = document.getElementById('custPrintBadge');
+    if (badge) { badge.innerText = ' (تمت الطباعة ✅)'; badge.style.color = '#10b981'; }
 }
 
-// 🔥 تنفيذ طباعة أمر المطبخ وتحديث الشارة
 function executeKitchenPrintOnly() {
-    if (typeof printKitchenTicketOnly === 'function') {
-        printKitchenTicketOnly();
-        const badge = document.getElementById('kitchenPrintBadge');
-        if (badge) { 
-            badge.innerText = '(تمت الطباعة ✅)'; 
-            badge.style.color = '#10b981'; 
+    let order = window.activePendingPrintOrder;
+    if (!order || !order.items || order.items.length === 0) {
+        if (typeof posCart !== 'undefined' && posCart.length > 0) {
+            order = {
+                orderNum: typeof getOrderSequence === 'function' ? getOrderSequence() : '89',
+                customerName: document.getElementById('posCustName')?.value || 'زبون مباشر',
+                items: JSON.parse(JSON.stringify(posCart)),
+                area: typeof selectedPosOrderType !== 'undefined' ? selectedPosOrderType : 'صالة',
+                timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+            };
         }
-    } else {
-        alert('⚠️ دالة طباعة المطبخ غير متوفرة!');
     }
+
+    if (!order || !order.items || order.items.length === 0) {
+        return alert("⚠️ السلة فارغة! اضف وجبات أولاً.");
+    }
+
+    printKitchenTicketOnly(null, order);
+    const badge = document.getElementById('kitchenPrintBadge');
+    if (badge) { badge.innerText = ' (تمت الطباعة ✅)'; badge.style.color = '#10b981'; }
 }
 function printCustomerInvoiceOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
