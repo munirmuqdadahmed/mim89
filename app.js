@@ -1882,11 +1882,16 @@ function printCustomerInvoiceOnly(event, customOrder) {
 function printKitchenTicketOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
     const order = customOrder || window.activePendingPrintOrder;
-    if (!order) return alert('⚠️ لا توجد بيانات للطباعة!');
+    if (!order) return alert('⚠️ لا توجد بيانات لطباعة المطبخ!');
 
     let itemsKitchenHtml = '';
     order.items.forEach(i => {
-        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="font-size:14px; color:#000; font-weight:900;">⚠️ [${i.itemNotes.join(' ، ')}]</span>` : '';
+        let notesArr = [];
+        if (i.itemNotes && Array.isArray(i.itemNotes) && i.itemNotes.length > 0) notesArr.push(...i.itemNotes);
+        if (i.customNotes) notesArr.push(i.customNotes);
+        
+        let itemNotesStr = notesArr.length > 0 ? `<br><span style="font-size:14px; color:#000; font-weight:900;">⚠️ [${notesArr.join(' ، ')}]</span>` : '';
+        
         itemsKitchenHtml += `
             <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
@@ -1902,19 +1907,20 @@ function printKitchenTicketOnly(event, customOrder) {
         <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
             <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
                 <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
-                <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
+                <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp || ''}</div>
             </div>
             <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
                 <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
-                <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
+                <div style="font-size:38px; font-weight:900;">#${order.orderNum || order.orderId || ''}</div>
             </div>
             <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
-                <div>الخدمة: ${order.area}</div>
-                <div>الزبون: ${order.customerName}</div>
+                <div>الخدمة: ${order.area || order.orderType || ''}</div>
+                <div>الزبون: ${order.customerName || 'زبون'}</div>
                 ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
             </div>
             <div style="padding:4px 0;">${itemsKitchenHtml}</div>
         </div>`;
+        
     setTimeout(() => { window.print(); }, 150);
 }
 
@@ -3152,3 +3158,54 @@ function getNextOrderNumber() {
 
     return nextNum;
 }
+// 🔢 العداد الذكي للطلبات
+function getNextOrderNumber() {
+    let lastNum = parseInt(localStorage.getItem('sys_last_order_num'), 10);
+    if (isNaN(lastNum) || lastNum < 141) lastNum = 141;
+
+    let nextNum = lastNum + 1;
+    localStorage.setItem('sys_last_order_num', nextNum.toString());
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection("settings").doc("order_counter").set({
+            lastNum: nextNum,
+            updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err));
+    }
+
+    return nextNum;
+}
+
+// 🖼️ معالجة ورفع ضغط الصور
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300;
+            const scaleFactor = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleFactor;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            if (document.getElementById('imgPreview')) document.getElementById('imgPreview').src = compressedBase64;
+            if (document.getElementById('itemImage')) document.getElementById('itemImage').value = compressedBase64;
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 🔄 تحديث الواجهات تلقائياً
+window.addEventListener('storage', (event) => {
+    if (event.key === 'sys_items' || event.key === 'sys_categories') {
+        if (typeof refreshActiveUI === 'function') refreshActiveUI();
+    }
+});
