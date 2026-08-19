@@ -1829,7 +1829,33 @@ function confirmCloseShiftAndLogout() {
 /* ==========================================
    10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
+// 🧾 تنفيذ طباعة فاتورة الزبون وتحديث الشارة
+function executeCustomerPrintOnly() {
+    if (typeof printCustomerInvoiceOnly === 'function') {
+        printCustomerInvoiceOnly();
+        const badge = document.getElementById('custPrintBadge');
+        if (badge) { 
+            badge.innerText = '(تمت الطباعة ✅)'; 
+            badge.style.color = '#10b981'; 
+        }
+    } else {
+        alert('⚠️ دالة طباعة الزبون غير متوفرة!');
+    }
+}
 
+// 🔥 تنفيذ طباعة أمر المطبخ وتحديث الشارة
+function executeKitchenPrintOnly() {
+    if (typeof printKitchenTicketOnly === 'function') {
+        printKitchenTicketOnly();
+        const badge = document.getElementById('kitchenPrintBadge');
+        if (badge) { 
+            badge.innerText = '(تمت الطباعة ✅)'; 
+            badge.style.color = '#10b981'; 
+        }
+    } else {
+        alert('⚠️ دالة طباعة المطبخ غير متوفرة!');
+    }
+}
 function printCustomerInvoiceOnly(event, customOrder) {
     if (event) { event.stopPropagation(); event.preventDefault(); }
     const order = customOrder || window.activePendingPrintOrder;
