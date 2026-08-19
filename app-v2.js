@@ -1,176 +1,5 @@
-/* ==========================================================================
-   MIM89 POS ENGINE V2 - Ultra Secure & Luxury Clean Edition
-   صاحب المشروع: منير مقداد
-   ========================================================================== */
-
-// 1. منع الفحص والتلاعب بالمتصفح (Anti-DevTools Security)
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase()))) {
-        e.preventDefault();
-    }
-});
-
-let posCartV2 = [];
-let activeServiceTypeV2 = 'dine_in';
-let currentOpeningFloat = 50000; // المداور المعتمد الافتراضي للشيفت (50,000 د.ع)
-
-function cleanPrice(val) {
-    if (!val) return 0;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    let str = String(val).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
-    let num = parseInt(str, 10);
-    return isNaN(num) ? 0 : num;
-}
-
-function getData(key) {
-    try {
-        const d = localStorage.getItem(key);
-        return d ? JSON.parse(d) : [];
-    } catch (e) { return []; }
-}
-
-function loginCashierV2() {
-    const input = document.getElementById('cashierPassInputV2');
-    const pass = input ? input.value.trim() : '';
-    const sysPasses = getData('sys_passwords') || {};
-    const validPass = sysPasses.cashier || "123";
-
-    if (pass === validPass || pass === "123" || pass === "admin123") {
-        document.getElementById('authOverlayV2').style.display = 'none';
-        document.getElementById('posMainScreen').style.display = 'grid';
-        loadCategoriesV2();
-        loadProductsV2('all');
-    } else {
-        document.getElementById('authErrorV2').innerText = "الرمز السري غير صحيح!";
-        if (input) { input.value = ''; input.focus(); }
-    }
-}
-
-function setServiceType(type, btnEl) {
-    activeServiceTypeV2 = type;
-    document.querySelectorAll('#svcTypeGroup .svc-btn').forEach(b => b.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
-}
-
-function loadCategoriesV2() {
-    const categories = getData('sys_categories');
-    const container = document.getElementById('categoriesSidebarV2');
-    if (!container) return;
-
-    let html = `<button class="cat-btn active" onclick="filterProductsV2('all', this)">الكل 🍔</button>`;
-    categories.forEach(c => {
-        html += `<button class="cat-btn" onclick="filterProductsV2('${c.id}', this)">${c.name}</button>`;
-    });
-    container.innerHTML = html;
-}
-
-function loadProductsV2(catId = 'all') {
-    const items = getData('sys_items');
-    const container = document.getElementById('productsGridV2');
-    if (!container) return;
-
-    if (!items || items.length === 0) {
-        container.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:40px;">لا توجد وجبات مسجلة في النظام</p>`;
-        return;
-    }
-
-    container.innerHTML = items.map(item => `
-        <div class="product-card" data-cat="${item.categoryId}" onclick="addToCartV2(${item.id})">
-            <img src="${item.image || 'https://via.placeholder.com/100?text=MIM89'}" class="product-img" onerror="this.src='https://via.placeholder.com/100?text=MIM89'">
-            <div class="product-title">${item.name}</div>
-            <div class="product-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</div>
-        </div>
-    `).join('');
-
-    filterProductsV2(catId, null);
-}
-
-function filterProductsV2(catId, btnEl) {
-    if (btnEl) {
-        document.querySelectorAll('#categoriesSidebarV2 .cat-btn').forEach(b => b.classList.remove('active'));
-        btnEl.classList.add('active');
-    }
-
-    const cards = document.querySelectorAll('#productsGridV2 .product-card');
-    cards.forEach(card => {
-        const itemCat = card.getAttribute('data-cat');
-        if (catId === 'all' || cleanPrice(itemCat) === cleanPrice(catId)) {
-            card.style.display = 'flex';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-function addToCartV2(itemId) {
-    const items = getData('sys_items');
-    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
-    if (!item) return;
-
-    const exist = posCartV2.find(c => cleanPrice(c.id) === cleanPrice(itemId));
-    if (exist) {
-        exist.qty += 1;
-    } else {
-        posCartV2.push({ ...item, price: cleanPrice(item.price), qty: 1 });
-    }
-    renderCartV2();
-}
-
-function renderCartV2() {
-    const list = document.getElementById('cartItemsListV2');
-    const totalEl = document.getElementById('cartTotalV2');
-    if (!list) return;
-
-    if (posCartV2.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:30px 0;">السلة فارغة حالياً</p>`;
-        if (totalEl) totalEl.innerText = "0 د.ع";
-        return;
-    }
-
-    let subtotal = 0;
-    list.innerHTML = posCartV2.map((item, idx) => {
-        const itemTotal = cleanPrice(item.price) * cleanPrice(item.qty);
-        subtotal += itemTotal;
-
-        return `
-            <div class="cart-item-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="font-size:0.85rem; color:#fff;">${item.name}</strong>
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        <button onclick="changeQtyV2(${idx}, -1)" style="padding:2px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:4px;">-</button>
-                        <span style="color:var(--gold-primary); font-weight:bold;">${item.qty}</span>
-                        <button onclick="changeQtyV2(${idx}, 1)" style="padding:2px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:4px;">+</button>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
-                    <span>${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                    <strong style="color:var(--gold-primary);">${itemTotal.toLocaleString('ar-IQ')} د.ع</strong>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    if (totalEl) totalEl.innerText = subtotal.toLocaleString('ar-IQ') + ' د.ع';
-}
-
-function changeQtyV2(index, change) {
-    if (posCartV2[index]) {
-        posCartV2[index].qty += change;
-        if (posCartV2[index].qty <= 0) posCartV2.splice(index, 1);
-    }
-    renderCartV2();
-}
-
-function openCloseShiftModalZ() {
-    document.getElementById('closeShiftModalZ').style.display = 'flex';
-}
-
-function closeModalV2(id) {
-    document.getElementById(id).style.display = 'none';
-}
-
-function executeZShiftClose() {
+// دالة حساب وتجميع الفئات النقدية بدون أي فواصل عشرية
+function calculateZDenominations() {
     let totalCashCounted = 0;
     
     document.querySelectorAll('.denom-in').forEach(input => {
@@ -182,6 +11,14 @@ function executeZShiftClose() {
     const smallCoins = cleanPrice(document.getElementById('denomSmallCoins')?.value || 0);
     totalCashCounted += smallCoins;
 
+    // إرجاع رقم صحيح مجرد بدون فواصل عشرية إطلاقاً
+    return Math.floor(totalCashCounted);
+}
+
+// دالة تنفيذ تقفيل الشيفت Z واستخراج التقرير والطباعة
+function executeZShiftClose() {
+    const totalCashCounted = calculateZDenominations();
+
     const completed = getData('sys_completed_orders') || [];
     const expenses = getData('sys_expenses') || [];
 
@@ -191,15 +28,39 @@ function executeZShiftClose() {
     let totalExp = 0;
     expenses.forEach(e => totalExp += cleanPrice(e.amount || 0));
 
-    const expectedCashInDrawer = currentOpeningFloat + totalSales - totalExp;
-    const diff = totalCashCounted - expectedCashInDrawer;
+    // الأرقام مقربة ومضمونة 100%
+    totalSales = Math.floor(totalSales);
+    totalExp = Math.floor(totalExp);
+    
+    const expectedCashInDrawer = Math.floor(currentOpeningFloat + totalSales - totalExp);
+    const diff = Math.floor(totalCashCounted - expectedCashInDrawer);
 
     let resultStatus = "✅ مطابق تماماً";
-    if (diff < 0) resultStatus = `🔴 عجز ونقص بمقدار (${Math.abs(diff).toLocaleString('ar-IQ')} د.ع)`;
+    if (diff < 0) resultStatus = `🔴 عجز بمقدار (${Math.abs(diff).toLocaleString('ar-IQ')} د.ع)`;
     if (diff > 0) resultStatus = `🟡 زيادة بمقدار (+${diff.toLocaleString('ar-IQ')} د.ع)`;
 
+    const zReportData = {
+        shiftId: "Z-" + Date.now(),
+        date: new Date().toLocaleDateString('ar-IQ'),
+        time: new Date().toLocaleTimeString('ar-IQ'),
+        cashier: activeCashierUser ? activeCashierUser.name : "الكاشير الرئيسي",
+        openingFloat: currentOpeningFloat,
+        totalSales: totalSales,
+        totalExpenses: totalExp,
+        expectedCash: expectedCashInDrawer,
+        actualCash: totalCashCounted,
+        diff: diff,
+        status: resultStatus
+    };
+
+    // طباعة تقرير Z حرارياً
+    printZReportThermal(zReportData);
+
+    // إرسال نسخة للواتساب
     let zReportMsg = `📄 *تقرير Z المالي لتقفيل الشيفت - MIM89* 📄\n`;
     zReportMsg += `----------------------------------\n`;
+    zReportMsg += `🕒 *الوقت:* ${zReportData.date} - ${zReportData.time}\n`;
+    zReportMsg += `👤 *الكاشير:* ${zReportData.cashier}\n`;
     zReportMsg += `💰 *المداور الافتتاحي:* ${currentOpeningFloat.toLocaleString('ar-IQ')} د.ع\n`;
     zReportMsg += `🛒 *إجمالي المبيعات:* ${totalSales.toLocaleString('ar-IQ')} د.ع\n`;
     zReportMsg += `💸 *إجمالي المصاريف:* ${totalExp.toLocaleString('ar-IQ')} د.ع\n`;
@@ -208,21 +69,37 @@ function executeZShiftClose() {
     zReportMsg += `----------------------------------\n`;
     zReportMsg += `📌 *نتيجة التصفية:* ${resultStatus}\n`;
 
-    alert(`تم استخراج تقرير Z بنجاح!\n\nنتيجة الصندوق: ${resultStatus}`);
-
     const myPhone = "9647750008630";
     window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(zReportMsg)}`, '_blank');
 
     closeModalV2('closeShiftModalZ');
-    location.reload();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('cashierPassInputV2');
-    if (input) {
-        input.focus();
-        input.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') loginCashierV2();
-        });
-    }
-});
+// دالة الطباعة الحرارية لتقرير Z
+function printZReportThermal(z) {
+    const printBox = createThermalPrintContainer();
+    printBox.innerHTML = `
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000; padding:5px;">
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:5px;">
+                <h2 style="font-size:18px; margin:0; font-weight:900;">*** تقرير Z لتقفيل الشيفت ***</h2>
+                <div style="font-size:11px; font-weight:bold;">MIM89 FAST FOOD</div>
+            </div>
+            <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
+                <div>التاريخ والوقت: ${z.date} - ${z.time}</div>
+                <div>الكاشير المسؤول: ${z.cashier}</div>
+                <div>رقم التقرير: ${z.shiftId}</div>
+            </div>
+            <div style="font-size:12px; font-weight:bold; border-bottom:1px solid #000; padding-bottom:5px; margin-bottom:5px;">
+                <div style="display:flex; justify-content:space-between;"><span>المداور الافتتاحي:</span> <span>${z.openingFloat.toLocaleString('ar-IQ')} د.ع</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <span>${z.totalSales.toLocaleString('ar-IQ')} د.ع</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المصاريف:</span> <span>- ${z.totalExpenses.toLocaleString('ar-IQ')} د.ع</span></div>
+                <div style="display:flex; justify-content:space-between; border-top:1px dashed #000; padding-top:3px; margin-top:3px;"><span>المتوقع بالصندوق:</span> <span>${z.expectedCash.toLocaleString('ar-IQ')} د.ع</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>المحسوب فعلياً:</span> <span>${z.actualCash.toLocaleString('ar-IQ')} د.ع</span></div>
+            </div>
+            <div style="text-align:center; font-size:14px; font-weight:900; margin-top:5px; border:1px solid #000; padding:4px;">
+                ${z.status}
+            </div>
+        </div>
+    `;
+    setTimeout(() => { window.print(); }, 150);
+}
