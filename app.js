@@ -1827,38 +1827,83 @@ function confirmCloseShiftAndLogout() {
 }
 
 /* ==========================================
-   10. الطباعة الحرارية للفواتير والمطبخ
+   🔥 طباعة أمر المطبخ المباشرة والمضمونة 100%
    ========================================== */
-/* ==========================================
-   تنفيذ الطباعة المباشرة للزبون والمطبخ
-   ========================================== */
-function executeCustomerPrintOnly() {
-    let order = window.activePendingPrintOrder;
-    if (!order || !order.items || order.items.length === 0) {
-        if (typeof posCart !== 'undefined' && posCart.length > 0) {
-            order = {
-                orderNum: typeof getOrderSequence === 'function' ? getOrderSequence() : '89',
-                customerName: document.getElementById('posCustName')?.value || 'زبون مباشر',
-                items: JSON.parse(JSON.stringify(posCart)),
-                subtotal: posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0),
-                discount: typeof posDiscountAmount !== 'undefined' ? posDiscountAmount : 0,
-                totalAmount: Math.max(0, posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0) - (typeof posDiscountAmount !== 'undefined' ? posDiscountAmount : 0)),
-                area: typeof selectedPosOrderType !== 'undefined' ? selectedPosOrderType : 'صالة',
-                paymentMethod: typeof selectedPosPaymentMethod !== 'undefined' ? selectedPosPaymentMethod : 'كاش',
-                dateDate: typeof getTodayString === 'function' ? getTodayString() : '',
-                timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
-            };
+function executeKitchenPrintOnly() {
+    try {
+        let order = window.activePendingPrintOrder;
+        
+        // جلب البيانات من السلة الحالية في حال عدم وجود طلب معلق
+        if (!order || !order.items || order.items.length === 0) {
+            if (typeof posCart !== 'undefined' && posCart.length > 0) {
+                order = {
+                    orderNum: typeof getOrderSequence === 'function' ? getOrderSequence() : '89',
+                    customerName: document.getElementById('posCustName')?.value || 'زبون مباشر',
+                    items: JSON.parse(JSON.stringify(posCart)),
+                    area: typeof selectedPosOrderType !== 'undefined' ? (selectedPosOrderType === 'takeaway' ? 'سفري' : (selectedPosOrderType === 'delivery' ? 'توصيل' : 'صالة')) : 'صالة',
+                    notes: document.getElementById('posOrderNotesInput')?.value || '',
+                    timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+                };
+            }
         }
-    }
 
-    if (!order || !order.items || order.items.length === 0) {
-        return alert("⚠️ السلة فارغة! اضف وجبات أولاً.");
-    }
+        if (!order || !order.items || order.items.length === 0) {
+            alert("⚠️ السلة فارغة! اضف وجبات أولاً لطباعة المطبخ.");
+            return;
+        }
 
-    printCustomerInvoiceOnly(null, order);
-    const badge = document.getElementById('custPrintBadge');
-    if (badge) { badge.innerText = ' (تمت الطباعة ✅)'; badge.style.color = '#10b981'; }
+        // بناء تجهيز ورقة المطبخ الحرارية
+        let itemsHtml = '';
+        order.items.forEach(i => {
+            let notesArr = [];
+            if (i.itemNotes && Array.isArray(i.itemNotes)) notesArr.push(...i.itemNotes);
+            if (i.customNotes) notesArr.push(i.customNotes);
+
+            let notesDisplay = notesArr.length > 0 ? `<br><span style="font-size:14px; font-weight:900; color:#000;">⚠️ [${notesArr.join(' ، ')}]</span>` : '';
+
+            itemsHtml += `
+                <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>- ${i.name || 'وجبة'}</span>
+                        <span>[x${i.qty || 1}]</span>
+                    </div>
+                    ${notesDisplay}
+                </div>`;
+        });
+
+        const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
+        printBox.innerHTML = `
+            <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
+                <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                    <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
+                    <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp || ''}</div>
+                </div>
+                <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
+                    <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
+                    <div style="font-size:38px; font-weight:900;">#${order.orderNum || order.orderId || '89'}</div>
+                </div>
+                <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
+                    <div>الخدمة: ${order.area || order.orderType || 'صالة'}</div>
+                    <div>الزبون: ${order.customerName || 'زبون'}</div>
+                    ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
+                </div>
+                <div style="padding:4px 0;">${itemsHtml}</div>
+            </div>`;
+
+        // إرسال أمر الطباعة المباشر
+        window.print();
+
+        // تحديث حالة الشارة في الشاشة
+        const badge = document.getElementById('kitchenPrintBadge');
+        if (badge) { 
+            badge.innerText = ' (تمت الطباعة ✅)'; 
+            badge.style.color = '#10b981'; 
+        }
+    } catch (err) {
+        alert("⚠️ تنبيه طباعة المطبخ: " + err.message);
+    }
 }
+
 
 function executeKitchenPrintOnly() {
     let order = window.activePendingPrintOrder;
