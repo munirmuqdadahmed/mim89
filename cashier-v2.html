@@ -1,278 +1,607 @@
-/* ==========================================================================
-   MIM89 FAST FOOD - POS Interface Bridge & Extension Module
-   دوال الربط والتكامل المباشر مع واجهة الكاشير (HTML Interface Bridge)
-   ========================================================================== */
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MIM89 POS">
+    <meta name="mobile-web-app-capable" content="yes">
 
-// ⏰ 1. متغيرات ودوال إدارة أوقات الدوام والإغلاق الطارئ
-let cashierWorkHoursObj = { open: 10, close: 3, isEmergencyClosed: false };
+    <title>MIM89 POS - شاشة الكاشير ونقطة البيع الشاملة</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-function openWorkingHoursModal() {
-    try {
-        const stored = localStorage.getItem('sys_work_hours');
-        if (stored) cashierWorkHoursObj = JSON.parse(stored);
-    } catch(e) {}
+    <style>
+        :root {
+            --gold-primary: #f59e0b;
+            --gold-bright: #fbbf24;
+            --bg-dark: #0f0f12;
+            --card-bg: #18181c;
+            --card-border: #2a2a32;
+            --text-main: #f3f4f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --blue-accent: #38bdf8;
+            --purple-accent: #a855f7;
+        }
 
-    const openInput = document.getElementById('cashierWorkOpenHour');
-    const closeInput = document.getElementById('cashierWorkCloseHour');
-    if (openInput) openInput.value = cashierWorkHoursObj.open ?? 10;
-    if (closeInput) closeInput.value = cashierWorkHoursObj.close ?? 3;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', 'Segoe UI', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    updateEmergencyToggleButtonUI();
-    updateWorkingHoursModalStatusInfo(cashierWorkHoursObj.open, cashierWorkHoursObj.close);
-    openModal('workingHoursModal');
-}
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            user-select: none;
+            height: 100vh;
+        }
 
-function updateEmergencyToggleButtonUI() {
-    const btn = document.getElementById('btnEmergencyStoreToggle');
-    if (!btn) return;
+        #authOverlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 14, 0.96);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
 
-    if (cashierWorkHoursObj.isEmergencyClosed) {
-        btn.style.background = 'var(--danger)';
-        btn.style.color = '#fff';
-        btn.innerHTML = '🔴 المينيو مغلق طارئاً الآن (اضغط للفتح المباشر 🟢)';
-    } else {
-        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-        btn.style.color = '#fff';
-        btn.innerHTML = '🟢 المينيو نشط ومفتوح للزبائن (اضغط للإغلاق الطارئ 🔴)';
-    }
-}
+        .login-card {
+            background: var(--card-bg);
+            border: 2px solid var(--gold-primary);
+            padding: 25px 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+        }
 
-function toggleEmergencyStoreStatus() {
-    cashierWorkHoursObj.isEmergencyClosed = !cashierWorkHoursObj.isEmergencyClosed;
-    updateEmergencyToggleButtonUI();
-    saveWorkingHoursFromCashier(true);
-}
+        .gold-input-inline {
+            width: 100%;
+            padding: 8px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary);
+        }
 
-function updateWorkingHoursModalStatusInfo(openH, closeH) {
-    const infoBox = document.getElementById('workingHoursStatusInfo');
-    if (!infoBox) return;
+        .gold-btn {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
+            color: #000;
+            border: none;
+            padding: 9px 14px;
+            font-weight: 800;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.88rem;
+            transition: 0.2s;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+        .gold-btn:active { transform: scale(0.97); }
 
-    if (cashierWorkHoursObj.isEmergencyClosed) {
-        infoBox.style.background = 'rgba(239, 68, 68, 0.2)';
-        infoBox.style.color = 'var(--danger)';
-        infoBox.style.border = '1px solid var(--danger)';
-        infoBox.innerHTML = '🔴 المينيو مغلق طارئاً وحالة الحظر مفعّلة الآن!';
-        return;
-    }
+        #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
 
-    const currentHour = new Date().getHours();
-    let isOpen = (openH > closeH) 
-        ? (currentHour >= openH || currentHour < closeH) 
-        : (currentHour >= openH && currentHour < closeH);
+        .pos-header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            padding: 6px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
 
-    if (isOpen) {
-        infoBox.style.background = 'rgba(16, 185, 129, 0.2)';
-        infoBox.style.color = 'var(--success)';
-        infoBox.style.border = '1px solid var(--success)';
-        infoBox.innerHTML = '🟢 المينيو مفتوح الآن ويستقبل الطلبات';
-    } else {
-        infoBox.style.background = 'rgba(239, 68, 68, 0.2)';
-        infoBox.style.color = 'var(--danger)';
-        infoBox.style.border = '1px solid var(--danger)';
-        infoBox.innerHTML = `🔴 المينيو مغلق حالياً (من ${openH}:00 ص إلى 0${closeH}:00 فجراً)`;
-    }
-}
+        .brand-dropdown-container { position: relative; }
 
-function saveWorkingHoursFromCashier(silent = false) {
-    const openVal = Number(document.getElementById('cashierWorkOpenHour')?.value) || 10;
-    const closeVal = Number(document.getElementById('cashierWorkCloseHour')?.value) || 3;
+        .brand-btn {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    cashierWorkHoursObj.open = openVal;
-    cashierWorkHoursObj.close = closeVal;
+        .brand-dropdown {
+            display: none;
+            position: absolute;
+            top: 115%;
+            right: 0;
+            background: #1a1a20;
+            border: 1px solid var(--gold-primary);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+            width: 270px;
+            z-index: 200;
+            overflow: hidden;
+        }
 
-    localStorage.setItem('sys_work_hours', JSON.stringify(cashierWorkHoursObj));
+        .brand-dropdown button {
+            width: 100%;
+            padding: 10px 14px;
+            background: none;
+            border: none;
+            color: #fff;
+            text-align: right;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.15s;
+        }
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection('settings').doc('work_hours').set(cashierWorkHoursObj)
-            .then(() => {
-                if (!silent) alert("✅ تم حفظ وتحديث حالة المينيو وأوقات الدوام بنجاح!");
-                updateWorkingHoursModalStatusInfo(openVal, closeVal);
-                if (!silent) closeModal('workingHoursModal');
-            })
-            .catch(err => {
-                if (!silent) alert("✅ تم الحفظ محلياً بنجاح!");
-                updateWorkingHoursModalStatusInfo(openVal, closeVal);
-                if (!silent) closeModal('workingHoursModal');
-            });
-    } else {
-        if (!silent) alert("✅ تم الحفظ بنجاح!");
-        updateWorkingHoursModalStatusInfo(openVal, closeVal);
-        if (!silent) closeModal('workingHoursModal');
-    }
-}
+        .brand-dropdown button:hover {
+            background: rgba(245, 158, 11, 0.25);
+            color: var(--gold-bright);
+        }
 
-// 🚫 2. إدارة نافذة النفاد والوجبات المنتهية (Sold Out)
-function openSoldOutManagerModal() {
-    const container = document.getElementById('soldOutItemsListTable');
-    if (!container) return;
+        .pos-container {
+            display: grid;
+            grid-template-columns: 370px 1fr;
+            height: calc(100vh - 46px);
+            overflow: hidden;
+        }
 
-    const items = getData('sys_items');
-    let soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+        @media (max-width: 950px) {
+            .pos-container {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: auto;
+            }
+        }
 
-    let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
-    items.forEach(item => {
-        const isSold = soldOutItems.includes(Number(item.id));
-        html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:8px 12px; border-radius:8px; border:1px solid #2a2a35;">
-                <div>
-                    <strong style="color:#fff;">${item.name}</strong>
-                    <div style="font-size:0.75rem; color:var(--gold-bright);">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</div>
-                </div>
-                <button onclick="toggleItemSoldOutStatus(${item.id})" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.75rem; background:${isSold ? 'var(--danger)' : '#222'}; color:${isSold ? '#fff' : 'var(--success)'}; border:1px solid ${isSold ? 'var(--danger)' : 'var(--success)'};">
-                    ${isSold ? '🚫 نفدت الكمية (اضغط للإتاحة)' : '🟢 متوفر (اضغط لإعلان النفاد)'}
-                </button>
-            </div>
-        `;
-    });
-    html += '</div>';
+        .pos-sidebar {
+            background: #141418;
+            border-left: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+            height: 100%;
+            overflow: hidden !important;
+        }
 
-    container.innerHTML = html;
-    openModal('soldOutManagerModal');
-}
+        .pos-cart-box {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 6px 8px;
+            border: 1px solid var(--card-border);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden !important;
+            position: relative;
+        }
 
-function toggleItemSoldOutStatus(itemId) {
-    let soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
-    itemId = Number(itemId);
+        .cart-scrollable-area {
+            flex: 1;
+            overflow-y: auto !important;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+        }
 
-    if (soldOutItems.includes(itemId)) {
-        soldOutItems = soldOutItems.filter(id => id !== itemId);
-    } else {
-        soldOutItems.push(itemId);
-    }
+        .cart-items-list {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            min-height: 70px;
+            max-height: 180px;
+            margin: 2px 0;
+            border-top: 1px dashed #333;
+            border-bottom: 1px dashed #333;
+            padding: 3px 0;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+        }
 
-    localStorage.setItem('sys_sold_out', JSON.stringify(soldOutItems));
+        .pos-main-content {
+            padding: 10px;
+            height: 100% !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            padding-bottom: 80px !important;
+        }
 
-    if (typeof db !== 'undefined' && db) {
-        db.collection('settings').doc('sold_out').set({ items: soldOutItems }).catch(console.warn);
-    }
+        .categories-bar {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none;
+        }
+        .categories-bar::-webkit-scrollbar { display: none; }
 
-    openSoldOutManagerModal();
-    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
-}
+        .category-tab {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: #ccc;
+            padding: 7px 14px;
+            border-radius: 18px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: 0.2s;
+        }
 
-// 🏷️ 3. إدارة الكوبونات وأكواد الخصم
-function openCouponsManagerModal() {
-    renderCouponsList();
-    openModal('couponsManagerModal');
-}
+        .category-tab.active {
+            background: var(--gold-primary);
+            color: #000;
+            font-weight: 900;
+            border-color: var(--gold-primary);
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+        }
 
-function renderCouponsList() {
-    const container = document.getElementById('couponsListTable');
-    if (!container) return;
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            touch-action: pan-y !important;
+            height: auto !important;
+            max-height: none !important;
+        }
 
-    let coupons = [
-        { code: 'MIM10', type: 'percent', value: 10, title: 'خصم 10%' },
-        { code: 'FREE', type: 'free_delivery', value: 0, title: 'توصيل مجاني 🎉' },
-        { code: 'MIM89', type: 'amount', value: 2000, title: 'خصم 2,000 د.ع' }
-    ];
+        .pos-product-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
 
-    try {
-        const stored = localStorage.getItem('sys_coupons');
-        if (stored) coupons = JSON.parse(stored);
-    } catch(e) {}
+        .pos-product-card img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
 
-    let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
-    coupons.forEach((c, index) => {
-        let typeTxt = c.type === 'percent' ? `${c.value}% خصم` : (c.type === 'amount' ? `${cleanPrice(c.value).toLocaleString('ar-IQ')} د.ع خصم` : 'توصيل مجاني');
-        html += `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:8px 12px; border-radius:8px; border:1px solid #2a2a35;">
-                <div>
-                    <strong style="color:var(--gold-bright); font-size:0.9rem;">${c.code}</strong>
-                    <div style="font-size:0.75rem; color:#aaa;">${typeTxt}</div>
-                </div>
-                <button onclick="deleteCouponCodeRecord(${index})" class="gold-btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:var(--danger); color:#fff;">حذف ✕</button>
-            </div>
-        `;
-    });
-    html += '</div>';
+        .pos-product-card.sold-out {
+            opacity: 0.55;
+            filter: grayscale(0.6);
+        }
 
-    container.innerHTML = html;
-}
+        #pendingOrdersAlertBanner {
+            display: none;
+            background: var(--danger);
+            color: #fff;
+            padding: 8px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            animation: pulse 1s infinite alternate;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
 
-function addNewCouponCodeRecord() {
-    const code = document.getElementById('newCouponCodeInput')?.value.trim().toUpperCase();
-    const type = document.getElementById('newCouponTypeSelect')?.value;
-    const val = cleanPrice(document.getElementById('newCouponValueInput')?.value) || 0;
+        @keyframes pulse {
+            from { background-color: #dc2626; }
+            to { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
+        }
 
-    if (!code) return alert("⚠️ يرجى كتابة رمز الكوبون!");
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 12px;
+        }
 
-    let coupons = JSON.parse(localStorage.getItem('sys_coupons') || '[]');
-    coupons.push({ code, type, value: val, title: `${code}` });
-    localStorage.setItem('sys_coupons', JSON.stringify(coupons));
+        .modal-body {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 16px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch !important;
+        }
 
-    if (document.getElementById('newCouponCodeInput')) document.getElementById('newCouponCodeInput').value = '';
-    if (document.getElementById('newCouponValueInput')) document.getElementById('newCouponValueInput').value = '';
+        .toggle-group {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
 
-    renderCouponsList();
-    alert("✅ تم إضافة كود الخصم بنجاح!");
-}
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 6px;
+            background: #121214;
+            border: 1px solid var(--card-border);
+            color: #aaa;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            transition: 0.2s;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-function deleteCouponCodeRecord(index) {
-    let coupons = JSON.parse(localStorage.getItem('sys_coupons') || '[]');
-    if (coupons[index]) {
-        coupons.splice(index, 1);
-        localStorage.setItem('sys_coupons', JSON.stringify(coupons));
-        renderCouponsList();
-    }
-}
+        .toggle-btn.active {
+            background: var(--gold-primary);
+            color: #000;
+            font-weight: 900;
+        }
 
-// 🍔 4. الفلترة المباشرة عبر الأقسام في POS
-function filterPosProductsByCategory(categoryName, btnElement) {
-    if (btnElement) {
-        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
-        btnElement.classList.add('active');
-    }
+        .section-label {
+            font-size: 0.72rem;
+            color: #999;
+            margin-top: 2px;
+            margin-bottom: 1px;
+            display: block;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
 
-    const items = getData('sys_items');
-    const categories = getData('sys_categories');
-    const grid = document.getElementById('posProductsGrid');
-    if (!grid) return;
+        .offline-status-badge {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
 
-    if (categoryName === 'all') {
-        loadPosDirectMenu('all');
-        return;
-    }
+        #mim89ThermalPrintBox { display: none; }
 
-    const targetCat = categories.find(c => c.name.includes(categoryName));
-    const filtered = targetCat 
-        ? items.filter(i => cleanPrice(i.categoryId) === cleanPrice(targetCat.id))
-        : items.filter(i => i.name.includes(categoryName));
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 0mm !important;
+            }
 
-    if (filtered.length === 0) {
-        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
-        return;
-    }
+            body > *:not(#mim89ThermalPrintBox) {
+                display: none !important;
+            }
 
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 78mm !important;
+                overflow: visible !important;
+            }
+
+            #mim89ThermalPrintBox {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 76mm !important;
+                margin: 0 !important;
+                padding: 1mm 2mm !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-family: 'Tajawal', Arial, sans-serif !important;
+                visibility: visible !important;
+                box-sizing: border-box !important;
+                text-align: right !important;
+                direction: rtl !important;
+            }
+
+            #mim89ThermalPrintBox * {
+                color: #000000 !important;
+                background: transparent !important;
+                visibility: visible !important;
+                box-sizing: border-box !important;
+            }
+        }
+    </style>
+</head>
+<body class="cashier-body">
+
+    <!-- 🔒 1. شاشة تسجيل الدخول -->
+    <div id="authOverlay">
+        <div class="login-card">
+            <h2 style="color:var(--gold-primary); margin-bottom:6px; font-weight:900;"><i class="fa-solid fa-cash-register"></i> MIM89 POS</h2>
+            <p style="color:#aaa; font-size:0.8rem; margin-bottom:12px;">نظام إدارة الوجبات المباشرة ونقطة البيع</p>
+            <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:6px;" onkeypress="if(event.key==='Enter') loginCashier()">
+            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:3px; font-weight:bold;"></p>
+            <button onclick="loginCashier()" class="gold-btn" style="margin-top:6px; padding:10px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
         </div>
-    `).join('');
-}
+    </div>
 
-// 🌐 5. التحكم بفتح الدرج وشارة الأوفلاين والقائمة المنسدلة
-function openCashDrawer() { window.print(); }
+    <!-- 🖥️ 2. التطبيق الرئيسي للكاشير -->
+    <div id="cashierMainApp">
+        <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])">
+            <i class="fa-solid fa-bell fa-bounce"></i> يوجد طلبات أو مكالمات واردة جديدة! (اضغط هنا للمعاينة)
+        </div>
 
-function toggleBrandMenu() {
-    const menu = document.getElementById('brandDropdownMenu');
-    if (menu) menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-}
+        <header class="pos-header">
+            <div class="brand-dropdown-container">
+                <button class="brand-btn" onclick="toggleBrandMenu()">
+                    <i class="fa-solid fa-cash-register"></i> MIM89 POS
+                    <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
+                </button>
+                <div id="brandDropdownMenu" class="brand-dropdown">
+                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
+                    <button onclick="openSoldOutManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
+                    <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
+                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
+                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
+                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
+                    <button onclick="openShiftReportModal(); toggleBrandMenu();"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</button>
+                    <hr style="border-color:#333; margin:3px 0;">
+                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square"></i> تعديل ملاحظات المطبخ السريعة</button>
+                    <button onclick="unlockIpadAudio(); toggleBrandMenu();"><i class="fa-solid fa-bell"></i> تفعيل التنبيه الصوتي</button>
+                    <button onclick="globalSystemSync(this); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
+                    <hr style="border-color:#333; margin:3px 0;">
+                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
+                </div>
+            </div>
 
-window.addEventListener('click', (e) => {
-    if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
-        const menu = document.getElementById('brandDropdownMenu');
-        if (menu && menu.style.display === 'block') menu.style.display = 'none';
-    }
-});
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div id="offlineStatusBadge" class="offline-status-badge">
+                    <i class="fa-solid fa-wifi"></i> أوفلاين (حفظ محلي)
+                </div>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;"></span>
+                <button onclick="openCashDrawer()" class="gold-btn" style="padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444; width:auto;"><i class="fa-solid fa-box-open"></i> الدرج</button>
+            </div>
+        </header>
 
-function initOfflineNetworkMonitor() {
-    const badge = document.getElementById('offlineStatusBadge');
-    const updateOnlineStatus = () => {
-        if (badge) badge.style.display = navigator.onLine ? 'none' : 'inline-flex';
-    };
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    updateOnlineStatus();
-}
+        <div class="pos-container">
+            <!-- 🛒 الشريط الجانبي -->
+            <aside class="pos-sidebar">
+                <div class="toggle-group" style="margin-bottom:4px;">
+                    <button class="toggle-btn active" onclick="switchCashierTab('tabPosDirect', this)"><i class="fa-solid fa-utensils"></i> بيع مباشر</button>
+                    <button class="toggle-btn" onclick="switchCashierTab('tabOnlineOrders', this)"><i class="fa-solid fa-phone-volume"></i> الطلبات الواردة <span id="liveOrdersBadge" style="background:var(--danger); color:#fff; border-radius:50%; padding:2px 5px; font-size:0.65rem; display:none;">0</span></button>
+                </div>
+
+                <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
+                    <div class="pos-cart-box">
+                        <div class="cart-scrollable-area">
+                            <span class="section-label">نوع الخدمة:</span>
+                            <div class="toggle-group" id="posOrderTypeGroup">
+                                <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
+                                <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
+                                <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                            </div>
+
+                            <div id="driverSelectBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
+                                <span class="section-label" style="color:var(--gold-bright); font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
+                                <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
+                            </div>
+
+                            <span class="section-label">طريقة الدفع:</span>
+                            <div class="toggle-group" id="posPaymentGroup">
+                                <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
+                                <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
+                            </div>
+
+                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن -->
+                            <div style="position:relative; margin: 2px 0; flex-shrink:0;">
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
+                                        style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
+                                    ✕
+                                </button>
+                                <div id="phoneSearchResults" style="display:none; position:absolute; top:100%; right:0; left:0; background:#181820; border:1px solid var(--gold-primary); border-radius:6px; z-index:90; max-height:150px; overflow-y:auto; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
+                            </div>
+
+                            <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                    <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
+                                        <i class="fa-solid fa-percent"></i> إدارة الخصومات والكوبونات:
+                                    </span>
+                                    <span id="discountStatusBadge" style="font-size:0.7rem; color:#aaa; font-weight:bold; display:none;"></span>
+                                </div>
+
+                                <div style="display:flex; gap:3px; align-items:center;">
+                                    <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🎉 مجاني</button>
+                                    <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ % خصم</button>
+                                    <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">💵 خصم مبلغ</button>
+                                    <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:var(--purple-accent); color:#fff; flex:1; min-height:26px;">🎟️ كوبون</button>
+                                    <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 6px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; display:none; min-height:26px;">✕</button>
+                                </div>
+                            </div>
+
+                            <div id="posCartList" class="cart-items-list">
+                                <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
+                            </div>
+                        </div>
+
+                        <div style="padding-top:4px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
+                                <span>المجموع الكلي:</span>
+                                <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
+                            </div>
+                            
+                            <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4); min-height: 38px;">
+                                <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
+                            </button>
+
+                            <div style="display:flex; gap:3px; margin-bottom:1px;">
+                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; background: var(--danger); color: #fff; width: 100%; min-height: 30px;">
+                                    إلغاء السلة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🛵 تبويب الطلبات المباشرة الواردة من المينيو -->
+                <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
+                    <div id="liveOrdersContainer">
+                        <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 📦 الأصناف والمنتجات والبحث -->
+            <main class="pos-main-content">
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
+                </div>
+
+                <!-- 🍔 شريط التناقل السريع بين الأقسام -->
+                <div id="posCategoriesBar" class="categories-bar">
+                    <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
+                </div>
+
+                <div id="posProductsGrid" class="products-grid"></div>
+            </main>
+        </div>
+    </div>
