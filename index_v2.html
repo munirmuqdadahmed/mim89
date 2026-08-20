@@ -280,32 +280,41 @@
             margin-bottom: 8px;
         }
 
-        /* 🏷️ شريط الأقسام السريع */
+        /* 🏷️ شريط الأقسام المطور بالتمرير السلس باللمس */
         .categories-sticky-bar {
             position: sticky;
             top: 0;
-            background: rgba(7, 7, 9, 0.95);
+            background: rgba(7, 7, 9, 0.96);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: 100;
-            padding: 12px;
+            padding: 10px 12px;
             display: flex;
-            gap: 10px;
-            overflow-x: auto;
+            gap: 8px;
+            overflow-x: auto !important;
+            white-space: nowrap;
             border-bottom: 1px solid var(--card-border);
             scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-x !important;
+            scroll-behavior: smooth;
         }
+
         .categories-sticky-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
+            flex: 0 0 auto !important;
             background: #141419;
             border: 1px solid var(--card-border);
             color: #ccc;
-            padding: 9px 20px;
+            padding: 8px 18px;
             border-radius: 25px;
-            white-space: nowrap;
-            font-size: 0.88rem;
+            font-size: 0.85rem;
             font-weight: 800;
             cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
         }
 
         .category-tab.active {
@@ -621,7 +630,7 @@
         </div>
     </aside>
 
-    <!-- شريط الأقسام السريع -->
+    <!-- شريط الأقسام السريع المطور -->
     <div id="categoriesNav" class="categories-sticky-bar"></div>
 
     <!-- شبكة الوجبات الرئيسية -->
@@ -833,6 +842,17 @@
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
         let currentDetailItem = null;
+
+        // 📋 قائمة الأقسام المفصلة المطلوبة حصراً
+        const DEFAULT_SPECIFIC_CATEGORIES = [
+            { id: 1, name: 'بركر لحم 🥩' },
+            { id: 2, name: 'بركر دجاج 🍗' },
+            { id: 3, name: 'الكنتاكي والكرسبي 🍗' },
+            { id: 4, name: 'الريزو 🍚' },
+            { id: 5, name: 'الفنكر والبطاطا 🍟' },
+            { id: 6, name: 'الصوصات 🥣' },
+            { id: 7, name: 'الببسي والمشروبات 🥤' }
+        ];
 
         function cleanPrice(v) {
             if (v === null || v === undefined) return 0;
@@ -1217,8 +1237,8 @@
                 bar.style.width = '33%';
                 if (msg) msg.innerHTML = '🍳 <strong>طلبكم قيد التحضير والتجهيز بالمطبخ الآن!</strong>';
             } else if (statusText === 'خرج للتوصيل' || statusText === 'مع السائق') {
-                s2.className = 'step-item completed';
                 s3.className = 'step-item active';
+                s2.className = 'step-item completed';
                 bar.style.width = '66%';
                 if (msg) msg.innerHTML = '🛵 <strong>خرج الطلب مع سائق التوصيل وهو في الطريق إليكم!</strong>';
             } else if (statusText === 'تم التسليم' || statusText === 'مكتمل') {
@@ -1344,6 +1364,7 @@
             }
         };
 
+        // 🍔 عرض المينيو الذكي مع السحب والتصفية
         window.loadPublicMenu = function() {
             const container = document.getElementById('menuSections');
             const navContainer = document.getElementById('categoriesNav');
@@ -1362,32 +1383,49 @@
                 } catch(e) {}
             }
 
+            if (!cats || cats.length === 0) {
+                cats = DEFAULT_SPECIFIC_CATEGORIES;
+            }
+
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
             if (navContainer && cats && cats.length > 0) {
-                let navHtml = `<button type="button" class="category-tab active" onclick="scrollToCategory('all')">الكل 🍔</button>`;
+                let navHtml = `<button type="button" class="category-tab active" onclick="selectCategoryTab('all', this)">الكل 🍔</button>`;
                 cats.forEach(c => {
-                    navHtml += `<button type="button" class="category-tab" onclick="scrollToCategory('cat_${c.id}')">${c.name}</button>`;
+                    navHtml += `<button type="button" class="category-tab" onclick="selectCategoryTab('cat_${c.id}', this)">${c.name}</button>`;
                 });
                 navContainer.innerHTML = navHtml;
             }
 
             let html = '';
             cats.forEach(c => {
-                const catItems = items.filter(i => (cleanPrice(i.categoryId) || cleanPrice(i.catId)) === cleanPrice(c.id));
+                const catItems = items.filter(i => {
+                    const itemCatId = cleanPrice(i.categoryId || i.catId || i.category);
+                    const catId = cleanPrice(c.id);
+                    if (itemCatId && catId && itemCatId === catId) return true;
+                    
+                    if (i.category && String(i.category).trim() === String(c.name).trim()) return true;
+                    return false;
+                });
+
                 if (catItems.length > 0) {
-                    html += `<div id="cat_${c.id}"><h2 class="category-header" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;">${c.name}</h2>`;
+                    html += `<div id="cat_${c.id}" class="menu-category-block" style="scroll-margin-top: 70px;">
+                                <h2 class="category-header" style="color:var(--gold-bright); margin:20px 14px 10px 14px; font-weight:900; font-size:1.15rem; display:flex; align-items:center; gap:8px;">
+                                    <span>${c.name}</span>
+                                    <span style="font-size:0.75rem; color:#888; font-weight:bold;">(${catItems.length})</span>
+                                </h2>`;
                     html += `<div class="items-grid">`;
+                    
                     catItems.forEach(item => {
                         const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
                         html += `
                             <div class="item-card ${isSoldOut ? 'sold-out' : ''}">
                                 ${isSoldOut ? '<span class="sold-out-badge">نفدت الكمية 🚫</span>' : ''}
-                                <img src="${item.image || item.img || 'https://via.placeholder.com/180x135'}" class="item-img" onclick="openItemCustomizationModal(${item.id})">
+                                <img src="${item.image || item.img || 'https://via.placeholder.com/180x135?text=MIM89'}" class="item-img" onclick="openItemCustomizationModal(${item.id})">
                                 <div class="item-details">
                                     <div>
                                         <div class="item-name">${item.name}</div>
-                                        <div class="item-desc">${item.ingredients || item.desc || ''}</div>
+                                        <div class="item-desc">${item.ingredients || item.desc || 'تحضر طازجة فوراً'}</div>
                                     </div>
                                     <div class="item-footer">
                                         <div class="item-price">${cleanPrice(item.price).toLocaleString('en-US')} د.ع</div>
@@ -1403,17 +1441,31 @@
                 }
             });
 
-            container.innerHTML = html;
+            if (html === '') {
+                container.innerHTML = `<div style="text-align:center; color:#aaa; padding:40px 10px;">لا توجد وجبات معروضة حالياً</div>`;
+            } else {
+                container.innerHTML = html;
+            }
         };
 
-        function scrollToCategory(id) {
-            if (id === 'all') {
+        window.selectCategoryTab = function(targetId, btnEl) {
+            document.querySelectorAll('.categories-sticky-bar .category-tab').forEach(b => b.classList.remove('active'));
+            if (btnEl) {
+                btnEl.classList.add('active');
+                btnEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+
+            if (targetId === 'all') {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                const el = document.getElementById(id);
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                const el = document.getElementById(targetId);
+                if (el) {
+                    const yOffset = -65; 
+                    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }
             }
-        }
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('public-menu-body');
