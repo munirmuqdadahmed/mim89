@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-title" content="MIM89 POS">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <title>MIM89 POS - شاشة الكاشير ونقطة البيع الشاملة</title>
+    <title>MIM89 POS - شاشة الكاشير المحدثة</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,7 +35,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Tajawal', 'Segoe UI', sans-serif;
+            font-family: 'Tajawal', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -51,7 +51,7 @@
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(10, 10, 14, 0.96);
-            z-index: 9999;
+            z-index: 99999;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -80,9 +80,7 @@
             box-sizing: border-box;
             outline: none;
         }
-        .gold-input-inline:focus {
-            border-color: var(--gold-primary);
-        }
+        .gold-input-inline:focus { border-color: var(--gold-primary); }
 
         .gold-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
@@ -111,20 +109,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: relative;
+            z-index: 10000;
             flex-shrink: 0;
         }
 
-        .brand-dropdown-container { position: relative; }
+        .brand-dropdown-container { position: relative; z-index: 10001; }
 
         .brand-btn {
             background: rgba(245, 158, 11, 0.15);
             border: 1px solid var(--gold-primary);
             color: var(--gold-primary);
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-weight: 800;
             font-size: 1rem;
             cursor: pointer;
@@ -136,31 +133,31 @@
         .brand-dropdown {
             display: none;
             position: absolute;
-            top: 115%;
+            top: 110%;
             right: 0;
             background: #1a1a20;
             border: 1px solid var(--gold-primary);
             border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.85);
-            width: 270px;
-            z-index: 2000;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.95);
+            width: 280px;
+            z-index: 99999 !important;
             overflow: hidden;
         }
 
         .brand-dropdown button {
             width: 100%;
-            padding: 10px 14px;
+            padding: 12px 14px;
             background: none;
             border: none;
             color: #fff;
             text-align: right;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: 0.15s;
+            border-bottom: 1px solid #222;
         }
 
         .brand-dropdown button:hover {
@@ -170,17 +167,13 @@
 
         .pos-container {
             display: grid;
-            grid-template-columns: 370px 1fr;
-            height: calc(100vh - 46px);
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 50px);
             overflow: hidden;
         }
 
         @media (max-width: 950px) {
-            .pos-container {
-                grid-template-columns: 1fr;
-                height: auto;
-                overflow: auto;
-            }
+            .pos-container { grid-template-columns: 1fr; height: auto; overflow: auto; }
         }
 
         .pos-sidebar {
@@ -203,7 +196,6 @@
             flex-direction: column;
             height: 100%;
             overflow: hidden !important;
-            position: relative;
         }
 
         .cart-scrollable-area {
@@ -211,23 +203,20 @@
             overflow-y: auto !important;
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            padding-bottom: 4px;
+            gap: 4px;
             -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
         }
 
         .cart-items-list {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
-            min-height: 70px;
+            min-height: 80px;
             max-height: 220px;
-            margin: 2px 0;
+            margin: 4px 0;
             border-top: 1px dashed #333;
             border-bottom: 1px dashed #333;
-            padding: 3px 0;
+            padding: 4px 0;
             -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
         }
 
         .pos-main-content {
@@ -235,18 +224,18 @@
             height: 100% !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
             padding-bottom: 80px !important;
         }
 
         .categories-bar {
             display: flex;
             gap: 6px;
-            overflow-x: auto;
-            padding-bottom: 6px;
+            overflow-x: auto !important;
+            padding-bottom: 8px;
             margin-bottom: 10px;
             -webkit-overflow-scrolling: touch !important;
             scrollbar-width: none;
+            touch-action: pan-x !important;
         }
         .categories-bar::-webkit-scrollbar { display: none; }
 
@@ -254,12 +243,13 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             color: #ccc;
-            padding: 7px 14px;
-            border-radius: 18px;
+            padding: 8px 16px;
+            border-radius: 20px;
             cursor: pointer;
             white-space: nowrap;
             font-size: 0.85rem;
-            font-weight: 700;
+            font-weight: 800;
+            flex: 0 0 auto !important;
             transition: 0.2s;
         }
 
@@ -268,16 +258,13 @@
             color: #000;
             font-weight: 900;
             border-color: var(--gold-primary);
-            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
         }
 
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 10px;
-            touch-action: pan-y !important;
-            height: auto !important;
-            max-height: none !important;
         }
 
         .pos-product-card {
@@ -287,7 +274,6 @@
             padding: 6px;
             text-align: center;
             cursor: pointer;
-            transition: 0.2s;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -302,37 +288,16 @@
             margin-bottom: 4px;
         }
 
-        .pos-product-card.sold-out {
-            opacity: 0.55;
-            filter: grayscale(0.6);
-        }
-
-        #pendingOrdersAlertBanner {
-            display: none;
-            background: var(--danger);
-            color: #fff;
-            padding: 8px;
-            text-align: center;
-            font-weight: 800;
-            font-size: 0.85rem;
-            animation: pulse 1s infinite alternate;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
-
-        @keyframes pulse {
-            from { background-color: #dc2626; }
-            to { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
-        }
+        .pos-product-card.sold-out { opacity: 0.55; filter: grayscale(0.6); }
 
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.88);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 3000;
+            z-index: 50000;
             padding: 12px;
         }
 
@@ -340,24 +305,18 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             padding: 16px;
-            border-radius: 10px;
+            border-radius: 12px;
             width: 100%;
             max-width: 450px;
             max-height: 90vh;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch !important;
         }
 
-        .toggle-group {
-            display: flex;
-            gap: 3px;
-            margin-bottom: 2px;
-            flex-shrink: 0;
-        }
+        .toggle-group { display: flex; gap: 3px; flex-shrink: 0; }
 
         .toggle-btn {
             flex: 1;
-            padding: 5px 6px;
+            padding: 6px;
             background: #121214;
             border: 1px solid var(--card-border);
             color: #aaa;
@@ -366,74 +325,30 @@
             font-size: 0.78rem;
             font-weight: 700;
             text-align: center;
-            transition: 0.2s;
-            min-height: 30px;
+            min-height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .toggle-btn.active {
-            background: var(--gold-primary);
-            color: #000;
-            font-weight: 900;
-        }
-
-        .section-label {
-            font-size: 0.72rem;
-            color: #999;
-            margin-top: 2px;
-            margin-bottom: 1px;
-            display: block;
-            flex-shrink: 0;
-            font-weight: 700;
-        }
-
+        .toggle-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; }
+        .section-label { font-size: 0.72rem; color: #999; margin-top: 3px; margin-bottom: 1px; font-weight: 700; }
         .btn-danger { background: var(--danger); color: #fff; }
 
         #mim89ThermalPrintBox { display: none; }
 
         @media print {
-            @page {
-                size: 80mm auto;
-                margin: 0mm !important;
-            }
-
-            body > *:not(#mim89ThermalPrintBox) {
-                display: none !important;
-            }
-
-            html, body {
-                background: #ffffff !important;
-                color: #000000 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 78mm !important;
-                overflow: visible !important;
-            }
-
+            @page { size: 80mm auto; margin: 0mm !important; }
+            body > *:not(#mim89ThermalPrintBox) { display: none !important; }
             #mim89ThermalPrintBox {
                 display: block !important;
                 position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
+                left: 0 !important; top: 0 !important;
                 width: 76mm !important;
-                margin: 0 !important;
-                padding: 1mm 2mm !important;
-                background: #ffffff !important;
-                color: #000000 !important;
-                font-family: 'Tajawal', Arial, sans-serif !important;
-                visibility: visible !important;
-                box-sizing: border-box !important;
-                text-align: right !important;
+                background: #fff !important;
+                color: #000 !important;
+                font-family: 'Tajawal', sans-serif !important;
                 direction: rtl !important;
-            }
-
-            #mim89ThermalPrintBox * {
-                color: #000000 !important;
-                background: transparent !important;
-                visibility: visible !important;
-                box-sizing: border-box !important;
             }
         }
     </style>
@@ -444,7 +359,7 @@
     <div id="authOverlay">
         <div class="login-card">
             <h2 style="color:var(--gold-primary); margin-bottom:6px; font-weight:900;"><i class="fa-solid fa-cash-register"></i> MIM89 POS</h2>
-            <p style="color:#aaa; font-size:0.8rem; margin-bottom:12px;">نظام إدارة الوجبات المباشرة ونقطة البيع</p>
+            <p style="color:#aaa; font-size:0.8rem; margin-bottom:12px;">نظام إدارة الوجبات ونقطة البيع</p>
             <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:6px;" onkeypress="if(event.key==='Enter') loginCashier()">
             <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:3px; font-weight:bold;"></p>
             <button onclick="loginCashier()" class="gold-btn" style="margin-top:6px; padding:10px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
@@ -453,10 +368,6 @@
 
     <!-- 🖥️ 2. التطبيق الرئيسي للكاشير -->
     <div id="cashierMainApp">
-        <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])">
-            <i class="fa-solid fa-bell fa-bounce"></i> يوجد طلبات أو مكالمات واردة جديدة! (اضغط هنا للمعاينة)
-        </div>
-
         <header class="pos-header">
             <div class="brand-dropdown-container">
                 <button class="brand-btn" onclick="toggleBrandMenu(event)">
@@ -464,11 +375,11 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openDriverAccountModal(); toggleBrandMenu(event);" style="color:var(--blue-accent); font-weight:bold;"><i class="fa-solid fa-motorcycle"></i> كشف وحساب الدليفرية 🛵</button>
-                    <button onclick="openCashDrawer(); toggleBrandMenu(event);" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openDriverAccountModal(); toggleBrandMenu(event);" style="color:var(--blue-accent);"><i class="fa-solid fa-motorcycle"></i> كشف وحساب الدليفرية 🛵</button>
+                    <button onclick="forceResetCategories(); toggleBrandMenu(event);" style="color:var(--gold-bright);"><i class="fa-solid fa-arrows-rotate"></i> إعادة فرز وترتيب الأقسام 🔄</button>
+                    <button onclick="openCashDrawer(); toggleBrandMenu(event);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
                     <button onclick="openSoldOutManagerModal(); toggleBrandMenu(event);" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
                     <button onclick="globalSystemSync(this); toggleBrandMenu(event);"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
-                    <hr style="border-color:#333; margin:3px 0;">
                     <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
                 </div>
             </div>
@@ -480,114 +391,94 @@
         </header>
 
         <div class="pos-container">
-            <!-- 🛒 الشريط الجانبي -->
+            <!-- 🛒 الشريط الجانبي للسلة والخصومات -->
             <aside class="pos-sidebar">
-                <div class="toggle-group" style="margin-bottom:4px;">
-                    <button class="toggle-btn active" onclick="switchCashierTab('tabPosDirect', this)"><i class="fa-solid fa-utensils"></i> بيع مباشر</button>
-                    <button class="toggle-btn" onclick="switchCashierTab('tabOnlineOrders', this)"><i class="fa-solid fa-phone-volume"></i> الطلبات الواردة <span id="liveOrdersBadge" style="background:var(--danger); color:#fff; border-radius:50%; padding:2px 5px; font-size:0.65rem; display:none;">0</span></button>
-                </div>
+                <div class="pos-cart-box">
+                    <div class="cart-scrollable-area">
+                        <span class="section-label">نوع الخدمة:</span>
+                        <div class="toggle-group" id="posOrderTypeGroup">
+                            <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
+                            <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
+                            <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                        </div>
 
-                <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
-                    <div class="pos-cart-box">
-                        <div class="cart-scrollable-area">
-                            <span class="section-label">نوع الخدمة:</span>
-                            <div class="toggle-group" id="posOrderTypeGroup">
-                                <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
-                                <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
-                                <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                        <div id="driverSelectBox" style="display:none; margin:2px 0; background:#121214; padding:5px; border-radius:6px; border:1px solid var(--gold-primary);">
+                            <span class="section-label" style="color:var(--gold-bright); font-weight:800;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
+                            <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; padding:6px;"></select>
+                        </div>
+
+                        <span class="section-label">طريقة الدفع:</span>
+                        <div class="toggle-group" id="posPaymentGroup">
+                            <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
+                            <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
+                        </div>
+
+                        <!-- 🎯 أزرار الخصومات والكوبونات بالكامل -->
+                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 3px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
+                                    <i class="fa-solid fa-percent"></i> إدارة الخصومات والكوبونات:
+                                </span>
+                                <span id="discountStatusText" style="font-size:0.7rem; color:var(--success); font-weight:bold; display:none;"></span>
                             </div>
 
-                            <div id="driverSelectBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
-                                <span class="section-label" style="color:var(--gold-bright); font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
-                                <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
-                            </div>
-
-                            <span class="section-label">طريقة الدفع:</span>
-                            <div class="toggle-group" id="posPaymentGroup">
-                                <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
-                                <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
-                            </div>
-
-                            <!-- حقل بحث دليل الزبائن -->
-                            <div style="position:relative; margin: 2px 0; flex-shrink:0;">
-                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف...">
-                                <button type="button" onclick="document.getElementById('posCustName').value=''; document.getElementById('posCustName').focus();" 
-                                        style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
-                                    ✕
-                                </button>
-                            </div>
-
-                            <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-                                    <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
-                                        <i class="fa-solid fa-percent"></i> إدارة الخصومات والكوبونات:
-                                    </span>
-                                </div>
-
-                                <div style="display:flex; gap:3px; align-items:center;">
-                                    <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:var(--purple-accent); color:#fff; flex:1; min-height:28px;">🎟️ أدخل كود الخصم / الكوبون</button>
-                                    <button onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; min-height:28px;">✕</button>
-                                </div>
-                            </div>
-
-                            <div id="posCartList" class="cart-items-list">
-                                <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
+                            <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
+                                <button onclick="applyFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">🎉 مجاني</button>
+                                <button onclick="applyPercentDiscountPrompt()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">🏷️ % خصم</button>
+                                <button onclick="applyAmountDiscountPrompt()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">💵 خصم مبلغ</button>
+                                <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:var(--purple-accent); color:#fff; flex:1; min-height:28px;">🎟️ كوبون</button>
+                                <button id="btnClearDiscX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; min-height:28px; display:none;">✕</button>
                             </div>
                         </div>
 
-                        <div style="padding-top:4px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
-                                <span>المجموع الكلي:</span>
-                                <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
-                            </div>
-                            
-                            <button type="button" class="gold-btn" onclick="prepareAndOpenPrintModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4); min-height: 38px;">
-                                <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
-                            </button>
-
-                            <div style="display:flex; gap:3px; margin-bottom:1px;">
-                                <button type="button" class="gold-btn btn-danger" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; width: 100%; min-height: 30px;">
-                                    إلغاء السلة
-                                </button>
-                            </div>
+                        <div id="posCartList" class="cart-items-list">
+                            <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
                         </div>
                     </div>
-                </div>
 
-                <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
-                    <div id="liveOrdersContainer">
-                        <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
+                    <div style="padding-top:4px; margin-top:auto; background: var(--card-bg); border-top: 1px solid var(--card-border);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
+                            <span>المجموع الكلي:</span>
+                            <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
+                        </div>
+                        
+                        <button type="button" class="gold-btn" onclick="prepareAndOpenPrintModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; color:#000; margin-bottom: 4px; min-height: 38px;">
+                            <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
+                        </button>
+
+                        <button type="button" class="gold-btn btn-danger" onclick="clearPosCart()" style="padding: 5px; font-size: 0.72rem; width: 100%; min-height: 28px;">
+                            إلغاء السلة
+                        </button>
                     </div>
                 </div>
             </aside>
 
-            <!-- 📦 الأصناف والمنتجات والبحث -->
+            <!-- 📦 الأصناف والمنتجات والفرز المطور -->
             <main class="pos-main-content">
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
+                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="font-size:0.85rem; padding:8px;">
                 </div>
 
-                <div id="posCategoriesBar" class="categories-bar">
-                    <button type="button" class="category-tab active" onclick="loadPosDirectMenu('all')">الكل 🍔</button>
-                </div>
+                <!-- شريط الأقسام المكتمل والمستقل لكل مادة -->
+                <div id="posCategoriesBar" class="categories-bar"></div>
 
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
         </div>
     </div>
 
-    <!-- 🛵 3. نافذة كشف وحساب السائقين والدليفري -->
+    <!-- 🛵 نافذة كشف وحساب السائقين -->
     <div id="driverAccountModal" class="modal-overlay">
-        <div class="modal-body" style="text-align:right; max-width:480px;">
+        <div class="modal-body" style="text-align:right;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
                 <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-motorcycle"></i> كشف وحساب السائقين</h3>
                 <button type="button" onclick="closeModal('driverAccountModal')" style="background:#333; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">✕</button>
             </div>
             
-            <label style="font-size:0.8rem; color:#aaa; margin-bottom:4px; display:block;">اختر السائق المعني:</label>
+            <label style="font-size:0.8rem; color:#aaa; margin-bottom:4px; display:block;">اختر السائق:</label>
             <select id="driverAccountSelect" class="gold-input-inline" onchange="calculateDriverBalance()" style="margin-bottom:12px; font-weight:bold; padding:8px; cursor:pointer;"></select>
 
-            <div id="driverStatsBox" style="background:#121215; padding:12px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
+            <div style="background:#121215; padding:12px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
                     <span>عدد الطلبات المسلمة:</span>
                     <strong id="driverOrdersCount" style="color:#fff;">0 طلبات</strong>
@@ -602,47 +493,32 @@
                 </div>
                 <hr style="border-color:#333; margin:8px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:900;">
-                    <span>الصافي المطلوب تسليمه للخزينة:</span>
+                    <span>الصافي المطلوب للخزينة:</span>
                     <strong id="driverFinalDue" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
             </div>
 
             <div style="display:flex; gap:6px;">
-                <button class="gold-btn" onclick="printDriverReceipt()" style="flex:1; padding:10px; font-size:0.82rem;"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
-                <button class="gold-btn btn-danger" onclick="zeroOutDriverBalance()" style="flex:1; padding:10px; font-size:0.82rem;"><i class="fa-solid fa-check-double"></i> تصفير الحساب</button>
+                <button class="gold-btn" onclick="printDriverReceipt()" style="flex:1;"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+                <button class="gold-btn btn-danger" onclick="zeroOutDriverBalance()" style="flex:1;"><i class="fa-solid fa-check-double"></i> تصفير الحساب</button>
             </div>
         </div>
     </div>
 
-    <!-- 🖨️ 4. نافذة خيارات الطباعة المزدوجة -->
+    <!-- 🖨️ نافذة خيارات الطباعة المزدوجة -->
     <div id="printOptionsModal" class="modal-overlay">
         <div class="modal-body" style="text-align:center;">
-            <h3 style="color:var(--gold-bright); margin-bottom:12px;"><i class="fa-solid fa-print"></i> طباعة أمر الخدمة والفاتورة</h3>
+            <h3 style="color:var(--gold-bright); margin-bottom:12px;"><i class="fa-solid fa-print"></i> طباعة الفاتورة وأمر المطبخ</h3>
             
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-                <button class="gold-btn" onclick="executeCustomerPrintOnly()" style="padding:12px; font-size:0.95rem;">
-                    🧾 طباعة فاتورة الكاشير <span id="custPrintBadge" style="font-size:0.75rem;">(لم تُطبع)</span>
-                </button>
-                <button class="gold-btn" onclick="executeKitchenPrintOnly()" style="background:#3b82f6; color:#fff; padding:12px; font-size:0.95rem;">
-                    🍳 طباعة أمر المطبخ <span id="kitchenPrintBadge" style="font-size:0.75rem;">(لم تُطبع)</span>
-                </button>
+                <button class="gold-btn" onclick="executeCustomerPrintOnly()">🧾 طباعة فاتورة الكاشير <span id="custPrintBadge">(لم تُطبع)</span></button>
+                <button class="gold-btn" onclick="executeKitchenPrintOnly()" style="background:#3b82f6; color:#fff;">🍳 طباعة أمر المطبخ <span id="kitchenPrintBadge">(لم تُطبع)</span></button>
             </div>
 
             <div style="display:flex; gap:8px;">
-                <button class="gold-btn" onclick="tryFinalizeAndClearOrder()" style="background:var(--success); color:#fff; flex:2;">
-                    إتمام وتفريغ الطلب ✅
-                </button>
+                <button class="gold-btn" onclick="tryFinalizeAndClearOrder()" style="background:var(--success); color:#fff; flex:2;">إتمام وتفريغ الطلب ✅</button>
                 <button class="gold-btn btn-danger" onclick="closeModal('printOptionsModal')" style="flex:1;">إلغاء</button>
             </div>
-        </div>
-    </div>
-
-    <!-- 🚫 5. نافذة إدارة النفاد -->
-    <div id="soldOutModal" class="modal-overlay">
-        <div class="modal-body">
-            <h3 style="color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-box-archive"></i> تحديد الوجبات المنتهية (Sold Out)</h3>
-            <div id="soldOutItemsList" style="max-height:250px; overflow-y:auto; margin-bottom:12px;"></div>
-            <button class="gold-btn" onclick="closeModal('soldOutModal'); loadPosDirectMenu('all');">حفظ وإغلاق</button>
         </div>
     </div>
 
@@ -653,8 +529,21 @@
         let selectedPosPaymentMethod = 'cash';
         let posDiscountAmount = 0;
         let activeCashierUser = null;
+        let activeSelectedCatId = 'all';
         let printTracker = { customerPrinted: false, kitchenPrinted: false };
         let activeDriverOrders = [];
+
+        // الأقسام المستقلة الثابتة المطلوبة بالكامل
+        const MASTER_CATEGORIES = [
+            { id: 'cat_burger_meat', name: 'بركر لحم 🥩' },
+            { id: 'cat_burger_chick', name: 'بركر دجاج 🍗' },
+            { id: 'cat_kentucky', name: 'الكنتاكي والكرسبي 🍗' },
+            { id: 'cat_rizo', name: 'الريزو 🍚' },
+            { id: 'cat_finger', name: 'الفنكر والبطاطا 🍟' },
+            { id: 'cat_sauces', name: 'الصوصات 🥣' },
+            { id: 'cat_drinks', name: 'الببسي والمشروبات 🥤' },
+            { id: 'cat_shawarma', name: 'الشاورما والصاج 🌯' }
+        ];
 
         function cleanPrice(v) {
             if (v === null || v === undefined) return 0;
@@ -664,7 +553,7 @@
             return isNaN(num) ? 0 : num;
         }
 
-        // 🔒 تسجيل دخول الكاشير
+        // 🔒 تسجيل الدخول
         function loginCashier() {
             const passInput = document.getElementById('cashierPassInput');
             const errEl = document.getElementById('authError');
@@ -673,12 +562,8 @@
             const typedPass = passInput.value.trim();
             let validCashierPass = "1234";
 
-            if (typeof getSystemPassword === 'function') {
-                validCashierPass = getSystemPassword('cashier') || "1234";
-            } else {
-                const storedPass = localStorage.getItem('sys_pass_cashier');
-                if (storedPass) validCashierPass = storedPass;
-            }
+            if (typeof getSystemPassword === 'function') validCashierPass = getSystemPassword('cashier') || "1234";
+            else validCashierPass = localStorage.getItem('sys_pass_cashier') || "1234";
 
             let cashiers = [];
             try { cashiers = JSON.parse(localStorage.getItem('sys_cashiers') || '[]'); } catch(e){}
@@ -689,19 +574,18 @@
                 document.getElementById('cashierMainApp').style.display = 'flex';
 
                 activeCashierUser = matchedCashier || { name: "الرئيسي" };
-                const activeEl = document.getElementById('activeCashierName');
-                if (activeEl) activeEl.innerText = "👤 الكاشير: " + activeCashierUser.name;
+                document.getElementById('activeCashierName').innerText = "👤 الكاشير: " + activeCashierUser.name;
 
-                loadPosDirectMenu('all');
                 populateDriversList();
+                loadPosDirectMenu('all');
             } else {
                 if (errEl) errEl.innerText = "❌ كلمة المرور غير صحيحة!";
             }
         }
 
-        // 🛠️ فتح وإغلاق القائمة
+        // 🛠️ فتح وإغلاق قائمة البردة بسلاسة في الآيباد
         window.toggleBrandMenu = function(e) {
-            if (e) e.stopPropagation();
+            if (e) { e.stopPropagation(); e.preventDefault(); }
             const menu = document.getElementById('brandDropdownMenu');
             if (!menu) return;
             menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
@@ -718,9 +602,7 @@
         function switchCashierTab(tabId, btn) {
             document.querySelectorAll('.pos-sidebar .tab-content').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.pos-sidebar .toggle-group .toggle-btn').forEach(b => b.classList.remove('active'));
-            
-            const target = document.getElementById(tabId);
-            if (target) target.style.display = 'flex';
+            document.getElementById(tabId).style.display = 'flex';
             if (btn) btn.classList.add('active');
         }
 
@@ -728,9 +610,7 @@
             document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedPosOrderType = btn.getAttribute('data-value');
-            
-            const driverBox = document.getElementById('driverSelectBox');
-            if (driverBox) driverBox.style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
+            document.getElementById('driverSelectBox').style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
         }
 
         function selectPaymentMethod(btn) {
@@ -742,48 +622,51 @@
         function populateDriversList() {
             const select = document.getElementById('posDriverSelect');
             if (!select) return;
-
             let drivers = [];
             try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
-
-            if (drivers.length === 0) {
-                drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
-            }
-
+            if (drivers.length === 0) drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
             select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
         }
 
-        function loadPosDirectMenu(catId = 'all') {
-            let categories = [];
-            let items = [];
+        // 🍔 الفرز التلقائي المستقل لكل صنف بحسب قسمه
+        function getItemCategoryKey(item) {
+            const name = (item.name || '').toLowerCase();
+            if (name.includes('ريزو')) return 'cat_rizo';
+            if (name.includes('كنتاكي') || name.includes('ستريبس') || name.includes('كرسبي') || name.includes('سكالوب')) return 'cat_kentucky';
+            if (name.includes('لحم') || name.includes('لحوم')) return 'cat_burger_meat';
+            if (name.includes('دجاج') && (name.includes('بركر') || name.includes('برجر'))) return 'cat_burger_chick';
+            if (name.includes('فنگر') || name.includes('فنكر') || name.includes('بطاطا')) return 'cat_finger';
+            if (name.includes('صوص') || name.includes('ثوم') || name.includes('كاتشب') || name.includes('مايونيز')) return 'cat_sauces';
+            if (name.includes('ببسي') || name.includes('مشروب') || name.includes('ماء') || name.includes('سفن') || name.includes('كولا')) return 'cat_drinks';
+            return 'cat_shawarma';
+        }
 
-            if (typeof getData === 'function') {
-                categories = getData('sys_categories');
-                items = getData('sys_items');
-            } else {
-                try {
-                    categories = JSON.parse(localStorage.getItem('sys_categories')) || [];
-                    items = JSON.parse(localStorage.getItem('sys_items')) || [];
-                } catch(e) {}
-            }
+        function loadPosDirectMenu(catId = 'all') {
+            activeSelectedCatId = catId;
+            let items = [];
+            if (typeof getData === 'function') items = getData('sys_items');
+            else try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e){}
 
             const catBar = document.getElementById('posCategoriesBar');
             const grid = document.getElementById('posProductsGrid');
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
-            if (!grid) return;
-
             if (catBar) {
-                catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
-                categories.forEach(c => {
-                    catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu(${c.id})">${c.name}</button>`;
+                let barHtml = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
+                MASTER_CATEGORIES.forEach(c => {
+                    barHtml += `<button class="category-tab ${catId === c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
                 });
+                catBar.innerHTML = barHtml;
             }
 
-            const filtered = (catId === 'all') ? items : items.filter(i => cleanPrice(i.categoryId || i.catId) === cleanPrice(catId));
+            let filtered = items;
+            if (catId !== 'all') {
+                filtered = items.filter(i => getItemCategoryKey(i) === catId);
+            }
 
+            if (!grid) return;
             if (filtered.length === 0) {
-                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
+                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد وجبات في هذا القسم</p>`;
                 return;
             }
 
@@ -791,14 +674,49 @@
                 const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
                 return `
                     <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" 
-                         onclick="${isSoldOut ? "alert('⚠️ هذه الوجبة نفدت كميتها حالياً!')" : `addToPosCart(${item.id})`}">
-                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" class="pos-product-img">
+                         onclick="${isSoldOut ? "alert('⚠️ هذه الوجبة نفدت!')" : `addToPosCart(${item.id})`}">
+                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" 
+                             onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
                         <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
                         <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                        ${isSoldOut ? '<span style="position:absolute; top:4px; right:4px; background:var(--danger); color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:4px; font-weight:bold;">نفدت</span>' : ''}
+                        ${isSoldOut ? '<span style="position:absolute; top:4px; right:4px; background:var(--danger); color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:4px;">نفدت</span>' : ''}
                     </div>
                 `;
             }).join('');
+        }
+
+        function filterPosProducts() {
+            const query = document.getElementById('posSearchInput').value.trim().toLowerCase();
+            let items = [];
+            if (typeof getData === 'function') items = getData('sys_items');
+            else items = JSON.parse(localStorage.getItem('sys_items') || '[]');
+
+            const grid = document.getElementById('posProductsGrid');
+            const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+
+            const filtered = items.filter(i => (i.name || '').toLowerCase().includes(query));
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد نتائج مطابقة للبحث</p>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
+                return `
+                    <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? "alert('⚠️ هذه الوجبة نفدت!')" : `addToPosCart(${item.id})`}">
+                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
+                        <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+                        <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function forceResetCategories() {
+            localStorage.removeItem('sys_categories');
+            loadPosDirectMenu('all');
+            alert("✅ تم إعادة فرز وترتيب جميع الأقسام بنجاح!");
         }
 
         function addToPosCart(itemId) {
@@ -821,16 +739,29 @@
         function renderPosCart() {
             const listContainer = document.getElementById('posCartList');
             const totalEl = document.getElementById('posTotalAmount');
+            const statusText = document.getElementById('discountStatusText');
+            const clearDiscBtn = document.getElementById('btnClearDiscX');
+
             if (!listContainer) return;
 
             if (posCart.length === 0) {
                 listContainer.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>`;
                 if (totalEl) totalEl.innerText = "0 د.ع";
+                if (statusText) statusText.style.display = 'none';
+                if (clearDiscBtn) clearDiscBtn.style.display = 'none';
                 return;
             }
 
             const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
             const finalTotal = Math.max(0, subtotal - posDiscountAmount);
+
+            if (posDiscountAmount > 0) {
+                if (statusText) { statusText.style.display = 'inline'; statusText.innerText = `- ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع خصم`; }
+                if (clearDiscBtn) clearDiscBtn.style.display = 'inline-block';
+            } else {
+                if (statusText) statusText.style.display = 'none';
+                if (clearDiscBtn) clearDiscBtn.style.display = 'none';
+            }
 
             listContainer.innerHTML = posCart.map((item, index) => `
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#181820; padding:6px 8px; border-radius:6px; margin-bottom:4px; border:1px solid #282835;">
@@ -868,7 +799,36 @@
             renderPosCart();
         }
 
-        // 🎟️ تطبيق كود الخصم / الكوبون
+        // 🎯 دوال الخصومات بالكامل
+        function applyFreeDiscount() {
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
+            posDiscountAmount = subtotal;
+            renderPosCart();
+        }
+
+        function applyPercentDiscountPrompt() {
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
+            const pct = prompt("أدخل نسبة الخصم المئوية (%):", "10");
+            if (!pct) return;
+            const pVal = parseFloat(pct);
+            if (isNaN(pVal) || pVal <= 0) return;
+            posDiscountAmount = Math.round((subtotal * pVal) / 100);
+            renderPosCart();
+        }
+
+        function applyAmountDiscountPrompt() {
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
+            const amt = prompt("أدخل مبلغ الخصم بالدينار:", "1000");
+            if (!amt) return;
+            const aVal = cleanPrice(amt);
+            if (aVal <= 0) return;
+            posDiscountAmount = Math.min(subtotal, aVal);
+            renderPosCart();
+        }
+
         window.applyCouponCodeToCart = function() {
             const inputCode = prompt("أدخل رمز الكوبون أو كود الخصم:")?.trim().toUpperCase();
             if (!inputCode) return;
@@ -890,30 +850,20 @@
             const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
             if (subtotal === 0) return alert("⚠️ السلة فارغة!");
 
-            if (found.type === 'percent') {
-                posDiscountAmount = Math.round((subtotal * found.value) / 100);
-            } else if (found.type === 'amount') {
-                posDiscountAmount = found.value;
-            } else if (found.type === 'free_delivery') {
-                alert("🎉 تم تطبيق التوصيل المجاني عبر الكوبون!");
-            }
+            if (found.type === 'percent') posDiscountAmount = Math.round((subtotal * found.value) / 100);
+            else if (found.type === 'amount') posDiscountAmount = found.value;
 
             renderPosCart();
             alert(`✅ تم تطبيق الخصم: ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع`);
         };
 
-        // 🛵 حساب وتصفير وطباعة كشف الدليفرية
+        // 🛵 حساب الدليفرية
         window.openDriverAccountModal = function() {
             const select = document.getElementById('driverAccountSelect');
             if (!select) return;
-
             let drivers = [];
             try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
-
-            if (drivers.length === 0) {
-                drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
-            }
-
+            if (drivers.length === 0) drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
             select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
             calculateDriverBalance();
             openModal('driverAccountModal');
@@ -922,10 +872,7 @@
         window.calculateDriverBalance = function() {
             const driverName = document.getElementById('driverAccountSelect')?.value;
             let completedOrders = [];
-
-            try {
-                completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
-            } catch(e){}
+            try { completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]'); } catch(e){}
 
             activeDriverOrders = completedOrders.filter(o => o.driverName === driverName && !o.isSettled);
 
@@ -942,14 +889,11 @@
 
         window.zeroOutDriverBalance = function() {
             const driverName = document.getElementById('driverAccountSelect')?.value;
-            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد طلبات معلقة لتصفيرها لهذا السائق!");
-
+            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد طلبات معلقة لتصفيرها!");
             if (!confirm(`هل أنت ألكيد من تسليم المبالغ وتصفير حساب السائق (${driverName})؟`)) return;
 
             let completedOrders = [];
-            try {
-                completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
-            } catch(e){}
+            try { completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]'); } catch(e){}
 
             completedOrders.forEach(o => {
                 if (o.driverName === driverName && !o.isSettled) {
@@ -959,7 +903,7 @@
             });
 
             localStorage.setItem('sys_completed_orders', JSON.stringify(completedOrders));
-            alert(`✅ تم تصفير حساب السائق (${driverName}) وتسليم كافة المبالغ للخزينة بنجاح.`);
+            alert(`✅ تم تصفير حساب السائق (${driverName}) بنجاح.`);
             calculateDriverBalance();
         };
 
@@ -985,37 +929,19 @@
                     <p style="margin:2px 0; font-size:11px;">السائق: <strong>${driverName}</strong></p>
                     <p style="margin:2px 0; font-size:10px;">التاريخ: ${new Date().toLocaleString('ar-IQ')}</p>
                     <hr style="border-top:1px dashed #000; margin:5px 0;">
-                    <table style="width:100%; font-size:10px; text-align:right;">
-                        <thead>
-                            <tr><th>رقم</th><th>الزبون</th><th>المبلغ</th></tr>
-                        </thead>
-                        <tbody>
-                            ${activeDriverOrders.map(o => `
-                                <tr>
-                                    <td>#${o.orderNum || 'POS'}</td>
-                                    <td>${o.customerName || 'زبون'}</td>
-                                    <td>${cleanPrice(o.totalAmount || o.total).toLocaleString('ar-IQ')}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    <hr style="border-top:1px dashed #000; margin:5px 0;">
                     <div style="font-size:11px; text-align:right;">
                         <div>عدد الطلبات: <strong>${activeDriverOrders.length}</strong></div>
-                        <div>مجموع المبالغ: <strong>${mealsTotal.toLocaleString('ar-IQ')} د.ع</strong></div>
+                        <div>مجموع الوجبات: <strong>${mealsTotal.toLocaleString('ar-IQ')} د.ع</strong></div>
                         <div>أجور التوصيل: <strong>${deliveryFees.toLocaleString('ar-IQ')} د.ع</strong></div>
                         <div style="font-size:13px; font-weight:bold; margin-top:4px;">الصافي المطلوب: ${finalDue.toLocaleString('ar-IQ')} د.ع</div>
                     </div>
-                    <br><br>
-                    <div style="text-align:center; font-size:10px;">توقيع الكاشير: ...................</div>
                 </div>
             `;
-
             window.print();
         };
 
-        function openModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
-        function closeModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         function prepareAndOpenPrintModal() {
             if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
@@ -1026,20 +952,18 @@
         function executeCustomerPrintOnly() {
             printTracker.customerPrinted = true;
             document.getElementById('custPrintBadge').innerText = "✅ (تمت الطباعة)";
-            document.getElementById('custPrintBadge').style.color = "var(--success)";
             window.print();
         }
 
         function executeKitchenPrintOnly() {
             printTracker.kitchenPrinted = true;
             document.getElementById('kitchenPrintBadge').innerText = "✅ (تمت الطباعة)";
-            document.getElementById('kitchenPrintBadge').style.color = "var(--success)";
             window.print();
         }
 
         function tryFinalizeAndClearOrder() {
             if (!printTracker.customerPrinted || !printTracker.kitchenPrinted) {
-                if (!confirm("⚠️ لم تقم بطباعة الفاتورتين معاً. هل تريد تفريغ وإتمام الطلب على أي حال؟")) return;
+                if (!confirm("⚠️ لم تقم بطباعة الفاتورتين معاً. هل تريد التفريغ والإتمام؟")) return;
             }
             clearPosCart();
             closeModal('printOptionsModal');
