@@ -6,10 +6,10 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MIM89 POS">
+    <meta name="apple-mobile-web-app-title" content="MIM89 POS Modern">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <title>MIM89 POS - شاشة الكاشير المحدثة</title>
+    <title>MIM89 POS - الشاشة المحدثة</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,9 +21,10 @@
         :root {
             --gold-primary: #f59e0b;
             --gold-bright: #fbbf24;
-            --bg-dark: #0f0f12;
-            --card-bg: #18181c;
-            --card-border: #2a2a32;
+            --gold-glow: rgba(245, 158, 11, 0.35);
+            --bg-dark: #09090b;
+            --card-bg: #141418;
+            --card-border: rgba(255, 255, 255, 0.08);
             --text-main: #f3f4f6;
             --danger: #ef4444;
             --success: #10b981;
@@ -42,16 +43,16 @@
         body {
             background-color: var(--bg-dark);
             color: var(--text-main);
-            overflow-x: hidden;
-            user-select: none;
+            overflow: hidden;
             height: 100vh;
         }
 
+        /* 🔒 شاشة تسجيل الدخول */
         #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 14, 0.96);
-            z-index: 99999;
+            background: radial-gradient(circle at center, #181824 0%, #060608 100%);
+            z-index: 999999;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -60,69 +61,65 @@
 
         .login-card {
             background: var(--card-bg);
-            border: 2px solid var(--gold-primary);
-            padding: 25px 20px;
-            border-radius: 16px;
+            border: 1px solid var(--gold-primary);
+            padding: 30px 24px;
+            border-radius: 20px;
             width: 100%;
             max-width: 360px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 10px 40px rgba(245, 158, 11, 0.2);
         }
 
         .gold-input-inline {
             width: 100%;
-            padding: 8px;
-            background: #111;
-            border: 1px solid #444;
-            border-radius: 6px;
+            padding: 10px;
+            background: #09090d;
+            border: 1px solid #333;
+            border-radius: 8px;
             color: #fff;
-            font-size: 0.85rem;
-            box-sizing: border-box;
+            font-size: 0.9rem;
             outline: none;
+            transition: 0.2s;
         }
-        .gold-input-inline:focus { border-color: var(--gold-primary); }
+        .gold-input-inline:focus { border-color: var(--gold-primary); box-shadow: 0 0 10px var(--gold-glow); }
 
         .gold-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
             color: #000;
             border: none;
-            padding: 9px 14px;
-            font-weight: 800;
-            border-radius: 6px;
+            padding: 10px 14px;
+            font-weight: 900;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            font-size: 0.88rem;
-            transition: 0.2s;
+            font-size: 0.9rem;
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            box-shadow: 0 4px 15px var(--gold-glow);
         }
-        .gold-btn:active { transform: scale(0.97); }
 
         #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
 
+        /* 🔝 الهيدر العلوي */
         .pos-header {
-            background: var(--card-bg);
+            background: #111115;
             border-bottom: 1px solid var(--card-border);
-            padding: 6px 14px;
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: relative;
-            z-index: 10000;
-            flex-shrink: 0;
+            z-index: 100;
         }
 
-        .brand-dropdown-container { position: relative; z-index: 10001; }
-
         .brand-btn {
-            background: rgba(245, 158, 11, 0.15);
+            background: rgba(245, 158, 11, 0.12);
             border: 1px solid var(--gold-primary);
-            color: var(--gold-primary);
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-weight: 800;
+            color: var(--gold-bright);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 900;
             font-size: 1rem;
             cursor: pointer;
             display: flex;
@@ -130,377 +127,340 @@
             gap: 8px;
         }
 
-        .brand-dropdown {
+        /* 🍔 البردة الجانبية المحدثة */
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 90000;
             display: none;
-            position: absolute;
-            top: 110%;
-            right: 0;
-            background: #1a1a20;
-            border: 1px solid var(--gold-primary);
-            border-radius: 10px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.95);
-            width: 280px;
-            z-index: 99999 !important;
-            overflow: hidden;
         }
 
-        .brand-dropdown button {
+        .side-drawer {
+            position: fixed;
+            top: 0; right: -320px;
+            width: 300px; height: 100%;
+            background: #111116;
+            border-left: 1px solid var(--gold-primary);
+            z-index: 90001;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .side-drawer.active { right: 0 !important; }
+        .drawer-overlay.active { display: block !important; }
+
+        .drawer-link {
             width: 100%;
-            padding: 12px 14px;
-            background: none;
-            border: none;
+            padding: 12px;
+            background: #181820;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
             color: #fff;
-            text-align: right;
-            font-size: 0.88rem;
-            font-weight: 700;
+            font-size: 0.9rem;
+            font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #222;
+            gap: 10px;
+            margin-bottom: 10px;
+            text-align: right;
         }
 
-        .brand-dropdown button:hover {
-            background: rgba(245, 158, 11, 0.25);
-            color: var(--gold-bright);
-        }
-
+        /* 📐 التقسيم الرئيسي */
         .pos-container {
             display: grid;
             grid-template-columns: 380px 1fr;
-            height: calc(100vh - 50px);
+            height: calc(100vh - 58px);
             overflow: hidden;
         }
 
-        @media (max-width: 950px) {
-            .pos-container { grid-template-columns: 1fr; height: auto; overflow: auto; }
-        }
-
+        /* 🛒 السلة والشريط الجانبي */
         .pos-sidebar {
-            background: #141418;
+            background: #0f0f13;
             border-left: 1px solid var(--card-border);
-            display: flex;
-            flex-direction: column;
-            padding: 6px;
-            height: 100%;
-            overflow: hidden !important;
-        }
-
-        .pos-cart-box {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 6px 8px;
-            border: 1px solid var(--card-border);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden !important;
-        }
-
-        .cart-scrollable-area {
-            flex: 1;
-            overflow-y: auto !important;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        .cart-items-list {
-            flex: 1 1 auto !important;
-            overflow-y: auto !important;
-            min-height: 80px;
-            max-height: 220px;
-            margin: 4px 0;
-            border-top: 1px dashed #333;
-            border-bottom: 1px dashed #333;
-            padding: 4px 0;
-            -webkit-overflow-scrolling: touch !important;
-        }
-
-        .pos-main-content {
             padding: 10px;
-            height: 100% !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            padding-bottom: 80px !important;
-        }
-
-        .categories-bar {
             display: flex;
-            gap: 6px;
-            overflow-x: auto !important;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: none;
-            touch-action: pan-x !important;
+            flex-direction: column;
+            height: 100%;
         }
-        .categories-bar::-webkit-scrollbar { display: none; }
 
-        .category-tab {
+        .cart-box {
+            background: var(--card-bg);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .cart-items-scroll {
+            flex: 1;
+            overflow-y: auto;
+            margin: 8px 0;
+            padding-right: 2px;
+        }
+
+        .cart-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a22;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid #282835;
+        }
+
+        /* 📦 قسم المواد والأقسام */
+        .pos-main {
+            padding: 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .categories-chips {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .categories-chips::-webkit-scrollbar { display: none; }
+
+        .chip-tab {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            color: #ccc;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            white-space: nowrap;
+            color: #aaa;
+            padding: 8px 18px;
+            border-radius: 25px;
             font-size: 0.85rem;
             font-weight: 800;
-            flex: 0 0 auto !important;
-            transition: 0.2s;
+            cursor: pointer;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
 
-        .category-tab.active {
+        .chip-tab.active {
             background: var(--gold-primary);
             color: #000;
             font-weight: 900;
-            border-color: var(--gold-primary);
-            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4);
+            border-color: var(--gold-bright);
+            box-shadow: 0 4px 12px var(--gold-glow);
         }
 
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+            gap: 12px;
         }
 
-        .pos-product-card {
+        .product-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 6px;
+            border-radius: 12px;
+            padding: 8px;
             text-align: center;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
+            transition: 0.15s;
         }
+        .product-card:active { transform: scale(0.96); }
 
-        .pos-product-card img {
-            width: 100%;
-            height: 80px;
+        .product-card img {
+            width: 100%; height: 85px;
             object-fit: cover;
-            border-radius: 6px;
-            margin-bottom: 4px;
+            border-radius: 8px;
+            margin-bottom: 6px;
         }
 
-        .pos-product-card.sold-out { opacity: 0.55; filter: grayscale(0.6); }
+        .product-card.sold-out { opacity: 0.5; filter: grayscale(0.8); }
 
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.88);
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
             display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 50000;
-            padding: 12px;
+            justify-content: center; align-items: center;
+            z-index: 99999; padding: 15px;
         }
 
         .modal-body {
             background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 16px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 450px;
-            max-height: 90vh;
-            overflow-y: auto;
+            border: 1px solid var(--gold-primary);
+            padding: 18px;
+            border-radius: 16px;
+            width: 100%; max-width: 440px;
         }
 
-        .toggle-group { display: flex; gap: 3px; flex-shrink: 0; }
-
-        .toggle-btn {
-            flex: 1;
-            padding: 6px;
-            background: #121214;
-            border: 1px solid var(--card-border);
-            color: #aaa;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.78rem;
-            font-weight: 700;
-            text-align: center;
-            min-height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .toggle-btn-group { display: flex; gap: 4px; margin-bottom: 6px; }
+        .t-btn {
+            flex: 1; padding: 6px;
+            background: #181820; border: 1px solid var(--card-border);
+            color: #ccc; border-radius: 6px; font-weight: 800; font-size: 0.78rem;
+            cursor: pointer; text-align: center;
         }
-
-        .toggle-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; }
-        .section-label { font-size: 0.72rem; color: #999; margin-top: 3px; margin-bottom: 1px; font-weight: 700; }
-        .btn-danger { background: var(--danger); color: #fff; }
+        .t-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; }
 
         #mim89ThermalPrintBox { display: none; }
 
         @media print {
-            @page { size: 80mm auto; margin: 0mm !important; }
+            @page { size: 80mm auto; margin: 0; }
             body > *:not(#mim89ThermalPrintBox) { display: none !important; }
             #mim89ThermalPrintBox {
                 display: block !important;
-                position: absolute !important;
-                left: 0 !important; top: 0 !important;
                 width: 76mm !important;
-                background: #fff !important;
-                color: #000 !important;
                 font-family: 'Tajawal', sans-serif !important;
                 direction: rtl !important;
+                color: #000 !important; background: #fff !important;
             }
         }
     </style>
 </head>
-<body class="cashier-body">
+<body>
 
-    <!-- 🔒 1. شاشة تسجيل الدخول -->
+    <!-- 🔒 شاشة الدخول -->
     <div id="authOverlay">
         <div class="login-card">
             <h2 style="color:var(--gold-primary); margin-bottom:6px; font-weight:900;"><i class="fa-solid fa-cash-register"></i> MIM89 POS</h2>
-            <p style="color:#aaa; font-size:0.8rem; margin-bottom:12px;">نظام إدارة الوجبات ونقطة البيع</p>
-            <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:6px;" onkeypress="if(event.key==='Enter') loginCashier()">
-            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:3px; font-weight:bold;"></p>
-            <button onclick="loginCashier()" class="gold-btn" style="margin-top:6px; padding:10px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
+            <p style="color:#aaa; font-size:0.8rem; margin-bottom:14px;">نظام نقطة البيع السريع</p>
+            <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.2rem; padding:10px;" onkeypress="if(event.key==='Enter') loginCashier()">
+            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:4px; font-weight:bold;"></p>
+            <button onclick="loginCashier()" class="gold-btn" style="margin-top:8px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
         </div>
     </div>
 
-    <!-- 🖥️ 2. التطبيق الرئيسي للكاشير -->
+    <!-- 🍔 البردة الجانبية المجهزة لللمس -->
+    <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
+    <aside id="sideDrawer" class="side-drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
+            <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> قائمة خيارات النظام</h3>
+            <button onclick="toggleSideDrawer()" style="background:none; border:none; color:#aaa; font-size:1.3rem;">✕</button>
+        </div>
+        <button class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
+            <i class="fa-solid fa-motorcycle"></i> كشف وحساب الدليفرية 🛵
+        </button>
+        <button class="drawer-link" onclick="openCashDrawer(); toggleSideDrawer();" style="color:var(--gold-bright);">
+            <i class="fa-solid fa-key"></i> فتح الدرج / الصندوق
+        </button>
+        <button class="drawer-link" onclick="globalSystemSync(); toggleSideDrawer();">
+            <i class="fa-solid fa-rotate"></i> تحديث وتصفير التخزين 🔄
+        </button>
+        <button class="drawer-link" onclick="confirmCloseShiftAndLogout();" style="color:var(--danger); margin-top:auto;">
+            <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+        </button>
+    </aside>
+
+    <!-- 🖥️ التطبيق الرئيسي -->
     <div id="cashierMainApp">
         <header class="pos-header">
-            <div class="brand-dropdown-container">
-                <button class="brand-btn" onclick="toggleBrandMenu(event)">
-                    <i class="fa-solid fa-cash-register"></i> MIM89 POS
-                    <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
-                </button>
-                <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openDriverAccountModal(); toggleBrandMenu(event);" style="color:var(--blue-accent);"><i class="fa-solid fa-motorcycle"></i> كشف وحساب الدليفرية 🛵</button>
-                    <button onclick="forceResetCategories(); toggleBrandMenu(event);" style="color:var(--gold-bright);"><i class="fa-solid fa-arrows-rotate"></i> إعادة فرز وترتيب الأقسام 🔄</button>
-                    <button onclick="openCashDrawer(); toggleBrandMenu(event);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
-                    <button onclick="openSoldOutManagerModal(); toggleBrandMenu(event);" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
-                    <button onclick="globalSystemSync(this); toggleBrandMenu(event);"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
-                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:8px; align-items:center;">
-                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
-                <button onclick="openCashDrawer()" class="gold-btn" style="padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444; width:auto;"><i class="fa-solid fa-box-open"></i> الدرج</button>
+            <button class="brand-btn" onclick="toggleSideDrawer()">
+                <i class="fa-solid fa-bars"></i> MIM89 POS
+            </button>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.88rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
+                <button onclick="openCashDrawer()" class="gold-btn" style="width:auto; padding:6px 12px; font-size:0.8rem; background:#222; color:#fff; border:1px solid #444;"><i class="fa-solid fa-box-open"></i> الدرج</button>
             </div>
         </header>
 
         <div class="pos-container">
-            <!-- 🛒 الشريط الجانبي للسلة والخصومات -->
+            <!-- 🛒 السلة الجانبية -->
             <aside class="pos-sidebar">
-                <div class="pos-cart-box">
-                    <div class="cart-scrollable-area">
-                        <span class="section-label">نوع الخدمة:</span>
-                        <div class="toggle-group" id="posOrderTypeGroup">
-                            <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
-                            <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
-                            <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                <div class="cart-box">
+                    <span style="font-size:0.75rem; color:#888; font-weight:bold;">نوع الخدمة:</span>
+                    <div class="toggle-btn-group" id="posOrderTypeGroup">
+                        <button class="t-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
+                        <button class="t-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
+                        <button class="t-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                    </div>
+
+                    <div id="driverSelectBox" style="display:none; margin-bottom:6px;">
+                        <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; padding:6px;"></select>
+                    </div>
+
+                    <span style="font-size:0.75rem; color:#888; font-weight:bold;">طريقة الدفع:</span>
+                    <div class="toggle-btn-group" id="posPaymentGroup">
+                        <button class="t-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
+                        <button class="t-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا</button>
+                    </div>
+
+                    <!-- الخصومات والخصم المباشر -->
+                    <div style="background:#181822; padding:8px; border-radius:8px; border:1px solid var(--card-border); margin:6px 0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:bold;">الخصومات:</span>
+                            <span id="discountStatusText" style="font-size:0.7rem; color:var(--success); display:none;"></span>
                         </div>
-
-                        <div id="driverSelectBox" style="display:none; margin:2px 0; background:#121214; padding:5px; border-radius:6px; border:1px solid var(--gold-primary);">
-                            <span class="section-label" style="color:var(--gold-bright); font-weight:800;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
-                            <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; padding:6px;"></select>
-                        </div>
-
-                        <span class="section-label">طريقة الدفع:</span>
-                        <div class="toggle-group" id="posPaymentGroup">
-                            <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
-                            <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
-                        </div>
-
-                        <!-- 🎯 أزرار الخصومات والكوبونات بالكامل -->
-                        <div style="background:#121215; padding:6px; border-radius:6px; border:1px solid var(--card-border); margin: 3px 0;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
-                                    <i class="fa-solid fa-percent"></i> إدارة الخصومات والكوبونات:
-                                </span>
-                                <span id="discountStatusText" style="font-size:0.7rem; color:var(--success); font-weight:bold; display:none;"></span>
-                            </div>
-
-                            <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
-                                <button onclick="applyFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">🎉 مجاني</button>
-                                <button onclick="applyPercentDiscountPrompt()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">🏷️ % خصم</button>
-                                <button onclick="applyAmountDiscountPrompt()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1; min-height:28px;">💵 خصم مبلغ</button>
-                                <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:var(--purple-accent); color:#fff; flex:1; min-height:28px;">🎟️ كوبون</button>
-                                <button id="btnClearDiscX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; min-height:28px; display:none;">✕</button>
-                            </div>
-                        </div>
-
-                        <div id="posCartList" class="cart-items-list">
-                            <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
+                        <div style="display:flex; gap:4px;">
+                            <button onclick="applyDiscountPrompt('pct')" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1;">% نسبة</button>
+                            <button onclick="applyDiscountPrompt('amt')" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222; color:#fff; border:1px solid #444; flex:1;">💵 مبلغ</button>
+                            <button onclick="applyCouponCode()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:var(--purple-accent); color:#fff; flex:1;">🎟️ كوبون</button>
+                            <button onclick="clearDiscount()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem;">✕</button>
                         </div>
                     </div>
 
-                    <div style="padding-top:4px; margin-top:auto; background: var(--card-bg); border-top: 1px solid var(--card-border);">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
+                    <!-- عناصر السلة -->
+                    <div id="posCartList" class="cart-items-scroll">
+                        <p style="text-align:center; color:#666; font-size:0.8rem; padding:20px;">السلة فارغة حالياً</p>
+                    </div>
+
+                    <div style="border-top:1px solid var(--card-border); padding-top:8px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:1.1rem; font-weight:900;">
                             <span>المجموع الكلي:</span>
                             <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
                         </div>
-                        
-                        <button type="button" class="gold-btn" onclick="prepareAndOpenPrintModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; color:#000; margin-bottom: 4px; min-height: 38px;">
-                            <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
+                        <button onclick="prepareAndOpenPrintModal()" class="gold-btn" style="padding:10px; font-size:0.95rem; margin-bottom:4px;">
+                            <i class="fa-solid fa-calculator"></i> حساب وطباعة الفاتورة
                         </button>
-
-                        <button type="button" class="gold-btn btn-danger" onclick="clearPosCart()" style="padding: 5px; font-size: 0.72rem; width: 100%; min-height: 28px;">
-                            إلغاء السلة
-                        </button>
+                        <button onclick="clearPosCart()" class="gold-btn" style="background:var(--danger); color:#fff; padding:6px; font-size:0.78rem;">إلغاء السلة</button>
                     </div>
                 </div>
             </aside>
 
-            <!-- 📦 الأصناف والمنتجات والفرز المطور -->
-            <main class="pos-main-content">
-                <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="font-size:0.85rem; padding:8px;">
-                </div>
-
-                <!-- شريط الأقسام المكتمل والمستقل لكل مادة -->
-                <div id="posCategoriesBar" class="categories-bar"></div>
-
+            <!-- 📦 قائمة المنتجات والفرز التلقائي المضمون -->
+            <main class="pos-main">
+                <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث سريع عن وجبة..." oninput="filterPosProducts()">
+                <div id="posCategoriesBar" class="categories-chips"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
         </div>
     </div>
 
-    <!-- 🛵 نافذة كشف وحساب السائقين -->
+    <!-- 🛵 نافذة حساب السائقين -->
     <div id="driverAccountModal" class="modal-overlay">
         <div class="modal-body" style="text-align:right;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                 <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-motorcycle"></i> كشف وحساب السائقين</h3>
-                <button type="button" onclick="closeModal('driverAccountModal')" style="background:#333; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">✕</button>
+                <button onclick="closeModal('driverAccountModal')" style="background:none; border:none; color:#fff;">✕</button>
             </div>
-            
-            <label style="font-size:0.8rem; color:#aaa; margin-bottom:4px; display:block;">اختر السائق:</label>
-            <select id="driverAccountSelect" class="gold-input-inline" onchange="calculateDriverBalance()" style="margin-bottom:12px; font-weight:bold; padding:8px; cursor:pointer;"></select>
-
+            <select id="driverAccountSelect" class="gold-input-inline" onchange="calculateDriverBalance()" style="margin-bottom:12px; font-weight:bold;"></select>
             <div style="background:#121215; padding:12px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
-                    <span>عدد الطلبات المسلمة:</span>
-                    <strong id="driverOrdersCount" style="color:#fff;">0 طلبات</strong>
+                    <span>عدد الطلبات:</span><strong id="driverOrdersCount" style="color:#fff;">0</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
-                    <span>مجموع مبالغ الوجبات:</span>
-                    <strong id="driverMealsTotal" style="color:var(--gold-bright);">0 د.ع</strong>
+                    <span>مجموع الوجبات:</span><strong id="driverMealsTotal" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
-                    <span>أجور التوصيل:</span>
-                    <strong id="driverDeliveryFeesTotal" style="color:var(--success);">0 د.ع</strong>
+                    <span>أجور التوصيل:</span><strong id="driverDeliveryFeesTotal" style="color:var(--success);">0 د.ع</strong>
                 </div>
                 <hr style="border-color:#333; margin:8px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:900;">
-                    <span>الصافي المطلوب للخزينة:</span>
-                    <strong id="driverFinalDue" style="color:var(--gold-bright);">0 د.ع</strong>
+                    <span>الصافي المطلوب:</span><strong id="driverFinalDue" style="color:var(--gold-bright);">0 د.ع</strong>
                 </div>
             </div>
-
             <div style="display:flex; gap:6px;">
-                <button class="gold-btn" onclick="printDriverReceipt()" style="flex:1;"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
-                <button class="gold-btn btn-danger" onclick="zeroOutDriverBalance()" style="flex:1;"><i class="fa-solid fa-check-double"></i> تصفير الحساب</button>
+                <button class="gold-btn" onclick="printDriverReceipt()"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+                <button class="gold-btn" onclick="zeroOutDriverBalance()" style="background:var(--danger); color:#fff;"><i class="fa-solid fa-check-double"></i> تصفير الحساب</button>
             </div>
         </div>
     </div>
@@ -508,16 +468,14 @@
     <!-- 🖨️ نافذة خيارات الطباعة المزدوجة -->
     <div id="printOptionsModal" class="modal-overlay">
         <div class="modal-body" style="text-align:center;">
-            <h3 style="color:var(--gold-bright); margin-bottom:12px;"><i class="fa-solid fa-print"></i> طباعة الفاتورة وأمر المطبخ</h3>
-            
+            <h3 style="color:var(--gold-bright); margin-bottom:12px;"><i class="fa-solid fa-print"></i> طباعة الفواتير</h3>
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-                <button class="gold-btn" onclick="executeCustomerPrintOnly()">🧾 طباعة فاتورة الكاشير <span id="custPrintBadge">(لم تُطبع)</span></button>
-                <button class="gold-btn" onclick="executeKitchenPrintOnly()" style="background:#3b82f6; color:#fff;">🍳 طباعة أمر المطبخ <span id="kitchenPrintBadge">(لم تُطبع)</span></button>
+                <button class="gold-btn" onclick="executeCustomerPrintOnly()">🧾 فاتورة الكاشير <span id="custPrintBadge">(لم تُطبع)</span></button>
+                <button class="gold-btn" onclick="executeKitchenPrintOnly()" style="background:#3b82f6; color:#fff;">🍳 أمر المطبخ <span id="kitchenPrintBadge">(لم تُطبع)</span></button>
             </div>
-
             <div style="display:flex; gap:8px;">
                 <button class="gold-btn" onclick="tryFinalizeAndClearOrder()" style="background:var(--success); color:#fff; flex:2;">إتمام وتفريغ الطلب ✅</button>
-                <button class="gold-btn btn-danger" onclick="closeModal('printOptionsModal')" style="flex:1;">إلغاء</button>
+                <button class="gold-btn" onclick="closeModal('printOptionsModal')" style="background:var(--danger); color:#fff; flex:1;">إلغاء</button>
             </div>
         </div>
     </div>
@@ -528,12 +486,9 @@
         let selectedPosOrderType = 'dine_in';
         let selectedPosPaymentMethod = 'cash';
         let posDiscountAmount = 0;
-        let activeCashierUser = null;
-        let activeSelectedCatId = 'all';
-        let printTracker = { customerPrinted: false, kitchenPrinted: false };
         let activeDriverOrders = [];
 
-        // الأقسام المستقلة الثابتة المطلوبة بالكامل
+        // 🏷️ الأقسام المستقلة الثابتة بالكامل
         const MASTER_CATEGORIES = [
             { id: 'cat_burger_meat', name: 'بركر لحم 🥩' },
             { id: 'cat_burger_chick', name: 'بركر دجاج 🍗' },
@@ -546,75 +501,64 @@
         ];
 
         function cleanPrice(v) {
-            if (v === null || v === undefined) return 0;
+            if (!v) return 0;
             if (typeof v === 'number') return isNaN(v) ? 0 : v;
-            let str = String(v).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
+            let str = String(v).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦network٨٩".indexOf(d)).replace(/[^\d]/g, '');
             let num = parseInt(str, 10);
             return isNaN(num) ? 0 : num;
         }
 
-        // 🔒 تسجيل الدخول
         function loginCashier() {
             const passInput = document.getElementById('cashierPassInput');
-            const errEl = document.getElementById('authError');
-            if (!passInput) return;
+            const typedPass = passInput?.value.trim();
+            const validPass = localStorage.getItem('sys_pass_cashier') || "1234";
 
-            const typedPass = passInput.value.trim();
-            let validCashierPass = "1234";
-
-            if (typeof getSystemPassword === 'function') validCashierPass = getSystemPassword('cashier') || "1234";
-            else validCashierPass = localStorage.getItem('sys_pass_cashier') || "1234";
-
-            let cashiers = [];
-            try { cashiers = JSON.parse(localStorage.getItem('sys_cashiers') || '[]'); } catch(e){}
-            const matchedCashier = cashiers.find(c => String(c.pass || c.password).trim() === typedPass);
-
-            if (typedPass === validCashierPass || typedPass === "1234" || typedPass === "123" || matchedCashier) {
+            if (typedPass === validPass || typedPass === "1234" || typedPass === "123") {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('cashierMainApp').style.display = 'flex';
-
-                activeCashierUser = matchedCashier || { name: "الرئيسي" };
-                document.getElementById('activeCashierName').innerText = "👤 الكاشير: " + activeCashierUser.name;
-
                 populateDriversList();
                 loadPosDirectMenu('all');
             } else {
-                if (errEl) errEl.innerText = "❌ كلمة المرور غير صحيحة!";
+                document.getElementById('authError').innerText = "❌ كلمة المرور غير صحيحة!";
             }
         }
 
-        // 🛠️ فتح وإغلاق قائمة البردة بسلاسة في الآيباد
-        window.toggleBrandMenu = function(e) {
-            if (e) { e.stopPropagation(); e.preventDefault(); }
-            const menu = document.getElementById('brandDropdownMenu');
-            if (!menu) return;
-            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-        };
-
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('brandDropdownMenu');
-            const btn = document.querySelector('.brand-btn');
-            if (menu && menu.style.display === 'block' && !menu.contains(e.target) && !btn.contains(e.target)) {
-                menu.style.display = 'none';
+        // 🛠️ فتح وإغلاق البردة الجانبية المباشرة
+        function toggleSideDrawer() {
+            const drawer = document.getElementById('sideDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (!drawer || !overlay) return;
+            const active = drawer.classList.contains('active');
+            if (active) {
+                drawer.classList.remove('active');
+                overlay.classList.remove('active');
+            } else {
+                drawer.classList.add('active');
+                overlay.classList.add('active');
             }
-        });
+        }
 
-        function switchCashierTab(tabId, btn) {
-            document.querySelectorAll('.pos-sidebar .tab-content').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.pos-sidebar .toggle-group .toggle-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).style.display = 'flex';
-            if (btn) btn.classList.add('active');
+        // 🔓 فتح الدرج دون طباعة الفاتورة القديمة
+        function openCashDrawer() {
+            let printBox = document.getElementById('mim89ThermalPrintBox');
+            if (!printBox) {
+                printBox = document.createElement('div');
+                printBox.id = 'mim89ThermalPrintBox';
+                document.body.appendChild(printBox);
+            }
+            printBox.innerHTML = `<div style="text-align:center; padding:10px;"><p style="font-size:11px;">MIM89 POS - فتح صندوق النقدية</p></div>`;
+            window.print();
         }
 
         function selectOrderType(btn) {
-            document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#posOrderTypeGroup .t-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedPosOrderType = btn.getAttribute('data-value');
             document.getElementById('driverSelectBox').style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
         }
 
         function selectPaymentMethod(btn) {
-            document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#posPaymentGroup .t-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedPosPaymentMethod = btn.getAttribute('data-value');
         }
@@ -628,7 +572,7 @@
             select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
         }
 
-        // 🍔 الفرز التلقائي المستقل لكل صنف بحسب قسمه
+        // 🧠 خوارزمية تصنيف الوجبات الذكية في حال تلف البيانات المسجلة
         function getItemCategoryKey(item) {
             const name = (item.name || '').toLowerCase();
             if (name.includes('ريزو')) return 'cat_rizo';
@@ -642,7 +586,6 @@
         }
 
         function loadPosDirectMenu(catId = 'all') {
-            activeSelectedCatId = catId;
             let items = [];
             if (typeof getData === 'function') items = getData('sys_items');
             else try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e){}
@@ -652,9 +595,9 @@
             const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
             if (catBar) {
-                let barHtml = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
+                let barHtml = `<button class="chip-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
                 MASTER_CATEGORIES.forEach(c => {
-                    barHtml += `<button class="category-tab ${catId === c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
+                    barHtml += `<button class="chip-tab ${catId === c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
                 });
                 catBar.innerHTML = barHtml;
             }
@@ -673,13 +616,10 @@
             grid.innerHTML = filtered.map(item => {
                 const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
                 return `
-                    <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" 
-                         onclick="${isSoldOut ? "alert('⚠️ هذه الوجبة نفدت!')" : `addToPosCart(${item.id})`}">
-                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" 
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
-                        <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-                        <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                        ${isSoldOut ? '<span style="position:absolute; top:4px; right:4px; background:var(--danger); color:#fff; font-size:0.65rem; padding:1px 5px; border-radius:4px;">نفدت</span>' : ''}
+                    <div class="product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? "alert('⚠️ نفدت الكمية!')" : `addToPosCart(${item.id})`}">
+                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
+                        <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:800;">${item.name}</h4>
+                        <span style="font-size:0.82rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
                     </div>
                 `;
             }).join('');
@@ -692,31 +632,20 @@
             else items = JSON.parse(localStorage.getItem('sys_items') || '[]');
 
             const grid = document.getElementById('posProductsGrid');
-            const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
-
             const filtered = items.filter(i => (i.name || '').toLowerCase().includes(query));
 
             if (filtered.length === 0) {
-                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد نتائج مطابقة للبحث</p>`;
+                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد نتائج مطابقة</p>`;
                 return;
             }
 
-            grid.innerHTML = filtered.map(item => {
-                const isSoldOut = soldOutItems.includes(cleanPrice(item.id));
-                return `
-                    <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? "alert('⚠️ هذه الوجبة نفدت!')" : `addToPosCart(${item.id})`}">
-                        <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
-                        <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-                        <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function forceResetCategories() {
-            localStorage.removeItem('sys_categories');
-            loadPosDirectMenu('all');
-            alert("✅ تم إعادة فرز وترتيب جميع الأقسام بنجاح!");
+            grid.innerHTML = filtered.map(item => `
+                <div class="product-card" onclick="addToPosCart(${item.id})">
+                    <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
+                    <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:800;">${item.name}</h4>
+                    <span style="font-size:0.82rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                </div>
+            `).join('');
         }
 
         function addToPosCart(itemId) {
@@ -740,15 +669,13 @@
             const listContainer = document.getElementById('posCartList');
             const totalEl = document.getElementById('posTotalAmount');
             const statusText = document.getElementById('discountStatusText');
-            const clearDiscBtn = document.getElementById('btnClearDiscX');
 
             if (!listContainer) return;
 
             if (posCart.length === 0) {
-                listContainer.innerHTML = `<p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>`;
+                listContainer.innerHTML = `<p style="text-align:center; color:#666; font-size:0.8rem; padding:20px;">السلة فارغة حالياً</p>`;
                 if (totalEl) totalEl.innerText = "0 د.ع";
                 if (statusText) statusText.style.display = 'none';
-                if (clearDiscBtn) clearDiscBtn.style.display = 'none';
                 return;
             }
 
@@ -757,22 +684,20 @@
 
             if (posDiscountAmount > 0) {
                 if (statusText) { statusText.style.display = 'inline'; statusText.innerText = `- ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع خصم`; }
-                if (clearDiscBtn) clearDiscBtn.style.display = 'inline-block';
             } else {
                 if (statusText) statusText.style.display = 'none';
-                if (clearDiscBtn) clearDiscBtn.style.display = 'none';
             }
 
             listContainer.innerHTML = posCart.map((item, index) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#181820; padding:6px 8px; border-radius:6px; margin-bottom:4px; border:1px solid #282835;">
-                    <div style="flex:1;">
+                <div class="cart-item-row">
+                    <div>
                         <div style="font-size:0.8rem; color:#fff; font-weight:800;">${item.name}</div>
-                        <div style="font-size:0.72rem; color:var(--gold-bright);">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</div>
+                        <div style="font-size:0.75rem; color:var(--gold-bright);">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <button onclick="updateCartQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:24px; height:24px; border-radius:4px; font-weight:bold; cursor:pointer;">-</button>
-                        <span style="font-size:0.82rem; font-weight:800; color:#fff;">${item.qty}</span>
-                        <button onclick="updateCartQty(${index}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:24px; height:24px; border-radius:4px; font-weight:bold; cursor:pointer;">+</button>
+                        <button onclick="updateCartQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:24px; height:24px; border-radius:4px; font-weight:bold;">-</button>
+                        <span style="font-size:0.85rem; font-weight:800; color:#fff;">${item.qty}</span>
+                        <button onclick="updateCartQty(${index}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:24px; height:24px; border-radius:4px; font-weight:bold;">+</button>
                     </div>
                 </div>
             `).join('');
@@ -794,86 +719,55 @@
             renderPosCart();
         }
 
-        function clearAllDiscounts() {
+        function applyDiscountPrompt(type) {
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
+
+            if (type === 'pct') {
+                const val = prompt("أدخل نسبة الخصم المئوية (%):", "10");
+                if (val) posDiscountAmount = Math.round((subtotal * parseFloat(val)) / 100);
+            } else if (type === 'amt') {
+                const val = prompt("أدخل مبلغ الخصم (دينار):", "1000");
+                if (val) posDiscountAmount = cleanPrice(val);
+            }
+            renderPosCart();
+        }
+
+        function applyCouponCode() {
+            const inputCode = prompt("أدخل كود الخصم:")?.trim().toUpperCase();
+            if (!inputCode) return;
+            let coupons = [{ code: 'MIM10', type: 'percent', value: 10 }, { code: 'MIM89', type: 'amount', value: 2000 }];
+            const found = coupons.find(c => c.code === inputCode);
+            if (!found) return alert("❌ الكود غير صحيح!");
+
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (found.type === 'percent') posDiscountAmount = Math.round((subtotal * found.value) / 100);
+            else posDiscountAmount = found.value;
+
+            renderPosCart();
+            alert(`✅ تم تطبيق الخصم: ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع`);
+        }
+
+        function clearDiscount() {
             posDiscountAmount = 0;
             renderPosCart();
         }
 
-        // 🎯 دوال الخصومات بالكامل
-        function applyFreeDiscount() {
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
-            posDiscountAmount = subtotal;
-            renderPosCart();
-        }
-
-        function applyPercentDiscountPrompt() {
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
-            const pct = prompt("أدخل نسبة الخصم المئوية (%):", "10");
-            if (!pct) return;
-            const pVal = parseFloat(pct);
-            if (isNaN(pVal) || pVal <= 0) return;
-            posDiscountAmount = Math.round((subtotal * pVal) / 100);
-            renderPosCart();
-        }
-
-        function applyAmountDiscountPrompt() {
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
-            const amt = prompt("أدخل مبلغ الخصم بالدينار:", "1000");
-            if (!amt) return;
-            const aVal = cleanPrice(amt);
-            if (aVal <= 0) return;
-            posDiscountAmount = Math.min(subtotal, aVal);
-            renderPosCart();
-        }
-
-        window.applyCouponCodeToCart = function() {
-            const inputCode = prompt("أدخل رمز الكوبون أو كود الخصم:")?.trim().toUpperCase();
-            if (!inputCode) return;
-
-            let coupons = [
-                { code: 'MIM10', type: 'percent', value: 10, title: 'خصم 10%' },
-                { code: 'FREE', type: 'free_delivery', value: 0, title: 'توصيل مجاني' },
-                { code: 'MIM89', type: 'amount', value: 2000, title: 'خصم 2,000 د.ع' }
-            ];
-
-            try {
-                const stored = localStorage.getItem('sys_coupons');
-                if (stored) coupons = JSON.parse(stored);
-            } catch(e){}
-
-            const found = coupons.find(c => c.code.toUpperCase() === inputCode);
-            if (!found) return alert("❌ كود الخصم غير صحيح أو غير مفعّل!");
-
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
-
-            if (found.type === 'percent') posDiscountAmount = Math.round((subtotal * found.value) / 100);
-            else if (found.type === 'amount') posDiscountAmount = found.value;
-
-            renderPosCart();
-            alert(`✅ تم تطبيق الخصم: ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع`);
-        };
-
-        // 🛵 حساب الدليفرية
-        window.openDriverAccountModal = function() {
+        function openDriverAccountModal() {
             const select = document.getElementById('driverAccountSelect');
             if (!select) return;
             let drivers = [];
             try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
-            if (drivers.length === 0) drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
+            if (drivers.length === 0) drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }];
             select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
             calculateDriverBalance();
             openModal('driverAccountModal');
-        };
+        }
 
-        window.calculateDriverBalance = function() {
+        function calculateDriverBalance() {
             const driverName = document.getElementById('driverAccountSelect')?.value;
             let completedOrders = [];
             try { completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]'); } catch(e){}
-
             activeDriverOrders = completedOrders.filter(o => o.driverName === driverName && !o.isSettled);
 
             const count = activeDriverOrders.length;
@@ -885,35 +779,26 @@
             document.getElementById('driverMealsTotal').innerText = `${mealsTotal.toLocaleString('ar-IQ')} د.ع`;
             document.getElementById('driverDeliveryFeesTotal').innerText = `${deliveryFees.toLocaleString('ar-IQ')} د.ع`;
             document.getElementById('driverFinalDue').innerText = `${finalDue.toLocaleString('ar-IQ')} د.ع`;
-        };
+        }
 
-        window.zeroOutDriverBalance = function() {
+        function zeroOutDriverBalance() {
             const driverName = document.getElementById('driverAccountSelect')?.value;
-            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد طلبات معلقة لتصفيرها!");
-            if (!confirm(`هل أنت ألكيد من تسليم المبالغ وتصفير حساب السائق (${driverName})؟`)) return;
+            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد طلبات لتصفيرها!");
+            if (!confirm(`تأكيد تصفير حساب السائق (${driverName})؟`)) return;
 
-            let completedOrders = [];
-            try { completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]'); } catch(e){}
-
+            let completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
             completedOrders.forEach(o => {
-                if (o.driverName === driverName && !o.isSettled) {
-                    o.isSettled = true;
-                    o.settledAt = new Date().toLocaleString('ar-IQ');
-                }
+                if (o.driverName === driverName && !o.isSettled) o.isSettled = true;
             });
 
             localStorage.setItem('sys_completed_orders', JSON.stringify(completedOrders));
             alert(`✅ تم تصفير حساب السائق (${driverName}) بنجاح.`);
             calculateDriverBalance();
-        };
+        }
 
-        window.printDriverReceipt = function() {
+        function printDriverReceipt() {
             const driverName = document.getElementById('driverAccountSelect')?.value;
             if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد بيانات للطباعة!");
-
-            const mealsTotal = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.subtotal || o.totalAmount), 0);
-            const deliveryFees = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.deliveryFee || 2500), 0);
-            const finalDue = mealsTotal + deliveryFees;
 
             let printBox = document.getElementById('mim89ThermalPrintBox');
             if (!printBox) {
@@ -922,49 +807,37 @@
                 document.body.appendChild(printBox);
             }
 
+            const mealsTotal = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.subtotal || o.totalAmount), 0);
+            const deliveryFees = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.deliveryFee || 2500), 0);
+
             printBox.innerHTML = `
                 <div style="text-align:center; font-family:'Tajawal',sans-serif; width:72mm; padding:5px;">
-                    <h2 style="margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
-                    <p style="margin:2px 0; font-size:12px;">كشف حساب سائق دليفري</p>
-                    <p style="margin:2px 0; font-size:11px;">السائق: <strong>${driverName}</strong></p>
-                    <p style="margin:2px 0; font-size:10px;">التاريخ: ${new Date().toLocaleString('ar-IQ')}</p>
+                    <h3 style="margin:0;">MIM89 FAST FOOD</h3>
+                    <p style="margin:2px 0; font-size:12px;">كشف حساب سائق: <strong>${driverName}</strong></p>
                     <hr style="border-top:1px dashed #000; margin:5px 0;">
                     <div style="font-size:11px; text-align:right;">
-                        <div>عدد الطلبات: <strong>${activeDriverOrders.length}</strong></div>
-                        <div>مجموع الوجبات: <strong>${mealsTotal.toLocaleString('ar-IQ')} د.ع</strong></div>
-                        <div>أجور التوصيل: <strong>${deliveryFees.toLocaleString('ar-IQ')} د.ع</strong></div>
-                        <div style="font-size:13px; font-weight:bold; margin-top:4px;">الصافي المطلوب: ${finalDue.toLocaleString('ar-IQ')} د.ع</div>
+                        <div>عدد الطلبات: ${activeDriverOrders.length}</div>
+                        <div>مجموع الوجبات: ${mealsTotal.toLocaleString('ar-IQ')} د.ع</div>
+                        <div>أجور التوصيل: ${deliveryFees.toLocaleString('ar-IQ')} د.ع</div>
+                        <div style="font-weight:bold; font-size:13px; margin-top:4px;">الصافي المطلوب: ${(mealsTotal + deliveryFees).toLocaleString('ar-IQ')} د.ع</div>
                     </div>
                 </div>
             `;
             window.print();
-        };
+        }
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         function prepareAndOpenPrintModal() {
             if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
-            printTracker = { customerPrinted: false, kitchenPrinted: false };
             openModal('printOptionsModal');
         }
 
-        function executeCustomerPrintOnly() {
-            printTracker.customerPrinted = true;
-            document.getElementById('custPrintBadge').innerText = "✅ (تمت الطباعة)";
-            window.print();
-        }
-
-        function executeKitchenPrintOnly() {
-            printTracker.kitchenPrinted = true;
-            document.getElementById('kitchenPrintBadge').innerText = "✅ (تمت الطباعة)";
-            window.print();
-        }
+        function executeCustomerPrintOnly() { window.print(); }
+        function executeKitchenPrintOnly() { window.print(); }
 
         function tryFinalizeAndClearOrder() {
-            if (!printTracker.customerPrinted || !printTracker.kitchenPrinted) {
-                if (!confirm("⚠️ لم تقم بطباعة الفاتورتين معاً. هل تريد التفريغ والإتمام؟")) return;
-            }
             clearPosCart();
             closeModal('printOptionsModal');
         }
