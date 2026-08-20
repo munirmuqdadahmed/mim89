@@ -1,416 +1,278 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 FAST FOOD - POS Luxury V2</title>
-    <!-- Tajawal Font & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+/* ==========================================================================
+   MIM89 FAST FOOD - POS Interface Bridge & Extension Module
+   دوال الربط والتكامل المباشر مع واجهة الكاشير (HTML Interface Bridge)
+   ========================================================================== */
 
-    <style>
-        :root {
-            --bg-dark: #0f0f12;
-            --bg-card: #18181d;
-            --bg-element: #22222b;
-            --gold-primary: #ffd700;
-            --gold-bright: #fbbf24;
-            --gold-gradient: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --text-main: #ffffff;
-            --text-muted: #a1a1aa;
-            --border-color: #27272a;
-        }
+// ⏰ 1. متغيرات ودوال إدارة أوقات الدوام والإغلاق الطارئ
+let cashierWorkHoursObj = { open: 10, close: 3, isEmergencyClosed: false };
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Tajawal', sans-serif;
-            user-select: none;
-        }
+function openWorkingHoursModal() {
+    try {
+        const stored = localStorage.getItem('sys_work_hours');
+        if (stored) cashierWorkHoursObj = JSON.parse(stored);
+    } catch(e) {}
 
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-        }
+    const openInput = document.getElementById('cashierWorkOpenHour');
+    const closeInput = document.getElementById('cashierWorkCloseHour');
+    if (openInput) openInput.value = cashierWorkHoursObj.open ?? 10;
+    if (closeInput) closeInput.value = cashierWorkHoursObj.close ?? 3;
 
-        /* Overlay Auth Lock */
-        #authOverlayV2 {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 12, 0.96);
-            backdrop-filter: blur(12px);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    updateEmergencyToggleButtonUI();
+    updateWorkingHoursModalStatusInfo(cashierWorkHoursObj.open, cashierWorkHoursObj.close);
+    openModal('workingHoursModal');
+}
 
-        .auth-card {
-            background: var(--bg-card);
-            border: 1px solid var(--gold-primary);
-            border-radius: 16px;
-            padding: 30px;
-            width: 360px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.15);
-        }
+function updateEmergencyToggleButtonUI() {
+    const btn = document.getElementById('btnEmergencyStoreToggle');
+    if (!btn) return;
 
-        .auth-card h2 {
-            color: var(--gold-primary);
-            margin-bottom: 8px;
-            font-weight: 900;
-        }
+    if (cashierWorkHoursObj.isEmergencyClosed) {
+        btn.style.background = 'var(--danger)';
+        btn.style.color = '#fff';
+        btn.innerHTML = '🔴 المينيو مغلق طارئاً الآن (اضغط للفتح المباشر 🟢)';
+    } else {
+        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        btn.style.color = '#fff';
+        btn.innerHTML = '🟢 المينيو نشط ومفتوح للزبائن (اضغط للإغلاق الطارئ 🔴)';
+    }
+}
 
-        .auth-input {
-            width: 100%;
-            padding: 14px;
-            margin: 18px 0;
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 1.2rem;
-            text-align: center;
-            letter-spacing: 4px;
-            outline: none;
-        }
+function toggleEmergencyStoreStatus() {
+    cashierWorkHoursObj.isEmergencyClosed = !cashierWorkHoursObj.isEmergencyClosed;
+    updateEmergencyToggleButtonUI();
+    saveWorkingHoursFromCashier(true);
+}
 
-        .auth-input:focus {
-            border-color: var(--gold-primary);
-        }
+function updateWorkingHoursModalStatusInfo(openH, closeH) {
+    const infoBox = document.getElementById('workingHoursStatusInfo');
+    if (!infoBox) return;
 
-        .gold-btn-main {
-            width: 100%;
-            padding: 14px;
-            background: var(--gold-gradient);
-            border: none;
-            border-radius: 10px;
-            color: #000;
-            font-weight: 900;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+    if (cashierWorkHoursObj.isEmergencyClosed) {
+        infoBox.style.background = 'rgba(239, 68, 68, 0.2)';
+        infoBox.style.color = 'var(--danger)';
+        infoBox.style.border = '1px solid var(--danger)';
+        infoBox.innerHTML = '🔴 المينيو مغلق طارئاً وحالة الحظر مفعّلة الآن!';
+        return;
+    }
 
-        .gold-btn-main:active {
-            transform: scale(0.98);
-        }
+    const currentHour = new Date().getHours();
+    let isOpen = (openH > closeH) 
+        ? (currentHour >= openH || currentHour < closeH) 
+        : (currentHour >= openH && currentHour < closeH);
 
-        /* Main POS Layout */
-        .pos-container {
-            display: grid;
-            grid-template-columns: 380px 1fr 140px;
-            height: 100vh;
-        }
+    if (isOpen) {
+        infoBox.style.background = 'rgba(16, 185, 129, 0.2)';
+        infoBox.style.color = 'var(--success)';
+        infoBox.style.border = '1px solid var(--success)';
+        infoBox.innerHTML = '🟢 المينيو مفتوح الآن ويستقبل الطلبات';
+    } else {
+        infoBox.style.background = 'rgba(239, 68, 68, 0.2)';
+        infoBox.style.color = 'var(--danger)';
+        infoBox.style.border = '1px solid var(--danger)';
+        infoBox.innerHTML = `🔴 المينيو مغلق حالياً (من ${openH}:00 ص إلى 0${closeH}:00 فجراً)`;
+    }
+}
 
-        /* Left Side: Cart & Checkout */
-        .pos-cart-section {
-            background: var(--bg-card);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
+function saveWorkingHoursFromCashier(silent = false) {
+    const openVal = Number(document.getElementById('cashierWorkOpenHour')?.value) || 10;
+    const closeVal = Number(document.getElementById('cashierWorkCloseHour')?.value) || 3;
 
-        .cart-header {
-            padding: 14px;
-            border-bottom: 1px solid var(--border-color);
-            background: #141418;
-        }
+    cashierWorkHoursObj.open = openVal;
+    cashierWorkHoursObj.close = closeVal;
 
-        .service-type-toggle {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 10px;
-        }
+    localStorage.setItem('sys_work_hours', JSON.stringify(cashierWorkHoursObj));
 
-        .svc-btn {
-            flex: 1;
-            padding: 10px 4px;
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-align: center;
-        }
+    if (typeof db !== 'undefined' && db) {
+        db.collection('settings').doc('work_hours').set(cashierWorkHoursObj)
+            .then(() => {
+                if (!silent) alert("✅ تم حفظ وتحديث حالة المينيو وأوقات الدوام بنجاح!");
+                updateWorkingHoursModalStatusInfo(openVal, closeVal);
+                if (!silent) closeModal('workingHoursModal');
+            })
+            .catch(err => {
+                if (!silent) alert("✅ تم الحفظ محلياً بنجاح!");
+                updateWorkingHoursModalStatusInfo(openVal, closeVal);
+                if (!silent) closeModal('workingHoursModal');
+            });
+    } else {
+        if (!silent) alert("✅ تم الحفظ بنجاح!");
+        updateWorkingHoursModalStatusInfo(openVal, closeVal);
+        if (!silent) closeModal('workingHoursModal');
+    }
+}
 
-        .svc-btn.active {
-            background: var(--gold-gradient);
-            color: #000;
-            border-color: var(--gold-primary);
-        }
+// 🚫 2. إدارة نافذة النفاد والوجبات المنتهية (Sold Out)
+function openSoldOutManagerModal() {
+    const container = document.getElementById('soldOutItemsListTable');
+    if (!container) return;
 
-        .cust-info-box input {
-            width: 100%;
-            padding: 10px;
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 0.85rem;
-        }
+    const items = getData('sys_items');
+    let soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
-        .cart-items-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-        }
-
-        .cart-item-card {
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 8px;
-        }
-
-        .cart-footer {
-            padding: 14px;
-            background: #141418;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .total-display-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .total-amount-large {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: var(--gold-primary);
-        }
-
-        /* Middle: Product Grid */
-        .pos-products-section {
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-dark);
-            height: 100vh;
-        }
-
-        .incoming-alert-banner {
-            background: #064e3b;
-            border-bottom: 1px solid var(--accent-green);
-            padding: 8px 14px;
-            display: none;
-        }
-
-        .products-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 12px;
-            padding: 14px;
-            overflow-y: auto;
-        }
-
-        .product-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .product-card:active {
-            transform: scale(0.95);
-            border-color: var(--gold-primary);
-        }
-
-        .product-img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .product-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: #fff;
-        }
-
-        .product-price {
-            font-size: 0.9rem;
-            font-weight: 900;
-            color: var(--gold-primary);
-        }
-
-        /* Right Side: Quick Categories Bar */
-        .pos-categories-sidebar {
-            background: #141418;
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px;
-            overflow-y: auto;
-        }
-
-        .cat-btn {
-            padding: 14px 8px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            color: #fff;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-
-        .cat-btn.active {
-            background: var(--gold-gradient);
-            color: #000;
-            border-color: var(--gold-primary);
-        }
-
-        /* Modal Lock Styling */
-        .modal-v2 {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(8px);
-            z-index: 8000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-card {
-            background: var(--bg-card);
-            border: 1px solid var(--gold-primary);
-            border-radius: 16px;
-            padding: 24px;
-            width: 450px;
-            max-width: 90%;
-        }
-
-        .denom-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .denom-row input {
-            width: 90px;
-            padding: 8px;
-            background: var(--bg-element);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--gold-primary);
-            text-align: center;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Lock Overlay Auth -->
-    <div id="authOverlayV2">
-        <div class="auth-card">
-            <h2><i class="fa-solid fa-shield-halved"></i> MIM89 POS V2</h2>
-            <p style="color:var(--text-muted); font-size:0.85rem;">نظام إدارة الكاشير الأمن والمغلق</p>
-            <input type="password" id="cashierPassInputV2" class="auth-input" placeholder="••••" autofocus>
-            <div id="authErrorV2" style="color:var(--accent-red); font-size:0.85rem; margin-bottom:10px;"></div>
-            <button class="gold-btn-main" onclick="loginCashierV2()">دخول للنظام 🚀</button>
-        </div>
-    </div>
-
-    <!-- Main POS Screen -->
-    <div class="pos-container" id="posMainScreen" style="display:none;">
-        
-        <!-- 1. Left Cart & Billing Section -->
-        <div class="pos-cart-section">
-            <div class="cart-header">
-                <div class="service-type-toggle" id="svcTypeGroup">
-                    <button class="svc-btn active" onclick="setServiceType('dine_in', this)">🍽️ صالة</button>
-                    <button class="svc-btn" onclick="setServiceType('takeaway', this)">🛍️ سفري</button>
-                    <button class="svc-btn" onclick="setServiceType('delivery', this)">🛵 توصيل</button>
+    let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
+    items.forEach(item => {
+        const isSold = soldOutItems.includes(Number(item.id));
+        html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:8px 12px; border-radius:8px; border:1px solid #2a2a35;">
+                <div>
+                    <strong style="color:#fff;">${item.name}</strong>
+                    <div style="font-size:0.75rem; color:var(--gold-bright);">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</div>
                 </div>
-                <div class="cust-info-box">
-                    <input type="text" id="posCustNameV2" placeholder="اسم الزبون / رقم الهاتف..." onkeyup="autoSearchCustomerByPhone(this.value)">
+                <button onclick="toggleItemSoldOutStatus(${item.id})" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.75rem; background:${isSold ? 'var(--danger)' : '#222'}; color:${isSold ? '#fff' : 'var(--success)'}; border:1px solid ${isSold ? 'var(--danger)' : 'var(--success)'};">
+                    ${isSold ? '🚫 نفدت الكمية (اضغط للإتاحة)' : '🟢 متوفر (اضغط لإعلان النفاد)'}
+                </button>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    openModal('soldOutManagerModal');
+}
+
+function toggleItemSoldOutStatus(itemId) {
+    let soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+    itemId = Number(itemId);
+
+    if (soldOutItems.includes(itemId)) {
+        soldOutItems = soldOutItems.filter(id => id !== itemId);
+    } else {
+        soldOutItems.push(itemId);
+    }
+
+    localStorage.setItem('sys_sold_out', JSON.stringify(soldOutItems));
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection('settings').doc('sold_out').set({ items: soldOutItems }).catch(console.warn);
+    }
+
+    openSoldOutManagerModal();
+    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+}
+
+// 🏷️ 3. إدارة الكوبونات وأكواد الخصم
+function openCouponsManagerModal() {
+    renderCouponsList();
+    openModal('couponsManagerModal');
+}
+
+function renderCouponsList() {
+    const container = document.getElementById('couponsListTable');
+    if (!container) return;
+
+    let coupons = [
+        { code: 'MIM10', type: 'percent', value: 10, title: 'خصم 10%' },
+        { code: 'FREE', type: 'free_delivery', value: 0, title: 'توصيل مجاني 🎉' },
+        { code: 'MIM89', type: 'amount', value: 2000, title: 'خصم 2,000 د.ع' }
+    ];
+
+    try {
+        const stored = localStorage.getItem('sys_coupons');
+        if (stored) coupons = JSON.parse(stored);
+    } catch(e) {}
+
+    let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
+    coupons.forEach((c, index) => {
+        let typeTxt = c.type === 'percent' ? `${c.value}% خصم` : (c.type === 'amount' ? `${cleanPrice(c.value).toLocaleString('ar-IQ')} د.ع خصم` : 'توصيل مجاني');
+        html += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:8px 12px; border-radius:8px; border:1px solid #2a2a35;">
+                <div>
+                    <strong style="color:var(--gold-bright); font-size:0.9rem;">${c.code}</strong>
+                    <div style="font-size:0.75rem; color:#aaa;">${typeTxt}</div>
                 </div>
+                <button onclick="deleteCouponCodeRecord(${index})" class="gold-btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:var(--danger); color:#fff;">حذف ✕</button>
             </div>
+        `;
+    });
+    html += '</div>';
 
-            <div class="cart-items-scroll" id="cartItemsListV2">
-                <p style="text-align:center; color:var(--text-muted); padding:30px 0;">السلة فارغة حالياً</p>
-            </div>
+    container.innerHTML = html;
+}
 
-            <div class="cart-footer">
-                <div class="total-display-row">
-                    <span style="color:var(--text-muted);">المجموع الكلي:</span>
-                    <span class="total-amount-large" id="cartTotalV2">0 د.ع</span>
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="gold-btn-main" onclick="openCashPaymentModalV2()" style="flex:2;">🖨️ دفع وطباعة</button>
-                    <button onclick="openCloseShiftModalZ()" style="flex:1; background:#ef4444; color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">🔒 Z-تقفيل</button>
-                </div>
-            </div>
+function addNewCouponCodeRecord() {
+    const code = document.getElementById('newCouponCodeInput')?.value.trim().toUpperCase();
+    const type = document.getElementById('newCouponTypeSelect')?.value;
+    const val = cleanPrice(document.getElementById('newCouponValueInput')?.value) || 0;
+
+    if (!code) return alert("⚠️ يرجى كتابة رمز الكوبون!");
+
+    let coupons = JSON.parse(localStorage.getItem('sys_coupons') || '[]');
+    coupons.push({ code, type, value: val, title: `${code}` });
+    localStorage.setItem('sys_coupons', JSON.stringify(coupons));
+
+    if (document.getElementById('newCouponCodeInput')) document.getElementById('newCouponCodeInput').value = '';
+    if (document.getElementById('newCouponValueInput')) document.getElementById('newCouponValueInput').value = '';
+
+    renderCouponsList();
+    alert("✅ تم إضافة كود الخصم بنجاح!");
+}
+
+function deleteCouponCodeRecord(index) {
+    let coupons = JSON.parse(localStorage.getItem('sys_coupons') || '[]');
+    if (coupons[index]) {
+        coupons.splice(index, 1);
+        localStorage.setItem('sys_coupons', JSON.stringify(coupons));
+        renderCouponsList();
+    }
+}
+
+// 🍔 4. الفلترة المباشرة عبر الأقسام في POS
+function filterPosProductsByCategory(categoryName, btnElement) {
+    if (btnElement) {
+        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    const items = getData('sys_items');
+    const categories = getData('sys_categories');
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
+
+    if (categoryName === 'all') {
+        loadPosDirectMenu('all');
+        return;
+    }
+
+    const targetCat = categories.find(c => c.name.includes(categoryName));
+    const filtered = targetCat 
+        ? items.filter(i => cleanPrice(i.categoryId) === cleanPrice(targetCat.id))
+        : items.filter(i => i.name.includes(categoryName));
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم</p>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(item => `
+        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
+    `).join('');
+}
 
-        <!-- 2. Middle Product Grid Section -->
-        <div class="pos-products-section">
-            <div class="incoming-alert-banner" id="incomingCallBanner">
-                <!-- Incoming Phone / Web Order Alert -->
-            </div>
-            
-            <div class="products-grid" id="productsGridV2">
-                <!-- Direct Product Cards Rendered Here -->
-            </div>
-        </div>
+// 🌐 5. التحكم بفتح الدرج وشارة الأوفلاين والقائمة المنسدلة
+function openCashDrawer() { window.print(); }
 
-        <!-- 3. Right Quick Categories Section -->
-        <div class="pos-categories-sidebar" id="categoriesSidebarV2">
-            <!-- Quick Category Tabs Rendered Here -->
-        </div>
+function toggleBrandMenu() {
+    const menu = document.getElementById('brandDropdownMenu');
+    if (menu) menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+}
 
-    </div>
+window.addEventListener('click', (e) => {
+    if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
+        const menu = document.getElementById('brandDropdownMenu');
+        if (menu && menu.style.display === 'block') menu.style.display = 'none';
+    }
+});
 
-    <!-- Z-Report Shift Closing Modal (Blind Close) -->
-    <div class="modal-v2" id="closeShiftModalZ">
-        <div class="modal-card">
-            <h3 style="color:var(--gold-primary); text-align:center; margin-bottom:12px;"><i class="fa-solid fa-lock"></i> تقفيل الشيفت أمنياً (Z-Report)</h3>
-            <p style="font-size:0.8rem; color:var(--text-muted); text-align:center; margin-bottom:16px;">أدخل عدد الأوراق النقدية الفعلية الموجودة بالصندوق للتقفيل المباشر:</p>
-
-            <div id="denomTable">
-                <div class="denom-row"><span>50,000 د.ع:</span> <input type="number" class="denom-in" data-val="50000" value="0"></div>
-                <div class="denom-row"><span>25,000 د.ع:</span> <input type="number" class="denom-in" data-val="25000" value="0"></div>
-                <div class="denom-row"><span>10,000 د.ع:</span> <input type="number" class="denom-in" data-val="10000" value="0"></div>
-                <div class="denom-row"><span>5,000 د.ع:</span> <input type="number" class="denom-in" data-val="5000" value="0"></div>
-                <div class="denom-row"><span>1,000 د.ع والخردة:</span> <input type="number" id="denomSmallCoins" value="0"></div>
-            </div>
-
-            <button class="gold-btn-main" style="margin-top:16px;" onclick="executeZShiftClose()">تأكيد واستخراج تقرير Z 📑</button>
-            <button onclick="closeModalV2('closeShiftModalZ')" style="width:100%; margin-top:8px; background:none; border:none; color:var(--text-muted); cursor:pointer;">إلغاء</button>
-        </div>
-    </div>
-
-    <!-- Import Engine Script -->
-    <script src="app-v2.js"></script>
-</body>
-</html>
+function initOfflineNetworkMonitor() {
+    const badge = document.getElementById('offlineStatusBadge');
+    const updateOnlineStatus = () => {
+        if (badge) badge.style.display = navigator.onLine ? 'none' : 'inline-flex';
+    };
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+}
