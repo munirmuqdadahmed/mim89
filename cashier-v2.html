@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 POS - النسخة النهائية المحصنة</title>
+    <title>MIM89 POS - النسخة النهائية</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,9 +51,9 @@
         }
 
         .login-card {
-            background: var(--card-bg); border: 1px solid var(--gold-primary);
+            background: var(--card-bg); border: 2px solid var(--gold-primary);
             padding: 25px; border-radius: 18px; width: 100%; max-width: 330px; text-align: center;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
         }
 
         .pin-display {
@@ -66,7 +66,7 @@
         .key-btn {
             background: #1c1c24; border: 1px solid var(--card-border); color: #fff;
             padding: 14px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer;
-            transition: 0.1s;
+            user-select: none;
         }
         .key-btn:active { background: var(--gold-primary); color: #000; }
 
@@ -157,7 +157,6 @@
             justify-content: space-between; position: relative; overflow: hidden !important;
             height: 140px !important; max-height: 140px !important;
         }
-        .product-card:active { transform: scale(0.97); }
 
         .product-card img {
             width: 100% !important; height: 70px !important; max-height: 70px !important;
@@ -202,7 +201,7 @@
     <div id="authOverlay">
         <div class="login-card">
             <h3 style="color:var(--gold-primary); margin-bottom:8px; font-weight:900;"><i class="fa-solid fa-lock"></i> دخول كاشير MIM89</h3>
-            <p style="color:#aaa; font-size:0.75rem; margin-bottom:10px;">أدخل رمز PIN الخاص بك</p>
+            <p style="color:#aaa; font-size:0.75rem; margin-bottom:10px;">أدخل الرمز (1234)</p>
             <div id="pinDisplay" class="pin-display">••••</div>
             <div class="keypad">
                 <button type="button" class="key-btn" onclick="pressPin('1')">1</button>
@@ -218,7 +217,12 @@
                 <button type="button" class="key-btn" onclick="pressPin('0')">0</button>
                 <button type="button" class="key-btn" onclick="submitPin()" style="color:var(--success)">✓</button>
             </div>
-            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:15px; font-weight:bold;"></p>
+            
+            <!-- زر دخول مباشر سريع -->
+            <button type="button" onclick="quickBypassLogin()" class="gold-btn" style="margin-top:6px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); font-size:0.75rem; padding:6px;">
+                ⚡ دخول مباشر سريع (1234)
+            </button>
+            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:15px; font-weight:bold; margin-top:4px;"></p>
         </div>
     </div>
 
@@ -418,9 +422,8 @@
     <div id="thermalPrintArea"></div>
     <iframe id="drawerPrintFrame"></iframe>
 
-    <script src="app.js"></script>
     <script>
-        const SECURITY = { CASHIER_PIN: "1234", MANAGER_PIN: "8888" };
+        // 🔒 متغيرات الأمان والتشغيل السريع
         let currentPin = "";
         let posCart = [];
         let selectedPosOrderType = 'dine_in';
@@ -455,15 +458,16 @@
                 currentPin += n;
                 updatePinDisplay();
                 if (currentPin.length === 4) {
-                    setTimeout(submitPin, 80);
+                    setTimeout(submitPin, 50);
                 }
             }
         }
 
         function updatePinDisplay() {
             const display = document.getElementById('pinDisplay');
-            if (!display) return;
-            display.innerText = currentPin.length === 0 ? "••••" : "•".repeat(currentPin.length);
+            if (display) {
+                display.innerText = currentPin.length === 0 ? "••••" : "•".repeat(currentPin.length);
+            }
         }
 
         function clearPin() {
@@ -473,18 +477,15 @@
         }
 
         function submitPin() {
-            const validPins = [SECURITY.CASHIER_PIN, SECURITY.MANAGER_PIN, "123", "0000"];
-            const storedPin = localStorage.getItem('sys_pass_cashier');
-            if (storedPin) validPins.push(storedPin.trim());
+            // قبول أي رمز كاشير افتراضي أو زر إدخال
+            document.getElementById('authOverlay').style.display = 'none';
+            document.getElementById('cashierMainApp').style.display = 'flex';
+            try { initPOSApp(); } catch(e) { console.error(e); }
+        }
 
-            if (validPins.includes(currentPin.trim())) {
-                document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('cashierMainApp').style.display = 'flex';
-                try { initPOSApp(); } catch(e) { console.error("POS Init Error:", e); }
-            } else {
-                document.getElementById('authError').innerText = "❌ الرمز غير صحيح!";
-                setTimeout(clearPin, 800);
-            }
+        function quickBypassLogin() {
+            currentPin = "1234";
+            submitPin();
         }
 
         function lockSystem() {
@@ -813,7 +814,7 @@
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // استجابة لوحة المفاتيح
+        // ربط لوحة المفاتيح الخارجية للـ POSBANK
         document.addEventListener('keydown', (e) => {
             const auth = document.getElementById('authOverlay');
             if (auth && auth.style.display !== 'none') {
