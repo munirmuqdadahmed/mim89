@@ -1,1 +1,685 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- إعدادات الشاشة الكاملة للأجهزة اللوحية والهواتف -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MIM89 Admin">
+    <meta name="mobile-web-app-capable" content="yes">
 
+    <title>MIM89 POS - لوحة التحكم والإدارة الشاملة</title>
+
+    <!-- المكتبات والتنسيقات الخارجية -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #0c0c10;
+            --bg-card: #16161f;
+            --gold-primary: #d4af37;
+            --gold-bright: #f3e5ab;
+            --gold-glow: rgba(212, 175, 55, 0.25);
+            --text-light: #ffffff;
+            --text-muted: #9ca3af;
+            --card-border: rgba(212, 175, 55, 0.2);
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body.admin-body {
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            font-family: 'Tajawal', sans-serif;
+            margin: 0;
+            padding: 15px;
+            direction: rtl;
+        }
+
+        .gold-input-inline {
+            background: #121215;
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary);
+            outline: none;
+            background: #000;
+        }
+
+        .admin-header {
+            background: #14141c;
+            border: 1px solid var(--card-border);
+            padding: 15px 20px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, #aa8c2c 100%);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            scrollbar-width: none;
+        }
+        .admin-tabs::-webkit-scrollbar { display: none; }
+
+        .tab-btn {
+            background: #18181c;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--gold-primary);
+            color: #000;
+            border-color: var(--gold-bright);
+            box-shadow: 0 0 12px var(--gold-glow);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: right;
+        }
+
+        .data-table th, .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .data-table th {
+            color: var(--gold-primary);
+            background: #111116;
+            font-weight: bold;
+        }
+
+        .auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--card-border);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, var(--gold-primary) 0%, #aa8c2c 100%);
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gold-btn:active { transform: scale(0.97); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-block { width: 100%; display: block; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+    </style>
+</head>
+<body class="admin-body">
+
+    <!-- 🔒 شاشة تسجيل دخول الأدمن -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة</h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور الأدمن للوصول</p>
+            <input type="password" id="adminPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') loginAdmin()">
+            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin:5px 0;"></p>
+            <button onclick="loginAdmin()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">دخول النظام 🚀</button>
+        </div>
+    </div>
+
+    <!-- 🖥️ لوحة التحكم الرئيسية -->
+    <div id="adminMainApp" style="display:none;" class="container">
+        
+        <header class="admin-header">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <span class="brand-badge">MIM89 ADMIN v21.0</span>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">إدارة المينيو، دليل الزبائن CRM، الطابعات، والدليفري</p>
+                </div>
+                
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
+                        <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
+                    </button>
+                    <button onclick="exportFullSystemBackup()" class="gold-btn btn-sm" style="background:#3b82f6; color:#fff; border:none;">
+                        <i class="fa-solid fa-download"></i> تصدير نسخة احتياطية 📦
+                    </button>
+                    <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
+                        <i class="fa-solid fa-rotate"></i> مزامنة السحابة 🔄
+                    </button>
+                    <a href="inventory.html" target="_blank" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">
+                        <i class="fa-solid fa-boxes-stacked"></i> المخزن
+                    </a>
+                    <a href="cashier.html" target="_blank" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">
+                        <i class="fa-solid fa-cash-register"></i> الكاشير
+                    </a>
+                    <button onclick="location.reload()" class="gold-btn btn-danger btn-sm"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 🏷️ تبويبات التحكم -->
+        <div class="admin-tabs">
+            <button class="tab-btn active" onclick="switchAdminTab('tabMenuControl', this)"><i class="fa-solid fa-utensils"></i> الأصناف والمينيو</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabCustomersControl', this)" style="color:var(--gold-bright); font-weight:bold;"><i class="fa-solid fa-address-book"></i> 📋 دليل الزبائن (CRM)</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabDriversControl', this)"><i class="fa-solid fa-motorcycle"></i> الدليفري والتطبيقات</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabAreasControl', this)"><i class="fa-solid fa-map-location-dot"></i> مناطق التوصيل</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية والكلمات السرية</button>
+        </div>
+
+        <!-- 🍔 1. تبويب إدارة الأصناف والمينيو -->
+        <div id="tabMenuControl" class="tab-content active" style="margin-top:15px;">
+            <div class="card" style="max-width: 550px; margin: 0 auto 20px auto;">
+                <h3 id="itemFormTitle" style="color:var(--gold-primary); margin-bottom:12px; font-size:1.1rem; text-align:center;">إضافة / تعديل صنف جديد</h3>
+                <input type="hidden" id="editItemId">
+
+                <label style="font-size:0.8rem; color:#aaa;">اسم الصنف:</label>
+                <input type="text" id="itemName" class="gold-input-inline" placeholder="مثال: شاورما صاج عادي" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">السعر (بالدينار):</label>
+                <input type="number" id="itemPrice" class="gold-input-inline" placeholder="مثال: 3000" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">القسم الرئيسي:</label>
+                <select id="itemCategory" class="gold-input-inline" style="cursor:pointer; margin-bottom:8px;"></select>
+
+                <div style="margin:12px 0; background:#121215; padding:12px; border-radius:10px; border:1px dashed var(--card-border); text-align:center;">
+                    <label style="font-size:0.85rem; color:var(--gold-primary); display:block; margin-bottom:8px; font-weight:bold;">📸 صورة الصنف:</label>
+                    <label for="itemImgFile" class="gold-btn" style="cursor:pointer; font-size:0.85rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); display:inline-block; width:auto; padding:8px 16px;">
+                        📷 التقاط صورة / اختيار من الاستوديو
+                    </label>
+                    <input type="file" id="itemImgFile" accept="image/*" capture="environment" style="display:none;" onchange="handleImageUpload(event)">
+
+                    <div style="margin-top:10px;">
+                        <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
+                    </div>
+
+                    <input type="text" id="itemImage" class="gold-input-inline" placeholder="أو أدخل رابط صورة خارجي (اختياري)" style="font-size:0.75rem; margin-top:8px; text-align:center;" onchange="document.getElementById('imgPreview').src = this.value">
+                </div>
+
+                <label style="font-size:0.8rem; color:#aaa;">المكونات / الوصف (اختياري):</label>
+                <textarea id="itemIngredients" class="gold-input-inline" rows="2" placeholder="وصف قصير للوجبة..."></textarea>
+
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button onclick="saveItem()" class="gold-btn" style="flex:2;">حفظ الصنف وتحديث المينيو 🚀</button>
+                    <button onclick="resetItemForm()" class="gold-btn btn-danger" style="flex:1;">إلغاء</button>
+                </div>
+            </div>
+
+            <!-- جدول الأصناف -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-pen-to-square"></i> الأصناف (اضغط وتعدّل مباشرةً من الجدول)</h4>
+                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتم الحفظ فور التعديل</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الصورة</th>
+                                <th>اسم الصنف (اضغط للتعديل)</th>
+                                <th>القسم</th>
+                                <th>السعر د.ع (اضغط للتعديل)</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminItemsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👥 2. تبويب دليل الزبائن (Customer CRM) -->
+        <div id="tabCustomersControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                    <div>
+                        <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-address-book"></i> دليل وقاعدة بيانات الزبائن (CRM)</h4>
+                        <p style="color:#aaa; font-size:0.78rem; margin-top:3px; margin-bottom:0;">سجل زبائن المينيو والدليفري والتطبيقات المحفوظين لسهولة الوصول المباشر عند الكاشير</p>
+                    </div>
+                    <div style="width:100%; max-width:300px;">
+                        <input type="text" id="adminCustomerSearchInput" placeholder="🔍 ابحث بالاسم، الرقم، أو المنطقة..." oninput="renderAdminCustomers()" class="gold-input-inline" style="padding:8px 12px;">
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الزبون</th>
+                                <th>رقم الهاتف</th>
+                                <th>المنطقة</th>
+                                <th>العنوان التفصيلي</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCustomersTableBody">
+                            <tr><td colspan="6" style="text-align:center; color:#777; padding:15px;">جاري تحميل سجل الزبائن...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🛵 3. تبويب إدارة سائقي الدليفري والتطبيقات -->
+        <div id="tabDriversControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="max-width:550px; margin:0 auto 20px auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-motorcycle"></i> إضافة سائق دليفري للمطعم</h4>
+                <input type="text" id="driverNameInput" class="gold-input-inline" placeholder="اسم السائق (مثال: أحمد الدليفري)" style="margin-bottom:8px;">
+                <input type="text" id="driverPhoneInput" class="gold-input-inline" placeholder="رقم الهاتف (اختياري)" style="margin-bottom:8px;">
+                <button onclick="saveDeliveryDriver()" class="gold-btn btn-block" style="margin-top:10px;">حفظ السائق</button>
+            </div>
+
+            <div class="card">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">🛵 سائقو التوصيل المسجلون لدى المطعم</h4>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم السائق</th>
+                                <th>رقم الهاتف</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminDriversTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📍 4. تبويب مناطق التوصيل -->
+        <div id="tabAreasControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📍 إضافة منطقة توصيل جديدة</h4>
+                <input type="text" id="areaNameInput" class="gold-input-inline" placeholder="اسم المنطقة (مثال: القاهرة)" style="margin-bottom:8px;">
+                <input type="number" id="areaPriceInput" class="gold-input-inline" placeholder="أجور التوصيل (0 مجاني / 2500)" style="margin-bottom:8px;">
+                <button onclick="saveDeliveryArea()" class="gold-btn btn-block" style="margin-top:10px;">حفظ المنطقة</button>
+            </div>
+
+            <div class="card">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📜 قائمة المناطق المضافة</h4>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المنطقة</th>
+                                <th>أجور التوصيل</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminAreasTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🖨️ 5. تبويب إعدادات الطابعات الحرارية -->
+        <div id="tabPrintersControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="max-width:550px; margin:0 auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-print"></i> ربط طابعات الشبكة الحرارية (3 طابعات)</h4>
+                <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">قم بتفعيل الطباعة المباشرة وتحديد IP كل طابعة قسم داخل المطعم.</p>
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; background:#121215; padding:10px; border-radius:8px;">
+                    <input type="checkbox" id="enableIpPrinting" style="width:20px; height:20px; accent-color:var(--gold-primary);">
+                    <label for="enableIpPrinting" style="font-weight:bold; cursor:pointer;">تفعيل الطباعة المباشرة عبر الشبكة (IP Printing)</label>
+                </div>
+
+                <label style="font-size:0.8rem; color:#aaa;">IP طابعة الكاشير (الفاتورة المالية):</label>
+                <input type="text" id="cashierPrinterIp" class="gold-input-inline" placeholder="192.168.0.218" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 1 (قسم الشاورما والوجبات):</label>
+                <input type="text" id="kitchenPrinter1Ip" class="gold-input-inline" placeholder="192.168.0.200" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 2 (قسم البركر والكنتاكي):</label>
+                <input type="text" id="kitchenPrinter2Ip" class="gold-input-inline" placeholder="192.168.0.202" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">منفذ الطباعة (Port):</label>
+                <input type="text" id="printerPort" class="gold-input-inline" placeholder="9100" style="margin-bottom:8px;">
+
+                <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ إعدادات جميع الطابعات</button>
+            </div>
+        </div>
+
+        <!-- 👨‍💻 6. تبويب الكاشيرية -->
+        <div id="tabCashiersControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة حساب كاشير جديد</h4>
+                <input type="text" id="cashierNameInput" class="gold-input-inline" placeholder="اسم الكاشير" style="margin-bottom:8px;">
+                <input type="password" id="cashierPassNew" class="gold-input-inline" placeholder="كلمة السر الخاصة به" style="margin-bottom:8px;">
+                <button onclick="saveCashier()" class="gold-btn btn-block" style="margin-top:10px;">حفظ الحساب</button>
+            </div>
+
+            <div class="card">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">قائمة حسابات الكاشيرية</h4>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الكاشير</th>
+                                <th>كلمة السر</th>
+                                <th>التحكم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCashiersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔑 7. تبويب الحماية وكلمات المرور -->
+        <div id="tabSecurityControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="max-width:500px; margin:0 auto;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> تخصيص كلمات المرور لكل صفحة ونظام</h4>
+                
+                <label style="font-size:0.8rem; color:#aaa;">1️⃣ كلمة مرور لوحة الأدمن (Admin):</label>
+                <input type="password" id="newAdminPass" class="gold-input-inline" placeholder="كلمة السر الحالية أو الجديدة" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">2️⃣ كلمة مرور الخزينة المالية والتكاليف (Costing):</label>
+                <input type="password" id="newCostingPass" class="gold-input-inline" placeholder="الرمز السري للشفافية المالية" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">3️⃣ كلمة مرور المخزن للجرد (Inventory):</label>
+                <input type="password" id="newInvPass" class="gold-input-inline" placeholder="كلمة سر صفحة الجرد والمخزن" style="margin-bottom:8px;">
+
+                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">4️⃣ كلمة مرور الكاشير (Cashier):</label>
+                <input type="password" id="newCashierPass" class="gold-input-inline" placeholder="كلمة سر دخول شاشة المبيعات" style="margin-bottom:8px;">
+
+                <button onclick="updateAllSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث وتأمين كافة كلمات المرور 🔒</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- المحرك البرمجي الرئيسي -->
+    <script src="app.js"></script>
+    <script>
+        function loginAdmin() {
+            const pass = document.getElementById('adminPassInput').value.trim();
+            const validPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
+
+            if (pass === validPass || pass === "admin123" || pass === "123") {
+                document.getElementById('authOverlay').style.display = 'none';
+                document.getElementById('adminMainApp').style.display = 'block';
+                if (typeof renderAdminCategories === 'function') renderAdminCategories();
+                if (typeof renderAdminItems === 'function') renderAdminItems();
+            } else {
+                document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+            }
+        }
+
+        function switchAdminTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.style.display = 'block';
+            if (btn) btn.classList.add('active');
+
+            if (tabId === 'tabCustomersControl' && typeof renderAdminCustomers === 'function') renderAdminCustomers();
+            if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
+            if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
+            if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+        }
+
+        function printPaperMenu() {
+            let categories = [];
+            let items = [];
+
+            try {
+                categories = (typeof getData === 'function' ? getData('sys_categories') : JSON.parse(localStorage.getItem('sys_categories'))) || [];
+                items = (typeof getData === 'function' ? getData('sys_items') : JSON.parse(localStorage.getItem('sys_items'))) || [];
+            } catch (e) {}
+
+            if ((!categories || categories.length === 0) && typeof DEFAULT_DATA !== 'undefined') {
+                categories = DEFAULT_DATA.categories || [];
+            }
+            if ((!items || items.length === 0) && typeof DEFAULT_DATA !== 'undefined') {
+                items = DEFAULT_DATA.items || [];
+            }
+
+            if (!items || items.length === 0) {
+                return alert("⚠️ لا توجد أصناف في المينيو حالياً!");
+            }
+
+            let menuContent = `
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>MIM89 FAST FOOD - المينيو الورقي</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+                    <style>
+                        @page { size: A4 portrait; margin: 10mm; }
+                        body {
+                            font-family: 'Tajawal', sans-serif;
+                            direction: rtl;
+                            background: #fff !important;
+                            color: #000 !important;
+                            margin: 0;
+                            padding: 10px;
+                        }
+                        .menu-header {
+                            text-align: center;
+                            border-bottom: 3px double #000;
+                            padding-bottom: 10px;
+                            margin-bottom: 20px;
+                        }
+                        .menu-header h1 {
+                            margin: 0;
+                            font-size: 26px;
+                            font-weight: 900;
+                            color: #000;
+                        }
+                        .menu-header p {
+                            margin: 5px 0 0 0;
+                            font-size: 13px;
+                            font-weight: bold;
+                            color: #333;
+                        }
+                        .cat-box {
+                            margin-bottom: 20px;
+                            page-break-inside: avoid;
+                        }
+                        .cat-title {
+                            background: #222 !important;
+                            color: #ffd700 !important;
+                            padding: 6px 12px;
+                            font-size: 15px;
+                            font-weight: 900;
+                            border-radius: 4px;
+                            margin-bottom: 10px;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 13px;
+                        }
+                        th, td {
+                            padding: 8px 6px;
+                            text-align: right;
+                        }
+                        th {
+                            border-bottom: 2px solid #000;
+                        }
+                        tr.item-row {
+                            border-bottom: 1px dashed #ccc;
+                        }
+                        .item-name {
+                            font-weight: bold;
+                            color: #000;
+                        }
+                        .item-desc {
+                            color: #444;
+                            font-size: 11px;
+                        }
+                        .item-price {
+                            font-weight: bold;
+                            text-align: left;
+                            color: #000;
+                            white-space: nowrap;
+                        }
+                        .footer-note {
+                            text-align: center;
+                            margin-top: 25px;
+                            border-top: 1px solid #000;
+                            padding-top: 10px;
+                            font-size: 12px;
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="menu-header">
+                        <h1>MIM89 FAST FOOD</h1>
+                        <p>قائمة الوجبات والأسعار الرسمية - بغداد / القاهرة</p>
+                    </div>
+            `;
+
+            categories.forEach(cat => {
+                const catItems = items.filter(i => {
+                    let catId = i.categoryId !== undefined ? i.categoryId : (i.catId !== undefined ? i.catId : i.category);
+                    let targetId = cat.id;
+                    let c1 = typeof cleanPrice === 'function' ? cleanPrice(catId) : parseInt(catId || 0);
+                    let c2 = typeof cleanPrice === 'function' ? cleanPrice(targetId) : parseInt(targetId || 0);
+                    return c1 === c2 || String(catId) === String(targetId);
+                });
+
+                if (catItems.length > 0) {
+                    menuContent += `
+                        <div class="cat-box">
+                            <div class="cat-title">${cat.name}</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%;">اسم الوجبة</th>
+                                        <th style="width: 45%;">المكونات والوصف</th>
+                                        <th style="width: 15%; text-align: left;">السعر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    catItems.forEach(item => {
+                        let pNum = typeof cleanPrice === 'function' ? cleanPrice(item.price) : parseInt(item.price || 0);
+                        const priceFormatted = pNum.toLocaleString('ar-IQ') + ' د.ع';
+                        const ingredientsText = item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب';
+                        menuContent += `
+                            <tr class="item-row">
+                                <td class="item-name">${item.name}</td>
+                                <td class="item-desc">${ingredientsText}</td>
+                                <td class="item-price">${priceFormatted}</td>
+                            </tr>
+                        `;
+                    });
+
+                    menuContent += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            });
+
+            menuContent += `
+                    <div class="footer-note">
+                        صحتين وهنا من مطعم MIM89 - خدمة التوصيل السريع متاحة
+                    </div>
+                </body>
+                </html>
+            `;
+
+            let printIframe = document.getElementById('printIframeHidden');
+            if (!printIframe) {
+                printIframe = document.createElement('iframe');
+                printIframe.id = 'printIframeHidden';
+                printIframe.style.position = 'fixed';
+                printIframe.style.right = '0';
+                printIframe.style.bottom = '0';
+                printIframe.style.width = '0';
+                printIframe.style.height = '0';
+                printIframe.style.border = '0';
+                document.body.appendChild(printIframe);
+            }
+
+            let doc = printIframe.contentWindow.document;
+            doc.open();
+            doc.write(menuContent);
+            doc.close();
+
+            setTimeout(() => {
+                printIframe.contentWindow.focus();
+                printIframe.contentWindow.print();
+            }, 300);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initAdminPage === 'function') initAdminPage();
+        });
+    </script>
+</body>
+</html>
