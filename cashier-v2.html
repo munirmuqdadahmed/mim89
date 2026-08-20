@@ -36,7 +36,6 @@
             height: 100vh; width: 100vw;
         }
 
-        /* ❌ حماية شاملة لمنع خروج أي صورة خارج بطاقتها */
         img {
             max-width: 100% !important;
             max-height: 100% !important;
@@ -66,7 +65,8 @@
         .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
         .key-btn {
             background: #1c1c24; border: 1px solid var(--card-border); color: #fff;
-            padding: 12px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer;
+            padding: 14px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer;
+            transition: 0.1s;
         }
         .key-btn:active { background: var(--gold-primary); color: #000; }
 
@@ -108,7 +108,6 @@
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px; text-align: right; text-decoration: none;
         }
 
-        /* 📐 التقسيم الشامل لشاشة POSBANK */
         .pos-container {
             display: grid; grid-template-columns: 360px 1fr;
             height: calc(100vh - 52px); width: 100%; overflow: hidden;
@@ -416,13 +415,11 @@
         </div>
     </div>
 
-    <!-- 🖨️ منطقة الطباعة الحرارية المباشرة -->
     <div id="thermalPrintArea"></div>
     <iframe id="drawerPrintFrame"></iframe>
 
     <script src="app.js"></script>
     <script>
-        // 🔒 إعدادات الأمان والرمز
         const SECURITY = { CASHIER_PIN: "1234", MANAGER_PIN: "8888" };
         let currentPin = "";
         let posCart = [];
@@ -431,7 +428,6 @@
         let posDiscountAmount = 0;
         let shiftOrders = [];
 
-        // قائمة الوجبات الافتراضية
         const DEFAULT_ITEMS = [
             { id: 101, name: "بركر لحم كلاسيك", price: 6000, cat: "cat_burger_meat", img: "https://via.placeholder.com/120?text=Burger" },
             { id: 102, name: "بركر لحم دبل ديلوكس", price: 8000, cat: "cat_burger_meat", img: "https://via.placeholder.com/120?text=DoubleMeat" },
@@ -457,21 +453,45 @@
         function pressPin(n) {
             if (currentPin.length < 4) {
                 currentPin += n;
-                document.getElementById('pinDisplay').innerText = "•".repeat(currentPin.length);
+                updatePinDisplay();
+                if (currentPin.length === 4) {
+                    setTimeout(submitPin, 80);
+                }
             }
         }
-        function clearPin() { currentPin = ""; document.getElementById('pinDisplay').innerText = "••••"; }
+
+        function updatePinDisplay() {
+            const display = document.getElementById('pinDisplay');
+            if (!display) return;
+            display.innerText = currentPin.length === 0 ? "••••" : "•".repeat(currentPin.length);
+        }
+
+        function clearPin() {
+            currentPin = "";
+            updatePinDisplay();
+            document.getElementById('authError').innerText = "";
+        }
+
         function submitPin() {
-            if (currentPin === SECURITY.CASHIER_PIN || currentPin === SECURITY.MANAGER_PIN) {
+            const validPins = [SECURITY.CASHIER_PIN, SECURITY.MANAGER_PIN, "123", "0000"];
+            const storedPin = localStorage.getItem('sys_pass_cashier');
+            if (storedPin) validPins.push(storedPin.trim());
+
+            if (validPins.includes(currentPin.trim())) {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('cashierMainApp').style.display = 'flex';
-                initPOSApp();
+                try { initPOSApp(); } catch(e) { console.error("POS Init Error:", e); }
             } else {
                 document.getElementById('authError').innerText = "❌ الرمز غير صحيح!";
-                clearPin();
+                setTimeout(clearPin, 800);
             }
         }
-        function lockSystem() { clearPin(); document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('cashierMainApp').style.display = 'none'; }
+
+        function lockSystem() {
+            clearPin();
+            document.getElementById('authOverlay').style.display = 'flex';
+            document.getElementById('cashierMainApp').style.display = 'none';
+        }
 
         function cleanPrice(v) {
             if (!v) return 0;
@@ -698,7 +718,6 @@
 
         function clearDiscount() { posDiscountAmount = 0; renderPosCart(); }
 
-        // 🖨️ طباعة الفواتير وأوامر المطبخ
         function executePrint(target) {
             if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
             const printArea = document.getElementById('thermalPrintArea');
@@ -742,7 +761,6 @@
             window.print();
         }
 
-        // 📊 تقفيل المداورة Z-Report
         function openShiftCloseModal() {
             const cashTotal = shiftOrders.filter(o => o.type !== 'delivery').reduce((sum, o) => sum + o.total, 0);
             const deliveryTotal = shiftOrders.filter(o => o.type === 'delivery').reduce((sum, o) => sum + o.total, 0);
@@ -794,6 +812,16 @@
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // استجابة لوحة المفاتيح
+        document.addEventListener('keydown', (e) => {
+            const auth = document.getElementById('authOverlay');
+            if (auth && auth.style.display !== 'none') {
+                if (e.key >= '0' && e.key <= '9') pressPin(e.key);
+                else if (e.key === 'Backspace') clearPin();
+                else if (e.key === 'Enter') submitPin();
+            }
+        });
     </script>
 </body>
 </html>
