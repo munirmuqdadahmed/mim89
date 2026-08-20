@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 POS - الشاشة المحدثة والمحصنة</title>
+    <title>MIM89 POS - الشاشة المباشرة</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,60 +23,60 @@
 
         * {
             box-sizing: border-box !important;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Tajawal', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             background-color: var(--bg-dark);
             color: #f3f4f6;
             overflow: hidden !important;
+            height: 100vh; width: 100vw;
+        }
+
+        /* ❌ منع أي صورة من الخروج خارج حجم بطاقتها كلياً */
+        img {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            object-fit: cover !important;
+        }
+
+        #cashierMainApp {
+            display: flex;
             height: 100vh;
-            width: 100vw;
+            flex-direction: column;
+            overflow: hidden;
         }
-
-        /* 🔒 شاشة الدخول */
-        #authOverlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: #060608; z-index: 999999;
-            display: flex; justify-content: center; align-items: center; padding: 15px;
-        }
-
-        .login-card {
-            background: var(--card-bg); border: 2px solid var(--gold-primary);
-            padding: 30px 24px; border-radius: 20px; width: 100%; max-width: 360px; text-align: center;
-        }
-
-        .gold-input-inline {
-            width: 100%; padding: 10px; background: #09090d; border: 1px solid #333;
-            border-radius: 8px; color: #fff; font-size: 0.9rem; outline: none;
-        }
-        .gold-input-inline:focus { border-color: var(--gold-primary); }
-
-        .gold-btn {
-            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
-            color: #000; border: none; padding: 10px; font-weight: 900; border-radius: 8px;
-            cursor: pointer; width: 100%; font-size: 0.9rem; display: inline-flex; justify-content: center; align-items: center; gap: 6px;
-        }
-
-        #cashierMainApp { display: none; height: 100vh; flex-direction: column; overflow: hidden; }
 
         /* 🔝 الهيدر العلوي */
         .pos-header {
-            background: #111116; border-bottom: 1px solid var(--card-border);
-            padding: 8px 16px; display: flex; justify-content: space-between; align-items: center;
-            height: 52px; flex-shrink: 0; z-index: 100;
+            background: #111116;
+            border-bottom: 1px solid var(--card-border);
+            padding: 6px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            flex-shrink: 0;
+            z-index: 100;
         }
 
         .brand-btn {
-            background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold-primary);
-            color: var(--gold-bright); padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-bright);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
         }
 
         /* 🍔 البردة الجانبية */
-        .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 90000; display: none; }
+        .drawer-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); z-index: 90000; display: none;
+        }
         .side-drawer {
             position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
             background: #111116; border-left: 1px solid var(--gold-primary); z-index: 90001;
@@ -87,15 +87,15 @@
 
         .drawer-link {
             width: 100%; padding: 12px; background: #181820; border: 1px solid var(--card-border);
-            border-radius: 10px; color: #fff; font-size: 0.9rem; font-weight: 800; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; margin-bottom: 10px; text-align: right;
+            border-radius: 10px; color: #fff; font-size: 0.88rem; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px; text-align: right;
         }
 
-        /* 📐 التقسيم الرئيسي لشاشة POSBANK */
+        /* 📐 التقسيم الشامل لشاشة POSBANK */
         .pos-container {
             display: grid;
-            grid-template-columns: 360px 1fr;
-            height: calc(100vh - 52px);
+            grid-template-columns: 350px 1fr;
+            height: calc(100vh - 50px);
             width: 100%;
             overflow: hidden;
         }
@@ -125,7 +125,6 @@
             flex: 1;
             overflow-y: auto !important;
             margin: 6px 0;
-            padding-right: 2px;
         }
 
         .cart-item-row {
@@ -149,7 +148,6 @@
             position: relative;
         }
 
-        /* 🏷️ شريط الأقسام */
         .categories-chips {
             display: flex;
             gap: 6px;
@@ -179,7 +177,7 @@
             border-color: var(--gold-bright);
         }
 
-        /* 📦 شبكة المنتجات وتثبيت حجم الصور لمنع الاختراق */
+        /* 📦 شبكة المنتجات وتثبيت الارتفاع للحماية */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
@@ -199,23 +197,34 @@
             flex-direction: column;
             justify-content: space-between;
             position: relative;
-            overflow: hidden !important; /* حماية عدم خروج الصور */
-            height: 145px !important;
-            max-height: 145px !important;
+            overflow: hidden !important;
+            height: 140px !important;
+            max-height: 140px !important;
         }
         .product-card:active { transform: scale(0.97); }
 
         .product-card img {
             width: 100% !important;
-            height: 75px !important;
-            max-height: 75px !important;
+            height: 70px !important;
+            max-height: 70px !important;
             object-fit: cover !important;
             border-radius: 6px;
             margin-bottom: 4px;
-            display: block;
         }
 
-        .product-card.sold-out { opacity: 0.5; filter: grayscale(0.8); }
+        .gold-btn {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
+            color: #000; border: none; padding: 8px; font-weight: 900; border-radius: 8px;
+            cursor: pointer; width: 100%; font-size: 0.85rem; display: inline-flex; justify-content: center; align-items: center; gap: 6px;
+        }
+
+        .toggle-btn-group { display: flex; gap: 4px; margin-bottom: 6px; }
+        .t-btn {
+            flex: 1; padding: 6px; background: #181820; border: 1px solid var(--card-border);
+            color: #ccc; border-radius: 6px; font-weight: 800; font-size: 0.78rem;
+            cursor: pointer; text-align: center;
+        }
+        .t-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -228,31 +237,12 @@
             padding: 18px; border-radius: 16px; width: 100%; max-width: 440px;
         }
 
-        .toggle-btn-group { display: flex; gap: 4px; margin-bottom: 6px; }
-        .t-btn {
-            flex: 1; padding: 6px; background: #181820; border: 1px solid var(--card-border);
-            color: #ccc; border-radius: 6px; font-weight: 800; font-size: 0.78rem;
-            cursor: pointer; text-align: center;
-        }
-        .t-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; }
-
         #drawerPrintFrame { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- 🔒 شاشة الدخول -->
-    <div id="authOverlay">
-        <div class="login-card">
-            <h2 style="color:var(--gold-primary); margin-bottom:6px; font-weight:900;"><i class="fa-solid fa-cash-register"></i> MIM89 POS</h2>
-            <p style="color:#aaa; font-size:0.8rem; margin-bottom:14px;">نظام نقطة البيع المحصن</p>
-            <input type="password" id="cashierPassInput" class="gold-input-inline" placeholder="••••••" style="text-align:center; font-size:1.2rem;" onkeypress="if(event.key==='Enter') loginCashier()">
-            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:18px; margin-top:4px; font-weight:bold;"></p>
-            <button onclick="loginCashier()" class="gold-btn" style="margin-top:8px;">تسجيل الدخول <i class="fa-solid fa-right-to-bracket"></i></button>
-        </div>
-    </div>
-
-    <!-- 🍔 البردة الجانبية -->
+    <!-- 🍔 البردة الجانبية المباشرة -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     <aside id="sideDrawer" class="side-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
@@ -262,22 +252,22 @@
         <button class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
             <i class="fa-solid fa-motorcycle"></i> كشف وإدارة السائقين 🛵
         </button>
-        <button class="drawer-link" onclick="forceFixSystemData(); toggleSideDrawer();">
-            <i class="fa-solid fa-screwdriver-wrench"></i> إصلاح وترتيب الأقسام 🛠️
+        <button class="drawer-link" onclick="cleanOldStorageAndReload();" style="color:var(--gold-bright);">
+            <i class="fa-solid fa-broom"></i> تنظيف الذاكرة وتصحيح الأقسام 🧹
         </button>
         <button class="drawer-link" onclick="location.reload();" style="color:var(--danger); margin-top:auto;">
-            <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+            <i class="fa-solid fa-rotate-right"></i> إعادة تحميل الواجهة
         </button>
     </aside>
 
-    <!-- 🖥️ التطبيق الرئيسي -->
+    <!-- 🖥️ التطبيق الرئيسي المباشر -->
     <div id="cashierMainApp">
         <header class="pos-header">
             <button class="brand-btn" onclick="toggleSideDrawer()">
                 <i class="fa-solid fa-bars"></i> MIM89 POS
             </button>
             <div style="display:flex; gap:10px; align-items:center;">
-                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.88rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
+                <span style="color:var(--gold-bright); font-size:0.88rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
                 <button onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:6px 14px; font-size:0.82rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
                     <i class="fa-solid fa-box-open"></i> فتح الدرج
                 </button>
@@ -335,7 +325,7 @@
                 </div>
             </aside>
 
-            <!-- 📦 قسم الوجبات والفرز الذكي -->
+            <!-- 📦 قسم الوجبات والأقسام المستقلة المباشرة -->
             <main class="pos-main">
                 <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث سريع عن وجبة..." oninput="filterPosProducts()">
                 <div id="posCategoriesBar" class="categories-chips"></div>
@@ -414,7 +404,7 @@
         let posDiscountAmount = 0;
         let activeDriverOrders = [];
 
-        // الأقسام المعتمدة
+        // الأقسام المستقلة الثابتة المطلوبة
         const MASTER_CATEGORIES = [
             { id: 'cat_burger_meat', name: 'بركر لحم 🥩' },
             { id: 'cat_burger_chick', name: 'بركر دجاج 🍗' },
@@ -434,21 +424,6 @@
             return isNaN(num) ? 0 : num;
         }
 
-        function loginCashier() {
-            const passInput = document.getElementById('cashierPassInput');
-            const typedPass = passInput?.value.trim();
-            const validPass = localStorage.getItem('sys_pass_cashier') || "1234";
-
-            if (typedPass === validPass || typedPass === "1234" || typedPass === "123") {
-                document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('cashierMainApp').style.display = 'flex';
-                populateDriversList();
-                loadPosDirectMenu('all');
-            } else {
-                document.getElementById('authError').innerText = "❌ كلمة المرور غير صحيحة!";
-            }
-        }
-
         function toggleSideDrawer() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
@@ -464,6 +439,12 @@
             doc.open();
             doc.write(`<html><head><style>@page { size: 80mm 30mm; margin: 0; }</style></head><body onload="window.print()"><div style="text-align:center; padding:10px;"><p style="font-size:10px;">=== MIM89 POS OPEN DRAWER ===</p></div></body></html>`);
             doc.close();
+        }
+
+        function cleanOldStorageAndReload() {
+            localStorage.removeItem('sys_categories');
+            localStorage.removeItem('sys_banners');
+            location.reload();
         }
 
         function selectOrderType(btn) {
@@ -519,7 +500,7 @@
             calculateDriverBalance();
         }
 
-        // 🧠 خوارزمية الفرز الذكي لكل مادة حسب اسمها وقسمها المباشر
+        // 🧠 خوارزمية فرز المواد حسب أسمائها وتفريغ العروض
         function getItemCategoryKey(item) {
             const name = (item.name || '').toLowerCase();
             if (name.includes('ريزو')) return 'cat_rizo';
@@ -587,12 +568,6 @@
                     <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
                 </div>
             `).join('');
-        }
-
-        function forceFixSystemData() {
-            localStorage.removeItem('sys_categories');
-            loadPosDirectMenu('all');
-            alert("✅ تم إعادة تنظيم الفرز والأقسام بنجاح!");
         }
 
         function addToPosCart(itemId) {
@@ -666,7 +641,6 @@
         function applyCouponCode() {
             const inputCode = prompt("أدخل الكود:")?.trim().toUpperCase();
             if (!inputCode) return;
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
             posDiscountAmount = 1000;
             renderPosCart();
         }
@@ -710,8 +684,8 @@
         function tryFinalizeAndClearOrder() { clearPosCart(); closeModal('printOptionsModal'); }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const passInput = document.getElementById('cashierPassInput');
-            if (passInput) passInput.focus();
+            populateDriversList();
+            loadPosDirectMenu('all');
         });
     </script>
 </body>
