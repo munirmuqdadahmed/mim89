@@ -144,7 +144,7 @@
             justify-content: space-between;
             position: relative;
             box-shadow: 0 4px 25px rgba(0,0,0,0.85);
-            z-index: 50;
+            z-index: 1000 !important; /* رفع مستوى الهيدر */
         }
 
         .hamburger-btn {
@@ -163,7 +163,6 @@
             box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
             user-select: none;
             touch-action: manipulation;
-            z-index: 10002;
         }
 
         .hamburger-btn:active { transform: scale(0.92); }
@@ -207,19 +206,18 @@
             50% { opacity: 0.3; }
         }
 
-        /* 🍔 البردة الجانبية */
+        /* 🍔 البردة الجانبية وطبقة التعتيم */
         .drawer-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(6px);
-            z-index: 10000;
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9998 !important;
             display: none;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-
-        .drawer-overlay.active { display: block !important; opacity: 1; }
 
         .side-drawer {
             position: fixed;
@@ -229,13 +227,14 @@
             height: 100%;
             background: #101014;
             border-left: 1px solid var(--gold-primary);
-            z-index: 10001;
+            z-index: 9999 !important;
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             box-shadow: -10px 0 30px rgba(0,0,0,0.9);
         }
 
+        .drawer-overlay.active { display: block !important; opacity: 1; }
         .side-drawer.active { right: 0 !important; }
 
         .drawer-header {
@@ -280,14 +279,14 @@
             margin-bottom: 8px;
         }
 
-        /* 🏷️ شريط الأقسام المطور بالتمرير السلس باللمس */
+        /* 🏷️ شريط الأقسام المطور */
         .categories-sticky-bar {
             position: sticky;
             top: 0;
             background: rgba(7, 7, 9, 0.96);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            z-index: 100;
+            z-index: 900 !important; /* ضمان بقاء الأقسام تحت البردة */
             padding: 10px 12px;
             display: flex;
             gap: 8px;
@@ -584,7 +583,7 @@
         </button>
     </header>
 
-    <!-- البردة الجانبية (الثلاث شخوط) -->
+    <!-- البردة الجانبية (الثلاث شخوط) وطبقة التعتيم -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     
     <aside id="sideDrawer" class="side-drawer">
@@ -866,18 +865,25 @@
             return isNaN(num) ? 0 : num;
         }
 
+        // 🛠️ دالة الفتح والإغلاق المباشرة والخصم التلقائي للاختناق البرمجي
         window.toggleSideDrawer = function() {
             const drawer = document.getElementById('sideDrawer');
             const overlay = document.getElementById('drawerOverlay');
             if (!drawer || !overlay) return;
 
-            if (drawer.classList.contains('active')) {
+            const isActive = drawer.classList.contains('active');
+
+            if (isActive) {
                 drawer.classList.remove('active');
                 overlay.classList.remove('active');
-                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+                setTimeout(() => {
+                    if (!drawer.classList.contains('active')) {
+                        overlay.style.display = 'none';
+                    }
+                }, 300);
             } else {
                 overlay.style.display = 'block';
-                void drawer.offsetWidth;
+                void drawer.offsetWidth; // إعادة تنشيط المتصفح للرسم الفوري
                 drawer.classList.add('active');
                 overlay.classList.add('active');
             }
