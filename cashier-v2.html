@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 POS - النسخة النهائية</title>
+    <title>MIM89 POS - الشاشة المباشرة المحترفة</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,8 +18,6 @@
             --danger: #ef4444;
             --success: #10b981;
             --blue-accent: #38bdf8;
-            --whatsapp-green: #25d366;
-            --purple-accent: #a855f7;
         }
 
         * {
@@ -43,7 +41,7 @@
             display: block;
         }
 
-        /* 🔒 شاشة القفل والرمز */
+        /* 🔒 شاشة القفل برمز PIN */
         #authOverlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #050507; z-index: 999999;
@@ -81,18 +79,10 @@
 
         .brand-btn {
             background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold-primary);
-            color: var(--gold-bright); padding: 6px 12px; border-radius: 8px; font-weight: 900; cursor: pointer;
+            color: var(--gold-bright); padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer;
         }
 
-        .cs-bar { display: flex; gap: 6px; align-items: center; }
-        .cs-btn {
-            padding: 5px 9px; border-radius: 6px; border: 1px solid #333; background: #1a1a22;
-            color: #fff; font-size: 0.75rem; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 4px;
-        }
-        .cs-btn.wa { background: rgba(37, 211, 102, 0.15); border-color: var(--whatsapp-green); color: var(--whatsapp-green); }
-        .cs-btn.call { background: rgba(56, 189, 248, 0.15); border-color: var(--blue-accent); color: var(--blue-accent); }
-
-        /* 🍔 البردة الجانبية */
+        /* 🍔 البردة الجانبية للخيارات الإدارية فقط */
         .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 90000; display: none; }
         .side-drawer {
             position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
@@ -106,6 +96,14 @@
             width: 100%; padding: 12px; background: #181820; border: 1px solid var(--card-border);
             border-radius: 10px; color: #fff; font-size: 0.88rem; font-weight: 800; cursor: pointer;
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px; text-align: right; text-decoration: none;
+        }
+
+        /* 📢 شريط التنبيهات الفوري للمكالمات والمينيو */
+        .incoming-alert-banner {
+            background: linear-gradient(90deg, #10b981, #059669);
+            color: #fff; padding: 8px 14px; font-weight: bold; font-size: 0.85rem;
+            display: none; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); z-index: 99;
         }
 
         .pos-container {
@@ -188,10 +186,14 @@
 
         #drawerPrintFrame { display: none; }
 
+        /* 🖨️ تنسيق الطباعة الحرارية الأنيق والمحترف (80mm Thermal Receipt) */
         @media print {
             body * { visibility: hidden; }
             #thermalPrintArea, #thermalPrintArea * { visibility: visible; }
-            #thermalPrintArea { position: absolute; left: 0; top: 0; width: 78mm; font-family: 'Tajawal', sans-serif; color: #000; }
+            #thermalPrintArea { 
+                position: absolute; left: 0; top: 0; width: 72mm; 
+                font-family: 'Tajawal', sans-serif; color: #000 !important; background: #fff !important;
+            }
         }
     </style>
 </head>
@@ -200,7 +202,7 @@
     <!-- 🔒 شاشة تسجيل الدخول بالرمز -->
     <div id="authOverlay">
         <div class="login-card">
-            <h3 style="color:var(--gold-primary); margin-bottom:8px; font-weight:900;"><i class="fa-solid fa-lock"></i> دخول كاشير MIM89</h3>
+            <h3 style="color:var(--gold-primary); margin-bottom:8px; font-weight:900;"><i class="fa-solid fa-lock"></i> كاشير مطعم MIM89</h3>
             <p style="color:#aaa; font-size:0.75rem; margin-bottom:10px;">أدخل الرمز (1234)</p>
             <div id="pinDisplay" class="pin-display">••••</div>
             <div class="keypad">
@@ -218,79 +220,61 @@
                 <button type="button" class="key-btn" onclick="submitPin()" style="color:var(--success)">✓</button>
             </div>
             
-            <!-- زر دخول مباشر سريع -->
             <button type="button" onclick="quickBypassLogin()" class="gold-btn" style="margin-top:6px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); font-size:0.75rem; padding:6px;">
-                ⚡ دخول مباشر سريع (1234)
+                ⚡ دخول مباشر (1234)
             </button>
             <p id="authError" style="color:var(--danger); font-size:0.75rem; height:15px; font-weight:bold; margin-top:4px;"></p>
         </div>
     </div>
 
-    <!-- 🍔 البردة الجانبية -->
+    <!-- 🍔 البردة الجانبية للمستندات والتقارير فقط -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     <aside id="sideDrawer" class="side-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:8px;">
-            <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> خيارات النظام</h3>
+            <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> إدارة الشيفت والمبيعات</h3>
             <button onclick="toggleSideDrawer()" style="background:none; border:none; color:#aaa; font-size:1.3rem;">✕</button>
         </div>
 
-        <a href="index.html" target="_blank" class="drawer-link" style="color:var(--gold-bright); border-color:var(--gold-primary);">
-            <i class="fa-solid fa-utensils"></i> فتح المينيو الإلكتروني 🌐
-        </a>
-        <a href="https://api.whatsapp.com/send?phone=9647750008630" target="_blank" class="drawer-link" style="color:var(--whatsapp-green); border-color:var(--whatsapp-green);">
-            <i class="fa-brands fa-whatsapp"></i> واتساب الخدمة (07750008630)
-        </a>
-        <a href="tel:07750008630" class="drawer-link" style="color:var(--blue-accent); border-color:var(--blue-accent);">
-            <i class="fa-solid fa-phone"></i> اتصال مباشر بخدمة الزبائن
-        </a>
-
-        <hr style="border-color:#282835; margin:8px 0;">
-
         <button class="drawer-link" onclick="openShiftCloseModal(); toggleSideDrawer();" style="color:var(--gold-bright);">
-            <i class="fa-solid fa-calculator"></i> تقفيل المداورة (Z-Report)
+            <i class="fa-solid fa-calculator"></i> تقفيل المداورة والحسابات (Z-Report)
         </button>
         <button class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
-            <i class="fa-solid fa-motorcycle"></i> كشف وإدارة السائقين 🛵
+            <i class="fa-solid fa-motorcycle"></i> كشف وتصفية حساب السائقين 🛵
         </button>
         <button class="drawer-link" onclick="cleanStorageAndFixMenu(); toggleSideDrawer();">
-            <i class="fa-solid fa-broom"></i> تنظيف الذاكرة وتصحيح الأقسام 🧹
+            <i class="fa-solid fa-broom"></i> تحديث الذاكرة والمينيو 🧹
         </button>
         <button class="drawer-link" onclick="lockSystem(); toggleSideDrawer();" style="color:var(--danger); margin-top:auto;">
-            <i class="fa-solid fa-power-off"></i> قفل النظام
+            <i class="fa-solid fa-power-off"></i> تسليم الشيفت والقفل
         </button>
     </aside>
 
-    <!-- 🖥️ الشاشة الرئيسية -->
+    <!-- 🖥️ الشاشة الرئيسية للكاشير -->
     <div id="cashierMainApp">
         <header class="pos-header">
             <button class="brand-btn" onclick="toggleSideDrawer()">
                 <i class="fa-solid fa-bars"></i> MIM89 POS
             </button>
 
-            <div class="cs-bar">
-                <a href="index.html" target="_blank" class="cs-btn" style="color:var(--gold-bright); border-color:var(--gold-primary);">
-                    <i class="fa-solid fa-globe"></i> المينيو
-                </a>
-                <a href="https://api.whatsapp.com/send?phone=9647750008630" target="_blank" class="cs-btn wa">
-                    <i class="fa-brands fa-whatsapp"></i> واتساب
-                </a>
-                <a href="tel:07750008630" class="cs-btn call">
-                    <i class="fa-solid fa-phone"></i> اتصال
-                </a>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-                <button onclick="openShiftCloseModal()" class="gold-btn" style="width:auto; padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444;">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> Z-Report
+                <button onclick="openShiftCloseModal()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid #444;">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> تقرير Z
                 </button>
-                <button onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
-                    <i class="fa-solid fa-box-open"></i> الدرج
+                <button onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
+                    <i class="fa-solid fa-box-open"></i> فتح الدرج
                 </button>
             </div>
         </header>
 
+        <!-- 📞 شريط تنبيه المكالمات والمينيو المباشر -->
+        <div id="pendingOrdersAlertBanner" class="incoming-alert-banner"></div>
+
         <div class="pos-container">
-            <!-- 🛒 السلة الجانبية -->
+            <!-- 🛒 السلة الجانبية وإدخال الزبون -->
             <aside class="pos-sidebar">
                 <div class="cart-box">
                     <span style="font-size:0.72rem; color:#888; font-weight:bold;">نوع الخدمة:</span>
@@ -300,8 +284,14 @@
                         <button type="button" class="t-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
                     </div>
 
+                    <!-- 👤 اسم الزبون وتلقائي الـ Caller ID -->
+                    <div style="margin-bottom:6px; position:relative;">
+                        <input type="text" id="posCustName" class="gold-input-inline" placeholder="👤 اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)" style="width:100%; padding:6px; background:#000; color:#fff; border:1px solid #333; border-radius:6px; font-size:0.8rem;">
+                        <div id="phoneSearchResults" style="position:absolute; top:100%; right:0; left:0; background:#181820; border:1px solid var(--gold-primary); z-index:99; display:none; border-radius:6px; max-height:150px; overflow-y:auto;"></div>
+                    </div>
+
                     <div id="driverSelectBox" style="display:none; margin-bottom:4px;">
-                        <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; padding:4px; background:#000; color:#fff;"></select>
+                        <select id="posDriverSelect" style="width:100%; font-size:0.8rem; padding:6px; background:#000; color:#fff; border:1px solid #333; border-radius:6px;"></select>
                     </div>
 
                     <span style="font-size:0.72rem; color:#888; font-weight:bold;">طريقة الدفع:</span>
@@ -344,9 +334,9 @@
                 </div>
             </aside>
 
-            <!-- 📦 قسم الوجبات والفرز المباشر -->
+            <!-- 📦 قسم الوجبات والبحث المباشر -->
             <main class="pos-main">
-                <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث سريع عن وجبة..." oninput="filterPosProducts()" style="background:#000; color:#fff; padding:8px; border-radius:8px;">
+                <input type="text" id="posSearchInput" placeholder="🔍 بحث سريع عن وجبة..." oninput="filterPosProducts()" style="background:#000; color:#fff; padding:8px; border-radius:8px; border:1px solid #333; font-size:0.85rem;">
                 <div id="posCategoriesBar" class="categories-chips"></div>
                 <div id="posProductsGrid" class="products-grid"></div>
             </main>
@@ -414,415 +404,15 @@
             </div>
             
             <div style="display:flex; gap:6px;">
-                <button type="button" class="gold-btn" onclick="zeroOutDriverBalance()" style="background:var(--danger); color:#fff;"><i class="fa-solid fa-check-double"></i> تصفير وتوليد حساب</button>
+                <button type="button" class="gold-btn" onclick="zeroOutDriverBalance()" style="background:var(--danger); color:#fff;"><i class="fa-solid fa-check-double"></i> تصفير وتوليد كشف</button>
             </div>
         </div>
     </div>
 
+    <!-- 🖨️ منطقة الطباعة الحرارية المخفية -->
     <div id="thermalPrintArea"></div>
     <iframe id="drawerPrintFrame"></iframe>
 
-    <script>
-        // 🔒 متغيرات الأمان والتشغيل السريع
-        let currentPin = "";
-        let posCart = [];
-        let selectedPosOrderType = 'dine_in';
-        let selectedPosPaymentMethod = 'cash';
-        let posDiscountAmount = 0;
-        let shiftOrders = [];
-
-        const DEFAULT_ITEMS = [
-            { id: 101, name: "بركر لحم كلاسيك", price: 6000, cat: "cat_burger_meat", img: "https://via.placeholder.com/120?text=Burger" },
-            { id: 102, name: "بركر لحم دبل ديلوكس", price: 8000, cat: "cat_burger_meat", img: "https://via.placeholder.com/120?text=DoubleMeat" },
-            { id: 103, name: "بركر دجاج مقرمش", price: 5000, cat: "cat_burger_chick", img: "https://via.placeholder.com/120?text=ChickenBurger" },
-            { id: 104, name: "وجبة كنتاكي 3 قطع", price: 7500, cat: "cat_kentucky", img: "https://via.placeholder.com/120?text=Kentucky" },
-            { id: 105, name: "ريزو دجاج حار", price: 4500, cat: "cat_rizo", img: "https://via.placeholder.com/120?text=Rizo" },
-            { id: 106, name: "فنكر حجم عائلي", price: 2500, cat: "cat_finger", img: "https://via.placeholder.com/120?text=Fries" },
-            { id: 107, name: "صوص ثومية خاص", price: 500, cat: "cat_sauces", img: "https://via.placeholder.com/120?text=Sauce" },
-            { id: 108, name: "ببسي بارد", price: 1000, cat: "cat_drinks", img: "https://via.placeholder.com/120?text=Pepsi" }
-        ];
-
-        const MASTER_CATEGORIES = [
-            { id: 'cat_burger_meat', name: 'بركر لحم 🥩' },
-            { id: 'cat_burger_chick', name: 'بركر دجاج 🍗' },
-            { id: 'cat_kentucky', name: 'الكنتاكي والكرسبي 🍗' },
-            { id: 'cat_rizo', name: 'الريزو 🍚' },
-            { id: 'cat_finger', name: 'الفنكر والبطاطا 🍟' },
-            { id: 'cat_sauces', name: 'الصوصات 🥣' },
-            { id: 'cat_drinks', name: 'الببسي والمشروبات 🥤' },
-            { id: 'cat_shawarma', name: 'الشاورما والصاج 🌯' }
-        ];
-
-        function pressPin(n) {
-            if (currentPin.length < 4) {
-                currentPin += n;
-                updatePinDisplay();
-                if (currentPin.length === 4) {
-                    setTimeout(submitPin, 50);
-                }
-            }
-        }
-
-        function updatePinDisplay() {
-            const display = document.getElementById('pinDisplay');
-            if (display) {
-                display.innerText = currentPin.length === 0 ? "••••" : "•".repeat(currentPin.length);
-            }
-        }
-
-        function clearPin() {
-            currentPin = "";
-            updatePinDisplay();
-            document.getElementById('authError').innerText = "";
-        }
-
-        function submitPin() {
-            // قبول أي رمز كاشير افتراضي أو زر إدخال
-            document.getElementById('authOverlay').style.display = 'none';
-            document.getElementById('cashierMainApp').style.display = 'flex';
-            try { initPOSApp(); } catch(e) { console.error(e); }
-        }
-
-        function quickBypassLogin() {
-            currentPin = "1234";
-            submitPin();
-        }
-
-        function lockSystem() {
-            clearPin();
-            document.getElementById('authOverlay').style.display = 'flex';
-            document.getElementById('cashierMainApp').style.display = 'none';
-        }
-
-        function cleanPrice(v) {
-            if (!v) return 0;
-            if (typeof v === 'number') return isNaN(v) ? 0 : v;
-            let str = String(v).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
-            let num = parseInt(str, 10);
-            return isNaN(num) ? 0 : num;
-        }
-
-        function initPOSApp() {
-            populateDriversList();
-            loadPosDirectMenu('all');
-        }
-
-        function toggleSideDrawer() {
-            document.getElementById('sideDrawer').classList.toggle('active');
-            document.getElementById('drawerOverlay').classList.toggle('active');
-        }
-
-        function openCashDrawerDirect() {
-            const frame = document.getElementById('drawerPrintFrame');
-            if (!frame) return;
-            const doc = frame.contentWindow.document;
-            doc.open();
-            doc.write(`<html><head><style>@page { size: 80mm 30mm; margin: 0; }</style></head><body onload="window.print()"><div style="text-align:center; padding:10px;"><p style="font-size:10px;">=== MIM89 OPEN DRAWER ===</p></div></body></html>`);
-            doc.close();
-        }
-
-        function cleanStorageAndFixMenu() {
-            localStorage.removeItem('sys_categories');
-            localStorage.removeItem('sys_banners');
-            location.reload();
-        }
-
-        function selectOrderType(btn) {
-            document.querySelectorAll('#posOrderTypeGroup .t-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedPosOrderType = btn.getAttribute('data-value');
-            document.getElementById('driverSelectBox').style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
-        }
-
-        function selectPaymentMethod(btn) {
-            document.querySelectorAll('#posPaymentGroup .t-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedPosPaymentMethod = btn.getAttribute('data-value');
-        }
-
-        function populateDriversList() {
-            const select1 = document.getElementById('posDriverSelect');
-            const select2 = document.getElementById('driverAccountSelect');
-            let drivers = [];
-            try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
-            if (drivers.length === 0) drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }];
-
-            const html = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-            if (select1) select1.innerHTML = html;
-            if (select2) select2.innerHTML = html;
-        }
-
-        function addNewDriverToList() {
-            const input = document.getElementById('newDriverNameInput');
-            const name = input?.value.trim();
-            if (!name) return alert("⚠️ اكتب اسم السائق أولاً!");
-
-            let drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]');
-            if (drivers.some(d => d.name === name)) return alert("⚠️ هذا السائق موجود بالفعل!");
-
-            drivers.push({ name: name });
-            localStorage.setItem('sys_drivers', JSON.stringify(drivers));
-            input.value = '';
-            populateDriversList();
-            calculateDriverBalance();
-        }
-
-        function deleteCurrentSelectedDriver() {
-            const select = document.getElementById('driverAccountSelect');
-            const name = select?.value;
-            if (!name) return;
-            if (!confirm(`هل أنت تأكد من حذف السائق (${name})؟`)) return;
-
-            let drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]');
-            drivers = drivers.filter(d => d.name !== name);
-            localStorage.setItem('sys_drivers', JSON.stringify(drivers));
-            populateDriversList();
-            calculateDriverBalance();
-        }
-
-        function getItemCategoryKey(item) {
-            const name = (item.name || '').toLowerCase();
-            if (name.includes('ريزو')) return 'cat_rizo';
-            if (name.includes('كنتاكي') || name.includes('ستريبس') || name.includes('كرسبي') || name.includes('سكالوب')) return 'cat_kentucky';
-            if (name.includes('لحم') || name.includes('لحوم')) return 'cat_burger_meat';
-            if (name.includes('دجاج') && (name.includes('بركر') || name.includes('برجر'))) return 'cat_burger_chick';
-            if (name.includes('فنگر') || name.includes('فنكر') || name.includes('بطاطا')) return 'cat_finger';
-            if (name.includes('صوص') || name.includes('ثوم') || name.includes('كاتشب')) return 'cat_sauces';
-            if (name.includes('ببسي') || name.includes('مشروب') || name.includes('ماء') || name.includes('سفن')) return 'cat_drinks';
-            return item.cat || 'cat_shawarma';
-        }
-
-        function loadPosDirectMenu(catId = 'all') {
-            let items = [];
-            try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e){}
-            if (!items || items.length === 0) items = DEFAULT_ITEMS;
-
-            const catBar = document.getElementById('posCategoriesBar');
-            const grid = document.getElementById('posProductsGrid');
-
-            if (catBar) {
-                let barHtml = `<button type="button" class="chip-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
-                MASTER_CATEGORIES.forEach(c => {
-                    barHtml += `<button type="button" class="chip-tab ${catId === c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
-                });
-                catBar.innerHTML = barHtml;
-            }
-
-            let filtered = items;
-            if (catId !== 'all') filtered = items.filter(i => getItemCategoryKey(i) === catId);
-
-            if (!grid) return;
-            if (filtered.length === 0) {
-                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد وجبات في هذا القسم</p>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="product-card" onclick="addToPosCart(${item.id})">
-                    <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
-                    <h4 style="font-size:0.78rem; color:#fff; margin:2px 0; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name}</h4>
-                    <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                </div>
-            `).join('');
-        }
-
-        function filterPosProducts() {
-            const query = document.getElementById('posSearchInput').value.trim().toLowerCase();
-            let items = [];
-            try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e){}
-            if (!items || items.length === 0) items = DEFAULT_ITEMS;
-
-            const grid = document.getElementById('posProductsGrid');
-            const filtered = items.filter(i => (i.name || '').toLowerCase().includes(query));
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:30px;">لا توجد نتائج مطابقة</p>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="product-card" onclick="addToPosCart(${item.id})">
-                    <img src="${item.image || item.img || 'https://via.placeholder.com/120?text=MIM89'}" onerror="this.onerror=null; this.src='https://via.placeholder.com/120?text=MIM89';">
-                    <h4 style="font-size:0.78rem; color:#fff; margin:2px 0; font-weight:800;">${item.name}</h4>
-                    <span style="font-size:0.8rem; color:var(--gold-bright); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                </div>
-            `).join('');
-        }
-
-        function addToPosCart(itemId) {
-            let items = [];
-            try { items = JSON.parse(localStorage.getItem('sys_items')) || []; } catch(e){}
-            if (!items || items.length === 0) items = DEFAULT_ITEMS;
-
-            const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
-            if (!item) return;
-
-            const existing = posCart.find(i => cleanPrice(i.id) === cleanPrice(itemId));
-            if (existing) existing.qty += 1;
-            else posCart.push({ id: item.id, name: item.name, price: cleanPrice(item.price), qty: 1 });
-            renderPosCart();
-        }
-
-        function renderPosCart() {
-            const listContainer = document.getElementById('posCartList');
-            const totalEl = document.getElementById('posTotalAmount');
-            if (!listContainer) return;
-
-            if (posCart.length === 0) {
-                listContainer.innerHTML = `<p style="text-align:center; color:#666; font-size:0.8rem; padding:20px;">السلة فارغة حالياً</p>`;
-                if (totalEl) totalEl.innerText = "0 د.ع";
-                return;
-            }
-
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            const finalTotal = Math.max(0, subtotal - posDiscountAmount);
-
-            listContainer.innerHTML = posCart.map((item, index) => `
-                <div class="cart-item-row">
-                    <div>
-                        <div style="font-size:0.78rem; color:#fff; font-weight:800;">${item.name}</div>
-                        <div style="font-size:0.72rem; color:var(--gold-bright);">${(cleanPrice(item.price) * cleanPrice(item.qty)).toLocaleString('ar-IQ')} د.ع</div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <button type="button" onclick="updateCartQty(${index}, -1)" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); width:24px; height:24px; border-radius:4px;">-</button>
-                        <span style="font-size:0.85rem; font-weight:800; color:#fff;">${item.qty}</span>
-                        <button type="button" onclick="updateCartQty(${index}, 1)" style="background:var(--gold-primary); color:#000; border:none; width:24px; height:24px; border-radius:4px;">+</button>
-                    </div>
-                </div>
-            `).join('');
-
-            if (totalEl) totalEl.innerText = finalTotal.toLocaleString('ar-IQ') + " د.ع";
-        }
-
-        function updateCartQty(index, change) {
-            if (posCart[index]) {
-                posCart[index].qty += change;
-                if (posCart[index].qty <= 0) posCart.splice(index, 1);
-            }
-            renderPosCart();
-        }
-
-        function clearPosCart() { posCart = []; posDiscountAmount = 0; renderPosCart(); }
-
-        function applyDiscountPrompt(type) {
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
-            if (type === 'pct') {
-                const val = prompt("نسبة الخصم (%):", "10");
-                if (val) posDiscountAmount = Math.round((subtotal * parseFloat(val)) / 100);
-            } else if (type === 'amt') {
-                const val = prompt("مبلغ الخصم (دينار):", "1000");
-                if (val) posDiscountAmount = cleanPrice(val);
-            }
-            renderPosCart();
-        }
-
-        function clearDiscount() { posDiscountAmount = 0; renderPosCart(); }
-
-        function executePrint(target) {
-            if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
-            const printArea = document.getElementById('thermalPrintArea');
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            const total = Math.max(0, subtotal - posDiscountAmount);
-            const orderNum = Math.floor(1000 + Math.random() * 9000);
-            const driverName = document.getElementById('posDriverSelect')?.value;
-
-            if (target === 'kitchen') {
-                printArea.innerHTML = `
-                    <div style="text-align:center; font-family:'Tajawal',sans-serif; width:72mm; padding:5px;">
-                        <h2 style="margin:0;">=== أمر مطبخ (#${orderNum}) ===</h2>
-                        <p style="margin:4px 0; font-size:12px;">النوع: <strong>${selectedPosOrderType === 'dine_in' ? 'صالة' : selectedPosOrderType === 'takeaway' ? 'سفري' : 'دليفري'}</strong></p>
-                        <hr style="border-top:1px dashed #000; margin:5px 0;">
-                        ${posCart.map(i => `<div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; margin:4px 0;"><span>${i.name}</span><span>X ${i.qty}</span></div>`).join('')}
-                    </div>
-                `;
-            } else {
-                printArea.innerHTML = `
-                    <div style="text-align:center; font-family:'Tajawal',sans-serif; width:72mm; padding:5px;">
-                        <h2 style="margin:0;">مطعم MIM89</h2>
-                        <p style="margin:2px 0; font-size:12px;">فاتورة زبون (#${orderNum})</p>
-                        <p style="margin:2px 0; font-size:11px;">الخدمة: ${selectedPosOrderType === 'delivery' ? 'دليفري ('+driverName+')' : selectedPosOrderType === 'dine_in' ? 'صالة' : 'سفري'}</p>
-                        <hr style="border-top:1px dashed #000; margin:5px 0;">
-                        ${posCart.map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin:3px 0;"><span>${i.name} (x${i.qty})</span><span>${(cleanPrice(i.price) * i.qty).toLocaleString('ar-IQ')}</span></div>`).join('')}
-                        <hr style="border-top:1px dashed #000; margin:5px 0;">
-                        ${posDiscountAmount > 0 ? `<div style="display:flex; justify-content:space-between; font-size:11px;"><span>الخصم:</span><span>-${posDiscountAmount.toLocaleString('ar-IQ')} د.ع</span></div>` : ''}
-                        <h3 style="margin:5px 0;">المجموع: ${total.toLocaleString('ar-IQ')} د.ع</h3>
-                    </div>
-                `;
-
-                shiftOrders.push({
-                    id: orderNum,
-                    total: total,
-                    type: selectedPosOrderType,
-                    driver: selectedPosOrderType === 'delivery' ? driverName : null,
-                    isSettled: selectedPosOrderType !== 'delivery'
-                });
-                clearPosCart();
-            }
-            window.print();
-        }
-
-        function openShiftCloseModal() {
-            const cashTotal = shiftOrders.filter(o => o.type !== 'delivery').reduce((sum, o) => sum + o.total, 0);
-            const deliveryTotal = shiftOrders.filter(o => o.type === 'delivery').reduce((sum, o) => sum + o.total, 0);
-
-            document.getElementById('shiftCashTotal').innerText = cashTotal.toLocaleString('ar-IQ') + " د.ع";
-            document.getElementById('shiftDeliveryTotal').innerText = deliveryTotal.toLocaleString('ar-IQ') + " د.ع";
-            document.getElementById('shiftGrandTotal').innerText = (cashTotal + deliveryTotal).toLocaleString('ar-IQ') + " د.ع";
-            openModal('shiftModal');
-        }
-
-        function calculateDiscrepancy() {
-            const cashTotal = shiftOrders.filter(o => o.type !== 'delivery').reduce((sum, o) => sum + o.total, 0);
-            const actual = parseFloat(document.getElementById('actualCashInput').value) || 0;
-            const diff = actual - cashTotal;
-            const textEl = document.getElementById('discrepancyText');
-            textEl.innerText = diff.toLocaleString('ar-IQ') + " د.ع";
-            textEl.style.color = diff < 0 ? 'var(--danger)' : 'var(--success)';
-        }
-
-        function finalizeShiftClose() {
-            alert("✅ تم إغلاق الشفت وحفظ التقرير بنجاح!");
-            shiftOrders = [];
-            closeModal('shiftModal');
-        }
-
-        function openDriverAccountModal() { populateDriversList(); calculateDriverBalance(); openModal('driverAccountModal'); }
-
-        function calculateDriverBalance() {
-            const driverName = document.getElementById('driverAccountSelect')?.value;
-            const pending = shiftOrders.filter(o => o.driver === driverName && !o.isSettled);
-
-            const count = pending.length;
-            const mealsTotal = pending.reduce((sum, o) => sum + o.total, 0);
-            const deliveryFees = count * 2500;
-
-            document.getElementById('driverOrdersCount').innerText = `${count}`;
-            document.getElementById('driverMealsTotal').innerText = `${mealsTotal.toLocaleString('ar-IQ')} د.ع`;
-            document.getElementById('driverDeliveryFeesTotal').innerText = `${deliveryFees.toLocaleString('ar-IQ')} د.ع`;
-            document.getElementById('driverFinalDue').innerText = `${(mealsTotal + deliveryFees).toLocaleString('ar-IQ')} د.ع`;
-        }
-
-        function zeroOutDriverBalance() {
-            const driverName = document.getElementById('driverAccountSelect')?.value;
-            if (!driverName) return;
-            shiftOrders.forEach(o => { if (o.driver === driverName) o.isSettled = true; });
-            alert(`✅ تم تصفير وإغلاق حساب السائق: ${driverName}`);
-            calculateDriverBalance();
-        }
-
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        // ربط لوحة المفاتيح الخارجية للـ POSBANK
-        document.addEventListener('keydown', (e) => {
-            const auth = document.getElementById('authOverlay');
-            if (auth && auth.style.display !== 'none') {
-                if (e.key >= '0' && e.key <= '9') pressPin(e.key);
-                else if (e.key === 'Backspace') clearPin();
-                else if (e.key === 'Enter') submitPin();
-            }
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
