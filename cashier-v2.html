@@ -143,7 +143,7 @@
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.85);
             width: 270px;
-            z-index: 200;
+            z-index: 2000;
             overflow: hidden;
         }
 
@@ -332,7 +332,7 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 3000;
             padding: 12px;
         }
 
@@ -389,18 +389,7 @@
             font-weight: 700;
         }
 
-        .offline-status-badge {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.72rem;
-            font-weight: 800;
-            display: none;
-            align-items: center;
-            gap: 4px;
-        }
+        .btn-danger { background: var(--danger); color: #fff; }
 
         #mim89ThermalPrintBox { display: none; }
 
@@ -470,24 +459,21 @@
 
         <header class="pos-header">
             <div class="brand-dropdown-container">
-                <button class="brand-btn" onclick="toggleBrandMenu()">
+                <button class="brand-btn" onclick="toggleBrandMenu(event)">
                     <i class="fa-solid fa-cash-register"></i> MIM89 POS
                     <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
-                    <button onclick="openSoldOutManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
-                    <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
-                    <button onclick="globalSystemSync(this); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
+                    <button onclick="openDriverAccountModal(); toggleBrandMenu(event);" style="color:var(--blue-accent); font-weight:bold;"><i class="fa-solid fa-motorcycle"></i> كشف وحساب الدليفرية 🛵</button>
+                    <button onclick="openCashDrawer(); toggleBrandMenu(event);" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openSoldOutManagerModal(); toggleBrandMenu(event);" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
+                    <button onclick="globalSystemSync(this); toggleBrandMenu(event);"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
                     <hr style="border-color:#333; margin:3px 0;">
                     <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
                 </div>
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-                <div id="offlineStatusBadge" class="offline-status-badge">
-                    <i class="fa-solid fa-wifi"></i> أوفلاين (حفظ محلي)
-                </div>
                 <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
                 <button onclick="openCashDrawer()" class="gold-btn" style="padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444; width:auto;"><i class="fa-solid fa-box-open"></i> الدرج</button>
             </div>
@@ -522,14 +508,13 @@
                                 <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
                             </div>
 
-                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن -->
+                            <!-- حقل بحث دليل الزبائن -->
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
-                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
-                                <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف...">
+                                <button type="button" onclick="document.getElementById('posCustName').value=''; document.getElementById('posCustName').focus();" 
                                         style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
                                     ✕
                                 </button>
-                                <div id="phoneSearchResults" style="display:none; position:absolute; top:100%; right:0; left:0; background:#181820; border:1px solid var(--gold-primary); border-radius:6px; z-index:90; max-height:150px; overflow-y:auto; box-shadow:0 8px 20px rgba(0,0,0,0.8);"></div>
                             </div>
 
                             <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
@@ -537,15 +522,11 @@
                                     <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
                                         <i class="fa-solid fa-percent"></i> إدارة الخصومات والكوبونات:
                                     </span>
-                                    <span id="discountStatusBadge" style="font-size:0.7rem; color:#aaa; font-weight:bold; display:none;"></span>
                                 </div>
 
                                 <div style="display:flex; gap:3px; align-items:center;">
-                                    <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🎉 مجاني</button>
-                                    <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ % خصم</button>
-                                    <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">💵 خصم مبلغ</button>
-                                    <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:var(--purple-accent); color:#fff; flex:1; min-height:26px;">🎟️ كوبون</button>
-                                    <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 6px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; display:none; min-height:26px;">✕</button>
+                                    <button onclick="applyCouponCodeToCart()" class="gold-btn" style="padding:5px; font-size:0.75rem; background:var(--purple-accent); color:#fff; flex:1; min-height:28px;">🎟️ أدخل كود الخصم / الكوبون</button>
+                                    <button onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 8px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; min-height:28px;">✕</button>
                                 </div>
                             </div>
 
@@ -565,7 +546,7 @@
                             </button>
 
                             <div style="display:flex; gap:3px; margin-bottom:1px;">
-                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; background: var(--danger); color: #fff; width: 100%; min-height: 30px;">
+                                <button type="button" class="gold-btn btn-danger" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; width: 100%; min-height: 30px;">
                                     إلغاء السلة
                                 </button>
                             </div>
@@ -573,7 +554,6 @@
                     </div>
                 </div>
 
-                <!-- 🛵 الطلبات الواردة من المينيو -->
                 <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
                     <div id="liveOrdersContainer">
                         <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
@@ -588,7 +568,7 @@
                 </div>
 
                 <div id="posCategoriesBar" class="categories-bar">
-                    <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
+                    <button type="button" class="category-tab active" onclick="loadPosDirectMenu('all')">الكل 🍔</button>
                 </div>
 
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -596,7 +576,45 @@
         </div>
     </div>
 
-    <!-- 🖨️ نافذة خيارات الطباعة المزدوجة -->
+    <!-- 🛵 3. نافذة كشف وحساب السائقين والدليفري -->
+    <div id="driverAccountModal" class="modal-overlay">
+        <div class="modal-body" style="text-align:right; max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
+                <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-motorcycle"></i> كشف وحساب السائقين</h3>
+                <button type="button" onclick="closeModal('driverAccountModal')" style="background:#333; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">✕</button>
+            </div>
+            
+            <label style="font-size:0.8rem; color:#aaa; margin-bottom:4px; display:block;">اختر السائق المعني:</label>
+            <select id="driverAccountSelect" class="gold-input-inline" onchange="calculateDriverBalance()" style="margin-bottom:12px; font-weight:bold; padding:8px; cursor:pointer;"></select>
+
+            <div id="driverStatsBox" style="background:#121215; padding:12px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                    <span>عدد الطلبات المسلمة:</span>
+                    <strong id="driverOrdersCount" style="color:#fff;">0 طلبات</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                    <span>مجموع مبالغ الوجبات:</span>
+                    <strong id="driverMealsTotal" style="color:var(--gold-bright);">0 د.ع</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+                    <span>أجور التوصيل:</span>
+                    <strong id="driverDeliveryFeesTotal" style="color:var(--success);">0 د.ع</strong>
+                </div>
+                <hr style="border-color:#333; margin:8px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:900;">
+                    <span>الصافي المطلوب تسليمه للخزينة:</span>
+                    <strong id="driverFinalDue" style="color:var(--gold-bright);">0 د.ع</strong>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:6px;">
+                <button class="gold-btn" onclick="printDriverReceipt()" style="flex:1; padding:10px; font-size:0.82rem;"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+                <button class="gold-btn btn-danger" onclick="zeroOutDriverBalance()" style="flex:1; padding:10px; font-size:0.82rem;"><i class="fa-solid fa-check-double"></i> تصفير الحساب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🖨️ 4. نافذة خيارات الطباعة المزدوجة -->
     <div id="printOptionsModal" class="modal-overlay">
         <div class="modal-body" style="text-align:center;">
             <h3 style="color:var(--gold-bright); margin-bottom:12px;"><i class="fa-solid fa-print"></i> طباعة أمر الخدمة والفاتورة</h3>
@@ -619,12 +637,12 @@
         </div>
     </div>
 
-    <!-- 🚫 نافذة إدارة النفاد -->
+    <!-- 🚫 5. نافذة إدارة النفاد -->
     <div id="soldOutModal" class="modal-overlay">
         <div class="modal-body">
             <h3 style="color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-box-archive"></i> تحديد الوجبات المنتهية (Sold Out)</h3>
             <div id="soldOutItemsList" style="max-height:250px; overflow-y:auto; margin-bottom:12px;"></div>
-            <button class="gold-btn" onclick="closeModal('soldOutModal'); renderPosProducts();">حفظ وإغلاق</button>
+            <button class="gold-btn" onclick="closeModal('soldOutModal'); loadPosDirectMenu('all');">حفظ وإغلاق</button>
         </div>
     </div>
 
@@ -634,9 +652,9 @@
         let selectedPosOrderType = 'dine_in';
         let selectedPosPaymentMethod = 'cash';
         let posDiscountAmount = 0;
-        let activeDiscountType = 'none';
         let activeCashierUser = null;
         let printTracker = { customerPrinted: false, kitchenPrinted: false };
+        let activeDriverOrders = [];
 
         function cleanPrice(v) {
             if (v === null || v === undefined) return 0;
@@ -646,7 +664,7 @@
             return isNaN(num) ? 0 : num;
         }
 
-        // 🔒 دالة تسجيل الدخول المباشرة للكاشير
+        // 🔒 تسجيل دخول الكاشير
         function loginCashier() {
             const passInput = document.getElementById('cashierPassInput');
             const errEl = document.getElementById('authError');
@@ -675,15 +693,27 @@
                 if (activeEl) activeEl.innerText = "👤 الكاشير: " + activeCashierUser.name;
 
                 loadPosDirectMenu('all');
+                populateDriversList();
             } else {
                 if (errEl) errEl.innerText = "❌ كلمة المرور غير صحيحة!";
             }
         }
 
-        function toggleBrandMenu() {
+        // 🛠️ فتح وإغلاق القائمة
+        window.toggleBrandMenu = function(e) {
+            if (e) e.stopPropagation();
             const menu = document.getElementById('brandDropdownMenu');
-            if (menu) menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-        }
+            if (!menu) return;
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        };
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('brandDropdownMenu');
+            const btn = document.querySelector('.brand-btn');
+            if (menu && menu.style.display === 'block' && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        });
 
         function switchCashierTab(tabId, btn) {
             document.querySelectorAll('.pos-sidebar .tab-content').forEach(t => t.style.display = 'none');
@@ -707,6 +737,20 @@
             document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedPosPaymentMethod = btn.getAttribute('data-value');
+        }
+
+        function populateDriversList() {
+            const select = document.getElementById('posDriverSelect');
+            if (!select) return;
+
+            let drivers = [];
+            try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
+
+            if (drivers.length === 0) {
+                drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
+            }
+
+            select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
         }
 
         function loadPosDirectMenu(catId = 'all') {
@@ -819,6 +863,157 @@
             renderPosCart();
         }
 
+        function clearAllDiscounts() {
+            posDiscountAmount = 0;
+            renderPosCart();
+        }
+
+        // 🎟️ تطبيق كود الخصم / الكوبون
+        window.applyCouponCodeToCart = function() {
+            const inputCode = prompt("أدخل رمز الكوبون أو كود الخصم:")?.trim().toUpperCase();
+            if (!inputCode) return;
+
+            let coupons = [
+                { code: 'MIM10', type: 'percent', value: 10, title: 'خصم 10%' },
+                { code: 'FREE', type: 'free_delivery', value: 0, title: 'توصيل مجاني' },
+                { code: 'MIM89', type: 'amount', value: 2000, title: 'خصم 2,000 د.ع' }
+            ];
+
+            try {
+                const stored = localStorage.getItem('sys_coupons');
+                if (stored) coupons = JSON.parse(stored);
+            } catch(e){}
+
+            const found = coupons.find(c => c.code.toUpperCase() === inputCode);
+            if (!found) return alert("❌ كود الخصم غير صحيح أو غير مفعّل!");
+
+            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+            if (subtotal === 0) return alert("⚠️ السلة فارغة!");
+
+            if (found.type === 'percent') {
+                posDiscountAmount = Math.round((subtotal * found.value) / 100);
+            } else if (found.type === 'amount') {
+                posDiscountAmount = found.value;
+            } else if (found.type === 'free_delivery') {
+                alert("🎉 تم تطبيق التوصيل المجاني عبر الكوبون!");
+            }
+
+            renderPosCart();
+            alert(`✅ تم تطبيق الخصم: ${posDiscountAmount.toLocaleString('ar-IQ')} د.ع`);
+        };
+
+        // 🛵 حساب وتصفير وطباعة كشف الدليفرية
+        window.openDriverAccountModal = function() {
+            const select = document.getElementById('driverAccountSelect');
+            if (!select) return;
+
+            let drivers = [];
+            try { drivers = JSON.parse(localStorage.getItem('sys_drivers') || '[]'); } catch(e){}
+
+            if (drivers.length === 0) {
+                drivers = [{ name: 'سائق 1' }, { name: 'سائق 2' }, { name: 'تطبيق دليفري' }];
+            }
+
+            select.innerHTML = drivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+            calculateDriverBalance();
+            openModal('driverAccountModal');
+        };
+
+        window.calculateDriverBalance = function() {
+            const driverName = document.getElementById('driverAccountSelect')?.value;
+            let completedOrders = [];
+
+            try {
+                completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
+            } catch(e){}
+
+            activeDriverOrders = completedOrders.filter(o => o.driverName === driverName && !o.isSettled);
+
+            const count = activeDriverOrders.length;
+            const mealsTotal = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.subtotal || o.totalAmount), 0);
+            const deliveryFees = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.deliveryFee || 2500), 0);
+            const finalDue = mealsTotal + deliveryFees;
+
+            document.getElementById('driverOrdersCount').innerText = `${count} طلبات`;
+            document.getElementById('driverMealsTotal').innerText = `${mealsTotal.toLocaleString('ar-IQ')} د.ع`;
+            document.getElementById('driverDeliveryFeesTotal').innerText = `${deliveryFees.toLocaleString('ar-IQ')} د.ع`;
+            document.getElementById('driverFinalDue').innerText = `${finalDue.toLocaleString('ar-IQ')} د.ع`;
+        };
+
+        window.zeroOutDriverBalance = function() {
+            const driverName = document.getElementById('driverAccountSelect')?.value;
+            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد طلبات معلقة لتصفيرها لهذا السائق!");
+
+            if (!confirm(`هل أنت ألكيد من تسليم المبالغ وتصفير حساب السائق (${driverName})؟`)) return;
+
+            let completedOrders = [];
+            try {
+                completedOrders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
+            } catch(e){}
+
+            completedOrders.forEach(o => {
+                if (o.driverName === driverName && !o.isSettled) {
+                    o.isSettled = true;
+                    o.settledAt = new Date().toLocaleString('ar-IQ');
+                }
+            });
+
+            localStorage.setItem('sys_completed_orders', JSON.stringify(completedOrders));
+            alert(`✅ تم تصفير حساب السائق (${driverName}) وتسليم كافة المبالغ للخزينة بنجاح.`);
+            calculateDriverBalance();
+        };
+
+        window.printDriverReceipt = function() {
+            const driverName = document.getElementById('driverAccountSelect')?.value;
+            if (activeDriverOrders.length === 0) return alert("⚠️ لا توجد بيانات للطباعة!");
+
+            const mealsTotal = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.subtotal || o.totalAmount), 0);
+            const deliveryFees = activeDriverOrders.reduce((sum, o) => sum + cleanPrice(o.deliveryFee || 2500), 0);
+            const finalDue = mealsTotal + deliveryFees;
+
+            let printBox = document.getElementById('mim89ThermalPrintBox');
+            if (!printBox) {
+                printBox = document.createElement('div');
+                printBox.id = 'mim89ThermalPrintBox';
+                document.body.appendChild(printBox);
+            }
+
+            printBox.innerHTML = `
+                <div style="text-align:center; font-family:'Tajawal',sans-serif; width:72mm; padding:5px;">
+                    <h2 style="margin:0; font-size:16px;">MIM89 FAST FOOD</h2>
+                    <p style="margin:2px 0; font-size:12px;">كشف حساب سائق دليفري</p>
+                    <p style="margin:2px 0; font-size:11px;">السائق: <strong>${driverName}</strong></p>
+                    <p style="margin:2px 0; font-size:10px;">التاريخ: ${new Date().toLocaleString('ar-IQ')}</p>
+                    <hr style="border-top:1px dashed #000; margin:5px 0;">
+                    <table style="width:100%; font-size:10px; text-align:right;">
+                        <thead>
+                            <tr><th>رقم</th><th>الزبون</th><th>المبلغ</th></tr>
+                        </thead>
+                        <tbody>
+                            ${activeDriverOrders.map(o => `
+                                <tr>
+                                    <td>#${o.orderNum || 'POS'}</td>
+                                    <td>${o.customerName || 'زبون'}</td>
+                                    <td>${cleanPrice(o.totalAmount || o.total).toLocaleString('ar-IQ')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <hr style="border-top:1px dashed #000; margin:5px 0;">
+                    <div style="font-size:11px; text-align:right;">
+                        <div>عدد الطلبات: <strong>${activeDriverOrders.length}</strong></div>
+                        <div>مجموع المبالغ: <strong>${mealsTotal.toLocaleString('ar-IQ')} د.ع</strong></div>
+                        <div>أجور التوصيل: <strong>${deliveryFees.toLocaleString('ar-IQ')} د.ع</strong></div>
+                        <div style="font-size:13px; font-weight:bold; margin-top:4px;">الصافي المطلوب: ${finalDue.toLocaleString('ar-IQ')} د.ع</div>
+                    </div>
+                    <br><br>
+                    <div style="text-align:center; font-size:10px;">توقيع الكاشير: ...................</div>
+                </div>
+            `;
+
+            window.print();
+        };
+
         function openModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
         function closeModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
 
@@ -848,20 +1043,6 @@
             }
             clearPosCart();
             closeModal('printOptionsModal');
-        }
-
-        function applyCouponCodeToCart() {
-            const inputCode = prompt("أدخل رمز الكوبون:")?.trim().toUpperCase();
-            if (!inputCode) return;
-            const coupons = JSON.parse(localStorage.getItem('sys_coupons') || '[]');
-            const found = coupons.find(c => c.code === inputCode);
-            if (!found) return alert("❌ كود الخصم غير صحيح!");
-
-            const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-            if (found.type === 'percent') posDiscountAmount = (subtotal * found.value) / 100;
-            else if (found.type === 'amount') posDiscountAmount = found.value;
-
-            renderPosCart();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
