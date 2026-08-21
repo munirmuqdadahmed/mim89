@@ -22,22 +22,42 @@
         :root {
             --gold-primary: #f59e0b;
             --gold-bright: #fbbf24;
-            --bg-dark: #0f0f12;
-            --card-bg: #18181c;
-            --card-border: #2a2a32;
+            --gold-glow: rgba(245, 158, 11, 0.35);
+            --bg-dark: #09090c;
+            --card-bg: #13131a;
+            --card-bg-elevated: #1a1a24;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-gold: rgba(245, 158, 11, 0.3);
             --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
             --danger: #ef4444;
             --success: #10b981;
             --blue-accent: #38bdf8;
-            --purple-accent: #a855f7;
+            --purple-accent: #c084fc;
         }
 
         * {
-            box-sizing: border-box;
+            box-sizing: border-box !important;
             margin: 0;
             padding: 0;
-            font-family: 'Tajawal', 'Segoe UI', sans-serif;
+            font-family: 'Tajawal', sans-serif;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 🎨 تخصيص أشرطة التمرير الحديثة */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b2b36;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gold-primary);
         }
 
         body {
@@ -46,12 +66,15 @@
             overflow-x: hidden;
             user-select: none;
             height: 100vh;
+            width: 100vw;
         }
 
+        /* 🔒 شاشة تسجيل الدخول */
         #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 14, 0.96);
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(12px);
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -61,39 +84,59 @@
 
         .login-card {
             background: var(--card-bg);
-            border: 2px solid var(--gold-primary);
-            padding: 25px 20px;
-            border-radius: 16px;
+            border: 1px solid var(--card-border-gold);
+            padding: 30px 24px;
+            border-radius: 20px;
             width: 100%;
             max-width: 360px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px var(--gold-glow);
+        }
+
+        .gold-input-inline {
+            width: 100%;
+            background: #0d0d12;
+            border: 1px solid #2a2a36;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .gold-input-inline:focus {
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 10px var(--gold-glow);
         }
 
         .gold-btn {
             background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
             color: #000;
             border: none;
-            padding: 9px 14px;
+            padding: 10px 14px;
             font-weight: 800;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
             font-size: 0.88rem;
-            transition: 0.2s;
+            transition: all 0.15s ease;
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
         }
-        .gold-btn:active { transform: scale(0.97); }
+        .gold-btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
 
         #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
 
+        /* 🖥️ الشريط العلوي (Header) */
         .pos-header {
-            background: var(--card-bg);
+            background: #101015;
             border-bottom: 1px solid var(--card-border);
-            padding: 6px 14px;
+            padding: 8px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -101,63 +144,72 @@
             top: 0;
             z-index: 100;
             flex-shrink: 0;
+            height: 52px;
         }
 
         .brand-dropdown-container { position: relative; }
 
         .brand-btn {
-            background: rgba(245, 158, 11, 0.15);
+            background: rgba(245, 158, 11, 0.12);
             border: 1px solid var(--gold-primary);
-            color: var(--gold-primary);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 800;
-            font-size: 1rem;
+            color: var(--gold-bright);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 0.95rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .brand-btn:hover {
+            background: var(--gold-primary);
+            color: #000;
         }
 
         .brand-dropdown {
             display: none;
             position: absolute;
-            top: 115%;
+            top: 120%;
             right: 0;
-            background: #1a1a20;
-            border: 1px solid var(--gold-primary);
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.85);
-            width: 270px;
+            background: #14141a;
+            border: 1px solid var(--card-border-gold);
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+            width: 280px;
             z-index: 200;
             overflow: hidden;
+            padding: 6px 0;
+            backdrop-filter: blur(10px);
         }
 
         .brand-dropdown button {
             width: 100%;
-            padding: 10px 14px;
+            padding: 10px 16px;
             background: none;
             border: none;
-            color: #fff;
+            color: #f3f4f6;
             text-align: right;
             font-size: 0.85rem;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             transition: 0.15s;
         }
 
         .brand-dropdown button:hover {
-            background: rgba(245, 158, 11, 0.25);
+            background: rgba(245, 158, 11, 0.18);
             color: var(--gold-bright);
+            padding-right: 20px;
         }
 
         .pos-container {
             display: grid;
-            grid-template-columns: 370px 1fr;
-            height: calc(100vh - 46px);
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 52px);
             overflow: hidden;
         }
 
@@ -170,19 +222,19 @@
         }
 
         .pos-sidebar {
-            background: #141418;
+            background: #0c0c10;
             border-left: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
-            padding: 6px;
+            padding: 8px;
             height: 100%;
             overflow: hidden !important;
         }
 
         .pos-cart-box {
             background: var(--card-bg);
-            border-radius: 8px;
-            padding: 6px 8px;
+            border-radius: 12px;
+            padding: 8px;
             border: 1px solid var(--card-border);
             flex: 1;
             display: flex;
@@ -197,7 +249,7 @@
             overflow-y: auto !important;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
             padding-bottom: 4px;
             -webkit-overflow-scrolling: touch !important;
             touch-action: pan-y !important;
@@ -206,18 +258,18 @@
         .cart-items-list {
             flex: 1 1 auto !important;
             overflow-y: auto !important;
-            min-height: 70px;
-            max-height: 180px;
-            margin: 2px 0;
-            border-top: 1px dashed #333;
-            border-bottom: 1px dashed #333;
-            padding: 3px 0;
+            min-height: 80px;
+            max-height: 200px;
+            margin: 4px 0;
+            border-top: 1px dashed #2a2a36;
+            border-bottom: 1px dashed #2a2a36;
+            padding: 4px 0;
             -webkit-overflow-scrolling: touch !important;
             touch-action: pan-y !important;
         }
 
         .pos-main-content {
-            padding: 10px;
+            padding: 12px;
             height: 100% !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch !important;
@@ -227,10 +279,10 @@
 
         .categories-bar {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             overflow-x: auto;
             padding-bottom: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             -webkit-overflow-scrolling: touch !important;
             scrollbar-width: none;
         }
@@ -239,22 +291,22 @@
         .category-tab {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            color: #ccc;
-            padding: 7px 14px;
-            border-radius: 18px;
+            color: var(--text-muted);
+            padding: 8px 18px;
+            border-radius: 20px;
             cursor: pointer;
             white-space: nowrap;
             font-size: 0.85rem;
-            font-weight: 700;
-            transition: 0.2s;
+            font-weight: 800;
+            transition: all 0.2s ease;
         }
 
         .category-tab.active {
             background: var(--gold-primary);
             color: #000;
             font-weight: 900;
-            border-color: var(--gold-primary);
-            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);
+            border-color: var(--gold-bright);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
         }
 
         .products-grid {
@@ -269,83 +321,92 @@
         .pos-product-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 6px;
+            border-radius: 12px;
+            padding: 8px;
             text-align: center;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
+            overflow: hidden;
+        }
+        .pos-product-card:active {
+            transform: scale(0.96);
+            border-color: var(--gold-primary);
         }
 
         .pos-product-card.sold-out {
-            opacity: 0.55;
-            filter: grayscale(0.6);
+            opacity: 0.5;
+            filter: grayscale(0.8);
         }
 
         #pendingOrdersAlertBanner {
             display: none;
-            background: var(--danger);
+            background: linear-gradient(90deg, #dc2626, #ef4444);
             color: #fff;
-            padding: 8px;
+            padding: 9px;
             text-align: center;
             font-weight: 800;
             font-size: 0.85rem;
             animation: pulse 1s infinite alternate;
             flex-shrink: 0;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
 
         @keyframes pulse {
-            from { background-color: #dc2626; }
-            to { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
+            from { opacity: 0.85; }
+            to { opacity: 1; transform: scale(1.002); }
         }
 
+        /* 🪟 النوافذ المنبثقة (Modals) */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 12px;
+            padding: 14px;
         }
 
         .modal-body {
             background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 16px;
-            border-radius: 10px;
+            border: 1px solid var(--card-border-gold);
+            padding: 20px;
+            border-radius: 16px;
             width: 100%;
-            max-width: 450px;
+            max-width: 460px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             -webkit-overflow-scrolling: touch !important;
         }
 
         .toggle-group {
             display: flex;
-            gap: 3px;
-            margin-bottom: 2px;
+            gap: 4px;
+            margin-bottom: 4px;
             flex-shrink: 0;
         }
 
         .toggle-btn {
             flex: 1;
-            padding: 5px 6px;
-            background: #121214;
+            padding: 6px;
+            background: #0f0f14;
             border: 1px solid var(--card-border);
-            color: #aaa;
-            border-radius: 5px;
+            color: var(--text-muted);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.78rem;
-            font-weight: 700;
+            font-weight: 800;
             text-align: center;
-            transition: 0.2s;
-            min-height: 30px;
+            transition: all 0.2s ease;
+            min-height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -355,13 +416,14 @@
             background: var(--gold-primary);
             color: #000;
             font-weight: 900;
+            border-color: var(--gold-bright);
         }
 
         .section-label {
-            font-size: 0.72rem;
-            color: #999;
-            margin-top: 2px;
-            margin-bottom: 1px;
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            margin-bottom: 2px;
             display: block;
             flex-shrink: 0;
             font-weight: 700;
@@ -372,8 +434,8 @@
             background: rgba(239, 68, 68, 0.2);
             border: 1px solid var(--danger);
             color: var(--danger);
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border-radius: 14px;
             font-size: 0.72rem;
             font-weight: 800;
             display: none;
@@ -511,7 +573,7 @@
                                 <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
                             </div>
 
-                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن مع زر الإلغاء السريع المحدث -->
+                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن -->
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
                                 <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
                                 <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
@@ -635,7 +697,7 @@
         </div>
     </div>
 
-    <!-- ⏰ نافذة تحديد أوقات العمل والدوام مع زر الإغلاق الطارئ -->
+    <!-- ⏰ نافذة تحديد أوقات العمل والدوام -->
     <div id="workingHoursModal" class="modal-overlay">
         <div class="modal-body" style="max-width:390px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -677,7 +739,7 @@
         </div>
     </div>
 
-    <!-- 📊 باقي النوافذ -->
+    <!-- 📊 باقي النوافذ الإدارية للحسابات والجرد -->
     <div id="quickCashModal" class="modal-overlay">
         <div class="modal-body" style="max-width:340px; text-align:center;">
             <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد (إجباري)</h3>
@@ -852,7 +914,7 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي الرئيسي -->
+    <!-- 🧠 المحرك البرمجي الرئيسي الداخلي -->
     <script src="app.js"></script>
     <script>
         let cashierWorkHoursObj = { open: 10, close: 3, isEmergencyClosed: false };
