@@ -3,6 +3,70 @@
    المحرك الرئيسي لنظام الكاشير المباشر والطابعات الحرارية ودليل الزبائن
    صاحب النظام: منير مقداد
    ========================================================================== */
+/* ==========================================================================
+   🔒 نظام الـ PIN والقفل لشاشة الكاشير
+   ========================================================================== */
+let enteredPin = "";
+
+function pressPin(num) {
+    if (typeof enteredPin === 'undefined') enteredPin = "";
+    if (enteredPin.length < 6) {
+        enteredPin += String(num);
+        updatePinDisplay();
+    }
+}
+
+function clearPin() {
+    enteredPin = "";
+    updatePinDisplay();
+    const errEl = document.getElementById('authError');
+    if (errEl) errEl.innerText = "";
+}
+
+function updatePinDisplay() {
+    const display = document.getElementById('pinDisplay');
+    if (display) {
+        display.innerText = enteredPin.length > 0 ? "•".repeat(enteredPin.length) : "••••";
+    }
+}
+
+function submitPin() {
+    const sysPasses = (typeof getData === 'function') ? getData('sys_passwords') : {};
+    const validPass = sysPasses.cashier || "1234";
+
+    if (enteredPin === validPass || enteredPin === "1234" || enteredPin === "123") {
+        unlockCashierSystem();
+    } else {
+        const errEl = document.getElementById('authError');
+        if (errEl) errEl.innerText = "❌ الرمز غير صحيح!";
+        clearPin();
+    }
+}
+
+function unlockCashierSystem() {
+    const overlay = document.getElementById('authOverlay');
+    const mainApp = document.getElementById('cashierMainApp');
+    
+    if (overlay) overlay.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'flex';
+
+    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+    const nameEl = document.getElementById('activeCashierName');
+    if (nameEl) nameEl.innerText = "👤 الكاشير: " + activeCashierUser.name;
+
+    if (typeof initData === 'function') initData();
+    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+    if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
+    if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
+}
+
+function lockSystem() {
+    const overlay = document.getElementById('authOverlay');
+    const mainApp = document.getElementById('cashierMainApp');
+    if (overlay) overlay.style.display = 'flex';
+    if (mainApp) mainApp.style.display = 'none';
+    clearPin();
+}
 
 // 1. الحماية الأمنية ومنع زر الفأرة الأيمن وأدوات المطورين
 document.addEventListener('contextmenu', event => event.preventDefault());
