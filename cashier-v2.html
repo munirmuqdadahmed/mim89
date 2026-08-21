@@ -99,7 +99,7 @@
             display: flex; align-items: center; gap: 10px; margin-bottom: 8px; text-align: right; text-decoration: none;
         }
 
-        /* 📢 شريط التنبيهات الفوري للمكالمات والمينيو */
+        /* 📢 شريط التنبيهات الفوري للمكالمات والمينيو الإلكتروني */
         .incoming-alert-banner {
             background: linear-gradient(90deg, #10b981, #059669);
             color: #fff; padding: 8px 14px; font-weight: bold; font-size: 0.85rem;
@@ -200,7 +200,7 @@
 </head>
 <body>
 
-    <!-- 🔒 شاشة القفل النظيفة برمز PIN آمن دون كشف السر -->
+    <!-- 🔒 شاشة القفل برمز PIN -->
     <div id="authOverlay">
         <div class="login-card">
             <h3 style="color:var(--gold-primary); margin-bottom:8px; font-weight:900;"><i class="fa-solid fa-lock"></i> كاشير مطعم MIM89</h3>
@@ -224,18 +224,21 @@
         </div>
     </div>
 
-    <!-- 🍔 البردة الجانبية للخيارات الإدارية وحسابات الشيفت -->
+    <!-- 🍔 البردة الجانبية الخيارات والإدارة -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     <aside id="sideDrawer" class="side-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:8px;">
-            <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> إدارة الشيفت والمبيعات</h3>
+            <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> لوحة الإدارة والشيفت</h3>
             <button type="button" onclick="toggleSideDrawer()" style="background:none; border:none; color:#aaa; font-size:1.3rem; cursor:pointer;">✕</button>
         </div>
 
-        <button type="button" class="drawer-link" onclick="openShiftCloseModal(); toggleSideDrawer();" style="color:var(--gold-bright);">
-            <i class="fa-solid fa-calculator"></i> تقفيل المداورة والحسابات (Z-Report)
+        <button type="button" class="drawer-link" onclick="openCashDrawerDirect(); toggleSideDrawer();" style="color:var(--gold-bright);">
+            <i class="fa-solid fa-box-open"></i> فتح الدرج الحراري 🔓
         </button>
-        <button type="button" class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
+        <button type="button" class="drawer-link" onclick="openShiftCloseModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
+            <i class="fa-solid fa-calculator"></i> تقرير تقفيل المداورة (Z-Report) 📊
+        </button>
+        <button type="button" class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--success);">
             <i class="fa-solid fa-motorcycle"></i> كشف وتصفية حساب السائقين 🛵
         </button>
         <button type="button" class="drawer-link" onclick="cleanStorageAndFixMenu(); toggleSideDrawer();">
@@ -250,24 +253,15 @@
     <div id="cashierMainApp">
         <header class="pos-header">
             <button type="button" class="brand-btn" onclick="toggleSideDrawer()">
-                <i class="fa-solid fa-bars"></i> MIM89 POS
+                <i class="fa-solid fa-bars"></i> القائمة والإدارة
             </button>
 
             <div style="display:flex; align-items:center; gap:10px;">
                 <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;">👤 الكاشير: الرئيسي</span>
             </div>
-
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button type="button" onclick="openShiftCloseModal()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid #444;">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> تقرير Z
-                </button>
-                <button type="button" onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
-                    <i class="fa-solid fa-box-open"></i> فتح الدرج
-                </button>
-            </div>
         </header>
 
-        <!-- 📞 شريط تنبيه المكالمات والمينيو المباشر -->
+        <!-- 📲 شريط التنبيه الفوري لطلبات المينيو الإلكتروني -->
         <div id="pendingOrdersAlertBanner" class="incoming-alert-banner"></div>
 
         <div class="pos-container">
@@ -453,6 +447,7 @@
               if (typeof initData === 'function') initData();
               if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
               if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
+              if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
           } else {
               var errEl = document.getElementById('authError');
               if (errEl) errEl.innerText = "❌ الرمز غير صحيح!";
@@ -463,4 +458,3 @@
 
 </body>
 </html>
-
