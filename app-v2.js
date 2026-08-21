@@ -133,7 +133,9 @@ try {
     console.warn("تشغيل محلي:", e);
 }
 
-// 5. البيانات الافتراضية المدمجة
+/* ==========================================
+   توزيع الأقسام والمينيو المنظم لمطعم MIM89
+   ========================================== */
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", cashier: "1234" },
     drivers: [
@@ -141,23 +143,97 @@ const DEFAULT_DATA = {
         { id: "drv_2", name: "مصطفى دليفري", phone: "07700000002" }
     ],
     categories: [
-        { id: 1, name: "🔥 العروض المميزة" },
-        { id: 2, name: "🍔 بركر اللحم والبركر" },
-        { id: 3, name: "🌯 قسم الشاورما" },
-        { id: 4, name: "🥖 قسم الصاج والسندويشات" },
-        { id: 5, name: "🍗 قسم الريزو والوجبات" },
-        { id: 6, name: "🍟 المقبلات والإضافات" }
+        { id: 1, name: "🔥 العروض والوجبات العائلية" },
+        { id: 2, name: "🌯 قسم الشاورما العراقي" },
+        { id: 3, name: "🍔 البركر والزنكر" },
+        { id: 4, name: "🥖 الصاج والسندويشات" },
+        { id: 5, name: "🍗 الوجبات والريزو" },
+        { id: 6, name: "🍟 المقبلات والمشروبات" }
     ],
     items: [
-        { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=300" },
+        // 1. العروض
+        { id: 101, categoryId: 1, name: "عرض 89 العائلي المشكل", price: 18000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=300" },
         { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
-        { id: 301, categoryId: 3, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
-        { id: 302, categoryId: 3, name: "وجبة شاورما دجاج", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
-        { id: 303, categoryId: 3, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
-        { id: 304, categoryId: 3, name: "شاورما عربي مقطع", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
-        { id: 305, categoryId: 3, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" }
+        
+        // 2. الشاورما
+        { id: 201, categoryId: 2, name: "صاج شاورما لحم", price: 4000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
+        { id: 202, categoryId: 2, name: "صاج شاورما دجاج", price: 3500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
+        { id: 203, categoryId: 2, name: "وجبة شاورما عربي مقطع", price: 6000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
+        { id: 204, categoryId: 2, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=300" },
+
+        // 3. البركر والزنكر
+        { id: 301, categoryId: 3, name: "بركر لحم كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300" },
+        { id: 302, categoryId: 3, name: "بركر دجاج زنكر", price: 4500, image: "https://images.unsplash.com/photo-1513185158878-8d8c2a2a3da3?w=300" },
+        { id: 303, categoryId: 3, name: "بركر 89 دبل تشيز", price: 6500, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300" },
+
+        // 4. الصاج والسندويشات
+        { id: 401, categoryId: 4, name: "صاج زنكر عملاق", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300" },
+        { id: 402, categoryId: 4, name: "صاج فاهيتا دجاج", price: 4500, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300" },
+        { id: 403, categoryId: 4, name: "سندويش كريسبي", price: 4000, image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=300" },
+
+        // 5. الوجبات والريزو
+        { id: 501, categoryId: 5, name: "وجبة ريزو دجاج حار", price: 5000, image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300" },
+        { id: 502, categoryId: 5, name: "وجبة كريسبي 4 قطع", price: 6500, image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=300" },
+        { id: 503, categoryId: 5, name: "وجبة استربس دجاج", price: 6000, image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=300" },
+
+        // 6. المقبلات والمشروبات
+        { id: 601, categoryId: 6, name: "بطاطا فريز مع الجبن", price: 2500, image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=300" },
+        { id: 602, categoryId: 6, name: "مقبلات مشكلة صغير", price: 2000, image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300" },
+        { id: 603, categoryId: 6, name: "مشروب غازي علبة", price: 1000, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300" }
     ]
 };
+
+/* ==========================================
+   نظام استلام ومراقبة طلبات المينيو الإلكتروني
+   ========================================== */
+function listenForIncomingOrders() {
+    const banner = document.getElementById('pendingOrdersAlertBanner');
+    if (!banner) return;
+
+    if (db) {
+        db.collection("orders").where("status", "==", "جديد").onSnapshot(snapshot => {
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                const data = doc.data();
+                showIncomingAlertBanner(data.customerName || 'زبون إلكتروني', data.phone || '', doc.id, data.items || []);
+            } else {
+                banner.style.display = 'none';
+            }
+        }, err => console.log("حالة الاستماع للطلبات:", err));
+    }
+}
+
+function showIncomingAlertBanner(name, phone, docId, items) {
+    const banner = document.getElementById('pendingOrdersAlertBanner');
+    if (!banner) return;
+
+    banner.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:10px;">
+            <span>📲 <strong>طلب إلكتروني جديد:</strong> ${name} (${phone || 'بدون رقم'}) - [${items.length} وجبات]</span>
+            <div style="display:flex; gap:6px;">
+                <button type="button" onclick="sendOnlineOrderToKitchen('${docId}', '${name}')" style="background:#000; color:#10b981; border:1px solid #10b981; padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">
+                    🔥 تحويل للتجهيز مباشرة
+                </button>
+                <button type="button" onclick="loadIncomingToCart('${name}', '${phone}', '${docId}')" style="background:#000; color:var(--gold-bright, #ffd700); border:1px solid var(--gold-primary, #f59e0b); padding:5px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">
+                    📥 تعديل/تحميل للسلة
+                </button>
+            </div>
+        </div>
+    `;
+    banner.style.display = 'flex';
+}
+
+function sendOnlineOrderToKitchen(docId, name) {
+    if (db && docId) {
+        db.collection("orders").doc(docId).update({ 
+            status: 'قيد التجهيز',
+            updatedAt: new Date()
+        }).then(() => {
+            alert(`✅ تم تحويل طلب الزبون (${name}) للتجهيز والمطبخ بنجاح!`);
+            document.getElementById('pendingOrdersAlertBanner').style.display = 'none';
+        }).catch(err => alert("⚠️ تعذر تحديث الطلب: " + err.message));
+    }
+}
 
 function initData() {
     if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
