@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MIM89 POS - الشاشة المباشرة المحترفة</title>
+    <title>MIM89 POS - الشاشة المباشرة</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -41,7 +41,7 @@
             display: block;
         }
 
-        /* 🔒 شاشة القفل برمز PIN */
+        /* 🔒 شاشة القفل برمز PIN الآمنة */
         #authOverlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #050507; z-index: 999999;
@@ -56,19 +56,20 @@
 
         .pin-display {
             background: #000; border: 1px solid #333; color: var(--gold-bright);
-            font-size: 1.8rem; letter-spacing: 8px; padding: 8px; border-radius: 8px; margin-bottom: 12px;
+            font-size: 1.8rem; letter-spacing: 8px; padding: 8px; border-radius: 8px; margin-bottom: 15px;
             height: 50px; display: flex; align-items: center; justify-content: center;
         }
 
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+        
         .key-btn {
             background: #1c1c24; border: 1px solid var(--card-border); color: #fff;
-            padding: 14px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer;
-            user-select: none;
+            padding: 14px; font-size: 1.25rem; font-weight: bold; border-radius: 10px; cursor: pointer;
+            user-select: none; transition: background 0.1s ease;
         }
         .key-btn:active { background: var(--gold-primary); color: #000; }
 
-        /* 🖥️ التطبيق الرئيسي */
+        /* 🖥️ الواجهة الرئيسية للنظام */
         #cashierMainApp { display: none; height: 100vh; flex-direction: column; overflow: hidden; }
 
         .pos-header {
@@ -82,7 +83,7 @@
             color: var(--gold-bright); padding: 6px 14px; border-radius: 8px; font-weight: 900; cursor: pointer;
         }
 
-        /* 🍔 البردة الجانبية للخيارات الإدارية فقط */
+        /* 🍔 البردة الجانبية للإدارة والشيفت */
         .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 90000; display: none; }
         .side-drawer {
             position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
@@ -186,7 +187,7 @@
 
         #drawerPrintFrame { display: none; }
 
-        /* 🖨️ تنسيق الطباعة الحرارية الأنيق والمحترف (80mm Thermal Receipt) */
+        /* 🖨️ تنسيق الطباعة الحرارية المخصص (80mm Thermal Receipt) */
         @media print {
             body * { visibility: hidden; }
             #thermalPrintArea, #thermalPrintArea * { visibility: visible; }
@@ -199,11 +200,11 @@
 </head>
 <body>
 
-    <!-- 🔒 شاشة تسجيل الدخول بالرمز -->
+    <!-- 🔒 شاشة القفل النظيفة برمز PIN آمن دون كشف السر -->
     <div id="authOverlay">
         <div class="login-card">
             <h3 style="color:var(--gold-primary); margin-bottom:8px; font-weight:900;"><i class="fa-solid fa-lock"></i> كاشير مطعم MIM89</h3>
-            <p style="color:#aaa; font-size:0.75rem; margin-bottom:10px;">أدخل الرمز (1234)</p>
+            <p style="color:#aaa; font-size:0.78rem; margin-bottom:12px;">أدخل رمز الدخول المسجل للشيفت</p>
             <div id="pinDisplay" class="pin-display">••••</div>
             <div class="keypad">
                 <button type="button" class="key-btn" onclick="pressPin('1')">1</button>
@@ -219,32 +220,28 @@
                 <button type="button" class="key-btn" onclick="pressPin('0')">0</button>
                 <button type="button" class="key-btn" onclick="submitPin()" style="color:var(--success)">✓</button>
             </div>
-            
-            <button type="button" onclick="quickBypassLogin()" class="gold-btn" style="margin-top:6px; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); font-size:0.75rem; padding:6px;">
-                ⚡ دخول مباشر (1234)
-            </button>
-            <p id="authError" style="color:var(--danger); font-size:0.75rem; height:15px; font-weight:bold; margin-top:4px;"></p>
+            <p id="authError" style="color:var(--danger); font-size:0.8rem; height:18px; font-weight:bold; margin-top:8px;"></p>
         </div>
     </div>
 
-    <!-- 🍔 البردة الجانبية للمستندات والتقارير فقط -->
+    <!-- 🍔 البردة الجانبية للخيارات الإدارية وحسابات الشيفت -->
     <div id="drawerOverlay" class="drawer-overlay" onclick="toggleSideDrawer()"></div>
     <aside id="sideDrawer" class="side-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:8px;">
             <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-sliders"></i> إدارة الشيفت والمبيعات</h3>
-            <button onclick="toggleSideDrawer()" style="background:none; border:none; color:#aaa; font-size:1.3rem;">✕</button>
+            <button type="button" onclick="toggleSideDrawer()" style="background:none; border:none; color:#aaa; font-size:1.3rem; cursor:pointer;">✕</button>
         </div>
 
-        <button class="drawer-link" onclick="openShiftCloseModal(); toggleSideDrawer();" style="color:var(--gold-bright);">
+        <button type="button" class="drawer-link" onclick="openShiftCloseModal(); toggleSideDrawer();" style="color:var(--gold-bright);">
             <i class="fa-solid fa-calculator"></i> تقفيل المداورة والحسابات (Z-Report)
         </button>
-        <button class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
+        <button type="button" class="drawer-link" onclick="openDriverAccountModal(); toggleSideDrawer();" style="color:var(--blue-accent);">
             <i class="fa-solid fa-motorcycle"></i> كشف وتصفية حساب السائقين 🛵
         </button>
-        <button class="drawer-link" onclick="cleanStorageAndFixMenu(); toggleSideDrawer();">
+        <button type="button" class="drawer-link" onclick="cleanStorageAndFixMenu(); toggleSideDrawer();">
             <i class="fa-solid fa-broom"></i> تحديث الذاكرة والمينيو 🧹
         </button>
-        <button class="drawer-link" onclick="lockSystem(); toggleSideDrawer();" style="color:var(--danger); margin-top:auto;">
+        <button type="button" class="drawer-link" onclick="lockSystem(); toggleSideDrawer();" style="color:var(--danger); margin-top:auto;">
             <i class="fa-solid fa-power-off"></i> تسليم الشيفت والقفل
         </button>
     </aside>
@@ -252,7 +249,7 @@
     <!-- 🖥️ الشاشة الرئيسية للكاشير -->
     <div id="cashierMainApp">
         <header class="pos-header">
-            <button class="brand-btn" onclick="toggleSideDrawer()">
+            <button type="button" class="brand-btn" onclick="toggleSideDrawer()">
                 <i class="fa-solid fa-bars"></i> MIM89 POS
             </button>
 
@@ -261,10 +258,10 @@
             </div>
 
             <div style="display:flex; gap:8px; align-items:center;">
-                <button onclick="openShiftCloseModal()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid #444;">
+                <button type="button" onclick="openShiftCloseModal()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid #444;">
                     <i class="fa-solid fa-file-invoice-dollar"></i> تقرير Z
                 </button>
-                <button onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
+                <button type="button" onclick="openCashDrawerDirect()" class="gold-btn" style="width:auto; padding:5px 12px; font-size:0.78rem; background:#222; color:#fff; border:1px solid var(--gold-primary);">
                     <i class="fa-solid fa-box-open"></i> فتح الدرج
                 </button>
             </div>
@@ -370,7 +367,7 @@
         <div class="modal-body" style="text-align:right;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
                 <h3 style="color:var(--gold-bright); font-size:1.1rem;"><i class="fa-solid fa-motorcycle"></i> كشف وإدارة السائقين</h3>
-                <button type="button" onclick="closeModal('driverAccountModal')" style="background:none; border:none; color:#fff;">✕</button>
+                <button type="button" onclick="closeModal('driverAccountModal')" style="background:none; border:none; color:#fff; cursor:pointer;">✕</button>
             </div>
 
             <div style="background:#181822; padding:8px; border-radius:10px; margin-bottom:10px; border:1px solid #333;">
@@ -413,6 +410,9 @@
     <div id="thermalPrintArea"></div>
     <iframe id="drawerPrintFrame"></iframe>
 
+    <!-- 🔗 الربط بملف Firebase والمحرك الموحد -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
