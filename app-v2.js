@@ -1,128 +1,18 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Core POS & Order Engine (v22.0 Test Edition)
-   صاحب النظام: منير مقداد
+   MIM89 FAST FOOD - Core POS & Order Engine (v22.0 Clean)
    ========================================================================== */
 
-/* ==========================================
-   🔒 نظام الـ PIN والقفل لشاشة الكاشير
-   ========================================== */
+// 1. المتغيرات العامة ونظام الـ PIN
 var enteredPin = "";
+var activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
+var posCart = [];
+var selectedPosOrderType = 'dine_in';
+var selectedPosPaymentMethod = 'cash';
+var activeDiscountType = null;
+var posDiscountAmount = 0;
+var db = null;
 
-function pressPin(num) {
-    if (typeof enteredPin === 'undefined') {
-        enteredPin = "";
-    }
-    if (enteredPin.length < 6) {
-        enteredPin += String(num);
-        updatePinDisplay();
-    }
-}
-
-function clearPin() {
-    enteredPin = "";
-    updatePinDisplay();
-    const errEl = document.getElementById('authError');
-    if (errEl) errEl.innerText = "";
-}
-
-function updatePinDisplay() {
-    const display = document.getElementById('pinDisplay');
-    if (display) {
-        display.innerText = enteredPin.length > 0 ? "•".repeat(enteredPin.length) : "••••";
-    }
-}
-
-function submitPin() {
-    const sysPasses = (typeof getData === 'function') ? getData('sys_passwords') : {};
-    const validPass = (sysPasses && sysPasses.cashier) ? sysPasses.cashier : "1234";
-
-    if (enteredPin === validPass || enteredPin === "1234" || enteredPin === "123") {
-        unlockCashierSystem();
-    } else {
-        const errEl = document.getElementById('authError');
-        if (errEl) errEl.innerText = "❌ الرمز غير صحيح!";
-        clearPin();
-    }
-}
-
-function unlockCashierSystem() {
-    const overlay = document.getElementById('authOverlay');
-    const mainApp = document.getElementById('cashierMainApp');
-    
-    if (overlay) overlay.style.display = 'none';
-    if (mainApp) mainApp.style.display = 'flex';
-
-    if (typeof initData === 'function') initData();
-    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
-    if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
-    if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
-}
-
-function lockSystem() {
-    const overlay = document.getElementById('authOverlay');
-    const mainApp = document.getElementById('cashierMainApp');
-    if (overlay) overlay.style.display = 'flex';
-    if (mainApp) mainApp.style.display = 'none';
-    clearPin();
-}
-
-function unlockCashierSystem() {
-    const overlay = document.getElementById('authOverlay');
-    const mainApp = document.getElementById('cashierMainApp');
-    
-    if (overlay) overlay.style.display = 'none';
-    if (mainApp) mainApp.style.display = 'flex';
-
-    activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-    const nameEl = document.getElementById('activeCashierName');
-    if (nameEl) nameEl.innerText = "👤 الكاشير: " + activeCashierUser.name;
-
-    if (typeof initData === 'function') initData();
-    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
-    if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
-    if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
-}
-
-function lockSystem() {
-    const overlay = document.getElementById('authOverlay');
-    const mainApp = document.getElementById('cashierMainApp');
-    if (overlay) overlay.style.display = 'flex';
-    if (mainApp) mainApp.style.display = 'none';
-    clearPin();
-}
-
-// 1. الحماية الأمنية ومنع زر الفأرة الأيمن وأدوات المطورين
-document.addEventListener('contextmenu', event => event.preventDefault());
-document.addEventListener('keydown', event => {
-  if (
-    event.key === 'F12' || 
-    (event.ctrlKey && event.shiftKey && ['I', 'J', 'C'].includes(event.key.toUpperCase())) ||
-    (event.ctrlKey && event.key.toUpperCase() === 'U')
-  ) {
-    event.preventDefault();
-  }
-});
-
-// 2. المتغيرات العامة للنظام
-let db = null;
-let activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-let posCart = [];
-let selectedPosOrderType = 'dine_in';
-let selectedPosPaymentMethod = 'cash';
-let activeDiscountType = null; // 'pct' or 'amt'
-let posDiscountValue = 0;
-let enteredPin = "";
-
-// تنظيف الأرقام والأسعار وتحويلها لرقم مجرد
-function cleanPrice(val) {
-    if (val === null || val === undefined) return 0;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    let str = String(val).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[^\d]/g, '');
-    let num = parseInt(str, 10);
-    return isNaN(num) ? 0 : num;
-}
-
-// إدارة البردة الجانبية (Drawer)
+// 🔒 إدارة البردة الجانبية (Drawer)
 window.toggleSideDrawer = function() {
     const drawer = document.getElementById('sideDrawer');
     const overlay = document.getElementById('drawerOverlay');
@@ -140,61 +30,88 @@ window.toggleSideDrawer = function() {
     }
 };
 
-// 🔒 نظام الـ PIN الخاص بشاشة الكاشير
-function pressPin(num) {
+// 🔒 دوال الـ PIN الموحدة والمعزولة
+window.pressPin = function(num) {
     if (enteredPin.length < 6) {
-        enteredPin += num;
-        updatePinDisplay();
+        enteredPin += String(num);
+        window.updatePinDisplay();
     }
-}
+};
 
-function clearPin() {
+window.clearPin = function() {
     enteredPin = "";
-    updatePinDisplay();
-    document.getElementById('authError').innerText = "";
-}
+    window.updatePinDisplay();
+    var errEl = document.getElementById('authError');
+    if (errEl) errEl.innerText = "";
+};
 
-function updatePinDisplay() {
-    const display = document.getElementById('pinDisplay');
+window.updatePinDisplay = function() {
+    var display = document.getElementById('pinDisplay');
     if (display) {
-        display.innerText = enteredPin ? "•".repeat(enteredPin.length) : "••••";
+        display.innerText = enteredPin.length > 0 ? "•".repeat(enteredPin.length) : "••••";
     }
-}
+};
 
-function submitPin() {
-    const sysPasses = getData('sys_passwords') || {};
-    const validPass = sysPasses.cashier || "1234";
+window.submitPin = function() {
+    var sysPasses = (typeof getData === 'function') ? getData('sys_passwords') : {};
+    var validPass = (sysPasses && sysPasses.cashier) ? sysPasses.cashier : "1234";
 
     if (enteredPin === validPass || enteredPin === "1234" || enteredPin === "123") {
-        quickBypassLogin();
+        window.unlockCashierSystem();
     } else {
-        document.getElementById('authError').innerText = "رمز PIN غير صحيح!";
-        clearPin();
+        var errEl = document.getElementById('authError');
+        if (errEl) errEl.innerText = "❌ رمز PIN غير صحيح!";
+        window.clearPin();
     }
-}
+};
 
-function quickBypassLogin() {
-    document.getElementById('authOverlay').style.display = 'none';
-    document.getElementById('cashierMainApp').style.display = 'flex';
+window.unlockCashierSystem = function() {
+    var overlay = document.getElementById('authOverlay');
+    var mainApp = document.getElementById('cashierMainApp');
+    if (overlay) overlay.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'flex';
+
     activeCashierUser = { id: "c1", name: "الكاشير الرئيسي" };
-    if (document.getElementById('activeCashierName')) {
-        document.getElementById('activeCashierName').innerText = "👤 الكاشير: " + activeCashierUser.name;
-    }
-    initData();
-    loadPosDirectMenu('all');
-    loadDriversDropdown();
-    listenForIncomingOrders();
-}
+    var nameEl = document.getElementById('activeCashierName');
+    if (nameEl) nameEl.innerText = "👤 الكاشير: " + activeCashierUser.name;
+
+    if (typeof initData === 'function') initData();
+    if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+    if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
+    if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
+};
 
 function lockSystem() {
-    document.getElementById('authOverlay').style.display = 'flex';
-    document.getElementById('cashierMainApp').style.display = 'none';
+    var overlay = document.getElementById('authOverlay');
+    var mainApp = document.getElementById('cashierMainApp');
+    if (overlay) overlay.style.display = 'flex';
+    if (mainApp) mainApp.style.display = 'none';
     clearPin();
 }
 
-// 3. الاتصال السحابي بـ Firebase
+// 2. تنظيف الأرقام والأسعار
+function cleanPrice(val) {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    var str = String(val).replace(/[٠-٩]/g, function(d) { return "٠١٢٣٤٥٦٧٨٩".indexOf(d); }).replace(/[^\d]/g, '');
+    var num = parseInt(str, 10);
+    return isNaN(num) ? 0 : num;
+}
+// 3. الحماية الأمنية ومنع زر الفأرة الأيمن وأدوات المطورين
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.addEventListener('keydown', event => {
+  if (
+    event.key === 'F12' || 
+    (event.ctrlKey && event.shiftKey && ['I', 'J', 'C'].includes(event.key.toUpperCase())) ||
+    (event.ctrlKey && event.key.toUpperCase() === 'U')
+  ) {
+    event.preventDefault();
+  }
+});
+
+// 4. الاتصال السحابي بـ Firebase
 try {
-    const firebaseConfig = {
+    var firebaseConfig = {
         apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
         authDomain: "mim89-ff938.firebaseapp.com",
         projectId: "mim89-ff938",
@@ -204,10 +121,8 @@ try {
         measurementId: "G-D9GK0G77ZD"
     };
 
-    if (typeof firebase !== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         console.log("تم الاتصال بـ Firebase بنجاح 🚀");
         db.enablePersistence({ synchronizeTabs: true }).catch(err => {
@@ -218,7 +133,7 @@ try {
     console.warn("تشغيل محلي:", e);
 }
 
-// 4. البيانات الافتراضية المدمجة
+// 5. البيانات الافتراضية المدمجة
 const DEFAULT_DATA = {
     passwords: { admin: "admin123", cashier: "1234" },
     drivers: [
@@ -260,7 +175,6 @@ function getData(key) {
         return [];
     }
 }
-
 function setData(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
     if (db) {
