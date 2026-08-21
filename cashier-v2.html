@@ -413,6 +413,54 @@
     <!-- 🔗 الربط بملف Firebase والمحرك الموحد -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="app-v2.js?v=2.0"></script>
+    
+    <!-- استدعاء واحد فقط لملف الجافاسكريبت الموحد بآخر تحديث -->
+    <script src="app-v2.js?v=999"></script>
+
+    <!-- ⚡ ربط مباشر ومضمون للأزرار على الشاشات اللمسية -->
+    <script>
+      var enteredPin = "";
+
+      window.pressPin = function(num) {
+          if (enteredPin.length < 6) {
+              enteredPin += String(num);
+              window.updatePinDisplay();
+          }
+      };
+
+      window.clearPin = function() {
+          enteredPin = "";
+          window.updatePinDisplay();
+          var errEl = document.getElementById('authError');
+          if (errEl) errEl.innerText = "";
+      };
+
+      window.updatePinDisplay = function() {
+          var display = document.getElementById('pinDisplay');
+          if (display) {
+              display.innerText = enteredPin.length > 0 ? "•".repeat(enteredPin.length) : "••••";
+          }
+      };
+
+      window.submitPin = function() {
+          if (enteredPin === "1234" || enteredPin === "123") {
+              var overlay = document.getElementById('authOverlay');
+              var mainApp = document.getElementById('cashierMainApp');
+              
+              if (overlay) overlay.style.display = 'none';
+              if (mainApp) mainApp.style.display = 'flex';
+
+              if (typeof initData === 'function') initData();
+              if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+              if (typeof loadDriversDropdown === 'function') loadDriversDropdown();
+          } else {
+              var errEl = document.getElementById('authError');
+              if (errEl) errEl.innerText = "❌ الرمز غير صحيح!";
+              window.clearPin();
+          }
+      };
+    </script>
+
 </body>
 </html>
+
