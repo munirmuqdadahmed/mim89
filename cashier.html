@@ -26,7 +26,7 @@
             --bg-dark: #09090c;
             --card-bg: #13131a;
             --card-border: rgba(255, 255, 255, 0.08);
-            --card-border-gold: rgba(245, 158, 11, 0.3);
+            --card-border-gold: #f59e0b;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
             --danger: #ef4444;
@@ -50,12 +50,11 @@
             height: 100vh; width: 100vw;
         }
 
-        /* 🔒 شاشة تسجيل الدخول برمز PIN اللمسي */
+        /* 🔒 شاشة تسجيل الدخول اللمسية (طابق الصورة 100%) */
         #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(5, 5, 8, 0.96);
-            backdrop-filter: blur(12px);
+            background: #050508;
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -64,25 +63,25 @@
         }
 
         .login-card {
-            background: var(--card-bg);
+            background: #121218;
             border: 2px solid var(--gold-primary);
-            padding: 25px 20px;
+            padding: 28px 22px;
             border-radius: 20px;
             width: 100%;
-            max-width: 340px;
+            max-width: 330px;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 25px var(--gold-glow);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.18), 0 20px 40px rgba(0, 0, 0, 0.9);
         }
 
         .pin-display {
-            background: #000;
-            border: 1px solid #333;
+            background: #08080c;
+            border: 1px solid #22222e;
             color: var(--gold-bright);
             font-size: 2rem;
-            letter-spacing: 10px;
-            padding: 8px;
+            letter-spacing: 12px;
+            padding: 6px;
             border-radius: 10px;
-            margin-bottom: 16px;
+            margin: 14px 0 18px 0;
             height: 52px;
             display: flex;
             align-items: center;
@@ -94,25 +93,28 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .key-btn {
-            background: #1c1c24;
-            border: 1px solid var(--card-border);
+            background: #1d1d26;
+            border: 1px solid #2a2a38;
             color: #fff;
-            padding: 15px;
-            font-size: 1.3rem;
-            font-weight: bold;
+            padding: 14px 0;
+            font-size: 1.35rem;
+            font-weight: 800;
             border-radius: 12px;
             cursor: pointer;
             user-select: none;
-            transition: all 0.1s ease;
+            transition: all 0.12s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .key-btn:active {
             background: var(--gold-primary);
             color: #000;
-            transform: scale(0.95);
+            transform: scale(0.94);
         }
 
         .gold-input-inline {
@@ -175,7 +177,7 @@
             position: absolute;
             top: 120%; right: 0;
             background: #14141a;
-            border: 1px solid var(--card-border-gold);
+            border: 1px solid var(--gold-primary);
             border-radius: 12px;
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
             width: 280px;
@@ -245,22 +247,40 @@
             padding: 12px; height: 100% !important; overflow-y: auto !important; padding-bottom: 80px !important;
         }
 
+        /* 🍔 تنسيق شريط الأقسام المودرن */
         .categories-bar {
-            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scrollbar-width: none;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 2px 8px 2px;
+            margin-bottom: 12px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
         .categories-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text-muted);
-            padding: 8px 18px; border-radius: 20px;
-            cursor: pointer; white-space: nowrap; font-size: 0.85rem; font-weight: 800; transition: all 0.2s ease;
+            background: #181820 !important;
+            border: 1px solid #2e2e3a !important;
+            color: #a0a0b0 !important;
+            padding: 8px 18px !important;
+            border-radius: 12px !important;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.88rem !important;
+            font-weight: 700 !important;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .category-tab.active {
-            background: var(--gold-primary); color: #000; font-weight: 900;
-            border-color: var(--gold-bright); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+        .category-tab.active, .category-tab:hover {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)) !important;
+            color: #000 !important;
+            border-color: var(--gold-bright) !important;
+            font-weight: 900 !important;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
         }
 
         .products-grid {
@@ -281,7 +301,7 @@
         }
 
         .modal-body {
-            background: var(--card-bg); border: 1px solid var(--card-border-gold);
+            background: var(--card-bg); border: 1px solid var(--gold-primary);
             padding: 20px; border-radius: 16px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
         }
 
@@ -313,17 +333,16 @@
 </head>
 <body class="cashier-body">
 
-    <!-- 🔒 شاشة تسجيل الدخول برمز PIN اللمسي -->
+    <!-- 🔒 شاشة تسجيل الدخول اللمسية -->
     <div id="authOverlay">
         <div class="login-card">
-            <h3 style="color:var(--gold-primary); margin-bottom:4px; font-weight:900; font-size:1.15rem;">
+            <h3 style="color:var(--gold-primary); font-size:1.15rem; font-weight:900; display:flex; align-items:center; justify-content:center; gap:6px;">
                 <i class="fa-solid fa-lock"></i> كاشير مطعم MIM89
             </h3>
-            <p style="color:#aaa; font-size:0.78rem; margin-bottom:12px;">أدخل رمز الدخول المسجل للشيفت</p>
+            <p style="color:#777788; font-size:0.78rem; margin-top:4px;">أدخل رمز الدخول المسجل للشيفت</p>
             
-            <div id="pinDisplay" class="pin-display">••••</div>
+            <div id="pinDisplay" class="pin-display">. . . .</div>
 
-            <!-- لوحة الأرقام اللمسية المطابقة للشاشة -->
             <div class="keypad">
                 <button type="button" class="key-btn" onclick="pressPin('3')">3</button>
                 <button type="button" class="key-btn" onclick="pressPin('2')">2</button>
@@ -342,7 +361,6 @@
                 <button type="button" class="key-btn" onclick="clearPin()" style="color:var(--danger)">C</button>
             </div>
 
-            <!-- حقل مخفي للتوافق مع دالة الدخول الأصلية -->
             <input type="hidden" id="cashierPassInput">
             <p id="authError" style="color:var(--danger); font-size:0.78rem; height:18px; font-weight:bold; margin-top:4px;"></p>
         </div>
@@ -417,7 +435,6 @@
                                 <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
                             </div>
 
-                            <!-- 🎯 حقل البحث التلقائي عن دليل الزبائن -->
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
                                 <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
                                 <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
@@ -467,7 +484,6 @@
                     </div>
                 </div>
 
-                <!-- 🛵 تبويب الطلبات المباشرة الواردة من المينيو -->
                 <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
                     <div id="liveOrdersContainer">
                         <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
@@ -481,16 +497,15 @@
                     <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
 
-                <!-- 🍔 شريط الأقسام المرتب والمحدث -->
+                <!-- 🍔 شريط التناقل السريع بين الأقسام المودرن المحدث -->
                 <div id="posCategoriesBar" class="categories-bar">
                     <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('العروض', this)">🔥 العروض المميزة</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">🌯 قسم الشاورما</button>
                     <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">🥩 بركر اللحم</button>
                     <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">🍗 بركر الدجاج</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصاج والوجبات', this)">🥖 الصاج والوجبات</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو والكنتاكي', this)">🍚 الريزو والكنتاكي</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('المقبلات والصوصات', this)">🍟 المقبلات والصوصات</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">🌯 الشاورما</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">🍚 الريزو</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">🍗 الكنتاكي</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات', this)">🥣 الصوصات</button>
                 </div>
 
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -501,7 +516,7 @@
     <!-- 🖨️ الحاوية الحرارية للطباعة -->
     <div id="mim89ThermalPrintBox"></div>
 
-    <!-- 🚫 نافذة إدارة النفاد والوجبات المنتهية -->
+    <!-- النوافذ المنبثقة -->
     <div id="soldOutManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -513,7 +528,6 @@
         </div>
     </div>
 
-    <!-- 🏷️ نافذة إدارة الكوبونات وأكواد الخصم -->
     <div id="couponsManagerModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -542,7 +556,6 @@
         </div>
     </div>
 
-    <!-- ⏰ نافذة تحديد أوقات العمل والدوام -->
     <div id="workingHoursModal" class="modal-overlay">
         <div class="modal-body" style="max-width:390px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
@@ -584,7 +597,6 @@
         </div>
     </div>
 
-    <!-- 📊 باقي النوافذ الإدارية للحسابات والجرد -->
     <div id="quickCashModal" class="modal-overlay">
         <div class="modal-body" style="max-width:340px; text-align:center;">
             <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد (إجباري)</h3>
@@ -759,12 +771,10 @@
         </div>
     </div>
 
-    <!-- 🧠 المحرك البرمجي الرئيسي الداخلي (ربط دوال الـ PIN والبحث مع app.js) -->
+    <!-- 🧠 المحرك البرمجي الرئيسي الداخلي -->
     <script src="app.js"></script>
     <script>
-        /* ==========================================================================
-           🔒 البرمجية اللمسية لشاشة PIN
-           ========================================================================== */
+        /* 🔒 برمجة كيباد الـ PIN اللمسي */
         var enteredPin = "";
 
         function pressPin(num) {
@@ -784,7 +794,7 @@
         function updatePinDisplay() {
             var display = document.getElementById('pinDisplay');
             if (display) {
-                display.innerText = enteredPin.length > 0 ? "•".repeat(enteredPin.length) : "••••";
+                display.innerText = enteredPin.length > 0 ? "• ".repeat(enteredPin.length).trim() : ". . . .";
             }
         }
 
@@ -806,9 +816,7 @@
             }
         }
 
-        /* ==========================================================================
-           بقيه الدوال والنوافذ التشغيلية
-           ========================================================================== */
+        /* 🛒 إدارة بقية الدوال الإدارية والنوافذ */
         let cashierWorkHoursObj = { open: 10, close: 3, isEmergencyClosed: false };
 
         function openCashDrawer() { window.print(); }
@@ -837,7 +845,6 @@
 
         function initOfflineNetworkMonitor() {
             const badge = document.getElementById('offlineStatusBadge');
-            
             function updateOnlineStatus() {
                 if (navigator.onLine) {
                     if (badge) badge.style.display = 'none';
@@ -845,7 +852,6 @@
                     if (badge) badge.style.display = 'inline-flex';
                 }
             }
-
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
             updateOnlineStatus();
@@ -954,7 +960,7 @@
             const container = document.getElementById('soldOutItemsListTable');
             if (!container) return;
 
-            const items = getData('sys_items');
+            const items = typeof getData === 'function' ? getData('sys_items') : [];
             let soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
 
             let html = '<div style="display:flex; flex-direction:column; gap:6px;">';
