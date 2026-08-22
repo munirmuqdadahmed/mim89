@@ -2893,3 +2893,136 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+// 🧠 1. دالة التصنيف الذكي الآلي للوجبات لمنع الخلط بين الأقسام القديمة والجديدة
+function getItemCategory(item) {
+    if (!item || !item.name) return cleanPrice(item?.categoryId) || 1;
+    const name = item.name.trim();
+    
+    // المطابقة اللفظية الذكية بناءً على اسم الوجبة
+    if (name.includes('شاورما')) return 8; // قسم الشاورما
+    if (name.includes('بركر') && name.includes('لحم')) return 2; // بركر لحم
+    if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; // بركر دجاج
+    if (name.includes('ريزو')) return 5; // قسم الريزو
+    if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; // قسم الكنتاكي
+    if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; // قسم الفنكر
+    if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; // الصوصات والمقبلات
+    if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; // قسم الساندويش
+    if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; // العروض المميزة
+    if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; // قسم الإضافات
+    
+    return cleanPrice(item.categoryId) || 1;
+}
+
+// 🔄 2. دالة تصحيح معرفات الأقسام تلقائياً في التخزين المحلي
+function autoFixItemCategories() {
+    let items = getData('sys_items');
+    if (Array.isArray(items) && items.length > 0) {
+        let updated = false;
+        items.forEach(i => {
+            const correctCat = getItemCategory(i);
+            if (cleanPrice(i.categoryId) !== correctCat) {
+                i.categoryId = correctCat;
+                updated = true;
+            }
+        });
+        if (updated) {
+            setData('sys_items', items);
+        }
+    }
+}
+
+// 🍔 3. دالة تحميل أزرار الأقسام والمنتجات المحدثة للكاشير مع التصنيف الذكي والفرز من الأرخص للأغلى
+function loadPosDirectMenu(catId = 'all') {
+    autoFixItemCategories(); // تصحيح البيانات تلقائياً
+    const categories = getData('sys_categories');
+    let items = getData('sys_items');
+    const catBar = document.getElementById('posCategoriesBar');
+    const grid = document.getElementById('posProductsGrid');
+
+    if (!catBar || !grid) return;
+
+    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
+    categories.forEach(c => {
+        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
+    });
+
+    let filtered = [];
+    if (catId === 'all') {
+        filtered = items;
+    } else {
+        filtered = items.filter(i => getItemCategory(i) === cleanPrice(catId));
+    }
+
+    // 🏷️ فرز الوجبات تلقائياً من الأرخص سعراً للأغلى
+    filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(item => `
+        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+        </div>
+    `).join('');
+}
+
+// 📱 4. دالة عرض المينيو الإلكتروني العام المحدثة
+function loadPublicMenu() {
+    autoFixItemCategories();
+    const categories = getData('sys_categories');
+    const items = getData('sys_items');
+    const navContainer = document.getElementById('categoriesNav');
+    const sectionsContainer = document.getElementById('menuSections');
+
+    if (!navContainer || !sectionsContainer) return;
+    navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'category-tab active';
+    allBtn.innerText = 'الكل 🍔';
+    allBtn.onclick = () => filterCategory('all', allBtn);
+    navContainer.appendChild(allBtn);
+
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-tab';
+        btn.innerText = cat.name;
+        btn.onclick = () => filterCategory(cat.id, btn);
+        navContainer.appendChild(btn);
+
+        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
+        
+        // 🏷️ ترتيب الوجبات من الأرخص للأغلى
+        catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+        if (catItems.length > 0) {
+            const sec = document.createElement('div');
+            sec.className = 'menu-section';
+            sec.id = `cat_${cat.id}`;
+            sec.setAttribute('data-category', cat.id);
+            sec.innerHTML = `
+                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
+                <div class="items-grid">
+                    ${catItems.map(item => `
+                        <div class="item-card">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <div class="item-details">
+                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
+                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
+                                <div class="item-footer">
+                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            sectionsContainer.appendChild(sec);
+        }
+    });
+}
