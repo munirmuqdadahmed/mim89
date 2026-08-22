@@ -247,7 +247,7 @@
             padding: 12px; height: 100% !important; overflow-y: auto !important; padding-bottom: 80px !important;
         }
 
-        /* 🍔 شريط الأقسام المباشر بدون تحريك أفقي */
+        /* 🍔 شريط الأقسام المباشر المكشوف والمقسم تفصيلياً */
         .categories-bar {
             display: flex !important;
             flex-wrap: wrap !important;
@@ -383,7 +383,7 @@
                     <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
                     <button onclick="openSoldOutManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
                     <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
-                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
                     <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
@@ -491,22 +491,23 @@
                 </div>
             </aside>
 
-            <!-- 📦 الأصناف والمنتجات والبحث (شريط الأقسام المباشر المكشوف بالكامل) -->
+            <!-- 📦 الأصناف والمنتجات والبحث مع تقسيم الأقسام المفصل والفرز من الأرخص للأغلى -->
             <main class="pos-main-content">
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
                     <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
 
-                <!-- 🍔 شريط الأقسام الظاهر فوراً دون الحاجة للسحب -->
+                <!-- 🍔 شريط الأقسام المنفصلة بالكامل -->
                 <div id="posCategoriesBar" class="categories-bar">
                     <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
-
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">🥩 بركر اللحم</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">🍗 بركر الدجاج</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">🌯 الشاورما</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">🍚 الريزو</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">🍗 الكنتاكي</button>
-                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات', this)">🥣 الصوصات</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر لحم', this)">🥩 بركر لحم</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر دجاج', this)">🍗 بركر دجاج</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الساندويش', this)">🥪 قسم الساندويش</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الريزو', this)">🍚 قسم الريزو</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الكنتاكي', this)">🍗 قسم الكنتاكي</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الفنكر', this)">🍟 قسم الفنكر</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">🌯 قسم الشاورما</button>
+                    <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الصوصات والمقبلات', this)">🥣 الصوصات والمقبلات</button>
                 </div>
 
                 <div id="posProductsGrid" class="products-grid"></div>
@@ -815,6 +816,26 @@
                     clearPin();
                 }
             }
+        }
+
+        /* 🏷️ تفعيل فرز الوجبات تلقائياً من الأرخص للأغلى */
+        function sortItemsByPriceAscending(items) {
+            if (!Array.isArray(items)) return [];
+            return items.sort(function(a, b) {
+                return (Number(a.price) || 0) - (Number(b.price) || 0);
+            });
+        }
+
+        // اعتراض دالة جلب المنتجات أو التصفية لترتيب السعر من الأرخص للأغلى
+        if (typeof window.renderPosProducts === 'function') {
+            var origRenderPosProducts = window.renderPosProducts;
+            window.renderPosProducts = function(items) {
+                if (!items && typeof getData === 'function') {
+                    items = getData('sys_items') || [];
+                }
+                var sorted = sortItemsByPriceAscending(items || []);
+                origRenderPosProducts(sorted);
+            };
         }
 
         /* 🚚 تثبيت خيار الدليفري ونوع الطلب عبر الفواتير المتعاقبة */
@@ -1198,6 +1219,7 @@
             if (typeof initCashierPage === 'function') initCashierPage();
             initLiveOnlineOrdersListener();
             applyPersistentOrderTypeUI();
+            if (typeof renderPosProducts === 'function') renderPosProducts();
         });
     </script>
 </body>
