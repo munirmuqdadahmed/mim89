@@ -3026,3 +3026,92 @@ function loadPublicMenu() {
         }
     });
 }
+/* ==========================================
+   ⚡ نظام المزامنة الفورية اللحظية بين الأدمن والكاشير
+   ========================================== */
+
+// 1. إنشاء قناة اتصال لحظية بين جميع التبويبات المفتوحة
+const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
+
+if (posSyncChannel) {
+    posSyncChannel.onmessage = (event) => {
+        if (event.data === 'menu_updated') {
+            if (typeof refreshActiveUI === 'function') refreshActiveUI();
+        }
+    };
+}
+
+// 📢 دالة إشعارات التحديث اللحظي
+function notifyMenuUpdated() {
+    if (posSyncChannel) posSyncChannel.postMessage('menu_updated');
+    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+}
+
+// ✏️ 2. دالة حفظ وتعديل الصنف المحدثة بالكامل
+function saveItem() {
+    const editId = document.getElementById('editItemId')?.value;
+    const id = editId ? String(editId) : String(Date.now());
+    const name = document.getElementById('itemName')?.value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice')?.value);
+    const categoryId = String(document.getElementById('itemCategory')?.value || '1');
+    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
+
+    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
+
+    const itemData = { 
+        id: id, 
+        name: name, 
+        price: price, 
+        categoryId: categoryId, 
+        image: image, 
+        ingredients: ingredients 
+    };
+
+    let items = getData('sys_items') || [];
+    const index = items.findIndex(i => String(i.id) === String(id));
+    
+    if (index !== -1) {
+        items[index] = itemData;
+    } else {
+        items.push(itemData);
+    }
+
+    // حفظ فوري في ذاكرة المتصفح
+    setData('sys_items', items);
+
+    // تحديث فوري في الفايربيس
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
+            .then(() => console.log("✅ تم التحديث السحابي"))
+            .catch(err => console.error("❌ خطأ سحابي:", err));
+    }
+
+    if (typeof resetItemForm === 'function') resetItemForm();
+    notifyMenuUpdated(); // إرسال التعديل فوراً للكاشير بدون تنشيط
+    alert("✅ تم حفظ التعديل وظهر الآن في شاشة الكاشير والمينيو!");
+}
+
+// ⚡ 3. دالة التعديل السريع المباشر من الجدول
+function updateItemInline(id, field, value) {
+    let items = getData('sys_items') || [];
+    let item = items.find(i => String(i.id) === String(id) || cleanPrice(i.id) === cleanPrice(id));
+
+    if (item) {
+        if (field === 'price') {
+            item.price = cleanPrice(value) || 0;
+        } else {
+            item[field] = typeof value === 'string' ? value.trim() : value;
+        }
+
+        setData('sys_items', items);
+
+        if (typeof db !== 'undefined' && db) {
+            db.collection("menu_items").doc(String(id)).update({
+                [field]: item[field]
+            }).catch(err => console.error("Cloud inline update error:", err));
+        }
+
+        notifyMenuUpdated(); // تحديث شاشة الكاشير فوراً
+    }
+}
