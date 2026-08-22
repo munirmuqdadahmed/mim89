@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- إعدادات الشاشة الكاملة للايباد والآيفون -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 Admin">
@@ -12,7 +11,6 @@
 
     <title>MIM89 POS - لوحة التحكم والإدارة الشاملة</title>
 
-    <!-- FontAwesome, Stylesheet & Firebase SDKs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -47,7 +45,7 @@
             background: #121215;
             border: 1px solid var(--card-border);
             color: #fff;
-            padding: 6px 10px;
+            padding: 8px 10px;
             border-radius: 6px;
             width: 100%;
             font-size: 0.85rem;
@@ -192,12 +190,22 @@
         <header class="admin-header">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <span class="brand-badge">MIM89 ADMIN v21.0</span>
+                    <span class="brand-badge">MIM89 ADMIN v25.0</span>
                     <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">إدارة المينيو، دليل الزبائن CRM، الطابعات، والدليفري</p>
                 </div>
                 
-                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                    <!-- 🖨️ زر استخراج وطباعة المينيو الورقي عبر التقنية المحدثة -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <!-- 💰 كارت مبيعات الشيفت اللحظي وزر التقفيل والتصفير اليدوي للإدارة حصراً -->
+                    <div style="display:flex; align-items:center; gap:10px; background:#111116; border:1px solid var(--gold-primary); padding:6px 14px; border-radius:10px;">
+                        <div>
+                            <span style="font-size:0.75rem; color:#aaa; display:block;">💰 مبيعات الشيفت الحالية:</span>
+                            <strong id="liveShiftSalesBadge" style="color:var(--gold-bright); font-size:1.05rem;">0 د.ع</strong>
+                        </div>
+                        <button onclick="confirmCloseShiftAndLogout()" class="gold-btn btn-danger btn-sm" style="padding:6px 12px; font-size:0.78rem; font-weight:bold;">
+                            🔒 تقفيل الشيفت وتصفير العداد
+                        </button>
+                    </div>
+
                     <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
                         <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
                     </button>
@@ -221,12 +229,12 @@
         <!-- تبويبات التحكم -->
         <div class="admin-tabs">
             <button class="tab-btn active" onclick="switchAdminTab('tabMenuControl', this)"><i class="fa-solid fa-utensils"></i> الأصناف والمينيو</button>
-            <button class="tab-btn" onclick="switchAdminTab('tabCustomersControl', this)" style="color:var(--gold-bright); font-weight:bold;"><i class="fa-solid fa-address-book"></i> 📋 دليل الزبائن (CRM)</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabCustomersControl', this)"><i class="fa-solid fa-address-book"></i> 📋 دليل الزبائن (CRM)</button>
             <button class="tab-btn" onclick="switchAdminTab('tabDriversControl', this)"><i class="fa-solid fa-motorcycle"></i> الدليفري والتطبيقات</button>
             <button class="tab-btn" onclick="switchAdminTab('tabAreasControl', this)"><i class="fa-solid fa-map-location-dot"></i> مناطق التوصيل</button>
             <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
             <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
-            <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية والكلمات السرية</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية</button>
         </div>
 
         <!-- 1. تبويب إدارة الأصناف والمينيو -->
@@ -249,7 +257,7 @@
                     <label for="itemImgFile" class="gold-btn" style="cursor:pointer; font-size:0.85rem; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); display:inline-block; width:auto; padding:8px 16px;">
                         📷 التقاط صورة / اختيار من الاستوديو
                     </label>
-                    <input type="file" id="itemImgFile" accept="image/*" capture="environment" style="display:none;" onchange="handleImageUpload(event)">
+                    <input type="file" id="itemImgFile" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
 
                     <div style="margin-top:10px;">
                         <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
@@ -267,20 +275,20 @@
                 </div>
             </div>
 
-            <!-- جدول الأصناف المطور -->
+            <!-- جدول الأصناف -->
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-pen-to-square"></i> الأصناف (اضغط وتعدّل مباشرةً من الجدول)</h4>
-                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتم الحفظ فور التعديل</span>
+                    <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-pen-to-square"></i> الأصناف الحالية (تعديل مباشر من الجدول)</h4>
+                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتم الحفظ والتحديث المباشر</span>
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>الصورة</th>
-                                <th>اسم الصنف (اضغط للتعديل)</th>
+                                <th>اسم الصنف</th>
                                 <th>القسم</th>
-                                <th>السعر د.ع (اضغط للتعديل)</th>
+                                <th>السعر د.ع</th>
                                 <th>التحكم</th>
                             </tr>
                         </thead>
@@ -290,16 +298,13 @@
             </div>
         </div>
 
-        <!-- 2. 📋 تبويب دليل الزبائن (Customer CRM) -->
+        <!-- 2. دليل الزبائن -->
         <div id="tabCustomersControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <div>
-                        <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-address-book"></i> دليل وقاعدة بيانات الزبائن (CRM)</h4>
-                        <p style="color:#aaa; font-size:0.78rem; margin-top:3px; margin-bottom:0;">سجل زبائن المينيو والدليفري والتطبيقات المحفوظين لسهولة الوصول المباشر عند الكاشير</p>
-                    </div>
+                    <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-address-book"></i> دليل وقاعدة بيانات الزبائن (CRM)</h4>
                     <div style="width:100%; max-width:300px;">
-                        <input type="text" id="adminCustomerSearchInput" placeholder="🔍 ابحث بالاسم، الرقم، أو المنطقة..." oninput="renderAdminCustomers()" class="gold-input-inline" style="padding:8px 12px;">
+                        <input type="text" id="adminCustomerSearchInput" placeholder="🔍 ابحث بالاسم، الرقم..." oninput="renderAdminCustomers()" class="gold-input-inline">
                     </div>
                 </div>
 
@@ -315,25 +320,23 @@
                                 <th>التحكم</th>
                             </tr>
                         </thead>
-                        <tbody id="adminCustomersTableBody">
-                            <tr><td colspan="6" style="text-align:center; color:#777; padding:15px;">جاري تحميل سجل الزبائن...</td></tr>
-                        </tbody>
+                        <tbody id="adminCustomersTableBody"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- 3. تبويب إدارة سائقي الدليفري والتطبيقات -->
+        <!-- 3. سائقو الدليفري -->
         <div id="tabDriversControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:550px; margin:0 auto 20px auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-motorcycle"></i> إضافة سائق دليفري للمطعم</h4>
-                <input type="text" id="driverNameInput" class="gold-input-inline" placeholder="اسم السائق (مثال: أحمد الدليفري)" style="margin-bottom:8px;">
-                <input type="text" id="driverPhoneInput" class="gold-input-inline" placeholder="رقم الهاتف (اختياري)" style="margin-bottom:8px;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة سائق دليفري جديد</h4>
+                <input type="text" id="driverNameInput" class="gold-input-inline" placeholder="اسم السائق" style="margin-bottom:8px;">
+                <input type="text" id="driverPhoneInput" class="gold-input-inline" placeholder="رقم الهاتف" style="margin-bottom:8px;">
                 <button onclick="saveDeliveryDriver()" class="gold-btn btn-block" style="margin-top:10px;">حفظ السائق</button>
             </div>
 
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">🛵 سائقو التوصيل المسجلون لدى المطعم</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">قائمة السائقين المسجلين</h4>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
@@ -350,17 +353,17 @@
             </div>
         </div>
 
-        <!-- 4. تبويب مناطق التوصيل والربط الذكي -->
+        <!-- 4. مناطق التوصيل -->
         <div id="tabAreasControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📍 إضافة منطقة توصيل جديدة</h4>
-                <input type="text" id="areaNameInput" class="gold-input-inline" placeholder="اسم المنطقة (مثال: القاهرة)" style="margin-bottom:8px;">
-                <input type="number" id="areaPriceInput" class="gold-input-inline" placeholder="أجور التوصيل (0 مجاني / 3000)" style="margin-bottom:8px;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة منطقة توصيل</h4>
+                <input type="text" id="areaNameInput" class="gold-input-inline" placeholder="اسم المنطقة" style="margin-bottom:8px;">
+                <input type="number" id="areaPriceInput" class="gold-input-inline" placeholder="أجور التوصيل (0 مجاني)" style="margin-bottom:8px;">
                 <button onclick="saveDeliveryArea()" class="gold-btn btn-block" style="margin-top:10px;">حفظ المنطقة</button>
             </div>
 
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">📜 قائمة المناطق المضافة (المعالجة الذكية للأسماء مفعلة)</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">مناطق التوصيل</h4>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
@@ -377,44 +380,34 @@
             </div>
         </div>
 
-        <!-- 5. تبويب إعدادات الطابعات الحرارية -->
+        <!-- 5. إعدادات الطابعات -->
         <div id="tabPrintersControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:550px; margin:0 auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-print"></i> ربط طابعات الشبكة الحرارية (3 طابعات)</h4>
-                <p style="color:#aaa; font-size:0.8rem; margin-bottom:15px;">قم بتفعيل الطباعة المباشرة وتحديد IP كل طابعة قسم داخل المطعم.</p>
-
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; background:#121215; padding:10px; border-radius:8px;">
-                    <input type="checkbox" id="enableIpPrinting" style="width:20px; height:20px; accent-color:var(--gold-primary);">
-                    <label for="enableIpPrinting" style="font-weight:bold; cursor:pointer;">تفعيل الطباعة المباشرة عبر الشبكة (IP Printing)</label>
-                </div>
-
-                <label style="font-size:0.8rem; color:#aaa;">IP طابعة الكاشير (الفاتورة المالية):</label>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-print"></i> ربط الطابعات</h4>
+                <label style="font-size:0.8rem; color:#aaa;">IP طابعة الكاشير:</label>
                 <input type="text" id="cashierPrinterIp" class="gold-input-inline" placeholder="192.168.0.218" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 1 (قسم الشاورما والوجبات):</label>
+                <label style="font-size:0.8rem; color:#aaa;">IP طابعة المطبخ 1:</label>
                 <input type="text" id="kitchenPrinter1Ip" class="gold-input-inline" placeholder="192.168.0.200" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">IP طابعة المطبخ 2 (قسم البركر والكنتاكي):</label>
+                <label style="font-size:0.8rem; color:#aaa;">IP طابعة المطبخ 2:</label>
                 <input type="text" id="kitchenPrinter2Ip" class="gold-input-inline" placeholder="192.168.0.202" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">منفذ الطباعة (Port):</label>
-                <input type="text" id="printerPort" class="gold-input-inline" placeholder="9100" style="margin-bottom:8px;">
-
-                <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ إعدادات جميع الطابعات</button>
+                <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ الإعدادات</button>
             </div>
         </div>
 
-        <!-- 6. تبويب الكاشيرية -->
+        <!-- 6. حسابات الكاشيرية -->
         <div id="tabCashiersControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:500px; margin:0 auto 20px auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة حساب كاشير جديد</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">إضافة كاشير</h4>
                 <input type="text" id="cashierNameInput" class="gold-input-inline" placeholder="اسم الكاشير" style="margin-bottom:8px;">
-                <input type="password" id="cashierPassNew" class="gold-input-inline" placeholder="كلمة السر الخاصة به" style="margin-bottom:8px;">
-                <button onclick="saveCashier()" class="gold-btn btn-block" style="margin-top:10px;">حفظ الحساب</button>
+                <input type="password" id="cashierPassNew" class="gold-input-inline" placeholder="كلمة السر" style="margin-bottom:8px;">
+                <button onclick="saveCashier()" class="gold-btn btn-block" style="margin-top:10px;">حفظ الكاشير</button>
             </div>
 
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;">قائمة حسابات الكاشيرية</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;">حسابات الكاشيرية</h4>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
                         <thead>
@@ -431,31 +424,31 @@
             </div>
         </div>
 
-        <!-- 7. تبويب الحماية وكلمات المرور لكل صفحة -->
+        <!-- 7. الحماية -->
         <div id="tabSecurityControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:500px; margin:0 auto;">
-                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> تخصيص كلمات المرور لكل صفحة ونظام</h4>
+                <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> كلمات المرور</h4>
                 
-                <label style="font-size:0.8rem; color:#aaa;">1️⃣ كلمة مرور لوحة الأدمن (Admin):</label>
-                <input type="password" id="newAdminPass" class="gold-input-inline" placeholder="كلمة السر الحالية أو الجديدة" style="margin-bottom:8px;">
+                <label style="font-size:0.8rem; color:#aaa;">كلمة مرور الأدمن (Admin):</label>
+                <input type="password" id="newAdminPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">2️⃣ كلمة مرور الخزينة المالية والتكاليف (Costing):</label>
-                <input type="password" id="newCostingPass" class="gold-input-inline" placeholder="الرمز السري للشفافية المالية" style="margin-bottom:8px;">
+                <label style="font-size:0.8rem; color:#aaa;">كلمة مرور الخزينة (Costing):</label>
+                <input type="password" id="newCostingPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">3️⃣ كلمة مرور المخزن للجرد (Inventory):</label>
-                <input type="password" id="newInvPass" class="gold-input-inline" placeholder="كلمة سر صفحة الجرد والمخزن" style="margin-bottom:8px;">
+                <label style="font-size:0.8rem; color:#aaa;">كلمة مرور المخزن (Inventory):</label>
+                <input type="password" id="newInvPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
 
-                <label style="font-size:0.8rem; color:#aaa; margin-top:8px; display:block;">4️⃣ كلمة مرور الكاشير (Cashier):</label>
-                <input type="password" id="newCashierPass" class="gold-input-inline" placeholder="كلمة سر دخول شاشة المبيعات" style="margin-bottom:8px;">
+                <label style="font-size:0.8rem; color:#aaa;">كلمة مرور الكاشير (Cashier):</label>
+                <input type="password" id="newCashierPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
 
-                <button onclick="updateAllSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث وتأمين كافة كلمات المرور 🔒</button>
+                <button onclick="updateAllSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث الكلمات 🔒</button>
             </div>
         </div>
 
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js"></script>
+    <script src="app.js?v=500"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -464,8 +457,7 @@
             if (pass === validPass || pass === "admin123" || pass === "123") {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('adminMainApp').style.display = 'block';
-                if (typeof renderAdminCategories === 'function') renderAdminCategories();
-                if (typeof renderAdminItems === 'function') renderAdminItems();
+                if (typeof initAdminPage === 'function') initAdminPage();
             } else {
                 document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
             }
@@ -479,13 +471,16 @@
             if (target) target.style.display = 'block';
             if (btn) btn.classList.add('active');
 
+            if (tabId === 'tabMenuControl') {
+                if (typeof renderAdminCategories === 'function') renderAdminCategories();
+                if (typeof renderAdminItems === 'function') renderAdminItems();
+            }
             if (tabId === 'tabCustomersControl' && typeof renderAdminCustomers === 'function') renderAdminCustomers();
             if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
         }
 
-        // 🖨️ دالة طباعة واستخراج المينيو الورقي المحدثة بالكامل والمتوافقة 100% مع سفاري
         function printPaperMenu() {
             let categories = [];
             let items = [];
@@ -495,7 +490,6 @@
                 items = (typeof getData === 'function' ? getData('sys_items') : JSON.parse(localStorage.getItem('sys_items'))) || [];
             } catch (e) {}
 
-            // دعم البيانات الافتراضية في حال كانت الذاكرة المحلية فارغة
             if ((!categories || categories.length === 0) && typeof DEFAULT_DATA !== 'undefined') {
                 categories = DEFAULT_DATA.categories || [];
             }
@@ -656,7 +650,6 @@
                 </html>
             `;
 
-            // الإنشاء والطباعة المباشرة عبر iframe مخفي متوافق 100% مع سفاري
             let printIframe = document.getElementById('printIframeHidden');
             if (!printIframe) {
                 printIframe = document.createElement('iframe');
