@@ -130,7 +130,7 @@ const DEFAULT_DATA = {
         { id: 6, name: "🍗 قسم الكنتاكي" },
         { id: 7, name: "🍟 قسم الفنكر" },
         { id: 8, name: "🌯 قسم الشاورما" },
-        { id: 9, name: "🥣 الصوصات والمقبلات" },
+        { id: 9, name: "🥣 الصوصات " },
         { id: 10, name: "➕ قسم الإضافات" }
     ],
     deliveryAreas: [
