@@ -50,7 +50,7 @@
             height: 100vh; width: 100vw;
         }
 
-        /* 🔒 شاشة تسجيل الدخول اللمسية (طابق الصورة 100%) */
+        /* 🔒 شاشة تسجيل الدخول اللمسية */
         #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -247,32 +247,32 @@
             padding: 12px; height: 100% !important; overflow-y: auto !important; padding-bottom: 80px !important;
         }
 
-        /* 🍔 تنسيق شريط الأقسام المودرن */
+        /* 🍔 شريط الأقسام المباشر بدون تحريك أفقي */
         .categories-bar {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 4px 2px 8px 2px;
-            margin-bottom: 12px;
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            padding: 4px 2px 10px 2px !important;
+            margin-bottom: 12px !important;
+            width: 100% !important;
+            overflow: visible !important;
         }
-        .categories-bar::-webkit-scrollbar { display: none; }
 
         .category-tab {
             background: #181820 !important;
             border: 1px solid #2e2e3a !important;
             color: #a0a0b0 !important;
-            padding: 8px 18px !important;
+            padding: 8px 16px !important;
             border-radius: 12px !important;
-            cursor: pointer;
-            white-space: nowrap;
+            cursor: pointer !important;
+            white-space: nowrap !important;
             font-size: 0.88rem !important;
             font-weight: 700 !important;
             transition: all 0.2s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0 !important;
         }
 
         .category-tab.active, .category-tab:hover {
@@ -417,7 +417,7 @@
                 <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
                     <div class="pos-cart-box">
                         <div class="cart-scrollable-area">
-                            <span class="section-label">نوع الخدمة:</span>
+                            <span class="section-label">نوع الخدمة الثابت:</span>
                             <div class="toggle-group" id="posOrderTypeGroup">
                                 <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
                                 <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
@@ -491,15 +491,16 @@
                 </div>
             </aside>
 
-            <!-- 📦 الأصناف والمنتجات والبحث -->
+            <!-- 📦 الأصناف والمنتجات والبحث (شريط الأقسام المباشر المكشوف بالكامل) -->
             <main class="pos-main-content">
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
                     <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
                 </div>
 
-                <!-- 🍔 شريط التناقل السريع بين الأقسام المودرن المحدث -->
+                <!-- 🍔 شريط الأقسام الظاهر فوراً دون الحاجة للسحب -->
                 <div id="posCategoriesBar" class="categories-bar">
                     <button type="button" class="category-tab active" onclick="filterPosProductsByCategory('all', this)">الكل 🍔</button>
+
                     <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر اللحم', this)">🥩 بركر اللحم</button>
                     <button type="button" class="category-tab" onclick="filterPosProductsByCategory('بركر الدجاج', this)">🍗 بركر الدجاج</button>
                     <button type="button" class="category-tab" onclick="filterPosProductsByCategory('الشاورما', this)">🌯 الشاورما</button>
@@ -814,6 +815,54 @@
                     clearPin();
                 }
             }
+        }
+
+        /* 🚚 تثبيت خيار الدليفري ونوع الطلب عبر الفواتير المتعاقبة */
+        var persistentOrderType = localStorage.getItem('mim89_pos_order_type') || 'dine_in';
+
+        function selectOrderType(btnEl) {
+            if (!btnEl) return;
+            var group = document.getElementById('posOrderTypeGroup');
+            if (group) {
+                var btns = group.querySelectorAll('.toggle-btn');
+                btns.forEach(function(b) { b.classList.remove('active'); });
+            }
+            btnEl.classList.add('active');
+            persistentOrderType = btnEl.getAttribute('data-value') || 'dine_in';
+            localStorage.setItem('mim89_pos_order_type', persistentOrderType);
+
+            var driverBox = document.getElementById('driverSelectBox');
+            if (driverBox) {
+                driverBox.style.display = (persistentOrderType === 'delivery') ? 'block' : 'none';
+            }
+        }
+
+        function applyPersistentOrderTypeUI() {
+            var group = document.getElementById('posOrderTypeGroup');
+            if (!group) return;
+            var activeBtn = group.querySelector('[data-value="' + persistentOrderType + '"]');
+            if (activeBtn) {
+                var btns = group.querySelectorAll('.toggle-btn');
+                btns.forEach(function(b) { b.classList.remove('active'); });
+                activeBtn.classList.add('active');
+            }
+            var driverBox = document.getElementById('driverSelectBox');
+            if (driverBox) {
+                driverBox.style.display = (persistentOrderType === 'delivery') ? 'block' : 'none';
+            }
+        }
+
+        /* منع إعادة ضبط نوع الطلب عند إلغاء/تفريغ السلة */
+        if (typeof window.clearPosCart === 'function') {
+            var origClearPosCart = window.clearPosCart;
+            window.clearPosCart = function() {
+                origClearPosCart();
+                applyPersistentOrderTypeUI();
+            };
+        } else {
+            window.clearPosCart = function() {
+                applyPersistentOrderTypeUI();
+            };
         }
 
         /* 🛒 إدارة بقية الدوال الإدارية والنوافذ */
@@ -1148,6 +1197,7 @@
             initOfflineNetworkMonitor();
             if (typeof initCashierPage === 'function') initCashierPage();
             initLiveOnlineOrdersListener();
+            applyPersistentOrderTypeUI();
         });
     </script>
 </body>
