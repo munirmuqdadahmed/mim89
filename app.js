@@ -2718,21 +2718,123 @@ function deleteItem(id) {
     }
 }
 
-function renderAdminCategories() {}
+/* ==========================================
+   🍔 1. إصلاح إضافة وتعديل وحفظ الأصناف بالكامل
+   ========================================== */
 
-function saveDeliveryDriver() {
-    const name = document.getElementById('driverNameInput').value.trim();
-    const phone = document.getElementById('driverPhoneInput').value.trim();
+function renderAdminCategories() {
+    const categories = getData('sys_categories') || [];
+    const selectEl = document.getElementById('itemCategory');
+    if (!selectEl) return;
 
-    if (!name) return alert("يرجى إدخال اسم السائق");
+    selectEl.innerHTML = categories.map(c => 
+        `<option value="${c.id}">${c.name}</option>`
+    ).join('');
+}
 
-    let drivers = getData('sys_drivers');
-    drivers.push({ id: 'drv_' + Date.now(), name, phone });
-    setData('sys_drivers', drivers);
+function saveItem() {
+    const editId = document.getElementById('editItemId')?.value;
+    const id = editId ? String(editId) : 'item_' + Date.now();
+    const name = document.getElementById('itemName')?.value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice')?.value);
+    const categoryId = document.getElementById('itemCategory')?.value || '1';
+    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
 
-    document.getElementById('driverNameInput').value = '';
-    document.getElementById('driverPhoneInput').value = '';
-    renderAdminDrivers();
+    if (!name || !price) {
+        alert("⚠️ يرجى كتابة اسم الصنف والسعر بشكل صحيح!");
+        return;
+    }
+
+    // توحيد الحقول لتتوافق مع كافة صفحات النظام
+    const itemData = {
+        id: id,
+        name: name,
+        price: price,
+        categoryId: categoryId,
+        catId: categoryId,
+        category: categoryId,
+        image: image,
+        ingredients: ingredients
+    };
+
+    let items = getData('sys_items') || [];
+    const index = items.findIndex(i => String(i.id) === String(id));
+
+    if (index !== -1) {
+        items[index] = itemData;
+    } else {
+        items.unshift(itemData);
+    }
+
+    // حفظ محلي + سحابي
+    setData('sys_items', items);
+
+    if (db) {
+        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
+            .catch(e => console.error("Cloud item save error:", e));
+    }
+
+    resetItemForm();
+    notifyMenuUpdated();
+    alert("✅ تم حفظ الصنف بنجاح وتحديث كافة الشاشات!");
+}
+
+function editItem(id) {
+    const items = getData('sys_items') || [];
+    const item = items.find(i => String(i.id) === String(id));
+    if (!item) return;
+
+    renderAdminCategories();
+
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemCategory').value = item.categoryId || item.catId || item.category || '1';
+    document.getElementById('itemImage').value = item.image || '';
+    document.getElementById('imgPreview').src = item.image || 'https://via.placeholder.com/150';
+    document.getElementById('itemIngredients').value = item.ingredients || '';
+    document.getElementById('itemFormTitle').innerText = "تعديل صنف: " + item.name;
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+/* ==========================================
+   📦 2. دالة استخراج وتنسيق وجبات الطلب عند الكاشير
+   ========================================== */
+
+// تقرأ الوجبات سواء جاءت بـ cart أو items أو details وتنسق المكونات والطلب
+function parseOrderItemsHTML(order) {
+    const itemList = order.items || order.cart || order.details || [];
+    
+    if (!itemList || itemList.length === 0) {
+        return `<span style="color:#ef4444;">⚠️ لا توجد تفاصيل للوجبات</span>`;
+    }
+
+    return itemList.map(item => {
+        const itemName = item.name || item.itemName || 'وجبة';
+        const qty = item.qty || item.quantity || 1;
+        const price = cleanPrice(item.price);
+        const notes = item.itemNotes || item.notes || [];
+        
+        let notesText = '';
+        if (Array.isArray(notes) && notes.length > 0) {
+            notesText = `<div style="font-size:0.75rem; color:#ffd700; margin-right:10px;">• ${notes.join(' • ')}</div>`;
+        } else if (typeof notes === 'string' && notes.trim() !== '') {
+            notesText = `<div style="font-size:0.75rem; color:#ffd700; margin-right:10px;">• ${notes}</div>`;
+        }
+
+        return `
+            <div style="padding:4px 0; border-bottom:1px dashed #333; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="color:#fff; font-size:0.88rem;">${qty}× ${itemName}</strong>
+                    ${notesText}
+                </div>
+                <span style="color:#aaa; font-size:0.8rem;">${(price * qty).toLocaleString('ar-IQ')} د.ع</span>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderAdminDrivers() {
