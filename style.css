@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Complete Master Style Sheet (v21.0)
-   (iOS & iPad Safari POS Display Optimized - Fixed Thermal Print & CRM Edition)
+   MIM89 FAST FOOD - Complete Master Style Sheet (v24.0)
+   (Direct Wrap Categories Display & iPad POS Thermal Print Optimized)
    صاحب النظام: منير مقداد
    ========================================================================== */
 
@@ -20,7 +20,7 @@
 }
 
 * {
-    box-sizing: border-box;
+    box-sizing: border-box !important;
     margin: 0;
     padding: 0;
     font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -43,6 +43,7 @@ body {
     height: 100dvh;
     overflow: hidden;
     position: relative;
+    user-select: none;
 }
 
 .container {
@@ -53,6 +54,74 @@ body {
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+/* 🔒 شاشة تسجيل الدخول اللمسية واللوحة الرقمية الثابتة */
+#authOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #050508;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+}
+
+.login-card {
+    background: #121218;
+    border: 2px solid var(--gold-primary);
+    padding: 28px 22px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 330px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.18), 0 20px 40px rgba(0, 0, 0, 0.9);
+}
+
+.pin-display {
+    background: #08080c;
+    border: 1px solid #22222e;
+    color: var(--gold-bright);
+    font-size: 2rem;
+    letter-spacing: 12px;
+    padding: 6px;
+    border-radius: 10px;
+    margin: 14px 0 18px 0;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.key-btn {
+    background: #1d1d26;
+    border: 1px solid #2a2a38;
+    color: #fff;
+    padding: 14px 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.key-btn:active {
+    background: var(--gold-primary);
+    color: #000;
+    transform: scale(0.94);
 }
 
 /* 2. الهيدر والكروت الأساسية */
@@ -269,37 +338,40 @@ body {
     to { background-color: #ef4444; box-shadow: 0 0 12px #ef4444; }
 }
 
-/* 7. التبويبات والأزرار التفاعلية */
+/* 🍔 7. التبويبات وشريط الأقسام المباشر المكشوف بالكامل بدون تحريك */
 .admin-tabs, .categories-container, .categories-bar {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 5px;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
+    display: flex !important;
+    flex-wrap: wrap !important; /* التفاف تلقائي لأسطر متعددة لظهور كافة الأقسام مباشرة */
+    gap: 8px !important;
+    padding: 4px 2px 10px 2px !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    overflow: visible !important;
 }
-.admin-tabs::-webkit-scrollbar { display: none; }
 
 .tab-btn, .category-tab {
-    background: #222228;
-    color: var(--text-muted);
-    border: 1px solid var(--card-border);
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 600;
-    white-space: nowrap;
-    font-size: 0.85rem;
+    background: #181820 !important;
+    border: 1px solid #2e2e3a !important;
+    color: #a0a0b0 !important;
+    padding: 8px 16px !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0 !important;
 }
 
-.tab-btn.active, .category-tab.active {
-    background: var(--gold-primary);
-    color: #000;
-    border-color: var(--gold-bright);
-    font-weight: bold;
-    box-shadow: 0 0 10px var(--gold-glow);
+.tab-btn.active, .category-tab.active, .category-tab:hover {
+    background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)) !important;
+    color: #000 !important;
+    border-color: var(--gold-bright) !important;
+    font-weight: 900 !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
 
 .tab-content {
@@ -310,13 +382,14 @@ body {
     display: block;
 }
 
-.toggle-btn-group {
+.toggle-btn-group, .toggle-group {
     display: flex;
     gap: 5px;
     background: #121215;
     padding: 3px;
     border-radius: 8px;
     border: 1px solid var(--card-border);
+    flex-shrink: 0;
 }
 
 .toggle-btn {
@@ -334,6 +407,7 @@ body {
 .toggle-btn.active {
     background: var(--gold-gradient);
     color: #000;
+    font-weight: 900;
 }
 
 /* 8. المينيو العام وكروت المنتجات */
@@ -518,7 +592,7 @@ body {
     font-weight: bold;
 }
 
-/* 11. النوافذ والشاشات المنبثقة */
+/* 11. النوافذ للشاشات المنبثقة */
 .modal, .modal-overlay {
     display: none;
     position: fixed;
@@ -546,41 +620,13 @@ body {
     -webkit-overflow-scrolling: touch !important;
 }
 
-.auth-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    padding: 15px;
-}
-
-.auth-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 20px;
-    padding: 30px 20px;
-    width: 100%;
-    max-width: 380px;
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
 .error-msg {
     color: var(--danger-red);
     font-size: 0.85rem;
     margin-top: 10px;
 }
 
-/* ========================================================= */
-/* 12. قواعد الطباعة الحرارية الصارمة المحسّنة (تمنع الصفحة البيضاء نهائياً) */
-/* ========================================================= */
+/* 🖨️ 12. قواعد الطباعة الحرارية الصارمة المحسّنة */
 #mim89ThermalPrintBox {
     display: none;
 }
@@ -598,12 +644,10 @@ body {
         height: auto !important;
     }
 
-    /* إخفاء كل العناصر باستثناء حاوية الطباعة الحرارية */
     body > *:not(#mim89ThermalPrintBox):not(#receiptModal):not(#dailyReportModal) {
         display: none !important;
     }
 
-    /* إظهار حاوية الفاتورة الحرارية بوضوح تام على ورق 80mm */
     #mim89ThermalPrintBox {
         display: block !important;
         position: absolute !important;
