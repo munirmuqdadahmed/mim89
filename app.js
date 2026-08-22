@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v22.0 Complete Categories & Price Sorted)
+   MIM89 FAST FOOD - Master Core Engine (v23.0 Fully Cleaned & Realtime Unified)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -86,7 +86,7 @@ try {
     console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
-// 2. البيانات الأساسية الكاملة والأقسام التفصيلية المحدثة
+// 2. البيانات الأساسية الكاملة للأقسام
 const DEFAULT_DATA = {
     passwords: { 
         admin: "admin123", 
@@ -120,7 +120,6 @@ const DEFAULT_DATA = {
         "صوص زيادة 🧀",
         "بدون مخلل 🥒"
     ],
-    /* 🍔 الأقسام المفصلة المنفردة بالكامل */
     categories: [
         { id: 1, name: "🔥 العروض المميزة" },
         { id: 2, name: "🥩 بركر لحم" },
@@ -130,7 +129,7 @@ const DEFAULT_DATA = {
         { id: 6, name: "🍗 قسم الكنتاكي" },
         { id: 7, name: "🍟 قسم الفنكر" },
         { id: 8, name: "🌯 قسم الشاورما" },
-        { id: 9, name: "🥣 الصوصات " },
+        { id: 9, name: "🥣 الصوصات والمقبلات" },
         { id: 10, name: "➕ قسم الإضافات" }
     ],
     deliveryAreas: [
@@ -163,6 +162,42 @@ const DEFAULT_DATA = {
     ]
 };
 
+// 🧠 التصنيف الذكي الآلي لمنع خلط الوجبات بين الأقسام
+function getItemCategory(item) {
+    if (!item || !item.name) return cleanPrice(item?.categoryId) || 1;
+    const name = item.name.trim();
+    
+    if (name.includes('شاورما')) return 8; 
+    if (name.includes('بركر') && name.includes('لحم')) return 2; 
+    if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; 
+    if (name.includes('ريزو')) return 5; 
+    if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; 
+    if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; 
+    if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; 
+    if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; 
+    if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; 
+    if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; 
+    
+    return cleanPrice(item.categoryId) || 1;
+}
+
+function autoFixItemCategories() {
+    let items = getData('sys_items');
+    if (Array.isArray(items) && items.length > 0) {
+        let updated = false;
+        items.forEach(i => {
+            const correctCat = getItemCategory(i);
+            if (cleanPrice(i.categoryId) !== correctCat) {
+                i.categoryId = correctCat;
+                updated = true;
+            }
+        });
+        if (updated) {
+            setData('sys_items', items);
+        }
+    }
+}
+
 function normalizeArabicArea(str) {
     if (!str) return '';
     return str.toString()
@@ -192,7 +227,6 @@ function initData() {
         }
     }
 
-    // تحديث الأقسام دائماً بالهيكلية المنفردة الجديدة
     localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
 
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
@@ -300,9 +334,25 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Customers sync fallback:", err));
 }
 
+// ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
+const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
+
+if (posSyncChannel) {
+    posSyncChannel.onmessage = (event) => {
+        if (event.data === 'menu_updated') {
+            if (typeof refreshActiveUI === 'function') refreshActiveUI();
+        }
+    };
+}
+
+function notifyMenuUpdated() {
+    if (posSyncChannel) posSyncChannel.postMessage('menu_updated');
+    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+}
+
 function refreshActiveUI() {
     if (document.body.classList.contains('public-menu-body')) {
-        if (typeof loadPublicMenu === 'function') loadPublicMenu();
+        if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
         if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
         if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
@@ -567,14 +617,40 @@ window.addCustomizedItemToCart = function() {
     closeModal('itemDetailModal');
 };
 
+function setupPublicMenuRealtimeListener() {
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").onSnapshot(snapshot => {
+            let cloudItems = [];
+            snapshot.forEach(doc => {
+                cloudItems.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
+            });
+            if (cloudItems.length > 0) {
+                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                renderPublicMenuUI();
+            }
+        }, err => {
+            console.error("خطأ في المزامنة اللحظية للمينيو:", err);
+            renderPublicMenuUI();
+        });
+    } else {
+        renderPublicMenuUI();
+    }
+}
+
 function loadPublicMenu() {
+    setupPublicMenuRealtimeListener();
+}
+
+function renderPublicMenuUI() {
+    autoFixItemCategories();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     const navContainer = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
 
     if (!navContainer || !sectionsContainer) return;
-    navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
+    navContainer.innerHTML = ''; 
+    sectionsContainer.innerHTML = '';
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
@@ -589,9 +665,7 @@ function loadPublicMenu() {
         btn.onclick = () => filterCategory(cat.id, btn);
         navContainer.appendChild(btn);
 
-        let catItems = items.filter(i => cleanPrice(i.categoryId) === cleanPrice(cat.id));
-        
-        // 🏷️ ترتيب الوجبات من الأرخص للأغلى
+        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
         catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
         if (catItems.length > 0) {
@@ -875,7 +949,6 @@ function saveOrderLocally(orderData) {
     orders.push(orderData);
     setData('sys_live_orders', orders);
 }
-
 /* ==========================================
    5. نقطة البيع POS والدليفري (cashier.html)
    ========================================== */
@@ -969,8 +1042,8 @@ function loadDriversAndAppDropdowns() {
     `;
 }
 
-/* 🍔 دالة تحميل أزرار الأقسام والمنتجات المحدثة بالكامل والتصفية من الأرخص للأغلى */
 function loadPosDirectMenu(catId = 'all') {
+    autoFixItemCategories();
     const categories = getData('sys_categories');
     let items = getData('sys_items');
     const catBar = document.getElementById('posCategoriesBar');
@@ -980,23 +1053,16 @@ function loadPosDirectMenu(catId = 'all') {
 
     catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
     categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id || catId == c.name ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
+        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
     });
 
     let filtered = [];
     if (catId === 'all') {
         filtered = items;
     } else {
-        filtered = items.filter(i => {
-            if (cleanPrice(i.categoryId) === cleanPrice(catId)) return true;
-            if (i.categoryName && i.categoryName.includes(catId)) return true;
-            const catObj = categories.find(c => String(c.id) === String(catId) || c.name.includes(catId));
-            if (catObj && cleanPrice(i.categoryId) === cleanPrice(catObj.id)) return true;
-            return false;
-        });
+        filtered = items.filter(i => getItemCategory(i) === cleanPrice(catId));
     }
 
-    // 🏷️ فرز الوجبات تلقائياً من الأرخص سعراً للأغلى
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
     if (filtered.length === 0) {
@@ -1020,7 +1086,6 @@ function filterPosProducts() {
     if (!grid) return;
     
     let filtered = items.filter(i => i.name.toLowerCase().includes(query));
-    // 🏷️ فرز نتائج البحث من الأرخص للأغلى
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
     grid.innerHTML = filtered.map(item => `
@@ -1227,6 +1292,7 @@ function renderPosCart() {
         }
     }
 }
+
 /* ==========================================
    6. حاسبة النقد والطباعة الإلزامية الآمنة
    ========================================== */
@@ -2496,14 +2562,14 @@ function triggerInlineImageUpload(itemId) {
 }
 
 function updateItemInline(id, field, value) {
-    let items = getData('sys_items');
-    let item = items.find(i => cleanPrice(i.id) === cleanPrice(id));
+    let items = getData('sys_items') || [];
+    let item = items.find(i => String(i.id) === String(id) || cleanPrice(i.id) === cleanPrice(id));
 
     if (item) {
         if (field === 'price') {
             item.price = cleanPrice(value) || 0;
         } else {
-            item[field] = value.trim();
+            item[field] = typeof value === 'string' ? value.trim() : value;
         }
 
         setData('sys_items', items);
@@ -2511,11 +2577,10 @@ function updateItemInline(id, field, value) {
         if (typeof db !== 'undefined' && db) {
             db.collection("menu_items").doc(String(id)).update({
                 [field]: item[field]
-            }).then(() => console.log(`تم تحديث ${field} فوراً في السحابة`))
-              .catch(err => console.error("Cloud inline update error:", err));
+            }).catch(err => console.error("Cloud inline update error:", err));
         }
 
-        refreshActiveUI();
+        notifyMenuUpdated();
     }
 }
 
@@ -2555,13 +2620,13 @@ function renderAdminItems() {
 }
 
 function saveItem() {
-    const editId = document.getElementById('editItemId').value;
+    const editId = document.getElementById('editItemId')?.value;
     const id = editId ? String(editId) : String(Date.now());
-    const name = document.getElementById('itemName').value.trim();
-    const price = typeof cleanPrice === 'function' ? cleanPrice(document.getElementById('itemPrice').value) : parseInt(document.getElementById('itemPrice').value || 0);
-    const categoryId = String(document.getElementById('itemCategory').value);
-    const image = document.getElementById('itemImage').value || 'https://via.placeholder.com/150';
-    const ingredients = document.getElementById('itemIngredients').value.trim();
+    const name = document.getElementById('itemName')?.value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice')?.value);
+    const categoryId = String(document.getElementById('itemCategory')?.value || '1');
+    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
 
     if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
 
@@ -2576,24 +2641,24 @@ function saveItem() {
 
     let items = getData('sys_items') || [];
     const index = items.findIndex(i => String(i.id) === String(id));
-    if (index !== -1) items[index] = itemData;
-    else items.push(itemData);
-
-    try {
-        setData('sys_items', items);
-    } catch (e) {
-        return alert("⚠️ حجم الصورة كبير جداً، اختر صورة أصغر أو استخدم رابط خارجي!");
+    
+    if (index !== -1) {
+        items[index] = itemData;
+    } else {
+        items.push(itemData);
     }
+
+    setData('sys_items', items);
 
     if (typeof db !== 'undefined' && db) {
         db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => console.log("✅ تم التحديث في السحابة"))
+            .then(() => console.log("✅ تم التحديث السحابي"))
             .catch(err => console.error("❌ خطأ سحابي:", err));
     }
 
-    resetItemForm();
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
-    alert("✅ تم حفظ وتعديل الصنف بنجاح في الأدمن والكاشير!");
+    if (typeof resetItemForm === 'function') resetItemForm();
+    notifyMenuUpdated();
+    alert("✅ تم حفظ التعديل وظهر الآن في شاشة الكاشير والمينيو!");
 }
 
 function editItem(id) {
@@ -2759,7 +2824,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v22.0-MIM89",
+            version: "v23.0-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -2893,312 +2958,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
-// 🧠 1. دالة التصنيف الذكي الآلي للوجبات لمنع الخلط بين الأقسام القديمة والجديدة
-function getItemCategory(item) {
-    if (!item || !item.name) return cleanPrice(item?.categoryId) || 1;
-    const name = item.name.trim();
-    
-    // المطابقة اللفظية الذكية بناءً على اسم الوجبة
-    if (name.includes('شاورما')) return 8; // قسم الشاورما
-    if (name.includes('بركر') && name.includes('لحم')) return 2; // بركر لحم
-    if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; // بركر دجاج
-    if (name.includes('ريزو')) return 5; // قسم الريزو
-    if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; // قسم الكنتاكي
-    if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; // قسم الفنكر
-    if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; // الصوصات والمقبلات
-    if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; // قسم الساندويش
-    if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; // العروض المميزة
-    if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; // قسم الإضافات
-    
-    return cleanPrice(item.categoryId) || 1;
-}
-
-// 🔄 2. دالة تصحيح معرفات الأقسام تلقائياً في التخزين المحلي
-function autoFixItemCategories() {
-    let items = getData('sys_items');
-    if (Array.isArray(items) && items.length > 0) {
-        let updated = false;
-        items.forEach(i => {
-            const correctCat = getItemCategory(i);
-            if (cleanPrice(i.categoryId) !== correctCat) {
-                i.categoryId = correctCat;
-                updated = true;
-            }
-        });
-        if (updated) {
-            setData('sys_items', items);
-        }
-    }
-}
-
-// 🍔 3. دالة تحميل أزرار الأقسام والمنتجات المحدثة للكاشير مع التصنيف الذكي والفرز من الأرخص للأغلى
-function loadPosDirectMenu(catId = 'all') {
-    autoFixItemCategories(); // تصحيح البيانات تلقائياً
-    const categories = getData('sys_categories');
-    let items = getData('sys_items');
-    const catBar = document.getElementById('posCategoriesBar');
-    const grid = document.getElementById('posProductsGrid');
-
-    if (!catBar || !grid) return;
-
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
-    categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
-    });
-
-    let filtered = [];
-    if (catId === 'all') {
-        filtered = items;
-    } else {
-        filtered = items.filter(i => getItemCategory(i) === cleanPrice(catId));
-    }
-
-    // 🏷️ فرز الوجبات تلقائياً من الأرخص سعراً للأغلى
-    filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
-
-    if (filtered.length === 0) {
-        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
-        return;
-    }
-
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
-            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-        </div>
-    `).join('');
-}
-
-// 📱 4. دالة عرض المينيو الإلكتروني العام المحدثة
-function loadPublicMenu() {
-    autoFixItemCategories();
-    const categories = getData('sys_categories');
-    const items = getData('sys_items');
-    const navContainer = document.getElementById('categoriesNav');
-    const sectionsContainer = document.getElementById('menuSections');
-
-    if (!navContainer || !sectionsContainer) return;
-    navContainer.innerHTML = ''; sectionsContainer.innerHTML = '';
-
-    const allBtn = document.createElement('button');
-    allBtn.className = 'category-tab active';
-    allBtn.innerText = 'الكل 🍔';
-    allBtn.onclick = () => filterCategory('all', allBtn);
-    navContainer.appendChild(allBtn);
-
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = 'category-tab';
-        btn.innerText = cat.name;
-        btn.onclick = () => filterCategory(cat.id, btn);
-        navContainer.appendChild(btn);
-
-        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
-        
-        // 🏷️ ترتيب الوجبات من الأرخص للأغلى
-        catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
-
-        if (catItems.length > 0) {
-            const sec = document.createElement('div');
-            sec.className = 'menu-section';
-            sec.id = `cat_${cat.id}`;
-            sec.setAttribute('data-category', cat.id);
-            sec.innerHTML = `
-                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
-                <div class="items-grid">
-                    ${catItems.map(item => `
-                        <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
-                            <div class="item-details">
-                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
-                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
-                                <div class="item-footer">
-                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            sectionsContainer.appendChild(sec);
-        }
-    });
-}
-/* ==========================================
-   ⚡ نظام المزامنة الفورية اللحظية بين الأدمن والكاشير
-   ========================================== */
-
-// 1. إنشاء قناة اتصال لحظية بين جميع التبويبات المفتوحة
-const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
-
-if (posSyncChannel) {
-    posSyncChannel.onmessage = (event) => {
-        if (event.data === 'menu_updated') {
-            if (typeof refreshActiveUI === 'function') refreshActiveUI();
-        }
-    };
-}
-
-// 📢 دالة إشعارات التحديث اللحظي
-function notifyMenuUpdated() {
-    if (posSyncChannel) posSyncChannel.postMessage('menu_updated');
-    if (typeof refreshActiveUI === 'function') refreshActiveUI();
-}
-
-// ✏️ 2. دالة حفظ وتعديل الصنف المحدثة بالكامل
-function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : String(Date.now());
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = cleanPrice(document.getElementById('itemPrice')?.value);
-    const categoryId = String(document.getElementById('itemCategory')?.value || '1');
-    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
-    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
-
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
-
-    const itemData = { 
-        id: id, 
-        name: name, 
-        price: price, 
-        categoryId: categoryId, 
-        image: image, 
-        ingredients: ingredients 
-    };
-
-    let items = getData('sys_items') || [];
-    const index = items.findIndex(i => String(i.id) === String(id));
-    
-    if (index !== -1) {
-        items[index] = itemData;
-    } else {
-        items.push(itemData);
-    }
-
-    // حفظ فوري في ذاكرة المتصفح
-    setData('sys_items', items);
-
-    // تحديث فوري في الفايربيس
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => console.log("✅ تم التحديث السحابي"))
-            .catch(err => console.error("❌ خطأ سحابي:", err));
-    }
-
-    if (typeof resetItemForm === 'function') resetItemForm();
-    notifyMenuUpdated(); // إرسال التعديل فوراً للكاشير بدون تنشيط
-    alert("✅ تم حفظ التعديل وظهر الآن في شاشة الكاشير والمينيو!");
-}
-
-// ⚡ 3. دالة التعديل السريع المباشر من الجدول
-function updateItemInline(id, field, value) {
-    let items = getData('sys_items') || [];
-    let item = items.find(i => String(i.id) === String(id) || cleanPrice(i.id) === cleanPrice(id));
-
-    if (item) {
-        if (field === 'price') {
-            item.price = cleanPrice(value) || 0;
-        } else {
-            item[field] = typeof value === 'string' ? value.trim() : value;
-        }
-
-        setData('sys_items', items);
-
-        if (typeof db !== 'undefined' && db) {
-            db.collection("menu_items").doc(String(id)).update({
-                [field]: item[field]
-            }).catch(err => console.error("Cloud inline update error:", err));
-        }
-
-        notifyMenuUpdated(); // تحديث شاشة الكاشير فوراً
-    }
-}
-/* ==========================================
-   🔥 المزامنة اللحظية المباشرة للمينيو الإلكتروني (Realtime Listener)
-   ========================================== */
-
-// 1. الاستماع اللحظي المباشر لأي تعديل في الفايربيس وتحديث المينيو فوراً
-function setupPublicMenuRealtimeListener() {
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").onSnapshot(snapshot => {
-            let cloudItems = [];
-            snapshot.forEach(doc => {
-                cloudItems.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
-            });
-            if (cloudItems.length > 0) {
-                // تحديث الذاكرة بالبيانات السحابية الجديدة
-                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-                // إعادة رسم المينيو فوراً أمام الزبون
-                renderPublicMenuUI();
-            }
-        }, err => {
-            console.error("خطأ في المزامنة اللحظية للمينيو:", err);
-            renderPublicMenuUI();
-        });
-    } else {
-        renderPublicMenuUI();
-    }
-}
-
-// 2. دالة تشغيل المينيو العام المحدثة
-function loadPublicMenu() {
-    setupPublicMenuRealtimeListener();
-}
-
-// 3. دالة بناء رسم الوجبات والأقسام للمينيو العام
-function renderPublicMenuUI() {
-    autoFixItemCategories();
-    const categories = getData('sys_categories');
-    const items = getData('sys_items');
-    const navContainer = document.getElementById('categoriesNav');
-    const sectionsContainer = document.getElementById('menuSections');
-
-    if (!navContainer || !sectionsContainer) return;
-    navContainer.innerHTML = ''; 
-    sectionsContainer.innerHTML = '';
-
-    const allBtn = document.createElement('button');
-    allBtn.className = 'category-tab active';
-    allBtn.innerText = 'الكل 🍔';
-    allBtn.onclick = () => filterCategory('all', allBtn);
-    navContainer.appendChild(allBtn);
-
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = 'category-tab';
-        btn.innerText = cat.name;
-        btn.onclick = () => filterCategory(cat.id, btn);
-        navContainer.appendChild(btn);
-
-        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
-        catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
-
-        if (catItems.length > 0) {
-            const sec = document.createElement('div');
-            sec.className = 'menu-section';
-            sec.id = `cat_${cat.id}`;
-            sec.setAttribute('data-category', cat.id);
-            sec.innerHTML = `
-                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
-                <div class="items-grid">
-                    ${catItems.map(item => `
-                        <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
-                            <div class="item-details">
-                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
-                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
-                                <div class="item-footer">
-                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            sectionsContainer.appendChild(sec);
-        }
-    });
-}
