@@ -3115,3 +3115,90 @@ function updateItemInline(id, field, value) {
         notifyMenuUpdated(); // تحديث شاشة الكاشير فوراً
     }
 }
+/* ==========================================
+   🔥 المزامنة اللحظية المباشرة للمينيو الإلكتروني (Realtime Listener)
+   ========================================== */
+
+// 1. الاستماع اللحظي المباشر لأي تعديل في الفايربيس وتحديث المينيو فوراً
+function setupPublicMenuRealtimeListener() {
+    if (typeof db !== 'undefined' && db) {
+        db.collection("menu_items").onSnapshot(snapshot => {
+            let cloudItems = [];
+            snapshot.forEach(doc => {
+                cloudItems.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
+            });
+            if (cloudItems.length > 0) {
+                // تحديث الذاكرة بالبيانات السحابية الجديدة
+                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                // إعادة رسم المينيو فوراً أمام الزبون
+                renderPublicMenuUI();
+            }
+        }, err => {
+            console.error("خطأ في المزامنة اللحظية للمينيو:", err);
+            renderPublicMenuUI();
+        });
+    } else {
+        renderPublicMenuUI();
+    }
+}
+
+// 2. دالة تشغيل المينيو العام المحدثة
+function loadPublicMenu() {
+    setupPublicMenuRealtimeListener();
+}
+
+// 3. دالة بناء رسم الوجبات والأقسام للمينيو العام
+function renderPublicMenuUI() {
+    autoFixItemCategories();
+    const categories = getData('sys_categories');
+    const items = getData('sys_items');
+    const navContainer = document.getElementById('categoriesNav');
+    const sectionsContainer = document.getElementById('menuSections');
+
+    if (!navContainer || !sectionsContainer) return;
+    navContainer.innerHTML = ''; 
+    sectionsContainer.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'category-tab active';
+    allBtn.innerText = 'الكل 🍔';
+    allBtn.onclick = () => filterCategory('all', allBtn);
+    navContainer.appendChild(allBtn);
+
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-tab';
+        btn.innerText = cat.name;
+        btn.onclick = () => filterCategory(cat.id, btn);
+        navContainer.appendChild(btn);
+
+        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
+        catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+        if (catItems.length > 0) {
+            const sec = document.createElement('div');
+            sec.className = 'menu-section';
+            sec.id = `cat_${cat.id}`;
+            sec.setAttribute('data-category', cat.id);
+            sec.innerHTML = `
+                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
+                <div class="items-grid">
+                    ${catItems.map(item => `
+                        <div class="item-card">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <div class="item-details">
+                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
+                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
+                                <div class="item-footer">
+                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            sectionsContainer.appendChild(sec);
+        }
+    });
+}
