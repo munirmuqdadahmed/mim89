@@ -27,7 +27,7 @@
         <div class="auth-card">
             <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-utensils"></i> إدارة المينيو</h2>
             <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور الأدمن للوصول</p>
-            <input type="password" id="adminPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;">
+            <input type="password" id="adminPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeydown="if(event.key==='Enter') loginMenuAdmin()">
             <p id="authError" style="color:var(--danger-red); font-size:0.8rem; margin:5px 0;"></p>
             <button onclick="loginMenuAdmin()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">دخول لوحة التحكم 🚀</button>
         </div>
@@ -39,13 +39,13 @@
         <header class="admin-header">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <span class="brand-badge">MIM89 MENU MANAGER v21.0</span>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">إضافة، تعديل، وتصوير وجبات المينيو بلمسة واحدة</p>
+                    <span class="brand-badge">MIM89 MENU MANAGER v26.0</span>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">إضافة، تعديل، وتصوير وجبات المينيو مع التحديث اللحظي المباشر</p>
                 </div>
                 
                 <!-- أزرار التحكم العلوية -->
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <!-- 🔄 زر التحديث والمزامنة الحقيقي بدون مسح التعديلات -->
+                    <!-- 🔄 زر التحديث والمزامنة الحقيقي -->
                     <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
                         <i class="fa-solid fa-rotate"></i> تحديث ومزامنة السحابة 🔄
                     </button>
@@ -61,7 +61,7 @@
             </div>
         </header>
 
-        <!-- نموذج إضافة وتعديل الصنف المطور مع الكاميرا الحية -->
+        <!-- نموذج إضافة وتعديل الصنف -->
         <div class="card" style="max-width: 550px; margin: 0 auto 20px auto;">
             <h3 id="itemFormTitle" style="color:var(--gold-primary); margin-bottom:12px; font-size:1.1rem; text-align:center;">إضافة / تعديل صنف للمينيو</h3>
             <input type="hidden" id="editItemId">
@@ -132,7 +132,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=200"></script>
+    <script src="app.js?v=206"></script>
 
     <script>
         function loginMenuAdmin() {
@@ -156,7 +156,7 @@
             const tbody = document.getElementById('adminItemsTable');
             if (!tbody) return;
 
-            const filtered = items.filter(i => i.name.toLowerCase().includes(q));
+            const filtered = items.filter(i => i.name && i.name.toLowerCase().includes(q));
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888; padding:15px;">لا توجد أصناف تطابق البحث</td></tr>`;
@@ -164,25 +164,25 @@
             }
 
             tbody.innerHTML = filtered.map(item => {
-                const cat = categories.find(c => Number(c.id) === Number(item.categoryId));
+                const cat = categories.find(c => cleanPrice(c.id) === getItemCategory(item));
                 return `
                     <tr>
                         <td style="text-align:center;">
-                            <img src="${item.image}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة" onerror="this.src='https://via.placeholder.com/45?text=MIM89'">
+                            <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload('${item.id}')" title="اضغط لتغيير الصورة مباشرة" onerror="this.src='https://via.placeholder.com/45?text=MIM89'">
                         </td>
                         <td>
-                            <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'name', this.value)" style="font-weight:bold;">
+                            <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline('${item.id}', 'name', this.value)" style="font-weight:bold;">
                         </td>
                         <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
                         <td>
                             <div style="display:flex; align-items:center; gap:4px;">
-                                <input type="number" value="${item.price}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
+                                <input type="number" value="${cleanPrice(item.price)}" class="gold-input-inline" onchange="updateItemInline('${item.id}', 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
                                 <small style="color:#aaa;">د.ع</small>
                             </div>
                         </td>
                         <td>
-                            <button onclick="editItem(${item.id})" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;"><i class="fa-solid fa-pen"></i> تعديل كامل</button>
-                            <button onclick="deleteItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;"><i class="fa-solid fa-trash"></i> حذف</button>
+                            <button onclick="editItem('${item.id}')" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;"><i class="fa-solid fa-pen"></i> تعديل كامل</button>
+                            <button onclick="deleteItem('${item.id}')" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;"><i class="fa-solid fa-trash"></i> حذف</button>
                         </td>
                     </tr>
                 `;
