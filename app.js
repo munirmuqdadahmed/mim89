@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v26.0 Complete Unified File)
+   MIM89 FAST FOOD - Master Core Engine (v26.1 Complete Synced Engine)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -162,7 +162,7 @@ const DEFAULT_DATA = {
     ]
 };
 
-// 🧠 التصنيف المحدد مع احترام خيار المستخدم أولاً
+// 🧠 التصنيف الذكي الآلي مع احترام خيار المستخدم
 function getItemCategory(item) {
     if (!item) return 1;
     let rawCat = item.categoryId !== undefined ? item.categoryId : (item.catId !== undefined ? item.catId : item.category);
@@ -199,7 +199,7 @@ function autoFixItemCategories() {
             }
         });
         if (updated) {
-            setData('sys_items', items);
+            localStorage.setItem('sys_items', JSON.stringify(items));
         }
     }
 }
@@ -265,7 +265,7 @@ function getData(key) {
 
 function setData(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
-    if (db) {
+    if (db && key !== 'sys_items') {
         try {
             db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: new Date() });
         } catch(e) {}
@@ -324,9 +324,17 @@ function setupCloudRealtimeSync() {
     db.collection("menu_items").onSnapshot(snapshot => {
         if (!snapshot.empty) {
             let cloudItems = [];
-            snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            if (cloudItems.length >= 1) {
-                setData('sys_items', cloudItems);
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                cloudItems.push({
+                    ...data,
+                    docId: doc.id,
+                    id: data.id || doc.id,
+                    categoryId: cleanPrice(data.categoryId || data.catId || data.category || 1)
+                });
+            });
+            if (cloudItems.length > 0) {
+                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
                 refreshActiveUI();
             }
         }
@@ -342,7 +350,7 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Customers sync fallback:", err));
 }
 
-// ⚡ قناة المزامنة الفورية اللحظية بين المينيو والكاشير
+// ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
 const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
 
 if (posSyncChannel) {
@@ -360,7 +368,7 @@ function notifyMenuUpdated() {
 }
 
 function refreshActiveUI() {
-    if (typeof updateLiveShiftBadge === 'function') updateLiveShiftBadge();
+    autoFixItemCategories();
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
@@ -389,8 +397,11 @@ async function globalSystemSync(btnElement) {
             const itemSnap = await db.collection("menu_items").get();
             if (!itemSnap.empty) {
                 let cloudItems = [];
-                itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 1) setData('sys_items', cloudItems);
+                itemSnap.forEach(doc => {
+                    const data = doc.data();
+                    cloudItems.push({ ...data, docId: doc.id, id: data.id || doc.id });
+                });
+                if (cloudItems.length > 0) localStorage.setItem('sys_items', JSON.stringify(cloudItems));
             }
 
             const custSnap = await db.collection("customers").get();
@@ -415,7 +426,6 @@ async function globalSystemSync(btnElement) {
         }
     }
 }
-
 /* ==========================================
    3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
@@ -915,6 +925,7 @@ function saveOrderLocally(orderData) {
     orders.push(orderData);
     setData('sys_live_orders', orders);
 }
+
 /* ==========================================
    5. نقطة البيع POS والدليفري (cashier.html)
    ========================================== */
@@ -1257,7 +1268,6 @@ function renderPosCart() {
         }
     }
 }
-
 /* ==========================================
    6. حاسبة النقد والطباعة الإلزامية الآمنة
    ========================================== */
@@ -1813,6 +1823,7 @@ function confirmCloseShiftAndLogout() {
         location.reload();
     }
 }
+
 /* ==========================================
    10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
@@ -2527,21 +2538,25 @@ function triggerInlineImageUpload(itemId) {
 
 function updateItemInline(id, field, value) {
     let items = getData('sys_items') || [];
-    let item = items.find(i => String(i.id) === String(id) || cleanPrice(i.id) === cleanPrice(id));
+    let item = items.find(i => String(i.id) === String(id) || String(i.docId) === String(id));
 
     if (item) {
         if (field === 'price') {
             item.price = cleanPrice(value) || 0;
+        } else if (field === 'categoryId') {
+            item.categoryId = cleanPrice(value);
+            item.catId = cleanPrice(value);
+            item.category = cleanPrice(value);
         } else {
             item[field] = typeof value === 'string' ? value.trim() : value;
         }
 
-        setData('sys_items', items);
+        item.updatedAt = Date.now();
+        localStorage.setItem('sys_items', JSON.stringify(items));
 
-        if (typeof db !== 'undefined' && db) {
-            db.collection("menu_items").doc(String(id)).update({
-                [field]: item[field]
-            }).catch(err => console.error("Cloud inline update error:", err));
+        if (db) {
+            db.collection("menu_items").doc(String(id)).set(item, { merge: true })
+                .catch(err => console.error("Cloud inline update error:", err));
         }
 
         notifyMenuUpdated();
@@ -2581,6 +2596,84 @@ function renderAdminItems() {
     }).join('');
 }
 
+function renderAdminCategories() {
+    const categories = getData('sys_categories') || [];
+    const selectEl = document.getElementById('itemCategory');
+    if (!selectEl) return;
+
+    selectEl.innerHTML = categories.map(c => 
+        `<option value="${c.id}">${c.name}</option>`
+    ).join('');
+}
+
+function saveItem() {
+    const editId = document.getElementById('editItemId')?.value;
+    const id = editId ? String(editId) : 'item_' + Date.now();
+    const name = document.getElementById('itemName')?.value.trim();
+    const price = cleanPrice(document.getElementById('itemPrice')?.value);
+    const categoryId = cleanPrice(document.getElementById('itemCategory')?.value || 1);
+    const image = document.getElementById('itemImage')?.value || document.getElementById('imgPreview')?.src || 'https://via.placeholder.com/150';
+    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
+
+    if (!name || !price) {
+        alert("⚠️ يرجى كتابة اسم الصنف والسعر بشكل صحيح!");
+        return;
+    }
+
+    const itemData = {
+        id: id,
+        docId: id,
+        name: name,
+        price: price,
+        categoryId: categoryId,
+        catId: categoryId,
+        category: categoryId,
+        image: image,
+        ingredients: ingredients,
+        updatedAt: Date.now()
+    };
+
+    let items = getData('sys_items') || [];
+    const index = items.findIndex(i => String(i.id) === String(id) || String(i.docId) === String(id));
+
+    if (index !== -1) {
+        items[index] = itemData;
+    } else {
+        items.unshift(itemData);
+    }
+
+    localStorage.setItem('sys_items', JSON.stringify(items));
+
+    if (db) {
+        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
+            .then(() => console.log("✅ تم التحديث السحابي الموحد"))
+            .catch(e => console.error("❌ خطأ حفظ الفايربيس:", e));
+    }
+
+    resetItemForm();
+    notifyMenuUpdated();
+    alert("✅ تم حفظ الصنف بنجاح وتحديث كافة الشاشات!");
+}
+
+function editItem(id) {
+    const items = getData('sys_items') || [];
+    const item = items.find(i => String(i.id) === String(id) || String(i.docId) === String(id));
+    if (!item) return;
+
+    renderAdminCategories();
+
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemCategory').value = getItemCategory(item);
+    document.getElementById('itemImage').value = item.image || '';
+    document.getElementById('imgPreview').src = item.image || 'https://via.placeholder.com/150';
+    document.getElementById('itemIngredients').value = item.ingredients || '';
+    document.getElementById('itemFormTitle').innerText = "تعديل صنف: " + item.name;
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function resetItemForm() {
     if (document.getElementById('editItemId')) document.getElementById('editItemId').value = '';
     if (document.getElementById('itemName')) document.getElementById('itemName').value = '';
@@ -2600,8 +2693,8 @@ function resetItemForm() {
 
 function deleteItem(id) {
     if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
-        let items = getData('sys_items').filter(i => String(i.id) !== String(id) && cleanPrice(i.id) !== cleanPrice(id));
-        setData('sys_items', items);
+        let items = getData('sys_items').filter(i => String(i.id) !== String(id) && String(i.docId) !== String(id));
+        localStorage.setItem('sys_items', JSON.stringify(items));
         
         if (db) {
             db.collection("menu_items").doc(String(id)).delete().catch(console.error);
@@ -2700,7 +2793,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v26.0-MIM89",
+            version: "v26.1-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -2754,7 +2847,7 @@ function importFullSystemBackup(fileInput) {
             if (backup.items && backup.customers) {
                 if (confirm(`هل أنت متأكد من استرجاع النسخة الاحتياطية المؤرخة في (${backup.backupDate || 'سابقاً'})؟ ستقوم باستبدال البيانات الحالية.`)) {
                     if (backup.categories) setData('sys_categories', backup.categories);
-                    if (backup.items) setData('sys_items', backup.items);
+                    if (backup.items) localStorage.setItem('sys_items', JSON.stringify(backup.items));
                     if (backup.inventory) setData('sys_inventory', backup.inventory);
                     if (backup.customers) setData('sys_customers', backup.customers);
                     if (backup.drivers) setData('sys_drivers', backup.drivers);
