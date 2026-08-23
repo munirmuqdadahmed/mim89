@@ -224,7 +224,6 @@ function initData() {
         }
     }
 
-    // عدم إعادة كتابة الأقسام الافتراضية إذا كانت توجد أقسام مسجلة مسبقاً
     let existingCats = getData('sys_categories');
     if (!existingCats || !Array.isArray(existingCats) || existingCats.length === 0) {
         localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
@@ -273,7 +272,7 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-// 🔢 حاسبة رقم الطلب الديناميكية الحقيقية (حساب أعلى رقم فاتورة + 1)
+// 🔢 حاسبة رقم الطلب الديناميكية الحقيقية
 function getOrderSequence(customOrder) {
     if (customOrder) {
         if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
@@ -348,7 +347,6 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Menu sync fallback:", err));
 }
 
-// ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
 const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
 
 if (posSyncChannel) {
@@ -381,6 +379,7 @@ function refreshActiveUI() {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
 }
+
 /* ==========================================
    3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
