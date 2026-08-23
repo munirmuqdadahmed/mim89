@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v26.1 Complete Synced Engine)
+   MIM89 FAST FOOD - Master Core Engine (v26.2 Fixed & Complete)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -143,22 +143,13 @@ const DEFAULT_DATA = {
         { id: 2, name: "خبز صاج", quantity: 200, unit: "قطع", totalPrice: 40000, costPerUnit: 200 },
         { id: 3, name: "بطاطس", quantity: 150, unit: "كغم", totalPrice: 150000, costPerUnit: 1000 },
         { id: 4, name: "صلصة ثومية", quantity: 30, unit: "علبة", totalPrice: 30000, costPerUnit: 1000 },
-        { id: 5, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 },
-        { id: 6, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
-        { id: 7, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
+        { id: 5, name: "خبز بركر", quantity: 100, unit: "قطع", totalPrice: 25000, costPerUnit: 250 }
     ],
     items: [
         { id: 101, categoryId: 1, catId: 1, category: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
         { id: 102, categoryId: 1, catId: 1, category: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-        { id: 301, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
-        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
-        { id: 303, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
-        { id: 304, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
-        { id: 305, categoryId: 8, catId: 8, category: 8, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
-        { id: 306, categoryId: 8, catId: 8, category: 8, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
-        { id: 307, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
-        { id: 308, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
-        { id: 309, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
+        { id: 301, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }] },
+        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما عربية", price: 3500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }] }
     ]
 };
 
@@ -177,10 +168,10 @@ function getItemCategory(item) {
         if (name.includes('ريزو')) return 5; 
         if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; 
         if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; 
-        if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; 
-        if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; 
+        if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب')) return 9; 
+        if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب')) return 4; 
         if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; 
-        if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; 
+        if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن')) return 10; 
     }
     return 1;
 }
@@ -216,7 +207,6 @@ function normalizeArabicArea(str) {
 
 function initData() {
     let currentItems = getData('sys_items');
-
     if (!currentItems || !Array.isArray(currentItems) || currentItems.length === 0) {
         if (db) {
             db.collection("menu_items").get().then(snapshot => {
@@ -226,7 +216,6 @@ function initData() {
                     setData('sys_items', cloudItems);
                     refreshActiveUI();
                 } else {
-                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
                     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
@@ -235,7 +224,11 @@ function initData() {
         }
     }
 
-    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    // عدم إعادة كتابة الأقسام الافتراضية إذا كانت توجد أقسام مسجلة مسبقاً
+    let existingCats = getData('sys_categories');
+    if (!existingCats || !Array.isArray(existingCats) || existingCats.length === 0) {
+        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    }
 
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
@@ -280,20 +273,34 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
+// 🔢 حاسبة رقم الطلب الديناميكية الحقيقية (حساب أعلى رقم فاتورة + 1)
 function getOrderSequence(customOrder) {
     if (customOrder) {
         if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
         if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
     }
+    
+    const completed = getData('sys_completed_orders') || [];
+    const today = getTodayString();
+    const todayOrders = completed.filter(o => o.dateDate === today);
+
+    if (todayOrders.length > 0) {
+        let maxNum = 0;
+        todayOrders.forEach(o => {
+            const num = cleanPrice(o.orderNum || o.orderNumber);
+            if (num > maxNum) maxNum = num;
+        });
+        if (maxNum > 0) return maxNum + 1;
+    }
+
     let currentSeq = localStorage.getItem('mim89_daily_order_seq');
     let seqNum = currentSeq ? parseInt(currentSeq) : 101;
     return seqNum;
 }
 
 function incrementOrderSequence() {
-    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
-    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
-    let nextSeq = (seqNum >= 999) ? 101 : seqNum + 1;
+    let nextSeq = getOrderSequence() + 1;
+    if (nextSeq >= 999) nextSeq = 101;
     localStorage.setItem('mim89_daily_order_seq', nextSeq);
 }
 
@@ -339,15 +346,6 @@ function setupCloudRealtimeSync() {
             }
         }
     }, err => console.log("Menu sync fallback:", err));
-
-    db.collection("customers").onSnapshot(snapshot => {
-        if (!snapshot.empty) {
-            let cloudCustomers = [];
-            snapshot.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
-            setData('sys_customers', cloudCustomers);
-            if (document.getElementById('adminCustomersTableBody')) renderAdminCustomers();
-        }
-    }, err => console.log("Customers sync fallback:", err));
 }
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
@@ -381,49 +379,6 @@ function refreshActiveUI() {
         if (typeof renderAdminCustomers === 'function') renderAdminCustomers();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
-    }
-}
-
-async function globalSystemSync(btnElement) {
-    let originalText = "";
-    if (btnElement) {
-        originalText = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> جاري التحديث...';
-        btnElement.disabled = true;
-    }
-
-    try {
-        if (typeof db !== 'undefined' && db) {
-            const itemSnap = await db.collection("menu_items").get();
-            if (!itemSnap.empty) {
-                let cloudItems = [];
-                itemSnap.forEach(doc => {
-                    const data = doc.data();
-                    cloudItems.push({ ...data, docId: doc.id, id: data.id || doc.id });
-                });
-                if (cloudItems.length > 0) localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-            }
-
-            const custSnap = await db.collection("customers").get();
-            if (!custSnap.empty) {
-                let cloudCustomers = [];
-                custSnap.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
-                setData('sys_customers', cloudCustomers);
-            }
-        }
-        refreshActiveUI();
-        alert("✅ تم مزامنة وتحديث النظام بنجاح من السحابة!");
-    } catch (error) {
-        console.error("Global sync error:", error);
-        refreshActiveUI();
-        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابة.");
-    } finally {
-        if (btnElement) {
-            setTimeout(() => {
-                btnElement.innerHTML = originalText;
-                btnElement.disabled = false;
-            }, 500);
-        }
     }
 }
 /* ==========================================
@@ -478,7 +433,7 @@ function autoSearchCustomerByPhone(phoneInput) {
     const customers = getData('sys_customers') || [];
     const completed = getData('sys_completed_orders') || [];
 
-    let matches = customers.filter(c => c.phone.includes(cleanPhone));
+    let matches = customers.filter(c => c.phone && c.phone.includes(cleanPhone));
 
     if (matches.length === 0) {
         completed.forEach(o => {
@@ -575,6 +530,11 @@ window.openItemCustomizationModal = function(itemId) {
     let items = getData('sys_items');
     const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
+
+    if (item.isOutOfStock) {
+        alert("⚠️ نعتذر، هذه الوجبة غير متوفرة حالياً (نفذت الكمية).");
+        return;
+    }
 
     currentDetailItem = item;
     
@@ -697,14 +657,17 @@ function renderPublicMenuUI() {
                 <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
                 <div class="items-grid">
                     ${catItems.map(item => `
-                        <div class="item-card">
+                        <div class="item-card ${item.isOutOfStock ? 'out-of-stock-card' : ''}">
                             <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal('${item.id}')" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
                                 <h3 class="item-name" onclick="openItemCustomizationModal('${item.id}')">${item.name}</h3>
                                 <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <button class="add-cart-btn" onclick="openItemCustomizationModal('${item.id}')" title="تخصيص وإضافة للسلة">+</button>
+                                    ${item.isOutOfStock ? 
+                                        '<span style="background:#ff4d4d; color:#fff; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:bold;">نفذت الكمية 🚫</span>' : 
+                                        `<button class="add-cart-btn" onclick="openItemCustomizationModal('${item.id}')" title="تخصيص وإضافة للسلة">+</button>`
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -927,7 +890,153 @@ function saveOrderLocally(orderData) {
 }
 
 /* ==========================================
-   5. نقطة البيع POS والدليفري (cashier.html)
+   5. إدارة أوقات العمل، والنفاد، والكوبونات
+   ========================================== */
+
+function openWorkingHoursModal() {
+    const settings = getData('sys_working_hours') || { isOpen: true, startTime: "12:00", endTime: "02:00" };
+    
+    let html = `
+        <div style="padding:15px; background:#1e1e24; border-radius:8px; color:#fff;">
+            <h3 style="color:var(--gold-primary); margin-bottom:12px;">⏰ تحديد أوقات فتح وإغلاق الطلبات</h3>
+            <label style="display:block; margin-bottom:10px;">
+                <input type="checkbox" id="workingHoursStatusToggle" ${settings.isOpen ? 'checked' : ''}> 🟢 استقبال الطلبات مفعل حالياً
+            </label>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div>
+                    <label style="font-size:0.8rem; color:#aaa;">وقت البدء اليومي:</label>
+                    <input type="time" id="workingStartTime" value="${settings.startTime || '12:00'}" class="gold-input-inline">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; color:#aaa;">وقت الإغلاق:</label>
+                    <input type="time" id="workingEndTime" value="${settings.endTime || '02:00'}" class="gold-input-inline">
+                </div>
+            </div>
+            <button onclick="saveWorkingHoursSettings()" class="gold-btn btn-block">حفظ الإعدادات 💾</button>
+        </div>
+    `;
+
+    const container = document.getElementById('workingHoursModalBody') || createDynamicModalContainer('workingHoursModal');
+    container.innerHTML = html;
+    openModal('workingHoursModal');
+}
+
+function saveWorkingHoursSettings() {
+    const isOpen = document.getElementById('workingHoursStatusToggle').checked;
+    const startTime = document.getElementById('workingStartTime').value;
+    const endTime = document.getElementById('workingEndTime').value;
+
+    const settings = { isOpen, startTime, endTime, updatedAt: Date.now() };
+    setData('sys_working_hours', settings);
+
+    alert("✅ تم حفظ وتفعيل حالة وأوقات العمل بنجاح!");
+    closeModal('workingHoursModal');
+}
+
+function openOutofStockModal() {
+    const items = getData('sys_items') || [];
+    
+    let html = `
+        <div style="padding:15px; background:#1e1e24; border-radius:8px; color:#fff; max-height:80vh; overflow-y:auto;">
+            <h3 style="color:#ff4d4d; margin-bottom:12px;">🚫 إدارة وجبات النفاد (غير المتاحة)</h3>
+            <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">اضغط على الوجبة لتعليمها كـ (نفذت الكمية) أو إعادة إتاحتها للمينيو والكاشير:</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                ${items.map(item => `
+                    <div onclick="toggleItemStockStatus('${item.id}')" style="padding:8px; background:${item.isOutOfStock ? '#3d1212' : '#25252e'}; border:1px solid ${item.isOutOfStock ? '#ff4d4d' : '#444'}; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.85rem; font-weight:bold; color:${item.isOutOfStock ? '#ff8888' : '#fff'};">${item.name}</span>
+                        <span style="font-size:0.75rem; padding:2px 6px; border-radius:4px; background:${item.isOutOfStock ? '#ff4d4d' : '#10b981'}; color:#fff;">${item.isOutOfStock ? 'نفذت 🚫' : 'متوفر 🟢'}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('outOfStockModalBody') || createDynamicModalContainer('outOfStockModal');
+    container.innerHTML = html;
+    openModal('outOfStockModal');
+}
+
+function toggleItemStockStatus(itemId) {
+    let items = getData('sys_items') || [];
+    let item = items.find(i => String(i.id) === String(itemId) || String(i.docId) === String(itemId));
+
+    if (item) {
+        item.isOutOfStock = !item.isOutOfStock;
+        localStorage.setItem('sys_items', JSON.stringify(items));
+
+        if (db) {
+            db.collection("menu_items").doc(String(itemId)).set({ isOutOfStock: item.isOutOfStock }, { merge: true }).catch(console.error);
+        }
+
+        notifyMenuUpdated();
+        openOutofStockModal();
+    }
+}
+
+function openCouponsManagerModal() {
+    const coupons = getData('sys_coupons') || [];
+
+    let html = `
+        <div style="padding:15px; background:#1e1e24; border-radius:8px; color:#fff;">
+            <h3 style="color:var(--gold-primary); margin-bottom:12px;">🎟️ إدارة الكوبونات وأكواد الخصم</h3>
+            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <input type="text" id="newCouponCode" placeholder="رمز الكوبون (مثال: MIM10)" class="gold-input-inline" style="flex:2;">
+                <input type="number" id="newCouponDiscount" placeholder="نسبة الخصم %" class="gold-input-inline" style="flex:1;">
+                <button onclick="addNewCouponCode()" class="gold-btn btn-sm">إضافة ➕</button>
+            </div>
+            <div style="max-height:200px; overflow-y:auto;">
+                ${coupons.length === 0 ? '<p style="color:#aaa; text-align:center;">لا توجد كوبونات مسجلة</p>' : 
+                    coupons.map(c => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#292933; padding:8px; border-radius:6px; margin-bottom:4px;">
+                            <strong style="color:var(--gold-bright);">${c.code} (${c.percent}%)</strong>
+                            <button onclick="deleteCouponCode('${c.code}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer;">✕ حذف</button>
+                        </div>
+                    `).join('')
+                }
+            </div>
+        </div>
+    `;
+
+    const container = document.getElementById('couponsModalBody') || createDynamicModalContainer('couponsModal');
+    container.innerHTML = html;
+    openModal('couponsModal');
+}
+
+function addNewCouponCode() {
+    const code = document.getElementById('newCouponCode').value.trim().toUpperCase();
+    const percent = cleanPrice(document.getElementById('newCouponDiscount').value);
+
+    if (!code || percent <= 0 || percent > 100) return alert("⚠️ أدخل رمز الكوبون ونسبة خصم صحيحة (1-100)%!");
+
+    let coupons = getData('sys_coupons') || [];
+    coupons.push({ code, percent, createdAt: Date.now() });
+    setData('sys_coupons', coupons);
+
+    openCouponsManagerModal();
+}
+
+function deleteCouponCode(code) {
+    let coupons = getData('sys_coupons') || [];
+    coupons = coupons.filter(c => c.code !== code);
+    setData('sys_coupons', coupons);
+    openCouponsManagerModal();
+}
+
+function createDynamicModalContainer(modalId) {
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.innerHTML = `<div class="modal-content" style="max-width:500px; width:90%; border:1px solid var(--gold-primary); background:#18181c;"><span class="close-btn" onclick="closeModal('${modalId}')">&times;</span><div id="${modalId}Body"></div></div>`;
+        document.body.appendChild(modal);
+    }
+    return document.getElementById(`${modalId}Body`);
+}
+
+/* ==========================================
+   6. نقطة البيع POS والدليفري (cashier.html)
    ========================================== */
 
 function initCashierPage() { 
@@ -1047,10 +1156,11 @@ function loadPosDirectMenu(catId = 'all') {
     }
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
+        <div class="pos-product-card ${item.isOutOfStock ? 'out-of-stock' : ''}" onclick="${item.isOutOfStock ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+            ${item.isOutOfStock ? '<small style="color:#ff4d4d; font-weight:bold; display:block;">نفذت 🚫</small>' : ''}
         </div>
     `).join('');
 }
@@ -1065,7 +1175,7 @@ function filterPosProducts() {
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
+        <div class="pos-product-card ${item.isOutOfStock ? 'out-of-stock' : ''}" onclick="${item.isOutOfStock ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
@@ -1077,6 +1187,8 @@ function addToPosCart(itemId) {
     const items = getData('sys_items');
     const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
+
+    if (item.isOutOfStock) return alert("⚠️ نفذت كمية هذا الصنف!");
 
     const exist = posCart.find(c => String(c.id) === String(itemId) || cleanPrice(c.id) === cleanPrice(itemId));
 
@@ -1268,302 +1380,102 @@ function renderPosCart() {
         }
     }
 }
-/* ==========================================
-   6. حاسبة النقد والطباعة الإلزامية الآمنة
-   ========================================== */
-
-function openQuickCashModal() {
-    if (posCart.length === 0) {
-        alert('⚠️ السلة فارغة! اختر الوجبات أولاً.');
-        return;
-    }
-
-    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    const finalTotal = Math.max(0, subtotal - posDiscountAmount);
-
-    const modalEl = document.getElementById('quickCashModal');
-    const reqEl = document.getElementById('modalCashTotalReq');
-    const givenInput = document.getElementById('cashGivenInput');
-    const resEl = document.getElementById('cashChangeResult');
-
-    if (modalEl && reqEl && givenInput && resEl) {
-        reqEl.innerText = finalTotal.toLocaleString('ar-IQ') + ' د.ع';
-        givenInput.value = '';
-        resEl.innerText = '0 د.ع';
-        openModal('quickCashModal');
-    } else {
-        prepareAndOpenPrintModal();
-    }
-}
-
-function setCashGiven(amount) {
-    const input = document.getElementById('cashGivenInput');
-    if (input) {
-        input.value = amount;
-        calculateCashChange();
-    }
-}
-
-function calculateCashChange() {
-    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    const req = Math.max(0, subtotal - posDiscountAmount);
-    const given = cleanPrice(document.getElementById('cashGivenInput')?.value || 0);
-    const change = given - req;
-    const resEl = document.getElementById('cashChangeResult');
-    if (resEl) {
-        if (change < 0) {
-            resEl.style.color = '#ff4d4d';
-            resEl.innerText = 'متبقي للزبون: ' + Math.abs(change).toLocaleString('ar-IQ') + ' د.ع';
-        } else {
-            resEl.style.color = '#10b981';
-            resEl.innerText = change.toLocaleString('ar-IQ') + ' د.ع';
-        }
-    }
-}
-
-function proceedToPrintAfterCash() {
-    closeModal('quickCashModal');
-    prepareAndOpenPrintModal();
-}
-
-function prepareAndOpenPrintModal() {
-    if (posCart.length === 0) return alert("⚠️ السلة فارغة!");
-
-    const custName = document.getElementById('posCustName')?.value.trim() || "زبون مباشر";
-    const driverSelect = document.getElementById('posDriverSelect');
-    const selectedDriver = driverSelect ? driverSelect.value : '';
-    const generalNotes = document.getElementById('posOrderNotesInput')?.value.trim() || '';
-
-    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    const finalTotal = Math.max(0, subtotal - posDiscountAmount);
-
-    let typeText = 'صالة';
-    if (selectedPosOrderType === 'takeaway') typeText = 'سفري';
-    if (selectedPosOrderType === 'delivery') typeText = `توصيل (${selectedDriver || 'دليفري'})`;
-
-    const pendingOrder = {
-        id: 'POS_' + Date.now(),
-        orderNum: getOrderSequence(),
-        customerName: custName,
-        phone: "-",
-        orderType: selectedPosOrderType,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
-        area: typeText,
-        driverName: selectedDriver || '-',
-        address: "-",
-        notes: generalNotes,
-        items: JSON.parse(JSON.stringify(posCart)),
-        subtotal: subtotal,
-        discount: posDiscountAmount,
-        totalAmount: finalTotal,
-        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
-        createdTimestamp: Date.now()
-    };
-
-    window.activePendingPrintOrder = pendingOrder;
-
-    const printModal = document.getElementById('printOptionsModal');
-    if (printModal) {
-        openModal('printOptionsModal');
-    } else {
-        printCustomerInvoiceOnly(null, pendingOrder);
-        setTimeout(() => printKitchenTicketOnly(null, pendingOrder), 1000);
-        tryFinalizeAndClearOrder();
-    }
-}
-
-function executeCustomerPrintOnly() {
-    if (window.activePendingPrintOrder) {
-        printCustomerInvoiceOnly(null, window.activePendingPrintOrder);
-    }
-}
-
-function executeKitchenPrintOnly() {
-    if (window.activePendingPrintOrder) {
-        printKitchenTicketOnly(null, window.activePendingPrintOrder);
-    }
-}
-
-function tryFinalizeAndClearOrder() {
-    const ord = window.activePendingPrintOrder;
-    if (ord) {
-        saveCompletedOrder(ord);
-        deductInventoryFromRecipe(ord.items);
-        incrementOrderSequence();
-    }
-    clearPosCart();
-    if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
-    window.activePendingPrintOrder = null;
-    closeModal('printOptionsModal');
-    alert("✅ تم تثبيت الطلب وتفريغ السلة بنجاح!");
-}
-
-function saveCompletedOrder(order) {
-    let completed = getData('sys_completed_orders');
-    completed.unshift(order);
-    setData('sys_completed_orders', completed);
-
-    if (order.customerName && order.phone && order.phone !== '-') {
-        saveCustomerRecord(order.customerName, order.phone, order.area, order.address);
-    }
-}
-
-function openCompletedOrdersModal() {
-    const list = document.getElementById('completedOrdersList');
-    const completed = getData('sys_completed_orders');
-
-    if (!list) return;
-
-    if (!completed || completed.length === 0) {
-        list.innerHTML = `<p style="text-align:center; color:#888; padding:20px;">لا توجد فواتير سابقة مطبوعة</p>`;
-    } else {
-        list.innerHTML = completed.map(ord => {
-            const itemsText = (ord.items && Array.isArray(ord.items)) ? ord.items.map(i => `${i.name} (×${i.qty})`).join(' ، ') : 'طلب مباشر';
-            return `
-                <div style="background:#222; border:1px solid #444; border-radius:8px; padding:8px; margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:#ffd700;">
-                        <strong>👤 ${ord.customerName || 'زبون'} ${ord.driverName ? ' - 🛵 ' + ord.driverName : ''}</strong>
-                        <span style="font-size:0.75rem; color:#aaa;">⏰ ${ord.timestamp || ''} (${ord.dateDate || ''})</span>
-                    </div>
-                    <div style="font-size:0.75rem; color:#888; margin:4px 0;">الوجبات: ${itemsText}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; padding-top:4px; margin-top:4px;">
-                        <strong style="color:#ffd700; font-size:0.9rem;">${cleanPrice(ord.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</strong>
-                        <button class="gold-btn" style="padding:2px 8px; font-size:0.75rem;" onclick="reprintCompletedOrder('${ord.id}')">🖨️ إعادة طباعة</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    openModal('completedOrdersModal');
-}
-
-function reprintCompletedOrder(orderId) {
-    const completed = getData('sys_completed_orders');
-    const order = completed.find(o => String(o.id) === String(orderId));
-    if (order) {
-        window.activePendingPrintOrder = order;
-        closeModal('completedOrdersModal');
-        printCustomerInvoiceOnly(null, order);
-    }
-}
-
-function clearCompletedOrdersHistory() {
-    if (confirm("مسح جميع الفواتير من السجل؟")) {
-        setData('sys_completed_orders', []);
-        openCompletedOrdersModal();
-    }
-}
 
 /* ==========================================
-   7. إدارة الصرفيات وسُلف الموظفين
+   7. تصفية حساب الدليفري والمحاسبة المالية المتقدمة
    ========================================== */
 
-function openExpenseManagerModal() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-
-    if (typeSelect) {
-        typeSelect.innerHTML = `
-            <option value="عامة">🔴 صرفيات عامة للمطعم</option>
-            <option value="سلفة موظف">👤 سلفة / مسحوبات موظف</option>
-            <option value="مشتريات طارئة">🛒 مشتريات وسوق طارئ</option>
-        `;
-    }
-
-    if (empSelect) {
-        const employees = getData('sys_employees') || DEFAULT_DATA.employees;
-        empSelect.innerHTML = employees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('');
-    }
-
-    renderExpensesTable();
-    openModal('expenseManagerModal');
-}
-
-function toggleExpenseTypeFields() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-    if (typeSelect && empSelect) {
-        empSelect.style.display = (typeSelect.value === 'سلفة موظف') ? 'block' : 'none';
-    }
-}
-
-function addNewExpenseRecord() {
-    const typeSelect = document.getElementById('expenseTypeSelect');
-    const empSelect = document.getElementById('expenseEmployeeSelect');
-    const amtInput = document.getElementById('expenseAmountInput');
-    const noteInput = document.getElementById('expenseNoteInput');
-
-    const amount = cleanPrice(amtInput ? amtInput.value : 0);
-    if (!amount || amount <= 0) return alert("⚠️ أدخل مبلغ الصرفية بشكل صحيح!");
-
-    const expType = typeSelect ? typeSelect.value : 'عامة';
-    let details = noteInput ? noteInput.value.trim() : '';
-
-    if (expType === 'سلفة موظف' && empSelect) {
-        details = `سلفة للموظف (${empSelect.value}) - ${details}`;
-    }
-
-    const newExpense = {
-        id: 'EXP_' + Date.now(),
-        type: expType,
-        amount: amount,
-        note: details || 'صرفية يومية',
-        cashierName: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
-        dateDate: getTodayString(),
-        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
-        createdTimestamp: Date.now()
-    };
-
-    let expenses = getData('sys_expenses') || [];
-    expenses.unshift(newExpense);
-    setData('sys_expenses', expenses);
-
-    if (amtInput) amtInput.value = '';
-    if (noteInput) noteInput.value = '';
-
-    renderExpensesTable();
-    alert("✅ تم تسجيل الصرفية وخصمها من الصندوق بنجاح!");
-}
-
-function renderExpensesTable() {
-    const tableEl = document.getElementById('expensesListTable');
-    if (!tableEl) return;
-
-    const expenses = getData('sys_expenses') || [];
+function getDriverDailySettlementReport(driverName) {
     const today = getTodayString();
-    const todayExpenses = expenses.filter(e => e.dateDate === today);
+    const completed = getData('sys_completed_orders') || [];
+    
+    const driverOrders = completed.filter(o => o.dateDate === today && o.driverName === driverName && !o.isSettled);
 
-    if (todayExpenses.length === 0) {
-        tableEl.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد صرفيات مسجلة اليوم</p>`;
-        return;
-    }
+    let totalAmountCollected = 0;
+    let totalDeliveryFees = 0;
 
-    tableEl.innerHTML = todayExpenses.map(exp => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#222; border-bottom:1px solid #333; padding:6px; margin-bottom:4px; border-radius:4px;">
-            <div>
-                <strong style="color:#ff4d4d; font-size:0.8rem;">${exp.type}</strong>
-                <div style="font-size:0.75rem; color:#aaa;">${exp.note} (${exp.timestamp})</div>
-            </div>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <strong style="color:#ffd700; font-size:0.85rem;">${cleanPrice(exp.amount).toLocaleString('ar-IQ')} د.ع</strong>
-                <button onclick="deleteExpenseRecord('${exp.id}')" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.8rem;">✕</button>
-            </div>
-        </div>
-    `).join('');
+    driverOrders.forEach(ord => {
+        totalAmountCollected += cleanPrice(ord.totalAmount || 0);
+        totalDeliveryFees += cleanPrice(ord.deliveryFee || 0);
+    });
+
+    const netToPayToRestaurant = totalAmountCollected - totalDeliveryFees;
+
+    return {
+        driverName: driverName,
+        ordersCount: driverOrders.length,
+        ordersList: driverOrders,
+        totalAmountCollected: totalAmountCollected,
+        totalDeliveryFees: totalDeliveryFees,
+        netToPayToRestaurant: netToPayToRestaurant
+    };
 }
 
-function deleteExpenseRecord(expId) {
-    if (confirm("هل تريد إلغاء وحذف هذه الصرفية؟")) {
-        let expenses = getData('sys_expenses') || [];
-        expenses = expenses.filter(e => String(e.id) !== String(expId));
-        setData('sys_expenses', expenses);
-        renderExpensesTable();
-    }
+function openDriverSettlementModal() {
+    const drivers = getData('sys_drivers') || [];
+    const repContainer = document.getElementById('repDriversList');
+    if (!repContainer) return;
+
+    let html = `
+        <div style="background:#121215; padding:12px; border-radius:8px; margin-bottom:10px;">
+            <h3 style="color:var(--gold-primary); margin-bottom:10px; font-size:1.1rem;">🛵 تصفية واستلام حساب الدليفري واستلام الكاش</h3>
+    `;
+
+    drivers.forEach(drv => {
+        const rep = getDriverDailySettlementReport(drv.name);
+        
+        let ordersDetailHtml = rep.ordersList.map(o => 
+            `<div style="font-size:0.75rem; color:#ccc; display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:2px 0;">
+                <span>طلب #${o.orderNum || o.id.slice(-4)} - ${o.customerName || 'زبون'}</span>
+                <strong style="color:var(--gold-bright);">${cleanPrice(o.totalAmount).toLocaleString('ar-IQ')} د.ع</strong>
+            </div>`
+        ).join('');
+
+        html += `
+            <div style="background:#222228; border:1px solid #444; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:#fff; font-size:1rem;">👤 ${drv.name}</strong>
+                    <span style="background:#333; color:#ffd700; padding:2px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">${rep.ordersCount} طلبات معلقة</span>
+                </div>
+                
+                <div style="margin:8px 0; background:#18181c; padding:6px; border-radius:4px; max-height:100px; overflow-y:auto;">
+                    ${ordersDetailHtml || '<p style="color:#777; font-size:0.75rem; margin:0;">لا توجد طلبات معلقة التسليم لهذا السائق</p>'}
+                </div>
+
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#aaa; margin-top:4px;">
+                    <span>إجمالي المبالغ المقبوضة: <strong style="color:#fff;">${rep.totalAmountCollected.toLocaleString('ar-IQ')} د.ع</strong></span>
+                    <span>أجور التوصيل: <strong style="color:#fff;">${rep.totalDeliveryFees.toLocaleString('ar-IQ')} د.ع</strong></span>
+                </div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed #444; padding-top:6px;">
+                    <strong style="color:#10b981; font-size:0.95rem;">الصافي الواجب استلامه للصندوق: ${rep.netToPayToRestaurant.toLocaleString('ar-IQ')} د.ع</strong>
+                    ${rep.ordersCount > 0 ? `<button class="gold-btn btn-sm" onclick="settleDriverAccount('${drv.name}')" style="background:#10b981; color:#fff; border:none; padding:6px 12px; font-weight:bold;">✅ تصفية وتفريغ الذمة</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    repContainer.innerHTML = html;
 }
 
+function settleDriverAccount(driverName) {
+    if (confirm(`هل تم استلام المبلغ الصافي وتصفية ذمة السائق (${driverName}) بنجاح؟`)) {
+        let completed = getData('sys_completed_orders') || [];
+        const today = getTodayString();
+
+        completed.forEach(o => {
+            if (o.dateDate === today && o.driverName === driverName) {
+                o.isSettled = true;
+                o.settledTimestamp = Date.now();
+            }
+        });
+
+        setData('sys_completed_orders', completed);
+        openDriverSettlementModal();
+        alert(`✅ تم تصفية حساب السائق (${driverName}) وتثبيت الاستلام في الصندوق!`);
+    }
+}
 /* ==========================================
    8. إدارة ملاحظات المطبخ السريعة
    ========================================== */
@@ -1825,7 +1737,7 @@ function confirmCloseShiftAndLogout() {
 }
 
 /* ==========================================
-   10. الطباعة الحرارية للفواتير والمطبخ
+   10. الطباعة الحرارية المبتكرة (تكبير خط الدليفري ورقم الطلب)
    ========================================== */
 
 function printCustomerInvoiceOnly(event, customOrder) {
@@ -1836,9 +1748,9 @@ function printCustomerInvoiceOnly(event, customOrder) {
     let itemsHtml = '';
     order.items.forEach(i => {
         const itemTotal = cleanPrice(i.price) * cleanPrice(i.qty);
-        let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><small style="color:#000; font-weight:bold;">★ ملاحظة: ${i.itemNotes.join(' - ')}</small>` : '';
+        let notesText = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="color:#000; font-weight:900; font-size:15px;">★ ملاحظة: ${i.itemNotes.join(' - ')}</span>` : '';
         itemsHtml += `
-            <div style="font-size:13px; font-weight:bold; margin:3px 0; border-bottom:1px solid #000; padding-bottom:2px; color:#000;">
+            <div style="font-size:16px; font-weight:900; margin:5px 0; border-bottom:1px solid #000; padding-bottom:4px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
                     <span>${i.name} (x${i.qty})</span>
                     <span>${itemTotal.toLocaleString('ar-IQ')} د.ع</span>
@@ -1849,30 +1761,31 @@ function printCustomerInvoiceOnly(event, customOrder) {
 
     const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
     printBox.innerHTML = `
-        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
-            <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px;">
-                <h2 style="font-size:18px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h2>
-                <div style="font-size:10px; font-weight:bold; color:#000;">بغداد - القاهرة | فاتورة كاشير</div>
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000; padding:5px;">
+            <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px;">
+                <h1 style="font-size:24px; margin:0; font-weight:900; color:#000;">MIM89 FAST FOOD</h1>
+                <div style="font-size:13px; font-weight:900; color:#000;">بغداد - القاهرة | فاتورة كاشير ودليفري</div>
             </div>
-            <div style="text-align:center; margin:4px 0; border:1px solid #000; padding:2px; background:#fff;">
-                <div style="font-size:10px; font-weight:bold; color:#000;">رقم الطلب</div>
-                <div style="font-size:28px; font-weight:900; color:#000;">#${order.orderNum}</div>
+            <div style="text-align:center; margin:6px 0; border:3px solid #000; padding:6px; background:#fff;">
+                <div style="font-size:14px; font-weight:900; color:#000;">رقم الطلب</div>
+                <div style="font-size:46px; font-weight:900; color:#000; line-height:1;">#${order.orderNum}</div>
             </div>
-            <div style="font-size:11px; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; color:#000;">
-                <div>التاريخ: ${order.dateDate} - ${order.timestamp}</div>
-                <div>اسم الزبون: ${order.customerName}</div>
-                <div>نوع الخدمة: ${order.area} | الدفع: ${order.paymentMethod}</div>
-                ${order.notes ? `<div style="font-size:12px; font-weight:900; margin-top:2px;">ملاحظة عامة: ${order.notes}</div>` : ''}
+            <div style="font-size:14px; font-weight:900; border-bottom:2px dashed #000; padding-bottom:6px; margin-bottom:6px; color:#000; line-height:1.4;">
+                <div>📅 التاريخ: ${order.dateDate} - ${order.timestamp}</div>
+                <div style="font-size:16px; font-weight:900; color:#000;">👤 الزبون: ${order.customerName}</div>
+                <div style="font-size:15px; font-weight:900;">📍 الخدمة / المنطقة: ${order.area}</div>
+                <div>💳 طريقة الدفع: ${order.paymentMethod}</div>
+                ${order.notes ? `<div style="font-size:15px; font-weight:900; margin-top:4px; background:#eee; padding:2px;">⚠️ ملاحظة: ${order.notes}</div>` : ''}
             </div>
-            <div style="border-bottom:1px dashed #000; padding:2px 0; margin-bottom:4px;">${itemsHtml}</div>
-            <div style="font-size:12px; margin-top:4px;">
+            <div style="border-bottom:2px dashed #000; padding:4px 0; margin-bottom:6px;">${itemsHtml}</div>
+            <div style="font-size:15px; font-weight:900; margin-top:6px;">
                 <div style="display:flex; justify-content:space-between;"><span>المجموع الفرعي:</span> <span>${cleanPrice(order.subtotal || 0).toLocaleString('ar-IQ')} د.ع</span></div>
                 ${order.discount > 0 ? `<div style="display:flex; justify-content:space-between;"><span>الخصم:</span> <span>- ${cleanPrice(order.discount).toLocaleString('ar-IQ')} د.ع</span></div>` : ''}
-                <div style="font-size:14px; font-weight:900; display:flex; justify-content:space-between; border-top:1px solid #000; padding-top:4px; margin-top:2px;">
+                <div style="font-size:18px; font-weight:900; display:flex; justify-content:space-between; border-top:2px solid #000; padding-top:6px; margin-top:4px;">
                     <span>المجموع الكلي:</span> <span>${cleanPrice(order.totalAmount || 0).toLocaleString('ar-IQ')} د.ع</span>
                 </div>
             </div>
-            <div style="text-align:center; margin-top:6px; font-size:10px; font-weight:bold;">شكراً لزيارتكم MIM89</div>
+            <div style="text-align:center; margin-top:10px; font-size:12px; font-weight:900;">شكراً لزيارتكم MIM89</div>
         </div>`;
     setTimeout(() => { window.print(); }, 150);
 }
@@ -1884,12 +1797,12 @@ function printKitchenTicketOnly(event, customOrder) {
 
     let itemsKitchenHtml = '';
     order.items.forEach(i => {
-        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="font-size:14px; color:#000; font-weight:900;">⚠️ [${i.itemNotes.join(' ، ')}]</span>` : '';
+        let itemNotesStr = (i.itemNotes && i.itemNotes.length > 0) ? `<br><span style="font-size:16px; color:#000; font-weight:900;">⚠️ [${i.itemNotes.join(' ، ')}]</span>` : '';
         itemsKitchenHtml += `
-            <div style="font-size:16px; font-weight:900; margin:6px 0; border-bottom:1px dashed #000; padding-bottom:4px; color:#000;">
+            <div style="font-size:18px; font-weight:900; margin:6px 0; border-bottom:2px dashed #000; padding-bottom:6px; color:#000;">
                 <div style="display:flex; justify-content:space-between;">
                     <span>- ${i.name}</span>
-                    <span>[x${i.qty}]</span>
+                    <span style="font-size:22px;">[x${i.qty}]</span>
                 </div>
                 ${itemNotesStr}
             </div>`;
@@ -1897,19 +1810,19 @@ function printKitchenTicketOnly(event, customOrder) {
 
     const printBox = document.getElementById('mim89ThermalPrintBox') || createThermalPrintContainer();
     printBox.innerHTML = `
-        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000;">
-            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:6px;">
-                <h2 style="font-size:22px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h2>
-                <div style="font-size:12px; font-weight:bold;">الوقت: ${order.timestamp}</div>
+        <div style="width:100%; box-sizing:border-box; font-family:'Tajawal',sans-serif; text-align:right; direction:rtl; color:#000; padding:5px;">
+            <div style="text-align:center; border-bottom:3px solid #000; padding-bottom:6px; margin-bottom:6px;">
+                <h1 style="font-size:26px; margin:0; font-weight:900; color:#000;">*** أمر تجهيز مطبخ ***</h1>
+                <div style="font-size:14px; font-weight:900;">⏰ الوقت: ${order.timestamp}</div>
             </div>
-            <div style="text-align:center; margin:6px 0; border:2px solid #000; padding:4px;">
-                <div style="font-size:12px; font-weight:bold;">رقم الطلب</div>
-                <div style="font-size:38px; font-weight:900;">#${order.orderNum}</div>
+            <div style="text-align:center; margin:6px 0; border:3px solid #000; padding:6px; background:#fff;">
+                <div style="font-size:14px; font-weight:900;">رقم الطلب</div>
+                <div style="font-size:52px; font-weight:900; line-height:1;">#${order.orderNum}</div>
             </div>
-            <div style="font-size:13px; font-weight:bold; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px;">
-                <div>الخدمة: ${order.area}</div>
-                <div>الزبون: ${order.customerName}</div>
-                ${order.notes ? `<div style="font-size:14px; font-weight:900; margin-top:4px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
+            <div style="font-size:15px; font-weight:900; margin-bottom:8px; border-bottom:2px solid #000; padding-bottom:6px; line-height:1.4;">
+                <div>📍 الخدمة: ${order.area}</div>
+                <div>👤 الزبون: ${order.customerName}</div>
+                ${order.notes ? `<div style="font-size:16px; font-weight:900; margin-top:4px; background:#eee; padding:2px;">⚠️ ملاحظة عامة: ${order.notes}</div>` : ''}
             </div>
             <div style="padding:4px 0;">${itemsKitchenHtml}</div>
         </div>`;
@@ -2206,96 +2119,7 @@ function cancelIncomingOrder(docId, orderId) {
 }
 
 /* ==========================================
-   12. محاسبة التوصيل والدليفري والتطبيقات
-   ========================================== */
-
-function getDriverDailySettlementReport(driverName) {
-    const today = getTodayString();
-    const completed = getData('sys_completed_orders') || [];
-    
-    const driverOrders = completed.filter(o => o.dateDate === today && o.driverName === driverName);
-
-    let totalAmountCollected = 0;
-    let totalDeliveryFees = 0;
-    let ordersCount = driverOrders.length;
-
-    driverOrders.forEach(ord => {
-        totalAmountCollected += cleanPrice(ord.totalAmount || 0);
-        totalDeliveryFees += cleanPrice(ord.deliveryFee || 0);
-    });
-
-    const netToPayToRestaurant = totalAmountCollected - totalDeliveryFees;
-
-    return {
-        driverName: driverName,
-        ordersCount: ordersCount,
-        totalAmountCollected: totalAmountCollected,
-        totalDeliveryFees: totalDeliveryFees,
-        netToPayToRestaurant: netToPayToRestaurant
-    };
-}
-
-function openDriverSettlementModal() {
-    const drivers = getData('sys_drivers') || [];
-    const completed = getData('sys_completed_orders') || [];
-
-    let html = `
-        <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
-            <h4 style="color:var(--gold-primary); margin-bottom:8px;">🛵 تصفية حساب سائقي المطعم المباشرين (يومي / فوري)</h4>
-    `;
-
-    drivers.forEach(drv => {
-        const rep = getDriverDailySettlementReport(drv.name);
-        html += `
-            <div style="background:#222228; border:1px solid #444; padding:8px; border-radius:6px; margin-bottom:6px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong style="color:#fff;">👤 ${drv.name}</strong>
-                    <span style="background:#333; color:#ffd700; padding:1px 6px; border-radius:4px; font-size:0.75rem;">${rep.ordersCount} طلبات اليوم</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#aaa; margin-top:4px;">
-                    <span>المقبوضات: ${rep.totalAmountCollected.toLocaleString('ar-IQ')} د.ع</span>
-                    <span>أجور التوصيل: ${rep.totalDeliveryFees.toLocaleString('ar-IQ')} د.ع</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; border-top:1px dashed #444; padding-top:4px;">
-                    <strong style="color:#10b981; font-size:0.85rem;">الصافي المطلوب تسليمه للصندوق: ${rep.netToPayToRestaurant.toLocaleString('ar-IQ')} د.ع</strong>
-                </div>
-            </div>
-        `;
-    });
-
-    html += `</div>`;
-
-    let talabateyTotal = 0, totersTotal = 0, baleTotal = 0;
-    completed.forEach(ord => {
-        const dName = String(ord.driverName || '').toLowerCase();
-        const amt = cleanPrice(ord.totalAmount || 0);
-
-        if (dName.includes("طلباتي")) talabateyTotal += amt;
-        else if (dName.includes("توترز")) totersTotal += amt;
-        else if (dName.includes("بلي")) baleTotal += amt;
-    });
-
-    html += `
-        <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid #38bdf8;">
-            <h4 style="color:#38bdf8; margin-bottom:8px;">📱 تراكم مستحقات الشركات (تصفية شهرية)</h4>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق طلباتي:</span> <strong style="color:#38bdf8;">${talabateyTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                <span>📱 تطبيق توترز:</span> <strong style="color:#a855f7;">${totersTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                <span>📱 تطبيق بلي:</span> <strong style="color:#10b981;">${baleTotal.toLocaleString('ar-IQ')} د.ع</strong>
-            </div>
-        </div>
-    `;
-
-    const repContainer = document.getElementById('repDriversList');
-    if (repContainer) repContainer.innerHTML = html;
-}
-
-/* ==========================================
-   13. لوحة جرد المخزن (inventory.html)
+   12. لوحة جرد المخزن (inventory.html)
    ========================================== */
 
 function deductInventoryFromRecipe(items) {
@@ -2426,7 +2250,7 @@ function deleteInvItem(id) {
 }
 
 /* ==========================================
-   14. لوحة تحكم الإدارة الكاملة Admin (admin.html)
+   13. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
 function initAdminPage() { initData(); }
@@ -2787,13 +2611,13 @@ function updateAllSystemPasswords() {
 }
 
 /* ==========================================
-   15. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
+   14. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
    ========================================== */
 
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v26.1-MIM89",
+            version: "v26.2-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -2872,7 +2696,7 @@ function importFullSystemBackup(fileInput) {
 }
 
 /* ==========================================
-   16. النوافذ المنبثقة والدوال المساعدة General Helpers
+   15. النوافذ المنبثقة والدوال المساعدة General Helpers
    ========================================== */
 
 function openModal(id) {
