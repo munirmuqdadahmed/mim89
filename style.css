@@ -1,6 +1,6 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Complete Master Style Sheet (v25.0)
-   (Direct Wrap Categories Display & iPad POS Thermal Print Optimized)
+   MIM89 FAST FOOD - Complete Master Style Sheet (v26.0)
+   (Fixed Thermal Print Container & Stable iPad POS Layout)
    صاحب النظام: منير مقداد
    ========================================================================== */
 
@@ -666,51 +666,44 @@ body.public-menu-body {
     margin-top: 10px;
 }
 
-/* 🖨️ 12. قواعد الطباعة الحرارية المحسّنة لطابعة الفواتير (80mm) */
-#mim89ThermalPrintBox {
-    display: none;
-}
-
+/* 🖨️ 12. قواعد الطباعة الحرارية المباشرة والصارمة لطابعة الفواتير (80mm) */
 @media print {
-    @page {
-        size: 80mm auto;
-        margin: 0mm !important;
-    }
-
-    body {
+    html, body {
         background: #ffffff !important;
         color: #000000 !important;
-        overflow: visible !important;
+        width: 100% !important;
         height: auto !important;
-        width: 78mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
         font-family: 'Tajawal', Arial, sans-serif !important;
     }
 
-    body > *:not(#mim89ThermalPrintBox) {
-        display: none !important;
+    /* إخفاء كل العناصر الظاهرة بالشاشة فقط أفقياً وعمودياً */
+    body * {
+        visibility: hidden !important;
+    }
+
+    /* استثناء صندوق الطباعة الحرارية وكافة محتوياته فوراً */
+    #mim89ThermalPrintBox, 
+    #mim89ThermalPrintBox * {
+        visibility: visible !important;
+        color: #000000 !important;
+        background: transparent !important;
+        font-weight: 900 !important;
     }
 
     #mim89ThermalPrintBox {
-        display: block !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         width: 76mm !important;
-        margin: 0 auto !important;
+        display: block !important;
         padding: 1mm 2mm !important;
-        background: #ffffff !important;
-        color: #000000 !important;
-        visibility: visible !important;
+        margin: 0 auto !important;
     }
 
-    #mim89ThermalPrintBox * {
-        color: #000000 !important;
-        background: transparent !important;
-        visibility: visible !important;
-        font-weight: 900 !important;
-    }
-
-    /* تكبير وتبريز العناصر الهامة في الفاتورة الحرارية */
+    /* تنسيقات إخراج خطوط الفاتورة ورقم الطلب للورق الحراري */
     .thermal-receipt-header {
         text-align: center;
         border-bottom: 2px dashed #000;
