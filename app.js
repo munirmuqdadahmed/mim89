@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v23.0 Fully Cleaned & Realtime Unified)
+   MIM89 FAST FOOD - Master Core Engine (v26.0 Complete Unified File)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -148,37 +148,41 @@ const DEFAULT_DATA = {
         { id: 7, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
     ],
     items: [
-        { id: 101, categoryId: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
-        { id: 102, categoryId: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-        { id: 301, categoryId: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
-        { id: 302, categoryId: 8, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
-        { id: 303, categoryId: 8, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
-        { id: 304, categoryId: 8, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
-        { id: 305, categoryId: 8, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
-        { id: 306, categoryId: 8, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
-        { id: 307, categoryId: 8, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
-        { id: 308, categoryId: 8, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
-        { id: 309, categoryId: 8, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
+        { id: 101, categoryId: 1, catId: 1, category: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
+        { id: 102, categoryId: 1, catId: 1, category: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
+        { id: 301, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
+        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
+        { id: 303, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
+        { id: 304, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
+        { id: 305, categoryId: 8, catId: 8, category: 8, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
+        { id: 306, categoryId: 8, catId: 8, category: 8, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
+        { id: 307, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
+        { id: 308, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
+        { id: 309, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
     ]
 };
 
-// 🧠 التصنيف الذكي الآلي لمنع خلط الوجبات بين الأقسام
+// 🧠 التصنيف المحدد مع احترام خيار المستخدم أولاً
 function getItemCategory(item) {
-    if (!item || !item.name) return cleanPrice(item?.categoryId) || 1;
-    const name = item.name.trim();
+    if (!item) return 1;
+    let rawCat = item.categoryId !== undefined ? item.categoryId : (item.catId !== undefined ? item.catId : item.category);
+    let parsed = cleanPrice(rawCat);
+    if (parsed > 0) return parsed;
     
-    if (name.includes('شاورما')) return 8; 
-    if (name.includes('بركر') && name.includes('لحم')) return 2; 
-    if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; 
-    if (name.includes('ريزو')) return 5; 
-    if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; 
-    if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; 
-    if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; 
-    if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; 
-    if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; 
-    if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; 
-    
-    return cleanPrice(item.categoryId) || 1;
+    if (item.name) {
+        const name = item.name.trim();
+        if (name.includes('شاورما')) return 8; 
+        if (name.includes('بركر') && name.includes('لحم')) return 2; 
+        if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; 
+        if (name.includes('ريزو')) return 5; 
+        if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; 
+        if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; 
+        if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; 
+        if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; 
+        if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; 
+        if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; 
+    }
+    return 1;
 }
 
 function autoFixItemCategories() {
@@ -189,6 +193,8 @@ function autoFixItemCategories() {
             const correctCat = getItemCategory(i);
             if (cleanPrice(i.categoryId) !== correctCat) {
                 i.categoryId = correctCat;
+                i.catId = correctCat;
+                i.category = correctCat;
                 updated = true;
             }
         });
@@ -224,6 +230,8 @@ function initData() {
                     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
+        } else {
+            localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
         }
     }
 
@@ -317,7 +325,7 @@ function setupCloudRealtimeSync() {
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-            if (cloudItems.length >= 5) {
+            if (cloudItems.length >= 1) {
                 setData('sys_items', cloudItems);
                 refreshActiveUI();
             }
@@ -334,7 +342,7 @@ function setupCloudRealtimeSync() {
     }, err => console.log("Customers sync fallback:", err));
 }
 
-// ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
+// ⚡ قناة المزامنة الفورية اللحظية بين المينيو والكاشير
 const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
 
 if (posSyncChannel) {
@@ -346,17 +354,20 @@ if (posSyncChannel) {
 }
 
 function notifyMenuUpdated() {
+    localStorage.setItem('mim89_last_menu_update', Date.now());
     if (posSyncChannel) posSyncChannel.postMessage('menu_updated');
     if (typeof refreshActiveUI === 'function') refreshActiveUI();
 }
 
 function refreshActiveUI() {
+    if (typeof updateLiveShiftBadge === 'function') updateLiveShiftBadge();
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
         if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
         if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
     } else if (document.getElementById('adminItemsTable')) {
+        if (typeof renderAdminCategories === 'function') renderAdminCategories();
         if (typeof renderAdminItems === 'function') renderAdminItems();
         if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
         if (typeof renderAdminCustomers === 'function') renderAdminCustomers();
@@ -379,7 +390,7 @@ async function globalSystemSync(btnElement) {
             if (!itemSnap.empty) {
                 let cloudItems = [];
                 itemSnap.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                if (cloudItems.length >= 5) setData('sys_items', cloudItems);
+                if (cloudItems.length >= 1) setData('sys_items', cloudItems);
             }
 
             const custSnap = await db.collection("customers").get();
@@ -552,7 +563,7 @@ function deleteCustomerRecord(id) {
 
 window.openItemCustomizationModal = function(itemId) {
     let items = getData('sys_items');
-    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
+    const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
 
     currentDetailItem = item;
@@ -642,7 +653,6 @@ function loadPublicMenu() {
 }
 
 function renderPublicMenuUI() {
-    autoFixItemCategories();
     const categories = getData('sys_categories');
     const items = getData('sys_items');
     const navContainer = document.getElementById('categoriesNav');
@@ -678,13 +688,13 @@ function renderPublicMenuUI() {
                 <div class="items-grid">
                     ${catItems.map(item => `
                         <div class="item-card">
-                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal(${item.id})" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal('${item.id}')" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
-                                <h3 class="item-name" onclick="openItemCustomizationModal(${item.id})">${item.name}</h3>
+                                <h3 class="item-name" onclick="openItemCustomizationModal('${item.id}')">${item.name}</h3>
                                 <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
                                 <div class="item-footer">
                                     <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-                                    <button class="add-cart-btn" onclick="openItemCustomizationModal(${item.id})" title="تخصيص وإضافة للسلة">+</button>
+                                    <button class="add-cart-btn" onclick="openItemCustomizationModal('${item.id}')" title="تخصيص وإضافة للسلة">+</button>
                                 </div>
                             </div>
                         </div>
@@ -705,9 +715,6 @@ function filterCategory(catId, btnElement) {
         sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
     });
 }
-
-function openItemDetails(id) { openItemCustomizationModal(id); }
-function addToCart(itemId) { openItemCustomizationModal(itemId); }
 
 function updateCartBadge() {
     const count = cart.reduce((sum, i) => sum + cleanPrice(i.qty), 0);
@@ -761,28 +768,6 @@ function changeCartIndexQty(index, change) {
     calculateDeliveryCost();
 }
 
-function changeCartQty(id, change) {
-    const idx = cart.findIndex(c => cleanPrice(c.id) === cleanPrice(id));
-    if (idx !== -1) {
-        changeCartIndexQty(idx, change);
-    }
-}
-
-function toggleDeliveryFields() {
-    const typeSelect = document.getElementById('orderTypeSelect');
-    const type = typeSelect ? typeSelect.value : 'delivery';
-    const group = document.getElementById('deliveryFieldsGroup');
-    const feeLine = document.getElementById('deliveryFeeLine');
-    if (type === 'delivery') {
-        if(group) group.style.display = 'block';
-        if(feeLine) feeLine.style.display = 'flex';
-    } else {
-        if(group) group.style.display = 'none';
-        if(feeLine) feeLine.style.display = 'none';
-    }
-    calculateDeliveryCost();
-}
-
 function calculateDeliveryCost() {
     const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     const orderType = document.getElementById('orderTypeSelect') ? document.getElementById('orderTypeSelect').value : 'delivery';
@@ -830,7 +815,7 @@ window.submitOrderToCashier = function() {
         const notesInput = document.getElementById('orderNotes');
 
         const name = nameInput ? nameInput.value.trim() : '';
-        const phone = phoneInput ? phoneInput.value.trim().replace(/\s+/g, '') : '';
+        const phone = phoneInput ? phoneInput.value.trim().replace(/[^\d+]/g, '') : '';
         const type = typeSelect ? typeSelect.value : 'delivery';
         
         let selectArea = areaSelect ? areaSelect.value : 'القاهرة';
@@ -845,19 +830,7 @@ window.submitOrderToCashier = function() {
         if (!name || name === '') return alert("⚠️ يرجى كتابة اسمك الكريم لتأكيد الطلب!");
         if (!phone || phone === '') return alert("⚠️ يرجى إدخال رقم الهاتف المباشر لتأكيد الطلب!");
 
-        if (type === 'delivery') {
-            if (!selectArea || selectArea === '' || selectArea === '-- اختر المنطقة --') {
-                return alert("⚠️ يرجى اختيار منطقة التوصيل!");
-            }
-        }
-
         saveCustomerRecord(name, phone, area, address);
-
-        const submitBtn = document.getElementById('sendOrderBtn');
-        if (submitBtn) {
-            submitBtn.innerText = "⏳ جاري تحويل الطلب للكاشير والواتساب...";
-            submitBtn.disabled = true;
-        }
 
         const subtotal = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
         let deliveryFee = 0;
@@ -873,11 +846,15 @@ window.submitOrderToCashier = function() {
             orderId: orderId,
             customerName: name,
             phone: phone,
+            customerPhone: phone,
+            number: phone,
+            caller: phone,
             orderType: type === 'delivery' ? 'توصيل' : (type === 'takeaway' ? 'سفري' : 'داخل الصالة'),
             area: area || 'غير محدد',
             address: address || 'غير محدد',
             notes: notes,
             items: cart.map(i => ({ name: i.name, qty: cleanPrice(i.qty), price: cleanPrice(i.price), total: cleanPrice(i.price) * cleanPrice(i.qty), customNotes: i.customNotes || '' })),
+            cart: cart,
             subtotal: subtotal,
             deliveryFee: deliveryFee,
             totalAmount: totalAmount,
@@ -923,20 +900,9 @@ window.submitOrderToCashier = function() {
         const restaurantPhone = "9647750008630";
         const waUrl = `https://wa.me/${restaurantPhone}?text=${encodeURIComponent(waMessage)}`;
 
-        localStorage.setItem('sys_last_order_id', orderId);
-
         cart = [];
-        updateCartBadge();
-        closeModal('cartModal');
-
-        if (submitBtn) {
-            submitBtn.innerText = "تأكيد وإرسال الطلب عبر الواتساب 🚀";
-            submitBtn.disabled = false;
-        }
-
-        if (typeof listenToOrderTracking === 'function') {
-            listenToOrderTracking(orderId);
-        }
+        if (typeof updateCartBadge === 'function') updateCartBadge();
+        if (typeof closeModal === 'function') closeModal('cartModal');
 
         window.location.href = waUrl;
     } catch (err) {
@@ -1043,7 +1009,6 @@ function loadDriversAndAppDropdowns() {
 }
 
 function loadPosDirectMenu(catId = 'all') {
-    autoFixItemCategories();
     const categories = getData('sys_categories');
     let items = getData('sys_items');
     const catBar = document.getElementById('posCategoriesBar');
@@ -1071,7 +1036,7 @@ function loadPosDirectMenu(catId = 'all') {
     }
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
@@ -1089,7 +1054,7 @@ function filterPosProducts() {
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
     grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart(${item.id})">
+        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
@@ -1099,10 +1064,10 @@ function filterPosProducts() {
 
 function addToPosCart(itemId) {
     const items = getData('sys_items');
-    const item = items.find(i => cleanPrice(i.id) === cleanPrice(itemId));
+    const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
 
-    const exist = posCart.find(c => cleanPrice(c.id) === cleanPrice(itemId));
+    const exist = posCart.find(c => String(c.id) === String(itemId) || cleanPrice(c.id) === cleanPrice(itemId));
 
     if (exist) {
         exist.qty += 1;
@@ -1114,10 +1079,10 @@ function addToPosCart(itemId) {
 }
 
 function changePosCartQty(id, change) {
-    const item = posCart.find(c => cleanPrice(c.id) === cleanPrice(id));
+    const item = posCart.find(c => String(c.id) === String(id) || cleanPrice(c.id) === cleanPrice(id));
     if (item) {
         item.qty += change;
-        if (item.qty <= 0) posCart = posCart.filter(c => cleanPrice(c.id) !== cleanPrice(id));
+        if (item.qty <= 0) posCart = posCart.filter(c => String(c.id) !== String(id) && cleanPrice(c.id) !== cleanPrice(id));
     }
     recalculateActiveDiscount();
     renderPosCart();
@@ -1259,9 +1224,9 @@ function renderPosCart() {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:#fff; font-size:0.85rem;">${item.name}</strong>
                     <div style="display:flex; gap:4px; align-items:center;">
-                        <button onclick="changePosCartQty(${item.id}, -1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">-</button>
+                        <button onclick="changePosCartQty('${item.id}', -1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">-</button>
                         <span style="color:#ffd700; font-weight:bold;">${item.qty}</span>
-                        <button onclick="changePosCartQty(${item.id}, 1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">+</button>
+                        <button onclick="changePosCartQty('${item.id}', 1)" style="padding:1px 8px; background:#333; color:#fff; border:1px solid #555; border-radius:3px;">+</button>
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; color:#aaa; font-size:0.75rem; margin-top:3px;">
@@ -1467,7 +1432,7 @@ function openCompletedOrdersModal() {
 
 function reprintCompletedOrder(orderId) {
     const completed = getData('sys_completed_orders');
-    const order = completed.find(o => o.id === orderId);
+    const order = completed.find(o => String(o.id) === String(orderId));
     if (order) {
         window.activePendingPrintOrder = order;
         closeModal('completedOrdersModal');
@@ -1583,7 +1548,7 @@ function renderExpensesTable() {
 function deleteExpenseRecord(expId) {
     if (confirm("هل تريد إلغاء وحذف هذه الصرفية؟")) {
         let expenses = getData('sys_expenses') || [];
-        expenses = expenses.filter(e => e.id !== expId);
+        expenses = expenses.filter(e => String(e.id) !== String(expId));
         setData('sys_expenses', expenses);
         renderExpensesTable();
     }
@@ -1848,7 +1813,6 @@ function confirmCloseShiftAndLogout() {
         location.reload();
     }
 }
-
 /* ==========================================
    10. الطباعة الحرارية للفواتير والمطبخ
    ========================================== */
@@ -2069,8 +2033,8 @@ function listenForIncomingOrders() {
             }
             
             if (alertBanner && lastIncomingCall) {
-                const phone = String(lastIncomingCall.phone || 'رقم غير معروف');
-                const name = String(lastIncomingCall.customerName || 'مكالمة واردة');
+                const phone = String(lastIncomingCall.phone || lastIncomingCall.customerPhone || lastIncomingCall.number || lastIncomingCall.caller || 'رقم غير معروف');
+                const name = String(lastIncomingCall.customerName || lastIncomingCall.name || 'مكالمة واردة');
                 const docId = String(lastIncomingCall.docId || lastIncomingCall.id || '');
                 const safeName = name.replace(/'/g, "\\'");
 
@@ -2158,10 +2122,10 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address, items
 }
 
 function generateOrderCardHTML(ord, docId) {
-    const itemsList = Array.isArray(ord.items) ? ord.items : [];
+    const itemsList = Array.isArray(ord.items) ? ord.items : (Array.isArray(ord.cart) ? ord.cart : []);
     const total = (ord.totalAmount !== undefined && ord.totalAmount !== null) ? cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') : '0';
 
-    const rawPhone = String(ord.phone || ord.number || ord.caller || ord.from || 'بدون رقم');
+    const rawPhone = String(ord.phone || ord.customerPhone || ord.number || ord.caller || ord.from || 'بدون رقم');
     const rawName = String(ord.customerName || ord.name || ord.caller_name || 'مكالمة واردة');
     const pastCustomer = getCustomerHistoryByPhone(rawPhone);
 
@@ -2198,7 +2162,7 @@ function generateOrderCardHTML(ord, docId) {
             <hr style="border-color:#333; margin:6px 0;">
             <ul style="padding-right:12px; font-size:0.8rem; color:#fff;">
                 ${itemsList.length > 0 
-                    ? itemsList.map(i => `<li>${i.name} × ${i.qty} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
+                    ? itemsList.map(i => `<li>${i.name} × ${i.qty || i.quantity || 1} ${i.customNotes ? ' <small style="color:var(--gold-bright);">('+i.customNotes+')</small>' : ''}</li>`).join('') 
                     : '<li style="color:#aaa;">(مكالمة هاتفية - اختر الوجبات يدوياً في الكاشير)</li>'}
             </ul>
             <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
@@ -2220,7 +2184,7 @@ function cancelIncomingOrder(docId, orderId) {
             db.collection("orders").doc(docId).delete().catch(err => console.error("Error deleting order:", err));
         }
         let orders = getData('sys_live_orders');
-        orders = orders.filter(o => o.id !== orderId);
+        orders = orders.filter(o => String(o.id) !== String(orderId) && String(o.docId) !== String(docId));
         setData('sys_live_orders', orders);
         
         const card = document.getElementById(`order_card_${docId}`) || document.getElementById(`order_card_${orderId}`);
@@ -2329,7 +2293,7 @@ function deductInventoryFromRecipe(items) {
     const allMenuItems = getData('sys_items');
 
     items.forEach(cartItem => {
-        const menuItem = allMenuItems.find(m => cleanPrice(m.id) === cleanPrice(cartItem.id));
+        const menuItem = allMenuItems.find(m => String(m.id) === String(cartItem.id) || cleanPrice(m.id) === cleanPrice(cartItem.id));
         if (menuItem && menuItem.recipe) {
             menuItem.recipe.forEach(ingredient => {
                 const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ingredient.invId));
@@ -2352,11 +2316,11 @@ function loginInventory() {
     const validAdminPass = getSystemPassword('admin');
 
     if (pass === validInvPass || pass === validAdminPass || pass === 'inv123' || pass === '123') {
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('invMainApp').style.display = 'block';
+        if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
+        if (document.getElementById('invMainApp')) document.getElementById('invMainApp').style.display = 'block';
         renderInventoryTable();
     } else {
-        document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+        if (document.getElementById('authError')) document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
     }
 }
 
@@ -2461,11 +2425,11 @@ function loginAdmin() {
     const validAdminPass = getSystemPassword('admin');
 
     if (pass === validAdminPass || pass === "admin123" || pass === "123") {
-        document.getElementById('authOverlay').style.display = 'none';
-        document.getElementById('adminMainApp').style.display = 'block';
+        if (document.getElementById('authOverlay')) document.getElementById('authOverlay').style.display = 'none';
+        if (document.getElementById('adminMainApp')) document.getElementById('adminMainApp').style.display = 'block';
         loadAdminTabsData();
     } else {
-        document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+        if (document.getElementById('authError')) document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
     }
 }
 
@@ -2588,112 +2552,41 @@ function renderAdminItems() {
     const items = getData('sys_items');
     const categories = getData('sys_categories');
     const tbody = document.getElementById('adminItemsTable');
-    const select = document.getElementById('itemCategory');
 
-    if (select) select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     if (!tbody) return;
 
     tbody.innerHTML = items.map(item => {
-        const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(item.categoryId));
+        const cat = categories.find(c => cleanPrice(c.id) === getItemCategory(item));
         return `
             <tr>
                 <td style="text-align:center;">
-                    <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload(${item.id})" title="اضغط لتغيير الصورة مباشرة">
+                    <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload('${item.id}')" title="اضغط لتغيير الصورة مباشرة">
                 </td>
                 <td>
-                    <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'name', this.value)" style="font-weight:bold;">
+                    <input type="text" value="${item.name}" class="gold-input-inline" onchange="updateItemInline('${item.id}', 'name', this.value)" style="font-weight:bold;">
                 </td>
                 <td><span style="font-size:0.8rem; color:#aaa;">${cat ? cat.name : '-'}</span></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:4px;">
-                        <input type="number" value="${cleanPrice(item.price)}" class="gold-input-inline" onchange="updateItemInline(${item.id}, 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
+                        <input type="number" value="${cleanPrice(item.price)}" class="gold-input-inline" onchange="updateItemInline('${item.id}', 'price', this.value)" style="color:#ffd700; font-weight:bold; width:100px;">
                         <small style="color:#aaa;">د.ع</small>
                     </div>
                 </td>
                 <td>
-                    <button onclick="editItem(${item.id})" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل كامل</button>
-                    <button onclick="deleteItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
+                    <button onclick="editItem('${item.id}')" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل كامل</button>
+                    <button onclick="deleteItem('${item.id}')" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
                 </td>
             </tr>
         `;
     }).join('');
 }
 
-function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : String(Date.now());
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = cleanPrice(document.getElementById('itemPrice')?.value);
-    const categoryId = String(document.getElementById('itemCategory')?.value || '1');
-    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
-    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
-
-    if (!name || !price) return alert("⚠️ يرجى إدخال اسم الصنف والسعر!");
-
-    const itemData = { 
-        id: id, 
-        name: name, 
-        price: price, 
-        categoryId: categoryId, 
-        image: image, 
-        ingredients: ingredients 
-    };
-
-    let items = getData('sys_items') || [];
-    const index = items.findIndex(i => String(i.id) === String(id));
-    
-    if (index !== -1) {
-        items[index] = itemData;
-    } else {
-        items.push(itemData);
-    }
-
-    setData('sys_items', items);
-
-    if (typeof db !== 'undefined' && db) {
-        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => console.log("✅ تم التحديث السحابي"))
-            .catch(err => console.error("❌ خطأ سحابي:", err));
-    }
-
-    if (typeof resetItemForm === 'function') resetItemForm();
-    notifyMenuUpdated();
-    alert("✅ تم حفظ التعديل وظهر الآن في شاشة الكاشير والمينيو!");
-}
-
-function editItem(id) {
-    const item = getData('sys_items').find(i => cleanPrice(i.id) === cleanPrice(id));
-    if (!item) return;
-
-    document.getElementById('editItemId').value = item.id;
-    document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPrice').value = cleanPrice(item.price);
-    document.getElementById('itemCategory').value = item.categoryId;
-    document.getElementById('itemIngredients').value = item.ingredients || item.desc || '';
-
-    const itemImg = item.image || item.img || '';
-
-    if (itemImg && itemImg.startsWith('data:image')) {
-        currentUploadedBase64 = itemImg;
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
-    } else {
-        currentUploadedBase64 = '';
-        if (document.getElementById('itemImage')) document.getElementById('itemImage').value = itemImg;
-    }
-
-    const preview = document.getElementById('imgPreview');
-    if (preview) preview.src = itemImg || 'https://via.placeholder.com/150';
-    
-    document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 function resetItemForm() {
-    document.getElementById('editItemId').value = '';
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemPrice').value = '';
+    if (document.getElementById('editItemId')) document.getElementById('editItemId').value = '';
+    if (document.getElementById('itemName')) document.getElementById('itemName').value = '';
+    if (document.getElementById('itemPrice')) document.getElementById('itemPrice').value = '';
     if (document.getElementById('itemImage')) document.getElementById('itemImage').value = '';
-    document.getElementById('itemIngredients').value = '';
+    if (document.getElementById('itemIngredients')) document.getElementById('itemIngredients').value = '';
     
     const fileInput = document.getElementById('itemImgFile');
     if (fileInput) fileInput.value = '';
@@ -2702,139 +2595,20 @@ function resetItemForm() {
     const preview = document.getElementById('imgPreview');
     if (preview) preview.src = 'https://via.placeholder.com/150?text=معاينة+الصورة';
     
-    document.getElementById('itemFormTitle').innerText = "إضافة / تعديل صنف للمينيو";
+    if (document.getElementById('itemFormTitle')) document.getElementById('itemFormTitle').innerText = "إضافة / تعديل صنف للمينيو";
 }
 
 function deleteItem(id) {
     if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
-        let items = getData('sys_items').filter(i => cleanPrice(i.id) !== cleanPrice(id));
+        let items = getData('sys_items').filter(i => String(i.id) !== String(id) && cleanPrice(i.id) !== cleanPrice(id));
         setData('sys_items', items);
         
         if (db) {
-            db.collection("menu_items").doc(String(id)).delete();
+            db.collection("menu_items").doc(String(id)).delete().catch(console.error);
         }
         renderAdminItems();
-        refreshActiveUI();
+        notifyMenuUpdated();
     }
-}
-
-/* ==========================================
-   🍔 1. إصلاح إضافة وتعديل وحفظ الأصناف بالكامل
-   ========================================== */
-
-function renderAdminCategories() {
-    const categories = getData('sys_categories') || [];
-    const selectEl = document.getElementById('itemCategory');
-    if (!selectEl) return;
-
-    selectEl.innerHTML = categories.map(c => 
-        `<option value="${c.id}">${c.name}</option>`
-    ).join('');
-}
-
-function saveItem() {
-    const editId = document.getElementById('editItemId')?.value;
-    const id = editId ? String(editId) : 'item_' + Date.now();
-    const name = document.getElementById('itemName')?.value.trim();
-    const price = cleanPrice(document.getElementById('itemPrice')?.value);
-    const categoryId = document.getElementById('itemCategory')?.value || '1';
-    const image = document.getElementById('itemImage')?.value || 'https://via.placeholder.com/150';
-    const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
-
-    if (!name || !price) {
-        alert("⚠️ يرجى كتابة اسم الصنف والسعر بشكل صحيح!");
-        return;
-    }
-
-    // توحيد الحقول لتتوافق مع كافة صفحات النظام
-    const itemData = {
-        id: id,
-        name: name,
-        price: price,
-        categoryId: categoryId,
-        catId: categoryId,
-        category: categoryId,
-        image: image,
-        ingredients: ingredients
-    };
-
-    let items = getData('sys_items') || [];
-    const index = items.findIndex(i => String(i.id) === String(id));
-
-    if (index !== -1) {
-        items[index] = itemData;
-    } else {
-        items.unshift(itemData);
-    }
-
-    // حفظ محلي + سحابي
-    setData('sys_items', items);
-
-    if (db) {
-        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .catch(e => console.error("Cloud item save error:", e));
-    }
-
-    resetItemForm();
-    notifyMenuUpdated();
-    alert("✅ تم حفظ الصنف بنجاح وتحديث كافة الشاشات!");
-}
-
-function editItem(id) {
-    const items = getData('sys_items') || [];
-    const item = items.find(i => String(i.id) === String(id));
-    if (!item) return;
-
-    renderAdminCategories();
-
-    document.getElementById('editItemId').value = item.id;
-    document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPrice').value = item.price;
-    document.getElementById('itemCategory').value = item.categoryId || item.catId || item.category || '1';
-    document.getElementById('itemImage').value = item.image || '';
-    document.getElementById('imgPreview').src = item.image || 'https://via.placeholder.com/150';
-    document.getElementById('itemIngredients').value = item.ingredients || '';
-    document.getElementById('itemFormTitle').innerText = "تعديل صنف: " + item.name;
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-
-/* ==========================================
-   📦 2. دالة استخراج وتنسيق وجبات الطلب عند الكاشير
-   ========================================== */
-
-// تقرأ الوجبات سواء جاءت بـ cart أو items أو details وتنسق المكونات والطلب
-function parseOrderItemsHTML(order) {
-    const itemList = order.items || order.cart || order.details || [];
-    
-    if (!itemList || itemList.length === 0) {
-        return `<span style="color:#ef4444;">⚠️ لا توجد تفاصيل للوجبات</span>`;
-    }
-
-    return itemList.map(item => {
-        const itemName = item.name || item.itemName || 'وجبة';
-        const qty = item.qty || item.quantity || 1;
-        const price = cleanPrice(item.price);
-        const notes = item.itemNotes || item.notes || [];
-        
-        let notesText = '';
-        if (Array.isArray(notes) && notes.length > 0) {
-            notesText = `<div style="font-size:0.75rem; color:#ffd700; margin-right:10px;">• ${notes.join(' • ')}</div>`;
-        } else if (typeof notes === 'string' && notes.trim() !== '') {
-            notesText = `<div style="font-size:0.75rem; color:#ffd700; margin-right:10px;">• ${notes}</div>`;
-        }
-
-        return `
-            <div style="padding:4px 0; border-bottom:1px dashed #333; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <strong style="color:#fff; font-size:0.88rem;">${qty}× ${itemName}</strong>
-                    ${notesText}
-                </div>
-                <span style="color:#aaa; font-size:0.8rem;">${(price * qty).toLocaleString('ar-IQ')} د.ع</span>
-            </div>
-        `;
-    }).join('');
 }
 
 function renderAdminDrivers() {
@@ -2881,16 +2655,16 @@ function renderAdminCashiers() {
 }
 
 function saveCashier() {
-    const name = document.getElementById('cashierNameInput').value;
-    const pass = document.getElementById('cashierPassNew').value;
+    const name = document.getElementById('cashierNameInput')?.value;
+    const pass = document.getElementById('cashierPassNew')?.value;
     if (!name || !pass) return alert("أدخل الاسم وكلمة المرور");
 
     const cashiers = getData('sys_cashiers');
     cashiers.push({ id: 'c_' + Date.now(), name, password: pass });
     setData('sys_cashiers', cashiers);
 
-    document.getElementById('cashierNameInput').value = '';
-    document.getElementById('cashierPassNew').value = '';
+    if (document.getElementById('cashierNameInput')) document.getElementById('cashierNameInput').value = '';
+    if (document.getElementById('cashierPassNew')) document.getElementById('cashierPassNew').value = '';
     renderAdminCashiers();
 }
 
@@ -2903,10 +2677,10 @@ function deleteCashier(id) {
 }
 
 function updateAllSystemPasswords() {
-    const adminPass = document.getElementById('newAdminPass').value.trim();
-    const costingPass = document.getElementById('newCostingPass').value.trim();
-    const invPass = document.getElementById('newInvPass').value.trim();
-    const cashierPass = document.getElementById('newCashierPass').value.trim();
+    const adminPass = document.getElementById('newAdminPass')?.value.trim();
+    const costingPass = document.getElementById('newCostingPass')?.value.trim();
+    const invPass = document.getElementById('newInvPass')?.value.trim();
+    const cashierPass = document.getElementById('newCashierPass')?.value.trim();
 
     let passes = getData('sys_passwords') || {};
 
@@ -2926,7 +2700,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v23.0-MIM89",
+            version: "v26.0-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
@@ -3040,8 +2814,11 @@ function handleImageUpload(event) {
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            document.getElementById('imgPreview').src = compressedBase64;
-            document.getElementById('itemImage').value = compressedBase64;
+            const preview = document.getElementById('imgPreview');
+            const itemImgInput = document.getElementById('itemImage');
+            
+            if (preview) preview.src = compressedBase64;
+            if (itemImgInput) itemImgInput.value = compressedBase64;
         };
         img.src = e.target.result;
     };
@@ -3049,7 +2826,7 @@ function handleImageUpload(event) {
 }
 
 window.addEventListener('storage', (event) => {
-    if (event.key === 'sys_items' || event.key === 'sys_categories') {
+    if (event.key === 'sys_items' || event.key === 'sys_categories' || event.key === 'mim89_last_menu_update') {
         refreshActiveUI();
     }
 });
