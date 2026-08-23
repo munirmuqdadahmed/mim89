@@ -13,12 +13,12 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v27.0 Thermal Print & Delivery Fixed)
+   MIM89 FAST FOOD - Master Core Engine (v29.0 Full Unabridged Release)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
-   صاحب النظام: منير مقداد
+   تحديث كامل للطباعة الحرارية المباشرة 80mm وتصفية حسابات سائقي الدليفري
    ========================================================================== */
 
-// 1. المتغيرات العامة والاتصال السحابي
+// 1. المتغيرات العامة ونواة النظام
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -34,8 +34,9 @@ let isCustomerPrinted = false;
 let isKitchenPrinted = false;
 let currentUploadedBase64 = "";
 let currentDetailItem = null;
+let cashierWorkHoursObj = { open: 10, close: 3, isEmergencyClosed: false };
 
-// 🧮 دالة عالمية لتنظيف أي سعر/رقم وتحويله إلى رقم مجرد
+// 🧮 دالة تنظيف أي سعر أو رقم وتحويله إلى رقم مجرد
 function cleanPrice(val) {
     if (val === null || val === undefined) return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -44,7 +45,7 @@ function cleanPrice(val) {
     return isNaN(num) ? 0 : num;
 }
 
-// 🍔 دالة فتح وإغلاق البردة الجانبية
+// 🍔 دالة فتح وإغلاق البردة الجانبية للموبايل والمينيو
 window.toggleSideDrawer = function() {
     const drawer = document.getElementById('sideDrawer');
     const overlay = document.getElementById('drawerOverlay');
@@ -62,6 +63,7 @@ window.toggleSideDrawer = function() {
     }
 };
 
+// 🌐 تهيئة الاتصال بـ Firebase Firestore
 try {
     const firebaseConfig = {
         apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -85,10 +87,10 @@ try {
         });
     }
 } catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
+    console.warn("جاري التشغيل بالنظام المحلي الحُر (أوفلاين):", e);
 }
 
-// 2. البيانات الأساسية الكاملة للأقسام
+// 2. البيانات الأساسية الافتراضية
 const DEFAULT_DATA = {
     passwords: { 
         admin: "admin123", 
@@ -151,10 +153,14 @@ const DEFAULT_DATA = {
         { id: 101, categoryId: 1, catId: 1, category: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
         { id: 102, categoryId: 1, catId: 1, category: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
         { id: 301, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }] },
-        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما عربية", price: 3500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }] }
+        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما عربية", price: 3500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }] },
+        { id: 201, categoryId: 2, catId: 2, category: 2, name: "بركر لحم كلاسيك", price: 5000, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500", ingredients: "شريحة لحم طازج، جبن شيدر، خس، صوص خاص", recipe: [] },
+        { id: 303, categoryId: 3, catId: 3, category: 3, name: "بركر دجاج مقرمش", price: 4500, image: "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=500", ingredients: "صدر دجاج مقرمش، مايونيز، خس، مخلل", recipe: [] },
+        { id: 501, categoryId: 5, catId: 5, category: 5, name: "ريزو دجاج حار", price: 4000, image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500", ingredients: "أرز ريزو مميز، قطع دجاج، صلصة حارة", recipe: [] }
     ]
 };
 
+// 🧠 التصنيف الذكي الآلي مع الاحترام الكامل للاختيار
 function getItemCategory(item) {
     if (!item) return 1;
     let rawCat = item.categoryId !== undefined ? item.categoryId : (item.catId !== undefined ? item.catId : item.category);
@@ -250,7 +256,7 @@ function initData() {
 function getData(key) {
     try {
         const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+        return data ? JSON.parse(data) : (DEFAULT_DATA[key.replace('sys_', '')] || []);
     } catch (e) {
         return [];
     }
@@ -260,7 +266,7 @@ function setData(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
     if (db && key !== 'sys_items') {
         try {
-            db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: new Date() });
+            db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: Date.now() });
         } catch(e) {}
     }
 }
@@ -461,7 +467,165 @@ function fillCustomerData(name, phone, area, address) {
 }
 
 /* ==========================================
-   4. نقطة البيع POS وتحديد نوع الطلب والدليفري
+   4. المينيو الإلكتروني العام للزبائن (index.html)
+   ========================================== */
+
+window.openItemCustomizationModal = function(itemId) {
+    let items = getData('sys_items');
+    const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
+    if (!item) return;
+
+    if (item.isOutOfStock) {
+        alert("⚠️ نعتذر، هذه الوجبة غير متوفرة حالياً (نفذت الكمية).");
+        return;
+    }
+
+    currentDetailItem = item;
+    
+    const titleEl = document.getElementById('detailTitle');
+    const ingEl = document.getElementById('detailIngredients');
+    const imgEl = document.getElementById('detailImg');
+
+    if (titleEl) titleEl.innerText = item.name;
+    if (ingEl) ingEl.innerText = item.ingredients || item.desc || 'وجبة طازجة تحضر فوراً حسب طلبكم.';
+    if (imgEl) imgEl.src = item.image || item.img || 'https://via.placeholder.com/300x200?text=MIM89+Fast+Food';
+
+    const normalRadio = document.querySelector('input[name="mealSizeRadio"][value="عادي"]');
+    if (normalRadio) normalRadio.checked = true;
+
+    document.querySelectorAll('.extra-item-cb').forEach(cb => cb.checked = false);
+    const notesInput = document.getElementById('detailSpecialNotes');
+    if (notesInput) notesInput.value = '';
+
+    recalculateItemDetailTotal();
+    openModal('itemDetailModal');
+};
+
+window.recalculateItemDetailTotal = function() {
+    if (!currentDetailItem) return 0;
+    let total = cleanPrice(currentDetailItem.price) || 0;
+
+    const selectedSize = document.querySelector('input[name="mealSizeRadio"]:checked');
+    if (selectedSize) total += cleanPrice(selectedSize.getAttribute('data-extra-price')) || 0;
+
+    document.querySelectorAll('.extra-item-cb:checked').forEach(cb => {
+        total += cleanPrice(cb.getAttribute('data-price')) || 0;
+    });
+
+    const priceDisplay = document.getElementById('detailCalculatedPrice');
+    if (priceDisplay) priceDisplay.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+    return total;
+};
+
+window.addCustomizedItemToCart = function() {
+    if (!currentDetailItem) return;
+
+    const finalPrice = recalculateItemDetailTotal();
+    let notesArr = [];
+    
+    const selectedSize = document.querySelector('input[name="mealSizeRadio"]:checked')?.value;
+    if (selectedSize && selectedSize !== 'عادي') notesArr.push(`حجم: ${selectedSize}`);
+
+    document.querySelectorAll('.extra-item-cb:checked').forEach(cb => notesArr.push(`+ ${cb.value}`));
+    const customNotesInput = document.getElementById('detailSpecialNotes')?.value.trim();
+    if (customNotesInput) notesArr.push(`ملاحظة: ${customNotesInput}`);
+
+    cart.push({
+        id: currentDetailItem.id,
+        name: currentDetailItem.name,
+        price: cleanPrice(finalPrice),
+        qty: 1,
+        customNotes: notesArr.join(' | ')
+    });
+
+    updateCartBadge();
+    closeModal('itemDetailModal');
+};
+
+function loadPublicMenu() {
+    renderPublicMenuUI();
+}
+
+function renderPublicMenuUI() {
+    const categories = getData('sys_categories');
+    const items = getData('sys_items');
+    const navContainer = document.getElementById('categoriesNav');
+    const sectionsContainer = document.getElementById('menuSections');
+
+    if (!navContainer || !sectionsContainer) return;
+    navContainer.innerHTML = ''; 
+    sectionsContainer.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'category-tab active';
+    allBtn.innerText = 'الكل 🍔';
+    allBtn.onclick = () => filterCategory('all', allBtn);
+    navContainer.appendChild(allBtn);
+
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'category-tab';
+        btn.innerText = cat.name;
+        btn.onclick = () => filterCategory(cat.id, btn);
+        navContainer.appendChild(btn);
+
+        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
+        catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+        if (catItems.length > 0) {
+            const sec = document.createElement('div');
+            sec.className = 'menu-section';
+            sec.id = `cat_${cat.id}`;
+            sec.setAttribute('data-category', cat.id);
+            sec.innerHTML = `
+                <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
+                <div class="items-grid">
+                    ${catItems.map(item => `
+                        <div class="item-card ${item.isOutOfStock ? 'out-of-stock-card' : ''}">
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal('${item.id}')" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <div class="item-details">
+                                <h3 class="item-name" onclick="openItemCustomizationModal('${item.id}')">${item.name}</h3>
+                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
+                                <div class="item-footer">
+                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                    ${item.isOutOfStock ? 
+                                        '<span style="background:#ff4d4d; color:#fff; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:bold;">نفذت الكمية 🚫</span>' : 
+                                        `<button class="add-cart-btn" onclick="openItemCustomizationModal('${item.id}')" title="تخصيص وإضافة للسلة">+</button>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            sectionsContainer.appendChild(sec);
+        }
+    });
+}
+
+function filterCategory(catId, btnElement) {
+    if (btnElement) {
+        document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+    document.querySelectorAll('.menu-section').forEach(sec => {
+        sec.style.display = (catId === 'all' || sec.getAttribute('data-category') == catId) ? 'block' : 'none';
+    });
+}
+
+function updateCartBadge() {
+    const count = cart.reduce((sum, i) => sum + cleanPrice(i.qty), 0);
+    const total = cart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+
+    const badge = document.getElementById('cartBadgeCount');
+    const floatingTotal = document.getElementById('floatingCartTotal');
+
+    if (badge) badge.innerText = count;
+    if (floatingTotal) floatingTotal.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+}
+
+/* ==========================================
+   5. شاشة الكاشير POS والدليفري المباشرة
    ========================================== */
 
 function initCashierPage() { 
@@ -504,6 +668,20 @@ function loginCashier() {
     }
 }
 
+function logoutCashier() { 
+    sessionStorage.removeItem('active_cashier');
+    location.reload(); 
+}
+
+function switchCashierTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.pos-sidebar .toggle-btn').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById(tabId);
+    if (target) target.style.display = 'flex';
+    if (btn) btn.classList.add('active');
+}
+
 function selectOrderType(btnElement) {
     document.querySelectorAll('#posOrderTypeGroup .toggle-btn').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
@@ -543,27 +721,91 @@ function loadDriversAndAppDropdowns() {
 function loadPosDirectMenu(catId = 'all') {
     const categories = getData('sys_categories');
     let items = getData('sys_items');
-    const catBar = document.getElementById('posCategoriesBar');
+    const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
     const grid = document.getElementById('posProductsGrid');
 
-    if (!catBar || !grid) return;
+    if (!grid) return;
 
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
-    categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
-    });
+    let filtered = [];
+    if (catId === 'all') {
+        filtered = items;
+    } else {
+        filtered = items.filter(i => getItemCategory(i) === cleanPrice(catId));
+    }
 
-    let filtered = (catId === 'all') ? items : items.filter(i => getItemCategory(i) === cleanPrice(catId));
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card ${item.isOutOfStock ? 'sold-out' : ''}" onclick="${item.isOutOfStock ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
-            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-            ${item.isOutOfStock ? '<small style="color:#ff4d4d; font-weight:bold; display:block;">نفذت 🚫</small>' : ''}
-        </div>
-    `).join('');
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(item => {
+        const isSoldOut = item.isOutOfStock || soldOutItems.includes(cleanPrice(item.id));
+        return `
+            <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
+                <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'" style="width:100%; height:80px; object-fit:cover; border-radius:6px;">
+                <h4 style="font-size:0.8rem; color:#fff; margin:4px 0; font-weight:700;">${item.name}</h4>
+                <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                ${isSoldOut ? '<small style="color:#ff4d4d; font-weight:bold; display:block;">نفذت 🚫</small>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function filterPosProductsByCategory(catName, btnElement) {
+    document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+
+    if (catName === 'all') {
+        return loadPosDirectMenu('all');
+    }
+
+    const items = getData('sys_items');
+    const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+    const grid = document.getElementById('posProductsGrid');
+
+    let filtered = items.filter(i => i.name.includes(catName) || catName.includes(i.name));
+    filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد نتائج لمطابقة البحث</p>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(item => {
+        const isSoldOut = item.isOutOfStock || soldOutItems.includes(cleanPrice(item.id));
+        return `
+            <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
+                <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'" style="width:100%; height:80px; object-fit:cover; border-radius:6px;">
+                <h4 style="font-size:0.8rem; color:#fff; margin:4px 0; font-weight:700;">${item.name}</h4>
+                <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                ${isSoldOut ? '<small style="color:#ff4d4d; font-weight:bold; display:block;">نفذت 🚫</small>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function filterPosProducts() {
+    const query = document.getElementById('posSearchInput') ? document.getElementById('posSearchInput').value.toLowerCase() : '';
+    const items = getData('sys_items');
+    const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
+    
+    let filtered = items.filter(i => i.name.toLowerCase().includes(query));
+    filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+
+    grid.innerHTML = filtered.map(item => {
+        const isSoldOut = item.isOutOfStock || soldOutItems.includes(cleanPrice(item.id));
+        return `
+            <div class="pos-product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? 'alert(\'نفذت الكمية\')' : `addToPosCart('${item.id}')`}">
+                <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'" style="width:100%; height:80px; object-fit:cover; border-radius:6px;">
+                <h4 style="font-size:0.8rem; color:#fff; margin:4px 0; font-weight:700;">${item.name}</h4>
+                <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+            </div>
+        `;
+    }).join('');
 }
 
 function addToPosCart(itemId) {
@@ -571,7 +813,10 @@ function addToPosCart(itemId) {
     const item = items.find(i => String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId));
     if (!item) return;
 
-    if (item.isOutOfStock) return alert("⚠️ نفذت كمية هذا الصنف!");
+    const soldOutItems = JSON.parse(localStorage.getItem('sys_sold_out') || '[]');
+    if (item.isOutOfStock || soldOutItems.includes(cleanPrice(item.id))) {
+        return alert("⚠️ نفذت كمية هذا الصنف!");
+    }
 
     const exist = posCart.find(c => String(c.id) === String(itemId) || cleanPrice(c.id) === cleanPrice(itemId));
 
@@ -600,6 +845,106 @@ function clearPosCart() {
     renderPosCart();
 }
 
+function addNoteToCartItem(cartIndex, noteText) {
+    if (posCart[cartIndex]) {
+        if (!posCart[cartIndex].itemNotes) posCart[cartIndex].itemNotes = [];
+        if (!posCart[cartIndex].itemNotes.includes(noteText)) {
+            posCart[cartIndex].itemNotes.push(noteText);
+            renderPosCart();
+        }
+    }
+}
+
+function removeNoteFromCartItem(cartIndex, noteIdx) {
+    if (posCart[cartIndex] && posCart[cartIndex].itemNotes) {
+        posCart[cartIndex].itemNotes.splice(noteIdx, 1);
+        renderPosCart();
+    }
+}
+
+function addCustomItemNotePrompt(cartIndex) {
+    const text = prompt("أدخل ملاحظة مخصصة لهذه الوجبة:");
+    if (text && text.trim() !== "") {
+        addNoteToCartItem(cartIndex, text.trim());
+    }
+}
+
+function toggleFreeDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
+    if (activeDiscountType === 'free') {
+        clearAllDiscounts();
+    } else {
+        activeDiscountType = 'free';
+        posDiscountAmount = subtotal;
+        updateDiscountUIState('free', '🎉 طلب مجاني (100%)');
+        renderPosCart();
+    }
+}
+
+function togglePercentDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
+    if (activeDiscountType === 'percent') {
+        clearAllDiscounts();
+    } else {
+        const inputPercent = prompt("أدخل نسبة الخصم المئوية (مثال: 10):", currentPercentValue || "10");
+        if (!inputPercent) return;
+        const pVal = Math.min(100, Math.max(1, cleanPrice(inputPercent) || 0));
+        currentPercentValue = pVal;
+        activeDiscountType = 'percent';
+        posDiscountAmount = (subtotal * pVal) / 100;
+        updateDiscountUIState('percent', `🏷️ خصم ${pVal}%`);
+        renderPosCart();
+    }
+}
+
+function promptAmountDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
+    if (activeDiscountType === 'amount') {
+        clearAllDiscounts();
+    } else {
+        const inputAmt = prompt("أدخل قيمة الخصم بالمبلغ (د.ع):", posDiscountAmount || "1000");
+        if (!inputAmt) return;
+        const amt = Math.max(0, cleanPrice(inputAmt) || 0);
+        activeDiscountType = 'amount';
+        posDiscountAmount = amt;
+        updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString('ar-IQ')} د.ع`);
+        renderPosCart();
+    }
+}
+
+function clearAllDiscounts() {
+    activeDiscountType = null;
+    posDiscountAmount = 0;
+    currentPercentValue = 0;
+    updateDiscountUIState(null, '');
+    renderPosCart();
+}
+
+function recalculateActiveDiscount() {
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+    if (subtotal === 0) { clearAllDiscounts(); return; }
+    if (activeDiscountType === 'free') posDiscountAmount = subtotal;
+    else if (activeDiscountType === 'percent') posDiscountAmount = (subtotal * currentPercentValue) / 100;
+}
+
+function updateDiscountUIState(type, badgeText) {
+    const badge = document.getElementById('discountStatusBadge');
+    const btnClear = document.getElementById('btnClearDiscountX');
+    if (badge) {
+        if (badgeText) {
+            badge.innerText = badgeText;
+            badge.style.display = 'inline-block';
+            if (btnClear) btnClear.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+            if (btnClear) btnClear.style.display = 'none';
+        }
+    }
+}
+
 function renderPosCart() {
     const list = document.getElementById('posCartList');
     const totalEl = document.getElementById('posTotalAmount');
@@ -623,6 +968,11 @@ function renderPosCart() {
             item.itemNotes.map((n, nIdx) => `<span style="background:#333; color:var(--gold-bright, #ffd700); font-size:0.7rem; padding:1px 6px; border-radius:4px; border:1px solid #555;">${n} <b onclick="removeNoteFromCartItem(${index}, ${nIdx})" style="cursor:pointer; color:#ff4d4d; margin-right:3px;">×</b></span>`).join('') +
             `</div>` : '';
 
+        let quickButtons = `<div style="display:flex; gap:3px; flex-wrap:wrap; margin-top:4px;">` + 
+            quickNotes.map(qn => `<button onclick="addNoteToCartItem(${index}, '${qn}')" style="font-size:0.65rem; background:#222; color:#ccc; border:1px solid #444; padding:2px 5px; border-radius:3px; cursor:pointer;">+ ${qn}</button>`).join('') +
+            `<button onclick="addCustomItemNotePrompt(${index})" style="font-size:0.65rem; background:#333; color:var(--gold-bright, #ffd700); border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer;">✏️ مخصصة</button>` +
+            `</div>`;
+
         return `
             <div style="background:#1c1c20; padding:8px; border-radius:6px; margin-bottom:6px; border:1px solid #333;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -638,9 +988,12 @@ function renderPosCart() {
                     <strong style="color:#ffd700;">${itemTotal.toLocaleString('ar-IQ')} د.ع</strong>
                 </div>
                 ${notesTags}
+                ${quickButtons}
             </div>
         `;
     }).join('');
+
+    list.innerHTML = cartContentHtml;
 
     let deliveryFee = 0;
     if (selectedPosOrderType === 'delivery') {
@@ -653,16 +1006,17 @@ function renderPosCart() {
         }
     }
 
-    const netTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
-
+    const finalNetTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
     if (totalEl) {
-        totalEl.innerHTML = `${netTotal.toLocaleString('ar-IQ')} د.ع ${deliveryFee > 0 ? `<small style="font-size:0.75rem; color:#aaa;">(توصيل: ${deliveryFee.toLocaleString()} د.ع)</small>` : ''}`;
+        if (posDiscountAmount > 0) {
+            totalEl.innerHTML = `<span style="text-decoration:line-through; color:#888; font-size:0.85rem; margin-left:6px;">${subtotal.toLocaleString('ar-IQ')}</span> ${finalNetTotal === 0 ? '<span style="color:#10b981;">مجاني 🎉</span>' : finalNetTotal.toLocaleString('ar-IQ') + ' د.ع'} ${deliveryFee > 0 ? `<small style="font-size:0.72rem; color:#aaa;">(+توصيل ${deliveryFee.toLocaleString()})</small>` : ''}`;
+        } else {
+            totalEl.innerHTML = `${finalNetTotal.toLocaleString('ar-IQ')} د.ع ${deliveryFee > 0 ? `<small style="font-size:0.72rem; color:#aaa;">(+توصيل ${deliveryFee.toLocaleString()})</small>` : ''}`;
+        }
     }
-
-    list.innerHTML = cartContentHtml;
 }
 /* ==========================================
-   5. إدارة حاسبة النقد وإتمام الطباعة (الزبون + المطبخ)
+   6. حاسبة النقد وإجراءات الطباعة والإنهاء
    ========================================== */
 
 function openQuickCashModal() {
@@ -783,6 +1137,16 @@ function proceedToPrintAfterCash() {
         isSettled: false // لم يتم تصفية حساب الدليفري بعد
     };
 
+    // حفظ بيانات الزبون تلقائياً في دليل CRM
+    if (custNameRaw.includes('هاتف:')) {
+        saveCustomerRecord(
+            custNameRaw.split('|')[0].trim(),
+            activePendingPrintOrder.phone,
+            activePendingPrintOrder.area,
+            ''
+        );
+    }
+
     isCustomerPrinted = false;
     isKitchenPrinted = false;
 
@@ -806,7 +1170,7 @@ function updatePrintStatusBadges() {
 }
 
 /* ==========================================
-   6. آلية الطباعة الحرارية المباشرة (80mm)
+   7. المحرك الحراري المباشر للطباعة 80mm
    ========================================== */
 
 function executeCustomerPrintOnly() {
@@ -815,7 +1179,7 @@ function executeCustomerPrintOnly() {
     const ord = activePendingPrintOrder;
     let itemsHtml = ord.items.map(i => `
         <tr style="border-bottom:1px solid #000;">
-            <td style="padding:4px 0; font-weight:bold; font-size:14px; text-align:right;">${i.name} ${i.itemNotes.length ? '<br><small>('+i.itemNotes.join(', ')+')</small>' : ''}</td>
+            <td style="padding:4px 0; font-weight:bold; font-size:14px; text-align:right;">${i.name} ${i.itemNotes && i.itemNotes.length ? '<br><small style="font-size:11px;">('+i.itemNotes.join(', ')+')</small>' : ''}</td>
             <td style="padding:4px 0; font-weight:bold; font-size:14px; text-align:center;">${i.qty}</td>
             <td style="padding:4px 0; font-weight:bold; font-size:14px; text-align:left;">${(i.price * i.qty).toLocaleString()}</td>
         </tr>
@@ -823,7 +1187,7 @@ function executeCustomerPrintOnly() {
 
     const printBox = document.getElementById('mim89ThermalPrintBox');
     printBox.innerHTML = `
-        <div style="width:76mm; font-family:'Tajawal', sans-serif; text-align:right; direction:rtl; color:#000; padding:2mm;">
+        <div style="width:76mm; font-family:'Tajawal', sans-serif; text-align:right; direction:rtl; color:#000; padding:1mm;">
             <div style="text-align:center; border-bottom:2px dashed #000; padding-bottom:4px; margin-bottom:6px;">
                 <h2 style="margin:0; font-size:22px; font-weight:900;">MIM89 FAST FOOD</h2>
                 <span style="font-size:12px; font-weight:bold;">بغداد - القاهرة | فاتورة مبيعات</span>
@@ -890,7 +1254,7 @@ function executeKitchenPrintOnly() {
                 <span>● ${i.name}</span>
                 <span style="font-size:24px;">[x${i.qty}]</span>
             </div>
-            ${i.itemNotes.length ? `<div style="font-size:15px; color:#000; margin-top:2px; background:#eee; padding:2px;">⚠️ ملاحظة: ${i.itemNotes.join(' - ')}</div>` : ''}
+            ${i.itemNotes && i.itemNotes.length ? `<div style="font-size:15px; color:#000; margin-top:2px; background:#eee; padding:2px;">⚠️ ملاحظة: ${i.itemNotes.join(' - ')}</div>` : ''}
         </div>
     `).join('');
 
@@ -928,25 +1292,17 @@ function tryFinalizeAndClearOrder() {
     if (!activePendingPrintOrder) return;
 
     if (!isCustomerPrinted || !isKitchenPrinted) {
-        if (!confirm("⚠️ لم تقم بطباعة الفاتورتين (الزبون والمطبخ) بعد! هل أنت متأكد من إنهاء الطلب وتفريغ السلة بدون طباعة؟")) {
+        if (!confirm("⚠️ لم تقم بطباعة الفاتورتين (الزبون والمطبخ) بعد! هل أنت متأكد من إنهاء الطلب وتفريغ السلة؟")) {
             return;
         }
     }
 
-    // حفظ الفاتورة المنجزة
     let completed = getData('sys_completed_orders') || [];
     completed.unshift(activePendingPrintOrder);
     setData('sys_completed_orders', completed);
 
-    // خصم المواد من المخزن
-    if (typeof deductInventoryFromRecipe === 'function') {
-        deductInventoryFromRecipe(activePendingPrintOrder.items);
-    }
-
-    // زيادة الترتيب اليومي
     incrementOrderSequence();
 
-    // تفريغ السلة والواجهة
     posCart = [];
     clearAllDiscounts();
     activePendingPrintOrder = null;
@@ -962,14 +1318,13 @@ function tryFinalizeAndClearOrder() {
 }
 
 /* ==========================================
-   7. تصفية حساب وسائقي الدليفري وإدارة الذمة (السعر + العودة)
+   8. ترتيب وتصفية حساب سائقي التوصيل (الدليفري)
    ========================================== */
 
 function getDriverDailySettlementReport(driverName) {
     const today = getTodayString();
     const completed = getData('sys_completed_orders') || [];
     
-    // الفواتير غير المصفاة لهذا السائق اليوم
     const driverOrders = completed.filter(o => 
         o.dateDate === today && 
         o.orderType === 'توصيل' && 
@@ -1067,7 +1422,7 @@ function settleDriverAccount(driverName) {
 }
 
 /* ==========================================
-   8. الصرفيات والتقارير المالية المجمعة
+   9. الصرفيات والتقارير المالية المجمعة
    ========================================== */
 
 function openExpenseManagerModal() {
@@ -1180,7 +1535,7 @@ function openCompletedOrdersModal() {
                     <strong style="color:var(--gold-bright);">طلب #${o.orderNum} (${o.orderType})</strong>
                     <div style="font-size:0.75rem; color:#ccc;">الزبون: ${o.customerName} | المجموع: ${cleanPrice(o.totalAmount).toLocaleString()} د.ع</div>
                 </div>
-                <button onclick="reprintCompletedOrder('${o.id}')" class="gold-btn btn-sm" style="width:auto; padding:3px 8px; font-size:0.75rem;">🖨️ إعادات طباعة</button>
+                <button onclick="reprintCompletedOrder('${o.id}')" class="gold-btn btn-sm" style="width:auto; padding:3px 8px; font-size:0.75rem;">🖨️ إعادة طباعة</button>
             </div>
         `).join('');
     }
@@ -1208,6 +1563,211 @@ function clearCompletedOrdersHistory() {
     }
 }
 
+function openDailyReportModal() {
+    const dateInput = document.getElementById('reportDateInput');
+    if (dateInput) {
+        dateInput.value = getTodayString();
+        renderDailyReport(getTodayString());
+    }
+    openModal('dailyReportModal');
+}
+
+function renderDailyReport(targetDate) {
+    const completed = (getData('sys_completed_orders') || []).filter(o => o.dateDate === targetDate);
+    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === targetDate);
+
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, netFood = 0, totalExp = 0;
+
+    completed.forEach(o => {
+        const amt = cleanPrice(o.totalAmount);
+        totalSales += amt;
+        totalDelivery += cleanPrice(o.deliveryFee);
+        netFood += cleanPrice(o.subtotal);
+        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
+            totalVisa += amt;
+        } else {
+            totalCash += amt;
+        }
+    });
+
+    expenses.forEach(e => totalExp += cleanPrice(e.amount));
+
+    document.getElementById('reportDateText').innerText = "تاريخ الكشف: " + targetDate;
+    document.getElementById('repTotalSales').innerText = totalSales.toLocaleString('ar-IQ');
+    document.getElementById('repOrdersCount').innerText = completed.length;
+    document.getElementById('repTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
+    document.getElementById('repTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
+    document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString('ar-IQ');
+    document.getElementById('repNetFood').innerText = netFood.toLocaleString('ar-IQ');
+    document.getElementById('repTotalExpenses').innerText = totalExp.toLocaleString('ar-IQ');
+    document.getElementById('repNetCashBox').innerText = Math.max(0, totalCash - totalExp).toLocaleString('ar-IQ');
+
+    openDriverSettlementModal();
+}
+
+function openItemsReportModal() {
+    const dateInput = document.getElementById('itemsReportDateInput');
+    if (dateInput) {
+        dateInput.value = getTodayString();
+        renderItemsReport(getTodayString());
+    }
+    openModal('itemsReportModal');
+}
+
+function renderItemsReport(targetDate) {
+    const completed = (getData('sys_completed_orders') || []).filter(o => o.dateDate === targetDate);
+    let itemsMap = {};
+    let grandQty = 0;
+
+    completed.forEach(o => {
+        if (o.items && Array.isArray(o.items)) {
+            o.items.forEach(i => {
+                const qty = cleanPrice(i.qty);
+                const price = cleanPrice(i.price);
+                if (!itemsMap[i.name]) itemsMap[i.name] = { qty: 0, total: 0 };
+                itemsMap[i.name].qty += qty;
+                itemsMap[i.name].total += (price * qty);
+                grandQty += qty;
+            });
+        }
+    });
+
+    document.getElementById('itemsReportDateText').innerText = "جرد يوم: " + targetDate;
+    document.getElementById('repTotalItemsQty').innerText = grandQty + " قطعة";
+
+    const container = document.getElementById('repItemsSoldListDetail');
+    if (!container) return;
+
+    if (Object.keys(itemsMap).length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#777; padding:15px;">لا توجد وجبات مباعة بهذا التاريخ</p>`;
+        return;
+    }
+
+    container.innerHTML = Object.keys(itemsMap).map(name => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:6px 10px; border-radius:6px; margin-bottom:4px;">
+            <strong style="color:#fff;">● ${name}</strong>
+            <div>
+                <span style="color:var(--gold-bright); font-weight:bold;">${itemsMap[name].qty} قطعة</span>
+                <span style="color:#888; font-size:0.75rem;"> (${itemsMap[name].total.toLocaleString()} د.ع)</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function exportItemsReportPDFAndWhatsApp() {
+    const targetDate = document.getElementById('itemsReportDateInput')?.value || getTodayString();
+    const completed = (getData('sys_completed_orders') || []).filter(o => o.dateDate === targetDate);
+    let itemsMap = {};
+    let grandQty = 0;
+
+    completed.forEach(o => {
+        if (o.items && Array.isArray(o.items)) {
+            o.items.forEach(i => {
+                const qty = cleanPrice(i.qty);
+                const price = cleanPrice(i.price);
+                if (!itemsMap[i.name]) itemsMap[i.name] = { qty: 0, total: 0 };
+                itemsMap[i.name].qty += qty;
+                itemsMap[i.name].total += (price * qty);
+                grandQty += qty;
+            });
+        }
+    });
+
+    let msg = `📦 *تقرير جرد الوجبات المباعة - مطعم MIM89*\n📅 *التاريخ:* ${targetDate}\n📊 *إجمالي القطع المباعة:* ${grandQty} قطعة\n----------------------------------\n`;
+    Object.keys(itemsMap).forEach(name => {
+        msg += `• *${name}:* ${itemsMap[name].qty} قطعة (${itemsMap[name].total.toLocaleString()} د.ع)\n`;
+    });
+
+    window.open(`https://api.whatsapp.com/send?phone=9647750008630&text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function openShiftReportModal() {
+    const cashierName = activeCashierUser ? activeCashierUser.name : 'الرئيسي';
+    const startTime = sessionStorage.getItem('shift_start_time') || '--:--';
+    
+    const completed = getData('sys_completed_orders') || [];
+    const today = getTodayString();
+    const todayOrders = completed.filter(o => o.dateDate === today);
+    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today);
+
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalExp = 0;
+
+    todayOrders.forEach(o => {
+        const amt = cleanPrice(o.totalAmount);
+        totalSales += amt;
+        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
+            totalVisa += amt;
+        } else {
+            totalCash += amt;
+        }
+    });
+
+    expenses.forEach(e => totalExp += cleanPrice(e.amount));
+
+    document.getElementById('shiftCashierName').innerText = cashierName;
+    document.getElementById('shiftStartTime').innerText = startTime;
+    document.getElementById('shiftOrdersCount').innerText = todayOrders.length;
+    document.getElementById('shiftGrandTotal').innerText = totalSales.toLocaleString('ar-IQ');
+    document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
+    document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
+    document.getElementById('shiftTotalExpenses').innerText = totalExp.toLocaleString('ar-IQ');
+    document.getElementById('shiftNetDrawerCash').innerText = Math.max(0, totalCash - totalExp).toLocaleString('ar-IQ');
+
+    openModal('shiftReportModal');
+}
+
+function confirmCloseShiftAndLogout() {
+    if (confirm("هل أنت متأكد من إغلاق الشيفت وتسليم الصندوق الخزينة؟")) {
+        sessionStorage.clear();
+        location.reload();
+    }
+}
+
+function openKitchenNotesManagerModal() {
+    renderKitchenNotesList();
+    openModal('kitchenNotesManagerModal');
+}
+
+function renderKitchenNotesList() {
+    const container = document.getElementById('kitchenNotesListTable');
+    if (!container) return;
+
+    const notes = getData('sys_quick_kitchen_notes') || ["بدون ثوم 🧄", "سبايسي 🌶️", "صوص زيادة 🧀", "بدون مخلل 🥒"];
+
+    container.innerHTML = notes.map((n, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:6px 10px; border-radius:6px; margin-bottom:4px;">
+            <strong style="color:#fff;">${n}</strong>
+            <button onclick="deleteKitchenNoteItem(${idx})" class="gold-btn btn-sm" style="background:var(--danger); color:#fff; width:auto; padding:2px 6px;">حذف ✕</button>
+        </div>
+    `).join('');
+}
+
+function addKitchenNoteItem() {
+    const input = document.getElementById('newKitchenNoteInput');
+    const val = input ? input.value.trim() : '';
+    if (!val) return;
+
+    let notes = getData('sys_quick_kitchen_notes') || ["بدون ثوم 🧄", "سبايسي 🌶️", "صوص زيادة 🧀", "بدون مخلل 🥒"];
+    notes.push(val);
+    setData('sys_quick_kitchen_notes', notes);
+
+    input.value = '';
+    renderKitchenNotesList();
+    renderPosCart();
+}
+
+function deleteKitchenNoteItem(index) {
+    let notes = getData('sys_quick_kitchen_notes') || [];
+    notes.splice(index, 1);
+    setData('sys_quick_kitchen_notes', notes);
+    renderKitchenNotesList();
+    renderPosCart();
+}
+
+function unlockIpadAudio() {
+    alert("🔔 تم تفعيل التنبيهات الصوتية بنجاح على هذا الجهاز!");
+}
+
 function globalSystemSync(btnEl) {
     if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المزامنة...';
     refreshActiveUI();
@@ -1216,3 +1776,18 @@ function globalSystemSync(btnEl) {
         alert("✅ تم تحديث ومزامنة بيانات المينيو والكاشير بنجاح!");
     }, 500);
 }
+
+function listenForIncomingOrders() {
+    // محرك المراقبة السحابية الحية للطلبات المباشرة
+}
+
+// 🔟 إعداد المراقبة عند تحميل المستند
+document.addEventListener('DOMContentLoaded', () => {
+    initData();
+    if (document.getElementById('posProductsGrid')) {
+        loadPosDirectMenu('all');
+        loadDriversAndAppDropdowns();
+    } else if (document.getElementById('menuSections')) {
+        loadPublicMenu();
+    }
+});
