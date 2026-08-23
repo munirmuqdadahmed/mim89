@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Complete Master Style Sheet (v24.0)
+   MIM89 FAST FOOD - Complete Master Style Sheet (v25.0)
    (Direct Wrap Categories Display & iPad POS Thermal Print Optimized)
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -17,6 +17,8 @@
     --text-muted: #9ca3af;
     --danger-red: #ef4444;
     --success-green: #10b981;
+    --blue-accent: #38bdf8;
+    --purple-accent: #c084fc;
 }
 
 * {
@@ -44,6 +46,13 @@ body {
     overflow: hidden;
     position: relative;
     user-select: none;
+}
+
+body.public-menu-body {
+    height: auto !important;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto !important;
 }
 
 .container {
@@ -295,7 +304,7 @@ body {
     border: 1px solid var(--card-border);
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-    width: 180px;
+    width: 280px;
     z-index: 200;
     overflow: hidden;
 }
@@ -308,6 +317,7 @@ body {
     color: #fff;
     text-align: right;
     font-size: 0.85rem;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -322,26 +332,26 @@ body {
 /* 6. شريط التنبيهات للطلبات الجديدة والمكالمات الواردة */
 #pendingOrdersAlertBanner {
     display: none;
-    background: var(--danger-red);
-    color: #fff;
+    background: var(--gold-primary);
+    color: #000;
     padding: 8px 12px;
     text-align: center;
-    font-weight: bold;
-    font-size: 0.85rem;
+    font-weight: 900;
+    font-size: 0.88rem;
     cursor: pointer;
     flex-shrink: 0;
     animation: pulse 1s infinite alternate;
 }
 
 @keyframes pulse {
-    from { background-color: #dc2626; }
-    to { background-color: #ef4444; box-shadow: 0 0 12px #ef4444; }
+    from { background-color: var(--gold-primary); }
+    to { background-color: var(--gold-bright); box-shadow: 0 0 12px var(--gold-bright); }
 }
 
-/* 🍔 7. التبويبات وشريط الأقسام المباشر المكشوف بالكامل بدون تحريك */
+/* 🍔 7. التبويبات وشريط الأقسام المباشر */
 .admin-tabs, .categories-container, .categories-bar {
     display: flex !important;
-    flex-wrap: wrap !important; /* التفاف تلقائي لأسطر متعددة لظهور كافة الأقسام مباشرة */
+    flex-wrap: wrap !important;
     gap: 8px !important;
     padding: 4px 2px 10px 2px !important;
     margin-bottom: 12px !important;
@@ -373,6 +383,21 @@ body {
     font-weight: 900 !important;
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
+
+.categories-sticky-bar {
+    position: sticky;
+    top: 0;
+    background: rgba(7, 7, 9, 0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--card-border);
+    scrollbar-width: none;
+}
+.categories-sticky-bar::-webkit-scrollbar { display: none; }
 
 .tab-content {
     display: none;
@@ -454,6 +479,20 @@ body {
     transition: border-color 0.2s;
 }
 
+.item-card.sold-out { opacity: 0.65; filter: grayscale(0.4); }
+
+.sold-out-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--danger-red);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 14px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    z-index: 10;
+}
+
 .item-card:hover, .pos-product-card:hover {
     border-color: var(--gold-primary);
 }
@@ -507,7 +546,7 @@ body {
 
 .pos-container, .pos-responsive-grid {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 380px 1fr;
     gap: 0;
     flex-grow: 1;
     height: calc(100% - 52px);
@@ -601,6 +640,7 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     z-index: 1000;
     align-items: center;
     justify-content: center;
@@ -609,11 +649,11 @@ body {
 
 .modal-content, .modal-body {
     background: var(--card-bg);
-    border: 1px solid var(--card-border);
+    border: 1px solid var(--gold-primary);
     border-radius: 12px;
     padding: 20px;
     width: 100%;
-    max-width: 500px;
+    max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
@@ -626,7 +666,7 @@ body {
     margin-top: 10px;
 }
 
-/* 🖨️ 12. قواعد الطباعة الحرارية الصارمة المحسّنة */
+/* 🖨️ 12. قواعد الطباعة الحرارية المحسّنة لطابعة الفواتير (80mm) */
 #mim89ThermalPrintBox {
     display: none;
 }
@@ -634,7 +674,7 @@ body {
 @media print {
     @page {
         size: 80mm auto;
-        margin: 0;
+        margin: 0mm !important;
     }
 
     body {
@@ -642,9 +682,11 @@ body {
         color: #000000 !important;
         overflow: visible !important;
         height: auto !important;
+        width: 78mm !important;
+        font-family: 'Tajawal', Arial, sans-serif !important;
     }
 
-    body > *:not(#mim89ThermalPrintBox):not(#receiptModal):not(#dailyReportModal) {
+    body > *:not(#mim89ThermalPrintBox) {
         display: none !important;
     }
 
@@ -655,10 +697,9 @@ body {
         top: 0 !important;
         width: 76mm !important;
         margin: 0 auto !important;
-        padding: 2mm !important;
+        padding: 1mm 2mm !important;
         background: #ffffff !important;
         color: #000000 !important;
-        font-family: 'Tajawal', Arial, sans-serif !important;
         visibility: visible !important;
     }
 
@@ -666,6 +707,49 @@ body {
         color: #000000 !important;
         background: transparent !important;
         visibility: visible !important;
+        font-weight: 900 !important;
+    }
+
+    /* تكبير وتبريز العناصر الهامة في الفاتورة الحرارية */
+    .thermal-receipt-header {
+        text-align: center;
+        border-bottom: 2px dashed #000;
+        padding-bottom: 6px;
+        margin-bottom: 6px;
+    }
+
+    .thermal-order-id {
+        font-size: 42px !important;
+        font-weight: 900 !important;
+        text-align: center;
+        margin: 4px 0;
+        letter-spacing: 1px;
+    }
+
+    .thermal-service-type {
+        font-size: 20px !important;
+        font-weight: 900 !important;
+        text-align: center;
+        border: 2px solid #000;
+        padding: 4px;
+        margin: 4px 0;
+    }
+
+    .thermal-item-row {
+        font-size: 16px !important;
+        font-weight: 800 !important;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .thermal-total-price {
+        font-size: 22px !important;
+        font-weight: 900 !important;
+        text-align: left;
+        border-top: 2px solid #000;
+        padding-top: 4px;
+        margin-top: 6px;
     }
 
     .no-print {
