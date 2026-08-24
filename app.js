@@ -336,6 +336,7 @@ function calculateItemCost(item) {
     return totalCost;
 }
 
+// 🔄 المزامنة اللحظية الحية بين الادارة والمينيو والكاشير
 function setupCloudRealtimeSync() {
     if (!db) return;
 
@@ -351,22 +352,18 @@ function setupCloudRealtimeSync() {
                     categoryId: cleanPrice(data.categoryId || data.catId || data.category || 1)
                 });
             });
-            if (cloudItems.length > 0) {
-                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+            
+            // تحديث التخزين المحلي فوراً بالبيانات الجديدة من السحابة
+            localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+            
+            // إعادة رسم الشاشة الحالية فوراً
+            if (typeof refreshActiveUI === 'function') {
                 refreshActiveUI();
             }
         }
-    }, err => console.log("Menu sync fallback:", err));
-
-    db.collection("customers").onSnapshot(snapshot => {
-        if (!snapshot.empty) {
-            let cloudCustomers = [];
-            snapshot.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
-            setData('sys_customers', cloudCustomers);
-            if (document.getElementById('adminCustomersTableBody')) renderAdminCustomers();
-        }
-    }, err => console.log("Customers sync fallback:", err));
+    }, err => console.log("خطأ بالمزامنة السحابية:", err));
 }
+
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
 const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
@@ -2603,6 +2600,7 @@ function renderAdminCategories() {
     ).join('');
 }
 
+// 💾 حفظ وتعديل الصنف مع البث السحابي المباشر لكل الأجهزة
 function saveItem() {
     const editId = document.getElementById('editItemId')?.value;
     const id = editId ? String(editId) : 'item_' + Date.now();
@@ -2630,27 +2628,38 @@ function saveItem() {
         updatedAt: Date.now()
     };
 
+    // 1. التحديث المحلي
     let items = getData('sys_items') || [];
     const index = items.findIndex(i => String(i.id) === String(id) || String(i.docId) === String(id));
-
     if (index !== -1) {
         items[index] = itemData;
     } else {
         items.unshift(itemData);
     }
-
     localStorage.setItem('sys_items', JSON.stringify(items));
 
+    // 2. الرفع المباشر لـ Firebase لتحديث mim89.com والكاشير في نفس اللحظة
     if (db) {
         db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => console.log("✅ تم التحديث السحابي الموحد"))
-            .catch(e => console.error("❌ خطأ حفظ الفايربيس:", e));
+            .then(() => {
+                console.log("✅ تم البث السحابي بنجاح إلى mim89.com");
+                // إرسال إشارة إجبارية للتحديث
+                localStorage.setItem('mim89_last_menu_update', Date.now());
+                refreshActiveUI();
+                resetItemForm();
+                alert("🎉 تم حفظ الصنف وتحديث المينيو والكاشير والموقع أونلاين فوراً!");
+            })
+            .catch(e => {
+                console.error("❌ خطأ بالرفع السحابي:", e);
+                alert("تم الحفظ محلياً فقط، تحقق من الاتصال بالإنترنت.");
+            });
+    } else {
+        refreshActiveUI();
+        resetItemForm();
+        alert("تم الحفظ محلياً.");
     }
-
-    resetItemForm();
-    notifyMenuUpdated();
-    alert("✅ تم حفظ الصنف بنجاح وتحديث كافة الشاشات!");
 }
+
 
 function editItem(id) {
     const items = getData('sys_items') || [];
