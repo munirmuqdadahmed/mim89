@@ -1572,30 +1572,43 @@ function tryFinalizeAndClearOrder() {
     if (!activePendingPrintOrder) return;
 
     if (!isCustomerPrinted || !isKitchenPrinted) {
-        if (!confirm("⚠️ لم تقم بطباعة الفاتورتين (الزبون والمطبخ) بعد! هل أنت متأكد من إنهاء الطلب وتفريغ السلة؟")) {
-            return;
-        }
+        if (!confirm("⚠️ لم تقم بطباعة الفاتورتين! هل تريد إنهاء الطلب وتفريغ السلة؟")) return;
     }
 
-    let completed = getData('sys_completed_orders') || [];
+    // حساب رقم الطلب اللحظي من أعلى رقم مطبوع اليوم + 1
+    const completed = getData('sys_completed_orders') || [];
+    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
+    let maxNum = 0;
+    todayOrders.forEach(o => {
+        const num = cleanPrice(o.orderNum || o.orderNumber);
+        if (num > maxNum) maxNum = num;
+    });
+    activePendingPrintOrder.orderNum = maxNum > 0 ? maxNum + 1 : 101;
+
+    // حفظ الفاتورة
     completed.unshift(activePendingPrintOrder);
     setData('sys_completed_orders', completed);
 
-    incrementOrderSequence();
-
+    // 🧹 تفريغ السلة والمتغيرات بالكامل (Hard Clear)
     posCart = [];
-    clearAllDiscounts();
+    activeDiscountType = null;
+    posDiscountAmount = 0;
     activePendingPrintOrder = null;
     isCustomerPrinted = false;
     isKitchenPrinted = false;
 
-    const custInput = document.getElementById('posCustName');
-    if (custInput) custInput.value = '';
+    // تصفيرة الحقول
+    if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
+    if (document.getElementById('posOrderNotesInput')) document.getElementById('posOrderNotesInput').value = '';
+    if (document.getElementById('cashGivenInput')) document.getElementById('cashGivenInput').value = '';
 
     renderPosCart();
     closeModal('printOptionsModal');
-    alert("🎉 تم إتمام وسحب الطلب بنجاح وتوثيقه في الصندوق!");
+    if (typeof renderDrawerDriverSettlement === 'function') renderDrawerDriverSettlement();
+
+    alert("🎉 تم إتمام الطلب وتفريغ السلة بالكامل!");
 }
+
 /* ==========================================================================
    MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 3)
    ========================================================================== */
@@ -2932,3 +2945,64 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
+function renderDrawerDriverSettlement() {
+    const container = document.getElementById('drawerDeliverySettlementBox');
+    if (!container) return;
+
+    const drivers = getData('sys_drivers') || [];
+    const completed = getData('sys_completed_orders') || [];
+    const today = getTodayString();
+
+    let html = `<h4 style="color:var(--gold-primary); font-size:0.88rem; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">🛵 حسابات السائقين المعلقة:</h4>`;
+    let hasOrders = false;
+
+    drivers.forEach(drv => {
+        const driverOrders = completed.filter(o => o.dateDate === today && o.orderType === 'توصيل' && o.driverName === drv.name && !o.isSettled);
+
+        if (driverOrders.length > 0) {
+            hasOrders = true;
+            let totalCollected = 0, totalDelivery = 0;
+            driverOrders.forEach(o => {
+                totalCollected += cleanPrice(o.totalAmount);
+                totalDelivery += cleanPrice(o.deliveryFee);
+            });
+            const netBox = totalCollected - totalDelivery;
+
+            html += `
+                <div style="background:#1c1c24; border:1px solid #444; border-radius:6px; padding:6px; margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#fff;">
+                        <strong>👤 ${drv.name}</strong>
+                        <span style="background:#ff4d4d; color:#fff; padding:1px 4px; border-radius:3px; font-size:0.7rem;">${driverOrders.length} طلبات</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#aaa; margin:4px 0;">
+                        المقبوض: ${totalCollected.toLocaleString()} | التوصيل: ${totalDelivery.toLocaleString()}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #444; padding-top:4px;">
+                        <strong style="color:var(--success); font-size:0.8rem;">الصافي: ${netBox.toLocaleString()} د.ع</strong>
+                        <button onclick="confirmDriverSettlement('${drv.name}')" style="background:var(--success); color:#fff; border:none; padding:3px 8px; border-radius:4px; font-size:0.72rem; cursor:pointer; font-weight:bold;">✅ تصفية</button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    if (!hasOrders) {
+        html += `<p style="color:#777; font-size:0.75rem; text-align:center; margin:0;">لا توجد حسابات معلقة للسائقين حالياً</p>`;
+    }
+    container.innerHTML = html;
+}
+
+function confirmDriverSettlement(driverName) {
+    if (confirm(`هل تم استلام المبالغ وتصفية ذمة السائق (${driverName})؟`)) {
+        let completed = getData('sys_completed_orders') || [];
+        const today = getTodayString();
+        completed.forEach(o => {
+            if (o.dateDate === today && o.driverName === driverName && !o.isSettled) {
+                o.isSettled = true;
+            }
+        });
+        setData('sys_completed_orders', completed);
+        renderDrawerDriverSettlement();
+        alert(`✅ تم تصفية حساب السائق (${driverName}) بنجاح!`);
+    }
+}
