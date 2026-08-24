@@ -46,48 +46,46 @@ function cleanPrice(val) {
     return isNaN(num) ? 0 : num;
 }
 
-// 🍔 دالة فتح وإغلاق البردة الجانبية
-window.toggleSideDrawer = function() {
-    const drawer = document.getElementById('sideDrawer');
-    const overlay = document.getElementById('drawerOverlay');
-    if (!drawer || !overlay) return;
+// 🗂️ توحيد شريط الأقسام للكاشير والمينيو والإدارة ديناميكياً
+function renderPosCategoriesBar() {
+    const catBar = document.getElementById('posCategoriesBar');
+    if (!catBar) return;
 
-    if (drawer.classList.contains('active')) {
-        drawer.classList.remove('active');
-        overlay.classList.remove('active');
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    const categories = getData('sys_categories') || [];
+    let html = `<button class="category-tab active" onclick="loadPosDirectMenu('all', this)">الكل 🍔</button>`;
+    categories.forEach(c => {
+        html += `<button class="category-tab" onclick="loadPosDirectMenu('${c.id}', this)">${c.name}</button>`;
+    });
+    catBar.innerHTML = html;
+}
+
+function loadPosDirectMenu(catId = 'all', btnElement = null) {
+    if (btnElement) {
+        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
     } else {
-        overlay.style.display = 'block';
-        void drawer.offsetWidth;
-        drawer.classList.add('active');
-        overlay.classList.add('active');
+        renderPosCategoriesBar();
     }
-};
 
-try {
-    const firebaseConfig = {
-        apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
-        authDomain: "mim89-ff938.firebaseapp.com",
-        projectId: "mim89-ff938",
-        storageBucket: "mim89-ff938.firebasestorage.app",
-        messagingSenderId: "8207632733",
-        appId: "1:8207632733:web:49cd53fe5dbf26216b80b4",
-        measurementId: "G-D9GK0G77ZD"
-    };
+    const items = getData('sys_items') || [];
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
 
-    if (typeof firebase !== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        db = firebase.firestore();
-        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
+    let filtered = (catId === 'all') ? items : items.filter(i => String(getItemCategory(i)) === String(catId));
+    filtered.sort((a, b) => cleanPrice(a.price) - cleanPrice(b.price));
 
-        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
-        });
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
+        return;
     }
-} catch (e) {
-    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
+
+    grid.innerHTML = filtered.map(item => `
+        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
+            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
+            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
+            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+        </div>
+    `).join('');
 }
 
 /* ==========================================
@@ -1039,27 +1037,33 @@ function loadDriversAndAppDropdowns() {
     `;
 }
 
-function loadPosDirectMenu(catId = 'all') {
-    const categories = getData('sys_categories');
-    let items = getData('sys_items');
+// 🗂️ توحيد شريط الأقسام للكاشير والمينيو والإدارة ديناميكياً
+function renderPosCategoriesBar() {
     const catBar = document.getElementById('posCategoriesBar');
-    const grid = document.getElementById('posProductsGrid');
+    if (!catBar) return;
 
-    if (!catBar || !grid) return;
-
-    catBar.innerHTML = `<button class="category-tab ${catId === 'all' ? 'active' : ''}" onclick="loadPosDirectMenu('all')">الكل 🍔</button>`;
+    const categories = getData('sys_categories') || [];
+    let html = `<button class="category-tab active" onclick="loadPosDirectMenu('all', this)">الكل 🍔</button>`;
     categories.forEach(c => {
-        catBar.innerHTML += `<button class="category-tab ${catId == c.id ? 'active' : ''}" onclick="loadPosDirectMenu('${c.id}')">${c.name}</button>`;
+        html += `<button class="category-tab" onclick="loadPosDirectMenu('${c.id}', this)">${c.name}</button>`;
     });
+    catBar.innerHTML = html;
+}
 
-    let filtered = [];
-    if (catId === 'all') {
-        filtered = items;
+function loadPosDirectMenu(catId = 'all', btnElement = null) {
+    if (btnElement) {
+        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
     } else {
-        filtered = items.filter(i => getItemCategory(i) === cleanPrice(catId));
+        renderPosCategoriesBar();
     }
 
-    filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
+    const items = getData('sys_items') || [];
+    const grid = document.getElementById('posProductsGrid');
+    if (!grid) return;
+
+    let filtered = (catId === 'all') ? items : items.filter(i => String(getItemCategory(i)) === String(catId));
+    filtered.sort((a, b) => cleanPrice(a.price) - cleanPrice(b.price));
 
     if (filtered.length === 0) {
         grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
