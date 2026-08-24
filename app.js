@@ -1568,6 +1568,28 @@ function executeKitchenPrintOnly() {
     }, 100);
 }
 
+// 7 احتساب رقم الطلب ديناميكياً من واقع طلبات اليوم المكتملة (يمنع الثبات على 305)
+function getOrderSequence(customOrder) {
+    if (customOrder) {
+        if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
+        if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
+    }
+    
+    const completed = getData('sys_completed_orders') || [];
+    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
+
+    if (todayOrders.length > 0) {
+        let maxNum = 0;
+        todayOrders.forEach(o => {
+            const num = cleanPrice(o.orderNum || o.orderNumber);
+            if (num > maxNum) maxNum = num;
+        });
+        if (maxNum > 0) return maxNum + 1;
+    }
+    return 101; // البداية اليومية عند تصفير اليوم
+}
+
+// 🧹 إتمام وتفريغ السلة القسري الشامل (Hard Clear)
 function tryFinalizeAndClearOrder() {
     if (!activePendingPrintOrder) return;
 
@@ -1575,39 +1597,36 @@ function tryFinalizeAndClearOrder() {
         if (!confirm("⚠️ لم تقم بطباعة الفاتورتين! هل تريد إنهاء الطلب وتفريغ السلة؟")) return;
     }
 
-    // حساب رقم الطلب اللحظي من أعلى رقم مطبوع اليوم + 1
-    const completed = getData('sys_completed_orders') || [];
-    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
-    let maxNum = 0;
-    todayOrders.forEach(o => {
-        const num = cleanPrice(o.orderNum || o.orderNumber);
-        if (num > maxNum) maxNum = num;
-    });
-    activePendingPrintOrder.orderNum = maxNum > 0 ? maxNum + 1 : 101;
+    // تعيين رقم الطلب اللحظي المحدث
+    activePendingPrintOrder.orderNum = getOrderSequence();
 
-    // حفظ الفاتورة
+    // حفظ الفاتورة في الأرشيف
+    let completed = getData('sys_completed_orders') || [];
     completed.unshift(activePendingPrintOrder);
     setData('sys_completed_orders', completed);
 
-    // 🧹 تفريغ السلة والمتغيرات بالكامل (Hard Clear)
+    // 🧹 تصفير كافة المصفوفات والمتغيرات
     posCart = [];
     activeDiscountType = null;
     posDiscountAmount = 0;
+    currentPercentValue = 0;
     activePendingPrintOrder = null;
     isCustomerPrinted = false;
     isKitchenPrinted = false;
 
-    // تصفيرة الحقول
+    // تصفير مدخلات واجهة الكاشير
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (document.getElementById('posOrderNotesInput')) document.getElementById('posOrderNotesInput').value = '';
     if (document.getElementById('cashGivenInput')) document.getElementById('cashGivenInput').value = '';
 
+    // إجبار واجهة الكاشير والبردة على التحديث
     renderPosCart();
     closeModal('printOptionsModal');
-    if (typeof renderDrawerDriverSettlement === 'function') renderDrawerDriverSettlement();
+    renderDrawerDriverSettlement();
 
-    alert("🎉 تم إتمام الطلب وتفريغ السلة بالكامل!");
+    alert("🎉 تم إتمام وسحب الطلب بنجاح وتفريغ السلة بالكامل!");
 }
+
 
 /* ==========================================================================
    MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 3)
