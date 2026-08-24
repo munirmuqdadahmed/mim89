@@ -237,6 +237,10 @@ function initData() {
                 } else {
                     localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
                     localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+                    // 🌱 تهيئة Firebase بكل العناصر الافتراضية حتى تصير هي المصدر الموحّد لكل الأجهزة
+                    DEFAULT_DATA.items.forEach(defItem => {
+                        db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
+                    });
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
         } else {
