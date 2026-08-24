@@ -263,6 +263,9 @@ function initData() {
     if (!localStorage.getItem('sys_expenses')) localStorage.setItem('sys_expenses', JSON.stringify([]));
     if (!localStorage.getItem('sys_completed_orders')) localStorage.setItem('sys_completed_orders', JSON.stringify([]));
     if (!localStorage.getItem('sys_customers')) localStorage.setItem('sys_customers', JSON.stringify([]));
+    if (!localStorage.getItem('sys_working_hours')) localStorage.setItem('sys_working_hours', JSON.stringify({ open: "10:00", close: "23:59", enabled: false }));
+    if (!localStorage.getItem('sys_out_of_stock')) localStorage.setItem('sys_out_of_stock', JSON.stringify([]));
+    if (!localStorage.getItem('sys_coupons')) localStorage.setItem('sys_coupons', JSON.stringify([]));
 
     setupCloudRealtimeSync();
 }
@@ -705,7 +708,24 @@ function renderPublicMenuUI() {
             sec.innerHTML = `
                 <h2 class="section-title" style="color:var(--gold-bright); margin:18px 14px 8px 14px; font-weight:900;"><i class="fa-solid fa-utensils"></i> ${cat.name}</h2>
                 <div class="items-grid">
-                    ${catItems.map(item => `
+                    ${catItems.map(item => {
+                        const isOut = isItemOutOfStock(item.id);
+                        if (isOut) {
+                            return `
+                        <div class="item-card" style="opacity:0.5; position:relative;">
+                            <span style="position:absolute; top:6px; left:6px; background:#ef4444; color:#fff; font-size:0.65rem; font-weight:900; padding:3px 8px; border-radius:5px; z-index:2;">نافذ حالياً 🚫</span>
+                            <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
+                            <div class="item-details">
+                                <h3 class="item-name">${item.name}</h3>
+                                <p class="item-desc">${item.ingredients || item.desc || 'وجبة طازجة من MIM89'}</p>
+                                <div class="item-footer">
+                                    <span class="item-price">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                        }
+                        return `
                         <div class="item-card">
                             <img src="${item.image || item.img}" alt="${item.name}" class="item-img" onclick="openItemCustomizationModal('${item.id}')" onerror="this.src='https://via.placeholder.com/300x200?text=MIM89+FAST+FOOD'">
                             <div class="item-details">
@@ -717,7 +737,8 @@ function renderPublicMenuUI() {
                                 </div>
                             </div>
                         </div>
-                    `).join('')}
+                    `;
+                    }).join('')}
                 </div>
             `;
             sectionsContainer.appendChild(sec);
@@ -1062,13 +1083,17 @@ function loadPosDirectMenu(catId = 'all', btnElement = null) {
         return;
     }
 
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
+    grid.innerHTML = filtered.map(item => {
+        const isOut = isItemOutOfStock(item.id);
+        return `
+        <div class="pos-product-card" style="${isOut ? 'opacity:0.45;' : ''}" onclick="${isOut ? '' : `addToPosCart('${item.id}')`}">
+            ${isOut ? '<span style="position:absolute; top:4px; left:4px; background:var(--danger); color:#fff; font-size:0.6rem; font-weight:900; padding:2px 6px; border-radius:4px;">نافذ</span>' : ''}
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function filterPosProducts() {
@@ -1080,13 +1105,17 @@ function filterPosProducts() {
     let filtered = items.filter(i => i.name.toLowerCase().includes(query));
     filtered.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
+    grid.innerHTML = filtered.map(item => {
+        const isOut = isItemOutOfStock(item.id);
+        return `
+        <div class="pos-product-card" style="${isOut ? 'opacity:0.45;' : ''}" onclick="${isOut ? '' : `addToPosCart('${item.id}')`}">
+            ${isOut ? '<span style="position:absolute; top:4px; left:4px; background:var(--danger); color:#fff; font-size:0.6rem; font-weight:900; padding:2px 6px; border-radius:4px;">نافذ</span>' : ''}
             <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
             <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
             <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function addToPosCart(itemId) {
@@ -2479,7 +2508,19 @@ function deleteInvItem(id) {
    12. لوحة تحكم الإدارة الكاملة Admin (admin.html)
    ========================================== */
 
-function initAdminPage() { initData(); }
+function initAdminPage() {
+    initData();
+    // 🌱🔧 إصلاح ومزامنة تلقائية: ترفع كل الوجبات الافتراضية إلى Firebase
+    // فور فتح صفحة الإدارة على أي جهاز (موبايل أو كومبيوتر) بدون أي خطوات يدوية.
+    // تستخدم merge:true فلا تحذف ولا تمس أي صنف آخر مضاف سابقاً.
+    setTimeout(() => {
+        if (typeof db !== 'undefined' && db) {
+            DEFAULT_DATA.items.forEach(defItem => {
+                db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
+            });
+        }
+    }, 1500);
+}
 
 function loginAdmin() {
     const pass = document.getElementById('adminPassInput')?.value.trim();
@@ -2925,7 +2966,245 @@ function importFullSystemBackup(fileInput) {
 }
 
 /* ==========================================
-   14. النوافذ المنبثقة والدوال المساعدة General Helpers
+   14. مزايا إضافية: السائقين، ملاحظات المطبخ، أوقات العمل، النفاد، الكوبونات
+   ========================================== */
+
+// 🛵 إضافة سائق دليفري جديد من لوحة الإدارة
+function saveDeliveryDriver() {
+    const nameInput = document.getElementById('driverNameInput');
+    const phoneInput = document.getElementById('driverPhoneInput');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+
+    if (!name) return alert("⚠️ يرجى إدخال اسم السائق على الأقل!");
+
+    const drivers = getData('sys_drivers') || [];
+    drivers.push({ id: 'drv_' + Date.now(), name: name, phone: phone || '' });
+    setData('sys_drivers', drivers);
+
+    if (nameInput) nameInput.value = '';
+    if (phoneInput) phoneInput.value = '';
+
+    if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
+    alert("✅ تم إضافة السائق بنجاح!");
+}
+
+// ✏️ محرر ملاحظات المطبخ السريعة
+function openKitchenNotesManagerModal() {
+    renderKitchenNotesList();
+    openModal('kitchenNotesManagerModal');
+}
+
+function renderKitchenNotesList() {
+    const container = document.getElementById('kitchenNotesListTable');
+    if (!container) return;
+
+    const notes = getData('sys_quick_kitchen_notes') || [];
+    if (notes.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد ملاحظات مسجلة حالياً</p>`;
+        return;
+    }
+
+    container.innerHTML = notes.map((n, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:6px 10px; border-radius:6px; margin-bottom:4px;">
+            <span style="color:#fff; font-size:0.85rem;">${n}</span>
+            <button onclick="deleteKitchenNoteItem(${idx})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1rem;">✕</button>
+        </div>
+    `).join('');
+}
+
+function addKitchenNoteItem() {
+    const input = document.getElementById('newKitchenNoteInput');
+    const text = input ? input.value.trim() : '';
+    if (!text) return alert("⚠️ اكتب نص الملاحظة أولاً!");
+
+    let notes = getData('sys_quick_kitchen_notes') || [];
+    notes.push(text);
+    setData('sys_quick_kitchen_notes', notes);
+
+    if (input) input.value = '';
+    renderKitchenNotesList();
+}
+
+function deleteKitchenNoteItem(index) {
+    let notes = getData('sys_quick_kitchen_notes') || [];
+    notes.splice(index, 1);
+    setData('sys_quick_kitchen_notes', notes);
+    renderKitchenNotesList();
+}
+
+// 🕐 إدارة أوقات فتح وإغلاق استقبال الطلبات
+function openWorkingHoursModal() {
+    const settings = getData('sys_working_hours') || { open: "10:00", close: "23:59", enabled: false };
+    if (document.getElementById('workHoursOpenInput')) document.getElementById('workHoursOpenInput').value = settings.open;
+    if (document.getElementById('workHoursCloseInput')) document.getElementById('workHoursCloseInput').value = settings.close;
+    if (document.getElementById('workHoursEnabledCheckbox')) document.getElementById('workHoursEnabledCheckbox').checked = !!settings.enabled;
+    openModal('workingHoursModal');
+}
+
+function saveWorkingHours() {
+    const open = document.getElementById('workHoursOpenInput')?.value || "10:00";
+    const close = document.getElementById('workHoursCloseInput')?.value || "23:59";
+    const enabled = document.getElementById('workHoursEnabledCheckbox')?.checked || false;
+
+    setData('sys_working_hours', { open, close, enabled });
+    alert("✅ تم حفظ أوقات الفتح والإغلاق بنجاح!");
+    closeModal('workingHoursModal');
+}
+
+// يتحقق هل المطعم يستقبل طلبات بالوقت الحالي (يفيد بالمينيو الإلكتروني)
+function isRestaurantCurrentlyOpen() {
+    const settings = getData('sys_working_hours') || { open: "10:00", close: "23:59", enabled: false };
+    if (!settings.enabled) return true;
+
+    const now = new Date();
+    const [oh, om] = String(settings.open).split(':').map(Number);
+    const [ch, cm] = String(settings.close).split(':').map(Number);
+    const openMinutes = (oh || 0) * 60 + (om || 0);
+    const closeMinutes = (ch || 0) * 60 + (cm || 0);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    if (closeMinutes > openMinutes) {
+        return nowMinutes >= openMinutes && nowMinutes < closeMinutes;
+    } else {
+        return nowMinutes >= openMinutes || nowMinutes < closeMinutes;
+    }
+}
+
+// 🚫 إدارة الوجبات النافذة/المنتهية مؤقتاً
+function openOutofStockModal() {
+    renderOutOfStockList();
+    openModal('outOfStockModal');
+}
+
+function renderOutOfStockList() {
+    const container = document.getElementById('outOfStockListContainer');
+    if (!container) return;
+
+    const items = getData('sys_items') || [];
+    const outIds = getData('sys_out_of_stock') || [];
+
+    if (items.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد أصناف بالمينيو حالياً</p>`;
+        return;
+    }
+
+    container.innerHTML = items.map(item => {
+        const isOut = outIds.some(id => String(id) === String(item.id));
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:6px 10px; border-radius:6px; margin-bottom:4px;">
+                <span style="color:#fff; font-size:0.82rem;">${item.name}</span>
+                <button onclick="toggleItemStockStatus('${item.id}')" class="gold-btn btn-sm" style="width:auto; padding:4px 10px; background:${isOut ? 'var(--danger)' : 'var(--success)'}; color:#fff; border:none;">
+                    ${isOut ? '🚫 نافذ (اضغط للإرجاع)' : '✅ متوفر (اضغط لتحديد النفاد)'}
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleItemStockStatus(itemId) {
+    let outIds = getData('sys_out_of_stock') || [];
+    const idx = outIds.findIndex(id => String(id) === String(itemId));
+    if (idx !== -1) {
+        outIds.splice(idx, 1);
+    } else {
+        outIds.push(itemId);
+    }
+    setData('sys_out_of_stock', outIds);
+    renderOutOfStockList();
+    notifyMenuUpdated();
+}
+
+function isItemOutOfStock(itemId) {
+    const outIds = getData('sys_out_of_stock') || [];
+    return outIds.some(id => String(id) === String(itemId));
+}
+
+// 🏷️ إدارة الكوبونات وأكواد الخصم
+function openCouponsManagerModal() {
+    renderCouponsList();
+    openModal('couponsManagerModal');
+}
+
+function renderCouponsList() {
+    const container = document.getElementById('couponsListContainer');
+    if (!container) return;
+
+    const coupons = getData('sys_coupons') || [];
+    if (coupons.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#777; padding:10px;">لا توجد كوبونات مسجلة حالياً</p>`;
+        return;
+    }
+
+    container.innerHTML = coupons.map(c => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#181822; padding:6px 10px; border-radius:6px; margin-bottom:4px;">
+            <div>
+                <strong style="color:var(--gold-bright, #ffd700);">${c.code}</strong>
+                <span style="font-size:0.75rem; color:#aaa;"> - ${c.type === 'percent' ? cleanPrice(c.value) + '%' : cleanPrice(c.value).toLocaleString('ar-IQ') + ' د.ع'}</span>
+            </div>
+            <button onclick="deleteCouponItem('${c.code}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:1rem;">✕</button>
+        </div>
+    `).join('');
+}
+
+function addNewCoupon() {
+    const codeInput = document.getElementById('newCouponCodeInput');
+    const typeSelect = document.getElementById('newCouponTypeSelect');
+    const valueInput = document.getElementById('newCouponValueInput');
+
+    const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+    const type = typeSelect ? typeSelect.value : 'percent';
+    const value = cleanPrice(valueInput ? valueInput.value : 0);
+
+    if (!code) return alert("⚠️ أدخل كود الكوبون!");
+    if (value <= 0) return alert("⚠️ أدخل قيمة الخصم بشكل صحيح!");
+
+    let coupons = getData('sys_coupons') || [];
+    if (coupons.some(c => c.code === code)) return alert("⚠️ هذا الكود مستخدم مسبقاً!");
+
+    coupons.push({ code: code, type: type, value: value, active: true });
+    setData('sys_coupons', coupons);
+
+    if (codeInput) codeInput.value = '';
+    if (valueInput) valueInput.value = '';
+    renderCouponsList();
+}
+
+function deleteCouponItem(code) {
+    if (confirm("هل تريد حذف هذا الكوبون؟")) {
+        let coupons = getData('sys_coupons') || [];
+        coupons = coupons.filter(c => c.code !== code);
+        setData('sys_coupons', coupons);
+        renderCouponsList();
+    }
+}
+
+// 🏷️ تطبيق كوبون خصم مباشرة على فاتورة الكاشير الحالية
+function applyCouponAtCashier() {
+    const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
+    if (subtotal === 0) return alert("السلة فارغة!");
+
+    if (activeDiscountType === 'coupon') {
+        clearAllDiscounts();
+        return;
+    }
+
+    const codeRaw = prompt("أدخل كود الكوبون:");
+    if (!codeRaw) return;
+    const code = codeRaw.trim().toUpperCase();
+
+    const coupons = getData('sys_coupons') || [];
+    const found = coupons.find(c => c.code === code && c.active);
+    if (!found) return alert("⚠️ الكود غير صحيح أو غير مفعّل!");
+
+    activeDiscountType = 'coupon';
+    posDiscountAmount = found.type === 'percent' ? (subtotal * cleanPrice(found.value)) / 100 : cleanPrice(found.value);
+    updateDiscountUIState('coupon', `🏷️ كوبون ${found.code}`);
+    renderPosCart();
+}
+
+/* ==========================================
+   15. النوافذ المنبثقة والدوال المساعدة General Helpers
    ========================================== */
 
 function openModal(id) {
