@@ -2510,13 +2510,18 @@ function deleteInvItem(id) {
 
 function initAdminPage() {
     initData();
-    // 🌱🔧 إصلاح ومزامنة تلقائية: ترفع كل الوجبات الافتراضية إلى Firebase
-    // فور فتح صفحة الإدارة على أي جهاز (موبايل أو كومبيوتر) بدون أي خطوات يدوية.
-    // تستخدم merge:true فلا تحذف ولا تمس أي صنف آخر مضاف سابقاً.
+    // 🌱🔧 إصلاح ومزامنة تلقائية: تزرع فقط الوجبات الافتراضية الناقصة من Firebase
+    // (اللي مو موجودة أصلاً بقاعدة البيانات) — تتحقق أول قبل الكتابة فلا تمس
+    // ولا تُرجع أي وجبة موجودة أو مُعدَّلة مسبقاً إلى قيمها القديمة إطلاقاً.
     setTimeout(() => {
         if (typeof db !== 'undefined' && db) {
             DEFAULT_DATA.items.forEach(defItem => {
-                db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
+                const ref = db.collection("menu_items").doc(String(defItem.id));
+                ref.get().then(docSnap => {
+                    if (!docSnap.exists) {
+                        ref.set(defItem, { merge: true }).catch(()=>{});
+                    }
+                }).catch(()=>{});
             });
         }
     }, 1500);
