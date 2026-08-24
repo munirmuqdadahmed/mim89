@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 1)
+   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Complete)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -46,46 +46,51 @@ function cleanPrice(val) {
     return isNaN(num) ? 0 : num;
 }
 
-// 🗂️ توحيد شريط الأقسام للكاشير والمينيو والإدارة ديناميكياً
-function renderPosCategoriesBar() {
-    const catBar = document.getElementById('posCategoriesBar');
-    if (!catBar) return;
+// 🍔 دالة فتح وإغلاق البردة الجانبية مع تحديث أجور السائقين تلقائياً
+window.toggleSideDrawer = function() {
+    const drawer = document.getElementById('sideDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (!drawer || !overlay) return;
 
-    const categories = getData('sys_categories') || [];
-    let html = `<button class="category-tab active" onclick="loadPosDirectMenu('all', this)">الكل 🍔</button>`;
-    categories.forEach(c => {
-        html += `<button class="category-tab" onclick="loadPosDirectMenu('${c.id}', this)">${c.name}</button>`;
-    });
-    catBar.innerHTML = html;
-}
-
-function loadPosDirectMenu(catId = 'all', btnElement = null) {
-    if (btnElement) {
-        document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
-        btnElement.classList.add('active');
+    if (drawer.classList.contains('active')) {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+        setTimeout(() => { overlay.style.display = 'none'; }, 300);
     } else {
-        renderPosCategoriesBar();
+        overlay.style.display = 'block';
+        void drawer.offsetWidth;
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+        if (typeof renderDrawerDriverSettlement === 'function') {
+            renderDrawerDriverSettlement();
+        }
     }
+};
 
-    const items = getData('sys_items') || [];
-    const grid = document.getElementById('posProductsGrid');
-    if (!grid) return;
+try {
+    const firebaseConfig = {
+        apiKey: "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
+        authDomain: "mim89-ff938.firebaseapp.com",
+        projectId: "mim89-ff938",
+        storageBucket: "mim89-ff938.firebasestorage.app",
+        messagingSenderId: "8207632733",
+        appId: "1:8207632733:web:49cd53fe5dbf26216b80b4",
+        measurementId: "G-D9GK0G77ZD"
+    };
 
-    let filtered = (catId === 'all') ? items : items.filter(i => String(getItemCategory(i)) === String(catId));
-    filtered.sort((a, b) => cleanPrice(a.price) - cleanPrice(b.price));
+    if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+        console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
 
-    if (filtered.length === 0) {
-        grid.innerHTML = `<p style="color:#aaa; grid-column:1/-1; text-align:center; padding:20px;">لا توجد وجبات في هذا القسم حالياً</p>`;
-        return;
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
+        });
     }
-
-    grid.innerHTML = filtered.map(item => `
-        <div class="pos-product-card" onclick="addToPosCart('${item.id}')">
-            <img src="${item.image || item.img}" class="pos-product-img" onerror="this.src='https://via.placeholder.com/120?text=MIM89'">
-            <h4 style="font-size:0.8rem; color:#fff; margin:2px 0; font-weight:700;">${item.name}</h4>
-            <span style="font-size:0.8rem; color:var(--gold-primary, #ffd700); font-weight:bold;">${cleanPrice(item.price).toLocaleString('ar-IQ')} د.ع</span>
-        </div>
-    `).join('');
+} catch (e) {
+    console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
 }
 
 /* ==========================================
@@ -284,6 +289,7 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
+// 🔢 احتساب رقم الطلب ديناميكياً من واقع طلبات اليوم المكتملة
 function getOrderSequence(customOrder) {
     if (customOrder) {
         if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
@@ -301,16 +307,7 @@ function getOrderSequence(customOrder) {
         });
         if (maxNum > 0) return maxNum + 1;
     }
-
-    let currentSeq = localStorage.getItem('mim89_daily_order_seq');
-    let seqNum = currentSeq ? parseInt(currentSeq) : 101;
-    return seqNum;
-}
-
-function incrementOrderSequence() {
-    let nextSeq = getOrderSequence() + 1;
-    if (nextSeq >= 999) nextSeq = 101;
-    localStorage.setItem('mim89_daily_order_seq', nextSeq);
+    return 101;
 }
 
 function getSystemPassword(type) {
@@ -351,17 +348,11 @@ function setupCloudRealtimeSync() {
                 });
             });
             
-            // تحديث التخزين المحلي فوراً بالبيانات الجديدة من السحابة
             localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-            
-            // إعادة رسم الشاشة الحالية فوراً
-            if (typeof refreshActiveUI === 'function') {
-                refreshActiveUI();
-            }
+            if (typeof refreshActiveUI === 'function') refreshActiveUI();
         }
     }, err => console.log("خطأ بالمزامنة السحابية:", err));
 }
-
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
 const posSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mim89_menu_sync') : null;
@@ -939,9 +930,6 @@ function saveOrderLocally(orderData) {
     orders.push(orderData);
     setData('sys_live_orders', orders);
 }
-/* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 2)
-   ========================================================================== */
 
 /* ==========================================
    5. نقطة البيع POS والدليفري (cashier.html)
@@ -1037,7 +1025,7 @@ function loadDriversAndAppDropdowns() {
     `;
 }
 
-// 🗂️ توحيد شريط الأقسام للكاشير والمينيو والإدارة ديناميكياً
+// 🗂️ دالة توليد أقسام الكاشير الموحدة من الإدارة والمينيو
 function renderPosCategoriesBar() {
     const catBar = document.getElementById('posCategoriesBar');
     if (!catBar) return;
@@ -1572,27 +1560,6 @@ function executeKitchenPrintOnly() {
     }, 100);
 }
 
-// 7 احتساب رقم الطلب ديناميكياً من واقع طلبات اليوم المكتملة (يمنع الثبات على 305)
-function getOrderSequence(customOrder) {
-    if (customOrder) {
-        if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
-        if (customOrder.orderNumber && !isNaN(customOrder.orderNumber)) return parseInt(customOrder.orderNumber);
-    }
-    
-    const completed = getData('sys_completed_orders') || [];
-    const todayOrders = completed.filter(o => o.dateDate === getTodayString());
-
-    if (todayOrders.length > 0) {
-        let maxNum = 0;
-        todayOrders.forEach(o => {
-            const num = cleanPrice(o.orderNum || o.orderNumber);
-            if (num > maxNum) maxNum = num;
-        });
-        if (maxNum > 0) return maxNum + 1;
-    }
-    return 101; // البداية اليومية عند تصفير اليوم
-}
-
 // 🧹 إتمام وتفريغ السلة القسري الشامل (Hard Clear)
 function tryFinalizeAndClearOrder() {
     if (!activePendingPrintOrder) return;
@@ -1601,15 +1568,12 @@ function tryFinalizeAndClearOrder() {
         if (!confirm("⚠️ لم تقم بطباعة الفاتورتين! هل تريد إنهاء الطلب وتفريغ السلة؟")) return;
     }
 
-    // تعيين رقم الطلب اللحظي المحدث
     activePendingPrintOrder.orderNum = getOrderSequence();
 
-    // حفظ الفاتورة في الأرشيف
     let completed = getData('sys_completed_orders') || [];
     completed.unshift(activePendingPrintOrder);
     setData('sys_completed_orders', completed);
 
-    // 🧹 تصفير كافة المصفوفات والمتغيرات
     posCart = [];
     activeDiscountType = null;
     posDiscountAmount = 0;
@@ -1618,12 +1582,10 @@ function tryFinalizeAndClearOrder() {
     isCustomerPrinted = false;
     isKitchenPrinted = false;
 
-    // تصفير مدخلات واجهة الكاشير
     if (document.getElementById('posCustName')) document.getElementById('posCustName').value = '';
     if (document.getElementById('posOrderNotesInput')) document.getElementById('posOrderNotesInput').value = '';
     if (document.getElementById('cashGivenInput')) document.getElementById('cashGivenInput').value = '';
 
-    // إجبار واجهة الكاشير والبردة على التحديث
     renderPosCart();
     closeModal('printOptionsModal');
     renderDrawerDriverSettlement();
@@ -1631,14 +1593,71 @@ function tryFinalizeAndClearOrder() {
     alert("🎉 تم إتمام وسحب الطلب بنجاح وتفريغ السلة بالكامل!");
 }
 
-
-/* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 3)
-   ========================================================================== */
-
 /* ==========================================
    8. ترتيب وتصفية حساب سائقي التوصيل (الدليفري)
    ========================================== */
+
+function renderDrawerDriverSettlement() {
+    const container = document.getElementById('drawerDeliverySettlementBox');
+    if (!container) return;
+
+    const drivers = getData('sys_drivers') || [];
+    const completed = getData('sys_completed_orders') || [];
+    const today = getTodayString();
+
+    let html = `<h4 style="color:var(--gold-primary); font-size:0.88rem; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">🛵 حسابات السائقين المعلقة:</h4>`;
+    let hasOrders = false;
+
+    drivers.forEach(drv => {
+        const driverOrders = completed.filter(o => o.dateDate === today && o.orderType === 'توصيل' && o.driverName === drv.name && !o.isSettled);
+
+        if (driverOrders.length > 0) {
+            hasOrders = true;
+            let totalCollected = 0, totalDelivery = 0;
+            driverOrders.forEach(o => {
+                totalCollected += cleanPrice(o.totalAmount);
+                totalDelivery += cleanPrice(o.deliveryFee);
+            });
+            const netBox = totalCollected - totalDelivery;
+
+            html += `
+                <div style="background:#1c1c24; border:1px solid #444; border-radius:6px; padding:6px; margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#fff;">
+                        <strong>👤 ${drv.name}</strong>
+                        <span style="background:#ff4d4d; color:#fff; padding:1px 4px; border-radius:3px; font-size:0.7rem;">${driverOrders.length} طلبات</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#aaa; margin:4px 0;">
+                        المقبوض: ${totalCollected.toLocaleString()} | التوصيل: ${totalDelivery.toLocaleString()}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #444; padding-top:4px;">
+                        <strong style="color:var(--success); font-size:0.8rem;">الصافي: ${netBox.toLocaleString()} د.ع</strong>
+                        <button onclick="confirmDriverSettlement('${drv.name}')" style="background:var(--success); color:#fff; border:none; padding:3px 8px; border-radius:4px; font-size:0.72rem; cursor:pointer; font-weight:bold;">✅ تصفية</button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    if (!hasOrders) {
+        html += `<p style="color:#777; font-size:0.75rem; text-align:center; margin:0;">لا توجد حسابات معلقة للسائقين حالياً</p>`;
+    }
+    container.innerHTML = html;
+}
+
+function confirmDriverSettlement(driverName) {
+    if (confirm(`هل تم استلام المبالغ وتصفية ذمة السائق (${driverName})؟`)) {
+        let completed = getData('sys_completed_orders') || [];
+        const today = getTodayString();
+        completed.forEach(o => {
+            if (o.dateDate === today && o.driverName === driverName && !o.isSettled) {
+                o.isSettled = true;
+            }
+        });
+        setData('sys_completed_orders', completed);
+        renderDrawerDriverSettlement();
+        alert(`✅ تم تصفية حساب السائق (${driverName}) بنجاح!`);
+    }
+}
 
 function getDriverDailySettlementReport(driverName) {
     const today = getTodayString();
@@ -2041,9 +2060,6 @@ function confirmCloseShiftAndLogout() {
         location.reload();
     }
 }
-/* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Part 4 Final)
-   ========================================================================== */
 
 /* ==========================================
    10. التنبيهات الصوتية ومراقبة الطلبات الواردة
@@ -2664,7 +2680,6 @@ function saveItem() {
         updatedAt: Date.now()
     };
 
-    // 1. التحديث المحلي
     let items = getData('sys_items') || [];
     const index = items.findIndex(i => String(i.id) === String(id) || String(i.docId) === String(id));
     if (index !== -1) {
@@ -2674,12 +2689,9 @@ function saveItem() {
     }
     localStorage.setItem('sys_items', JSON.stringify(items));
 
-    // 2. الرفع المباشر لـ Firebase لتحديث mim89.com والكاشير في نفس اللحظة
     if (db) {
         db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
             .then(() => {
-                console.log("✅ تم البث السحابي بنجاح إلى mim89.com");
-                // إرسال إشارة إجبارية للتحديث
                 localStorage.setItem('mim89_last_menu_update', Date.now());
                 refreshActiveUI();
                 resetItemForm();
@@ -2695,7 +2707,6 @@ function saveItem() {
         alert("تم الحفظ محلياً.");
     }
 }
-
 
 function editItem(id) {
     const items = getData('sys_items') || [];
@@ -2968,64 +2979,3 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPublicMenu();
     }
 });
-function renderDrawerDriverSettlement() {
-    const container = document.getElementById('drawerDeliverySettlementBox');
-    if (!container) return;
-
-    const drivers = getData('sys_drivers') || [];
-    const completed = getData('sys_completed_orders') || [];
-    const today = getTodayString();
-
-    let html = `<h4 style="color:var(--gold-primary); font-size:0.88rem; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">🛵 حسابات السائقين المعلقة:</h4>`;
-    let hasOrders = false;
-
-    drivers.forEach(drv => {
-        const driverOrders = completed.filter(o => o.dateDate === today && o.orderType === 'توصيل' && o.driverName === drv.name && !o.isSettled);
-
-        if (driverOrders.length > 0) {
-            hasOrders = true;
-            let totalCollected = 0, totalDelivery = 0;
-            driverOrders.forEach(o => {
-                totalCollected += cleanPrice(o.totalAmount);
-                totalDelivery += cleanPrice(o.deliveryFee);
-            });
-            const netBox = totalCollected - totalDelivery;
-
-            html += `
-                <div style="background:#1c1c24; border:1px solid #444; border-radius:6px; padding:6px; margin-bottom:6px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#fff;">
-                        <strong>👤 ${drv.name}</strong>
-                        <span style="background:#ff4d4d; color:#fff; padding:1px 4px; border-radius:3px; font-size:0.7rem;">${driverOrders.length} طلبات</span>
-                    </div>
-                    <div style="font-size:0.75rem; color:#aaa; margin:4px 0;">
-                        المقبوض: ${totalCollected.toLocaleString()} | التوصيل: ${totalDelivery.toLocaleString()}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #444; padding-top:4px;">
-                        <strong style="color:var(--success); font-size:0.8rem;">الصافي: ${netBox.toLocaleString()} د.ع</strong>
-                        <button onclick="confirmDriverSettlement('${drv.name}')" style="background:var(--success); color:#fff; border:none; padding:3px 8px; border-radius:4px; font-size:0.72rem; cursor:pointer; font-weight:bold;">✅ تصفية</button>
-                    </div>
-                </div>
-            `;
-        }
-    });
-
-    if (!hasOrders) {
-        html += `<p style="color:#777; font-size:0.75rem; text-align:center; margin:0;">لا توجد حسابات معلقة للسائقين حالياً</p>`;
-    }
-    container.innerHTML = html;
-}
-
-function confirmDriverSettlement(driverName) {
-    if (confirm(`هل تم استلام المبالغ وتصفية ذمة السائق (${driverName})؟`)) {
-        let completed = getData('sys_completed_orders') || [];
-        const today = getTodayString();
-        completed.forEach(o => {
-            if (o.dateDate === today && o.driverName === driverName && !o.isSettled) {
-                o.isSettled = true;
-            }
-        });
-        setData('sys_completed_orders', completed);
-        renderDrawerDriverSettlement();
-        alert(`✅ تم تصفية حساب السائق (${driverName}) بنجاح!`);
-    }
-}
