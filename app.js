@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 /* ==========================================================================
-   MIM89 FAST FOOD - Master Core Engine (v30.0 Full Unabridged - Complete)
+   MIM89 FAST FOOD - Master Core Engine (v31.0 - Order Sequence & Menu Sync Fix)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
    صاحب النظام: منير مقداد
    ========================================================================== */
@@ -248,7 +248,31 @@ function initData() {
         }
     }
 
-    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    // 🛠️ إصلاح خطأ عدم توحيد الأقسام: لا نمسح الأقسام المحفوظة محلياً/سحابياً بعد كل تحميل صفحة.
+    // نزرع القيم الافتراضية فقط أول مرة (عندما لا توجد بيانات إطلاقاً)، ثم نعتمد على السحابة كمصدر موحّد.
+    if (!localStorage.getItem('sys_categories')) {
+        if (db) {
+            db.collection("system_store").doc("sys_categories").get().then(docSnap => {
+                if (docSnap.exists && docSnap.data() && docSnap.data().content) {
+                    try {
+                        const cloudCats = JSON.parse(docSnap.data().content);
+                        if (Array.isArray(cloudCats) && cloudCats.length > 0) {
+                            localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
+                            refreshActiveUI();
+                            return;
+                        }
+                    } catch (e) {}
+                }
+                // لا يوجد شيء بالسحابة بعد: نزرع الافتراضي محلياً وسحابياً معاً
+                localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+                setData('sys_categories', DEFAULT_DATA.categories);
+            }).catch(() => {
+                localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+            });
+        } else {
+            localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+        }
+    }
 
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
@@ -268,6 +292,7 @@ function initData() {
     if (!localStorage.getItem('sys_coupons')) localStorage.setItem('sys_coupons', JSON.stringify([]));
 
     setupCloudRealtimeSync();
+    setupCategoriesRealtimeSync();
 }
 
 function getData(key) {
@@ -296,7 +321,8 @@ function getTodayString() {
     return `${year}-${month}-${day}`;
 }
 
-// 🔢 احتساب رقم الطلب ديناميكياً من واقع طلبات اليوم المكتملة
+// 🔢 [نسخة احتياطية محلية] احتساب رقم الطلب من واقع طلبات اليوم المكتملة محلياً
+// تُستخدم فقط كحل بديل إذا تعذّر الاتصال بالسحابة (أوفلاين). المصدر الأساسي أصبح getNextOrderNumberFromCloud().
 function getOrderSequence(customOrder) {
     if (customOrder) {
         if (customOrder.orderNum && !isNaN(customOrder.orderNum)) return parseInt(customOrder.orderNum);
@@ -315,6 +341,50 @@ function getOrderSequence(customOrder) {
         if (maxNum > 0) return maxNum + 1;
     }
     return 101;
+}
+
+// 🔢🌐 [المصدر الموحّد الجديد] عدّاد طلبات مركزي وآمن عبر Firestore Transaction.
+// يمنع تكرار نفس رقم الطلب حتى لو كان أكثر من كاشير/جهاز يبيع بنفس اللحظة بالضبط،
+// لأن Firestore Transaction يضمن قراءة وكتابة العداد بشكل ذَرّي (atomic) لا يمكن تصادمه.
+async function getNextOrderNumberFromCloud() {
+    const today = getTodayString();
+
+    // لا يوجد اتصال سحابي: نستخدم الحساب المحلي كحل بديل مؤقت (أوفلاين)
+    if (!db) {
+        return getOrderSequence();
+    }
+
+    const counterRef = db.collection("system_counters").doc("daily_order_counter");
+
+    try {
+        const newNumber = await db.runTransaction(async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+
+            let currentDate = today;
+            let currentValue = 100; // يبدأ العد الفعلي من 101
+
+            if (counterDoc.exists) {
+                const data = counterDoc.data();
+                if (data.date === today) {
+                    currentDate = data.date;
+                    currentValue = cleanPrice(data.lastNumber) || 100;
+                } else {
+                    // يوم جديد: نصفر العداد تلقائياً على بداية اليوم الجديد
+                    currentDate = today;
+                    currentValue = 100;
+                }
+            }
+
+            const nextValue = currentValue + 1;
+            transaction.set(counterRef, { date: currentDate, lastNumber: nextValue, updatedAt: Date.now() });
+            return nextValue;
+        });
+
+        return newNumber;
+    } catch (err) {
+        console.error("⚠️ فشل الحصول على رقم الطلب من العداد المركزي، سيتم استخدام الحساب المحلي كبديل:", err);
+        return getOrderSequence();
+    }
 }
 
 function getSystemPassword(type) {
@@ -359,6 +429,78 @@ function setupCloudRealtimeSync() {
             if (typeof refreshActiveUI === 'function') refreshActiveUI();
         }
     }, err => console.log("خطأ بالمزامنة السحابية:", err));
+}
+
+// 🔄🗂️ مزامنة لحظية موحّدة للأقسام (Categories) بين لوحة الإدارة، المينيو، والكاشير.
+// هذا يحل مشكلة "المينيو لم يتم توحيده مع إدارة المينيو" لأن أي إضافة/تعديل/حذف قسم
+// من أي جهاز، ينعكس فوراً على جميع الأجهزة الأخرى المفتوحة بنفس اللحظة.
+function setupCategoriesRealtimeSync() {
+    if (!db) return;
+
+    db.collection("system_store").doc("sys_categories").onSnapshot(docSnap => {
+        if (docSnap.exists && docSnap.data() && docSnap.data().content) {
+            try {
+                const cloudCats = JSON.parse(docSnap.data().content);
+                if (Array.isArray(cloudCats)) {
+                    localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
+                    if (typeof refreshActiveUI === 'function') refreshActiveUI();
+                }
+            } catch (e) {}
+        }
+    }, err => console.log("خطأ بمزامنة الأقسام السحابية:", err));
+}
+
+// ➕ إضافة قسم جديد للمينيو (يظهر فوراً في الإدارة، الكاشير، والمينيو الإلكتروني)
+function addNewMenuCategory() {
+    const input = document.getElementById('newCategoryNameInput');
+    const name = input ? input.value.trim() : '';
+    if (!name) return alert("⚠️ يرجى كتابة اسم القسم أولاً!");
+
+    let categories = getData('sys_categories') || [];
+    const newId = categories.length > 0 ? Math.max(...categories.map(c => cleanPrice(c.id))) + 1 : 1;
+    categories.push({ id: newId, name: name });
+
+    setData('sys_categories', categories);
+    if (input) input.value = '';
+
+    if (typeof renderAdminCategories === 'function') renderAdminCategories();
+    if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+    alert("✅ تم إضافة القسم وتوحيده على كل الأجهزة بنجاح!");
+}
+
+// ✏️ تعديل اسم قسم موجود
+function renameMenuCategory(catId) {
+    let categories = getData('sys_categories') || [];
+    const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(catId));
+    if (!cat) return;
+
+    const newName = prompt("أدخل الاسم الجديد للقسم:", cat.name);
+    if (!newName || !newName.trim()) return;
+
+    cat.name = newName.trim();
+    setData('sys_categories', categories);
+
+    if (typeof renderAdminCategories === 'function') renderAdminCategories();
+    if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+}
+
+// 🗑️ حذف قسم (بشرط عدم وجود أصناف مرتبطة به لتفادي أصناف بلا قسم)
+function deleteMenuCategory(catId) {
+    const items = getData('sys_items') || [];
+    const hasItems = items.some(i => getItemCategory(i) === cleanPrice(catId));
+
+    if (hasItems) {
+        return alert("⚠️ لا يمكن حذف هذا القسم لوجود أصناف مرتبطة به! انقلها لقسم آخر أولاً.");
+    }
+
+    if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
+        let categories = getData('sys_categories') || [];
+        categories = categories.filter(c => cleanPrice(c.id) !== cleanPrice(catId));
+        setData('sys_categories', categories);
+
+        if (typeof renderAdminCategories === 'function') renderAdminCategories();
+        if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+    }
 }
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
@@ -413,6 +555,16 @@ async function globalSystemSync(btnElement) {
                     cloudItems.push({ ...data, docId: doc.id, id: data.id || doc.id });
                 });
                 if (cloudItems.length > 0) localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+            }
+
+            const catDoc = await db.collection("system_store").doc("sys_categories").get();
+            if (catDoc.exists && catDoc.data() && catDoc.data().content) {
+                try {
+                    const cloudCats = JSON.parse(catDoc.data().content);
+                    if (Array.isArray(cloudCats) && cloudCats.length > 0) {
+                        localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
+                    }
+                } catch (e) {}
             }
 
             const custSnap = await db.collection("customers").get();
@@ -909,6 +1061,8 @@ window.submitOrderToCashier = function() {
             db.collection("orders").add(orderData).catch(err => console.error("Firebase Order Sync Error:", err));
         }
 
+        localStorage.setItem('sys_last_order_id', orderId);
+
         let typeText = '🛵 توصيل للمنزل';
         if (type === 'takeaway') typeText = '🛍️ استلام سفري من المطعم';
         if (type === 'dine_in') typeText = '🍽️ تناول داخل الصالة';
@@ -1393,7 +1547,10 @@ function calculateCashChange() {
     }
 }
 
-function proceedToPrintAfterCash() {
+// 🖨️🔢 [مُعدّلة] الانتقال لشاشة الطباعة: أصبحت الدالة async وتنتظر رقم الطلب
+// من العدّاد المركزي الموحّد بالسحابة (getNextOrderNumberFromCloud) بدل الحساب المحلي وحده،
+// هذا يمنع نهائياً تكرار نفس رقم الطلب (مثل مشكلة تكرار #301 سابقاً).
+async function proceedToPrintAfterCash() {
     const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
     let deliveryFee = 0;
     if (selectedPosOrderType === 'delivery') {
@@ -1412,7 +1569,26 @@ function proceedToPrintAfterCash() {
     const custNameRaw = document.getElementById('posCustName')?.value.trim() || 'زبون مباشر';
     const driverName = selectedPosOrderType === 'delivery' ? (document.getElementById('posDriverSelect')?.value || 'سائق غير محدد') : '-';
 
-    let orderNumSeq = getOrderSequence();
+    // ⏳ إظهار حالة انتظار بسيطة أثناء طلب الرقم من السحابة لمنع الضغط المزدوج
+    const confirmBtn = document.querySelector('#quickCashModal button[onclick="proceedToPrintAfterCash()"]');
+    let originalBtnText = '';
+    if (confirmBtn) {
+        originalBtnText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تجهيز رقم الطلب...';
+        confirmBtn.disabled = true;
+    }
+
+    let orderNumSeq;
+    try {
+        orderNumSeq = await getNextOrderNumberFromCloud();
+    } catch (e) {
+        orderNumSeq = getOrderSequence();
+    } finally {
+        if (confirmBtn) {
+            confirmBtn.innerHTML = originalBtnText;
+            confirmBtn.disabled = false;
+        }
+    }
 
     activePendingPrintOrder = {
         id: "ORD_" + Date.now(),
@@ -1594,14 +1770,24 @@ function executeKitchenPrintOnly() {
 }
 
 // 🧹 إتمام وتفريغ السلة القسري الشامل (Hard Clear)
+// 🛡️ [مُعدّلة] أُضيفت حماية ضد إعادة حفظ الطلب من جديد عند "إعادة طباعة" طلب قديم من السجل،
+// وأُزيلت إعادة حساب رقم الطلب هنا لأنه أصبح يُحسب مرة واحدة فقط عند proceedToPrintAfterCash().
 function tryFinalizeAndClearOrder() {
     if (!activePendingPrintOrder) return;
+
+    // 🛡️ منع تكرار حفظ نفس رقم الطلب القديم عند الضغط بالغلط أثناء إعادة الطباعة
+    if (activePendingPrintOrder.isReprint) {
+        activePendingPrintOrder = null;
+        isCustomerPrinted = false;
+        isKitchenPrinted = false;
+        closeModal('printOptionsModal');
+        alert("ℹ️ هذا طلب مُعاد طباعته من السجل فقط، تم الإغلاق بدون تكرار حفظه بالتقارير.");
+        return;
+    }
 
     if (!isCustomerPrinted || !isKitchenPrinted) {
         if (!confirm("⚠️ لم تقم بطباعة الفاتورتين! هل تريد إنهاء الطلب وتفريغ السلة؟")) return;
     }
-
-    activePendingPrintOrder.orderNum = getOrderSequence();
 
     let completed = getData('sys_completed_orders') || [];
     completed.unshift(activePendingPrintOrder);
@@ -1914,11 +2100,13 @@ function openCompletedOrdersModal() {
     openModal('completedOrdersModal');
 }
 
+// 🖨️🛡️ [مُعدّلة] إعادة الطباعة أصبحت تضع علامة isReprint:true على الطلب المؤقت،
+// بحيث لو ضغط الكاشير بالغلط على "إتمام وتفريغ السلة" بعد إعادة الطباعة، لا يتكرر حفظ نفس الطلب القديم من جديد.
 function reprintCompletedOrder(orderId) {
     const completed = getData('sys_completed_orders') || [];
     const ord = completed.find(o => o.id === orderId);
     if (ord) {
-        activePendingPrintOrder = ord;
+        activePendingPrintOrder = { ...ord, isReprint: true };
         isCustomerPrinted = true;
         isKitchenPrinted = true;
         updatePrintStatusBadges();
@@ -2896,7 +3084,7 @@ function updateAllSystemPasswords() {
 function exportFullSystemBackup() {
     try {
         const fullBackup = {
-            version: "v30.0-MIM89",
+            version: "v31.0-MIM89",
             backupDate: new Date().toLocaleString('ar-IQ'),
             timestamp: Date.now(),
             categories: getData('sys_categories'),
