@@ -455,10 +455,11 @@
                                     <span id="discountStatusBadge" style="font-size:0.7rem; color:#aaa; font-weight:bold; display:none;"></span>
                                 </div>
 
-                                <div style="display:flex; gap:3px; align-items:center;">
+                                <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
                                     <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🎉 مجاني</button>
                                     <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ % خصم</button>
                                     <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">💵 خصم مبلغ</button>
+                                    <button id="btnCouponDiscount" onclick="applyCouponAtCashier()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ كوبون</button>
                                     <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 6px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; display:none; min-height:26px;">✕</button>
                                 </div>
                             </div>
@@ -691,6 +692,74 @@
                 <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:5px 10px;">إضافة</button>
             </div>
             <div id="kitchenNotesListTable" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 🕐 نافذة تحديد أوقات فتح وإغلاق استقبال الطلبات -->
+    <div id="workingHoursModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:380px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> أوقات فتح وإغلاق استقبال الطلبات</h4>
+                <button onclick="closeModal('workingHoursModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#fff; cursor:pointer; margin-bottom:10px;">
+                    <input type="checkbox" id="workHoursEnabledCheckbox" style="width:18px; height:18px;">
+                    تفعيل تقييد أوقات استقبال الطلبات بالمينيو الإلكتروني
+                </label>
+
+                <label class="section-label">وقت الفتح:</label>
+                <input type="time" id="workHoursOpenInput" class="gold-input-inline" style="margin-bottom:8px;">
+
+                <label class="section-label">وقت الإغلاق:</label>
+                <input type="time" id="workHoursCloseInput" class="gold-input-inline" style="margin-bottom:4px;">
+            </div>
+
+            <button onclick="saveWorkingHours()" class="gold-btn" style="background:var(--success); color:#fff;">
+                <i class="fa-solid fa-check"></i> حفظ أوقات الدوام
+            </button>
+        </div>
+    </div>
+
+    <!-- 🚫 نافذة إدارة النفاد والوجبات المنتهية -->
+    <div id="outOfStockModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية</h4>
+                <button onclick="closeModal('outOfStockModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <p style="font-size:0.75rem; color:#aaa; margin-bottom:8px;">اضغط على أي صنف لتحديده كـ "نافذ" فيختفي من إمكانية الطلب بالكاشير والمينيو الإلكتروني مؤقتاً.</p>
+            <div id="outOfStockListContainer" style="max-height:320px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 🏷️ نافذة إدارة الكوبونات وأكواد الخصم -->
+    <div id="couponsManagerModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم</h4>
+                <button onclick="closeModal('couponsManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label class="section-label">كود الكوبون:</label>
+                <input type="text" id="newCouponCodeInput" class="gold-input-inline" placeholder="مثال: MIM10" style="margin-bottom:6px; text-transform:uppercase;">
+
+                <label class="section-label">نوع الخصم:</label>
+                <select id="newCouponTypeSelect" class="gold-input-inline" style="margin-bottom:6px;">
+                    <option value="percent">نسبة مئوية %</option>
+                    <option value="amount">مبلغ ثابت (د.ع)</option>
+                </select>
+
+                <label class="section-label">قيمة الخصم:</label>
+                <input type="number" id="newCouponValueInput" class="gold-input-inline" placeholder="مثال: 10" style="margin-bottom:8px;">
+
+                <button onclick="addNewCoupon()" class="gold-btn" style="background:var(--success); color:#fff;">إضافة الكوبون</button>
+            </div>
+
+            <h5 style="color:var(--gold-bright); margin-bottom:5px;">الكوبونات المسجلة:</h5>
+            <div id="couponsListContainer" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
         </div>
     </div>
 
