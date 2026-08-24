@@ -500,7 +500,43 @@ function deleteMenuCategory(catId) {
 
         if (typeof renderAdminCategories === 'function') renderAdminCategories();
         if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+        if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
     }
+}
+
+// 📋 عرض جدول إدارة الأقسام الكامل بلوحة الإدارة (تبويب "الأقسام")
+function renderCategoriesManagementList() {
+    const tbody = document.getElementById('categoriesManagementTable');
+    if (!tbody) return;
+
+    const categories = getData('sys_categories') || [];
+    const items = getData('sys_items') || [];
+
+    if (categories.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888; padding:15px;">لا توجد أقسام مسجلة حالياً</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = categories.map((cat, idx) => {
+        const itemsCount = items.filter(i => getItemCategory(i) === cleanPrice(cat.id)).length;
+        return `
+            <tr>
+                <td>${idx + 1}</td>
+                <td><strong>${cat.name}</strong></td>
+                <td><span style="font-size:0.8rem; color:#aaa;">${itemsCount} صنف</span></td>
+                <td>
+                    <button class="gold-btn btn-sm" onclick="renameMenuCategory('${cat.id}')" style="padding:4px 8px; font-size:0.75rem;">✏️ تعديل</button>
+                    <button class="gold-btn btn-danger btn-sm" onclick="deleteMenuCategory('${cat.id}')" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ➕ إضافة قسم من نافذة تبويب الإدارة (نسخة مرتبطة بحقل tabCategoriesControl) ثم تحديث الجدول فوراً
+function addNewMenuCategoryFromAdminTab() {
+    addNewMenuCategory();
+    renderCategoriesManagementList();
 }
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
@@ -532,6 +568,7 @@ function refreshActiveUI() {
         if (typeof renderAdminItems === 'function') renderAdminItems();
         if (typeof renderAdminDrivers === 'function') renderAdminDrivers();
         if (typeof renderAdminCustomers === 'function') renderAdminCustomers();
+        if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
     }
