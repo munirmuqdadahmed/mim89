@@ -4,140 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- إعدادات الشاشة الكاملة للآيباد والآيفون -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MIM89 Inventory">
+    <meta name="apple-mobile-web-app-title" content="MIM89 POS">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <title>MIM89 POS - إدارة المخزن والجرد التلقائي</title>
-
-    <!-- Google Fonts, FontAwesome & CSS الموحد -->
+    <title>MIM89 POS - شاشة الكاشير ونقطة البيع الشاملة</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
         :root {
-            --bg-main: #0f0f12;
-            --bg-card: #18181c;
             --gold-primary: #f59e0b;
             --gold-bright: #fbbf24;
-            --text-light: #f3f4f6;
+            --gold-glow: rgba(245, 158, 11, 0.35);
+            --bg-dark: #09090c;
+            --card-bg: #13131a;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-gold: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
             --danger: #ef4444;
             --success: #10b981;
-            --border: #2a2a32;
+            --blue-accent: #38bdf8;
+            --purple-accent: #c084fc;
         }
 
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Tajawal', 'Segoe UI', sans-serif; 
+        * {
+            box-sizing: border-box !important;
+            margin: 0; padding: 0;
+            font-family: 'Tajawal', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
-        body { 
-            background-color: var(--bg-main); 
-            color: var(--text-light); 
-            padding: 15px; 
-            font-size: 14px; 
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
             user-select: none;
+            height: 100vh; width: 100vw;
         }
 
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
-        
-        .header-title { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid var(--gold-primary); 
-            padding-bottom: 12px; 
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .card { 
-            background: var(--bg-card); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            padding: 18px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        .add-grid { 
-            display: grid; 
-            grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr auto; 
-            gap: 10px; 
-            align-items: center; 
-        }
-
-        @media (max-width: 900px) {
-            .add-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        @media (max-width: 550px) {
-            .add-grid { grid-template-columns: 1fr; }
-        }
-
-        .gold-input-inline {
-            background: #101014;
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 9px 12px;
-            border-radius: 6px;
-            font-size: 0.88rem;
-            width: 100%;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        .gold-input-inline:focus {
-            border-color: var(--gold-primary);
-            box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 14px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .kpi-card h5 {
-            color: #aaa;
-            font-size: 0.8rem;
-            margin-bottom: 6px;
-        }
-
-        .kpi-card .val {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--gold-bright);
-        }
-
-        /* شاشة الدخول */
-        .auth-overlay {
+        /* 🔒 شاشة تسجيل الدخول اللمسية (تحديد هوية الكاشير المناوب فقط - ليست الحاجز الأمني الفعلي) */
+        #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 14, 0.96);
+            background: #050508;
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -145,317 +62,787 @@
             padding: 15px;
         }
 
-        .auth-card {
-            background: var(--bg-card);
+        .login-card {
+            background: #121218;
             border: 2px solid var(--gold-primary);
-            padding: 25px 20px;
-            border-radius: 16px;
+            padding: 28px 22px;
+            border-radius: 20px;
             width: 100%;
-            max-width: 360px;
+            max-width: 330px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.18), 0 20px 40px rgba(0, 0, 0, 0.9);
         }
 
-        .low-stock-badge {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
+        .pin-display {
+            background: #08080c;
+            border: 1px solid #22222e;
+            color: var(--gold-bright);
+            font-size: 2rem;
+            letter-spacing: 12px;
+            padding: 6px;
+            border-radius: 10px;
+            margin: 14px 0 18px 0;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
         }
 
-        .normal-stock-badge {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-            border: 1px solid var(--success);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .key-btn {
+            background: #1d1d26;
+            border: 1px solid #2a2a38;
+            color: #fff;
+            padding: 14px 0;
+            font-size: 1.35rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.12s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key-btn:active {
+            background: var(--gold-primary);
+            color: #000;
+            transform: scale(0.94);
+        }
+
+        .gold-input-inline {
+            width: 100%;
+            background: #0d0d12;
+            border: 1px solid #2a2a36;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .gold-btn {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
+            color: #000;
+            border: none;
+            padding: 10px 14px;
+            font-weight: 800;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.88rem;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        .gold-btn:active { transform: scale(0.97); }
+
+        #cashierMainApp { display: none; height: 100vh; flex-direction: column; }
+
+        .pos-header {
+            background: #101015;
+            border-bottom: 1px solid var(--card-border);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky; top: 0; z-index: 100; flex-shrink: 0; height: 52px;
+        }
+
+        .brand-dropdown-container { position: relative; }
+
+        .brand-btn {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-bright);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-dropdown {
+            display: none;
+            position: absolute;
+            top: 120%; right: 0;
+            background: #14141a;
+            border: 1px solid var(--gold-primary);
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+            width: 290px;
+            z-index: 200;
+            overflow: hidden;
+            padding: 6px 0;
+        }
+
+        .brand-dropdown button {
+            width: 100%;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: #f3f4f6;
+            text-align: right;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand-dropdown button:hover {
+            background: rgba(245, 158, 11, 0.18);
+            color: var(--gold-bright);
+        }
+
+        .pos-container {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 52px);
+            overflow: hidden;
+        }
+
+        @media (max-width: 950px) {
+            .pos-container { grid-template-columns: 1fr; height: auto; overflow: auto; }
+        }
+
+        .pos-sidebar {
+            background: #0c0c10;
+            border-left: 1px solid var(--card-border);
+            display: flex; flex-direction: column;
+            padding: 8px; height: 100%; overflow: hidden !important;
+        }
+
+        .pos-cart-box {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid var(--card-border);
+            flex: 1; display: flex; flex-direction: column;
+            height: 100%; overflow: hidden !important; position: relative;
+        }
+
+        .cart-scrollable-area {
+            flex: 1; overflow-y: auto !important;
+            display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px;
+        }
+
+        .cart-items-list {
+            flex: 1 1 auto !important; overflow-y: auto !important;
+            min-height: 80px; max-height: 200px; margin: 4px 0;
+            border-top: 1px dashed #2a2a36; border-bottom: 1px dashed #2a2a36; padding: 4px 0;
+        }
+
+        .pos-main-content {
+            padding: 12px; height: 100% !important; overflow-y: auto !important; padding-bottom: 80px !important;
+        }
+
+        /* 🍔 شريط الأقسام المباشر */
+        .categories-bar {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            padding: 4px 2px 10px 2px !important;
+            margin-bottom: 12px !important;
+            width: 100% !important;
+            overflow: visible !important;
+        }
+
+        .category-tab {
+            background: #181820 !important;
+            border: 1px solid #2e2e3a !important;
+            color: #a0a0b0 !important;
+            padding: 8px 16px !important;
+            border-radius: 12px !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
+            font-size: 0.88rem !important;
+            font-weight: 700 !important;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0 !important;
+        }
+
+        .category-tab.active, .category-tab:hover {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)) !important;
+            color: #000 !important;
+            border-color: var(--gold-bright) !important;
+            font-weight: 900 !important;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+        }
+
+        .products-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px; height: auto !important;
+        }
+
+        .pos-product-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 8px; text-align: center; cursor: pointer;
+            display: flex; flex-direction: column; justify-content: space-between; position: relative;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000; padding: 14px;
+        }
+
+        .modal-body {
+            background: var(--card-bg); border: 1px solid var(--gold-primary);
+            padding: 20px; border-radius: 16px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+        }
+
+        .toggle-group { display: flex; gap: 4px; margin-bottom: 4px; flex-shrink: 0; }
+
+        .toggle-btn {
+            flex: 1; padding: 6px; background: #0f0f14; border: 1px solid var(--card-border);
+            color: var(--text-muted); border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 800; text-align: center; min-height: 32px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .toggle-btn.active { background: var(--gold-primary); color: #000; font-weight: 900; border-color: var(--gold-bright); }
+
+        .section-label { font-size: 0.73rem; color: var(--text-muted); margin-top: 4px; margin-bottom: 2px; display: block; font-weight: 700; }
+
+        .offline-status-badge {
+            background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger);
+            color: var(--danger); padding: 4px 10px; border-radius: 14px; font-size: 0.72rem; font-weight: 800; display: none; align-items: center; gap: 4px;
+        }
+
+        #mim89ThermalPrintBox { display: none; }
+
+        /* 🖨️ تنسيق الطباعة الحرارية بالخطوط العريضة والمكبرة للدليفري ورقم الطلب */
+        @media print {
+            @page { size: 80mm auto; margin: 0mm !important; }
+            body > *:not(#mim89ThermalPrintBox) { display: none !important; }
+            html, body { background: #fff !important; color: #000 !important; width: 78mm !important; font-family: 'Tajawal', sans-serif !important; }
+            #mim89ThermalPrintBox { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 76mm !important; }
+            #mim89ThermalPrintBox * { color: #000 !important; font-weight: 900 !important; }
         }
     </style>
 </head>
-<body class="admin-body">
+<body class="cashier-body">
 
-    <!-- 🔐 شاشة الدخول للمخزن -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-card">
-            <h2 style="color:var(--gold-primary); margin-bottom:10px; font-weight:900;">
-                <i class="fa-solid fa-boxes-stacked"></i> مخزن MIM89
-            </h2>
-            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور المخزن أو الأدمن للوصول</p>
-            <input type="password" id="invPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') loginInventory()">
-            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin:5px 0; font-weight:bold;"></p>
-            <button onclick="loginInventory()" class="gold-btn btn-block" style="margin-top:10px; padding:12px; width:100%;">دخول لوحة المخزن 🚀</button>
+    <!-- 🔒 شاشة تسجيل الدخول اللمسية -->
+    <div id="authOverlay">
+        <div class="login-card">
+            <h3 style="color:var(--gold-primary); font-size:1.15rem; font-weight:900; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <i class="fa-solid fa-lock"></i> كاشير مطعم MIM89
+            </h3>
+            <p style="color:#777788; font-size:0.78rem; margin-top:4px;">أدخل رمز الدخول المسجل للشيفت</p>
+            
+            <div id="pinDisplay" class="pin-display">. . . .</div>
+
+            <div class="keypad">
+                <button type="button" class="key-btn" onclick="pressPin('3')">3</button>
+                <button type="button" class="key-btn" onclick="pressPin('2')">2</button>
+                <button type="button" class="key-btn" onclick="pressPin('1')">1</button>
+
+                <button type="button" class="key-btn" onclick="pressPin('6')">6</button>
+                <button type="button" class="key-btn" onclick="pressPin('5')">5</button>
+                <button type="button" class="key-btn" onclick="pressPin('4')">4</button>
+
+                <button type="button" class="key-btn" onclick="pressPin('9')">9</button>
+                <button type="button" class="key-btn" onclick="pressPin('8')">8</button>
+                <button type="button" class="key-btn" onclick="pressPin('7')">7</button>
+
+                <button type="button" class="key-btn" onclick="submitPin()" style="color:var(--success)">✓</button>
+                <button type="button" class="key-btn" onclick="pressPin('0')">0</button>
+                <button type="button" class="key-btn" onclick="clearPin()" style="color:var(--danger)">C</button>
+            </div>
+
+            <input type="hidden" id="cashierPassInput">
+            <p id="authError" style="color:var(--danger); font-size:0.78rem; height:18px; font-weight:bold; margin-top:4px;"></p>
+
         </div>
     </div>
 
-    <!-- 📦 الواجهة الرئيسية للمخزن -->
-    <div class="container" id="invMainApp" style="display:none;">
-        
-        <header class="header-title">
-            <div>
-                <h1 style="color:var(--gold-primary); font-size:1.4rem; font-weight:900;">
-                    <i class="fa-solid fa-boxes-stacked"></i> MIM89 - إدارة المخزن والخصم الآلي
-                </h1>
-                <p style="color:#aaa; font-size:0.78rem; margin-top:3px;">متابعة الكميات، أسعار الشراء، والحد الأدنى للنواقص</p>
-            </div>
-            
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none; padding:8px 12px;">
-                    <i class="fa-solid fa-rotate"></i> تحديث ومزامنة 🔄
+    <!-- 🖥️ التطبيق الرئيسي للكاشير -->
+    <div id="cashierMainApp">
+        <div id="pendingOrdersAlertBanner" onclick="switchCashierTab('tabOnlineOrders', document.querySelectorAll('.pos-sidebar .toggle-btn')[1])" style="display:none; background:var(--gold-primary); color:#000; padding:6px 12px; font-weight:900; text-align:center; cursor:pointer;">
+            <i class="fa-solid fa-bell fa-bounce"></i> يوجد طلبات أو مكالمات واردة جديدة! (اضغط هنا للمعاينة)
+        </div>
+
+        <header class="pos-header">
+            <div class="brand-dropdown-container">
+                <button class="brand-btn" onclick="toggleBrandMenu()">
+                    <i class="fa-solid fa-cash-register"></i> MIM89 POS
+                    <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
                 </button>
-                <a href="admin.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-user-shield"></i> الأدمن
-                </a>
-                <a href="costing.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-vault"></i> الخزينة
-                </a>
-                <a href="cashier.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-cash-register"></i> الكاشير
-                </a>
-                <button onclick="location.reload()" class="gold-btn btn-danger btn-sm" style="padding:8px 12px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+                <div id="brandDropdownMenu" class="brand-dropdown">
+                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
+                    <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
+                    <button onclick="openOutofStockModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
+                    <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
+                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
+                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
+                    <button onclick="openDriverSettlementModal(); openModal('dailyReportModal'); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-motorcycle"></i> تصفية واستلام حساب الدليفري</button>
+                    <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
+                    <button onclick="openShiftReportModal(); toggleBrandMenu();"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</button>
+                    <hr style="border-color:#333; margin:3px 0;">
+                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square"></i> تعديل ملاحظات المطبخ السريعة</button>
+                    <button onclick="unlockIpadAudio(); toggleBrandMenu();"><i class="fa-solid fa-bell"></i> تفعيل التنبيه الصوتي</button>
+                    <button onclick="location.reload(); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
+                    <button onclick="runCloudDiagnostics(this); toggleBrandMenu();" style="color:#38bdf8;"><i class="fa-solid fa-stethoscope"></i> 🩺 فحص الاتصال السحابي</button>
+                    <button onclick="repairCloudSync(this); toggleBrandMenu();" style="color:#f59e0b;"><i class="fa-solid fa-wrench"></i> 🔧 إصلاح المزامنة</button>
+                    <hr style="border-color:#333; margin:3px 0;">
+                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div id="offlineStatusBadge" class="offline-status-badge">
+                    <i class="fa-solid fa-wifi"></i> أوفلاين (حفظ محلي)
+                </div>
+                <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;"></span>
+                <button onclick="openCashDrawer()" class="gold-btn" style="padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444; width:auto;"><i class="fa-solid fa-box-open"></i> الدرج</button>
             </div>
         </header>
 
-        <!-- 📊 كروت مؤشرات المخزن -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h5>إجمالي القيمة النقدية للمخزون</h5>
-                <div class="val" id="kpiTotalInvValue">0 د.ع</div>
-            </div>
-            <div class="kpi-card">
-                <h5>إجمالي عدد المواد الأولية</h5>
-                <div class="val" id="kpiTotalInvItems">0 مادة</div>
-            </div>
-            <div class="kpi-card" style="border-color:var(--danger);">
-                <h5>مواد أوشكت على النفاد</h5>
-                <div class="val" id="kpiLowStockCount" style="color:var(--danger);">0 مادة</div>
-            </div>
-        </div>
-
-        <!-- ⚠️ شريط تنبيه النواقص المباشر -->
-        <div id="lowStockAlertBanner" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid var(--danger); padding:10px 14px; border-radius:8px; margin-bottom:15px; color:#fff; font-size:0.85rem;">
-            <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger); font-size:1rem; margin-left:6px;"></i>
-            <strong>تنبيه المخزون:</strong> يوجد مواد انخفضت عن الحد الأدنى، يرجى إعادة التجهيز فوراً!
-        </div>
-
-        <!-- ➕ إضافة مادة جديدة للمخزن -->
-        <div class="card">
-            <h4 style="color:var(--gold-primary); margin-bottom:12px; font-size:1.05rem;">
-                <i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة للجرد
-            </h4>
-            <div class="add-grid">
-                <input type="text" id="newInvName" class="gold-input-inline" placeholder="اسم المادة (مثلاً: صدور دجاج طازجة)">
-                <input type="number" id="newInvQty" class="gold-input-inline" placeholder="الكمية الكلية">
-                <input type="text" id="newInvUnit" class="gold-input-inline" placeholder="الوحدة (كغم/قطعة/علبة)">
-                <input type="number" id="newInvPrice" class="gold-input-inline" placeholder="إجمالي الشراء (د.ع)">
-                <input type="number" id="newInvMinLimit" class="gold-input-inline" placeholder="حد التنبيه (مثلاً 10)" value="10">
-                <button onclick="addNewInventoryItem()" class="gold-btn" style="padding:9px 16px; font-weight:bold; white-space:nowrap; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:6px; cursor:pointer;">
-                    <i class="fa-solid fa-save"></i> حفظ المادة
-                </button>
-            </div>
-        </div>
-
-        <!-- 📋 جدول المواد المسجلة وحساب كلفة الوحدة -->
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-                <div>
-                    <h4 style="color:var(--gold-primary); margin:0; font-size:1.05rem;">
-                        <i class="fa-solid fa-list-check"></i> قائمة مواد المخزن والتكلفة التلقائية (تعديل مباشر)
-                    </h4>
-                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتحدث سعر الكيلو/القطعة آلياً عند تغيير الكمية أو المبلغ الكلي</span>
+        <div class="pos-container">
+            <!-- 🛒 الشريط الجانبي -->
+            <aside class="pos-sidebar">
+                <div class="toggle-group" style="margin-bottom:4px;">
+                    <button class="toggle-btn active" onclick="switchCashierTab('tabPosDirect', this)"><i class="fa-solid fa-utensils"></i> بيع مباشر</button>
+                    <button class="toggle-btn" onclick="switchCashierTab('tabOnlineOrders', this)"><i class="fa-solid fa-phone-volume"></i> الطلبات الواردة <span id="liveOrdersBadge" style="background:var(--danger); color:#fff; border-radius:50%; padding:2px 5px; font-size:0.65rem; display:none;">0</span></button>
                 </div>
-                
-                <div style="width:230px;">
-                    <input type="text" id="invSearchInput" class="gold-input-inline" placeholder="🔍 بحث في المواد..." onkeyup="filterInventoryTable(this.value)">
-                </div>
-            </div>
-            
-            <div style="overflow-x:auto;">
-                <table class="data-table" style="width:100%; border-collapse:collapse;">
-                    <thead>
-                        <tr style="background:#121216; color:var(--gold-primary); font-size:0.85rem; border-bottom:1px solid var(--border);">
-                            <th style="padding:10px; text-align:right; width: 4%;">#</th>
-                            <th style="padding:10px; text-align:right; width: 22%;">اسم المادة الأولية</th>
-                            <th style="padding:10px; text-align:right; width: 14%;">الكمية المتبقية</th>
-                            <th style="padding:10px; text-align:right; width: 10%;">الوحدة</th>
-                            <th style="padding:10px; text-align:right; width: 18%;">إجمالي الشراء (د.ع)</th>
-                            <th style="padding:10px; text-align:right; width: 16%;">كلفة الوحدة (تلقائي)</th>
-                            <th style="padding:10px; text-align:right; width: 10%;">حالة المخزون</th>
-                            <th style="padding:10px; text-align:center; width: 6%;">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTableBody"></tbody>
-                </table>
-            </div>
-        </div>
 
+                <div id="tabPosDirect" class="tab-content" style="display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden;">
+                    <div class="pos-cart-box">
+                        <div class="cart-scrollable-area">
+                            <span class="section-label">نوع الخدمة الثابت:</span>
+                            <div class="toggle-group" id="posOrderTypeGroup">
+                                <button class="toggle-btn active" data-value="dine_in" onclick="selectOrderType(this)">🍽️ صالة</button>
+                                <button class="toggle-btn" data-value="takeaway" onclick="selectOrderType(this)">🛍️ سفري</button>
+                                <button class="toggle-btn" data-value="delivery" onclick="selectOrderType(this)">🛵 توصيل</button>
+                            </div>
+
+                            <div id="driverSelectBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
+                                <span class="section-label" style="color:var(--gold-bright); font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
+                                <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
+                            </div>
+
+                            <span class="section-label">طريقة الدفع:</span>
+                            <div class="toggle-group" id="posPaymentGroup">
+                                <button class="toggle-btn active" data-value="cash" onclick="selectPaymentMethod(this)">💵 كاش</button>
+                                <button class="toggle-btn" data-value="visa" onclick="selectPaymentMethod(this)">💳 فيزا / ماستر</button>
+                            </div>
+
+                            <div style="position:relative; margin: 2px 0; flex-shrink:0;">
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
+                                        style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
+                                    ✖
+                                </button>
+                                <div id="phoneSearchResults" style="display:none;"></div>
+                            </div>
+
+                            <div style="background:#121215; padding:5px 6px; border-radius:6px; border:1px solid var(--card-border); margin: 2px 0; flex-shrink:0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                    <span style="font-size:0.72rem; color:var(--gold-bright); font-weight:800;">
+                                        <i class="fa-solid fa-percent"></i> إدارة الخصومات:
+                                    </span>
+                                    <span id="discountStatusBadge" style="font-size:0.7rem; color:#aaa; font-weight:bold; display:none;"></span>
+                                </div>
+
+                                <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
+                                    <button id="btnFreeDiscount" onclick="toggleFreeDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🎉 مجاني</button>
+                                    <button id="btnPercentDiscount" onclick="togglePercentDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ % خصم</button>
+                                    <button id="btnAmountDiscount" onclick="promptAmountDiscount()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">💵 خصم مبلغ</button>
+                                    <button id="btnCouponDiscount" onclick="applyCouponAtCashier()" class="gold-btn" style="padding:4px; font-size:0.7rem; background:#222228; color:#fff; border:1px solid #444; flex:1; min-height:26px;">🏷️ كوبون</button>
+                                    <button id="btnClearDiscountX" onclick="clearAllDiscounts()" title="إلغاء الخصم" class="gold-btn" style="padding:4px 6px; background:var(--danger); color:#fff; width:auto; font-size:0.75rem; display:none; min-height:26px;">✕</button>
+                                </div>
+                            </div>
+
+                            <div id="posCartList" class="cart-items-list">
+                                <p style="text-align:center; color:#777; font-size:0.8rem; padding:12px;">اختر الوجبات لإضافتها للطلب</p>
+                            </div>
+                        </div>
+
+                        <div style="padding-top:4px; margin-top:auto; flex-shrink:0; background: var(--card-bg); border-top: 1px solid var(--card-border);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:1rem; font-weight:900;">
+                                <span>المجموع الكلي:</span>
+                                <span id="posTotalAmount" style="color:var(--gold-bright);">0 د.ع</span>
+                            </div>
+                            
+                            <button type="button" class="gold-btn" onclick="openQuickCashModal()" style="padding: 8px; font-size: 0.9rem; font-weight: 900; background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; margin-bottom: 4px; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4); min-height: 38px;">
+                                <i class="fa-solid fa-calculator"></i> 🧮 حساب وطباعة الفواتير
+                            </button>
+
+                            <div style="display:flex; gap:3px; margin-bottom:1px;">
+                                <button type="button" class="gold-btn" onclick="clearPosCart()" style="padding: 5px 8px; font-size: 0.72rem; background: var(--danger); color: #fff; width: 100%; min-height: 30px;">
+                                    إلغاء السلة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabOnlineOrders" class="tab-content" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; padding:6px;">
+                    <div id="liveOrdersContainer">
+                        <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
+                    </div>
+
+                    <!-- 🛵 حسابات السائقين المعلقة (كانت مفقودة سابقاً فلم تكن تظهر إطلاقاً) -->
+                    <div id="drawerDeliverySettlementBox" style="margin-top:10px; background:#121215; border:1px solid var(--card-border); border-radius:10px; padding:8px;"></div>
+                </div>
+            </aside>
+
+            <!-- 📦 الأصناف والمنتجات والبحث متفاعلة تلقائياً مع أقسام الأدمن -->
+            <main class="pos-main-content">
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="text" id="posSearchInput" class="gold-input-inline" placeholder="🔍 بحث عن وجبة بالاسم..." oninput="filterPosProducts()" style="margin-bottom:0; font-size:0.85rem; text-align:right; padding:8px 12px;">
+                </div>
+
+                <!-- 🍔 شريط الأقسام الديناميكي المتولّد تلقائياً من app.js -->
+                <div id="posCategoriesBar" class="categories-bar"></div>
+
+                <div id="posProductsGrid" class="products-grid"></div>
+            </main>
+        </div>
     </div>
 
-    <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js"></script>
+    <!-- 🖨️ الحاوية الحرارية للطباعة -->
+    <div id="mim89ThermalPrintBox"></div>
+
+    <!-- 🧮 حاسبة النقد المنبثقة الإلزامية -->
+    <div id="quickCashModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:340px; text-align:center;">
+            <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-calculator"></i> حاسبة النقد (إجباري)</h3>
+            <p style="font-size:0.8rem; color:#aaa;">المبلغ الكلي المطلوب:</p>
+            <h2 id="modalCashTotalReq" style="color:var(--gold-bright); font-size:1.6rem; margin-bottom:8px;">0 د.ع</h2>
+            
+            <input type="number" id="cashGivenInput" class="gold-input-inline" placeholder="المبلغ المستلم من الزبون..." style="font-size:1.1rem; text-align:center; padding:8px; margin-bottom:8px;" oninput="calculateCashChange()">
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px;">
+                <button onclick="setCashGiven(5000)" class="gold-btn" style="background:#222; color:#fff; border:1px solid #444; padding:6px;">5,000 د.ع</button>
+                <button onclick="setCashGiven(10000)" class="gold-btn" style="background:#222; color:#fff; border:1px solid #444; padding:6px;">10,000 د.ع</button>
+                <button onclick="setCashGiven(25000)" class="gold-btn" style="background:#222; color:#fff; border:1px solid #444; padding:6px;">25,000 د.ع</button>
+                <button onclick="setCashGiven(50000)" class="gold-btn" style="background:#222; color:#fff; border:1px solid #444; padding:6px;">50,000 د.ع</button>
+            </div>
+
+            <div style="background:#111115; padding:8px; border-radius:6px; border:1px solid var(--gold-primary); margin-bottom:10px;">
+                <span style="font-size:0.8rem; color:#aaa;">المبلغ المتبقي للزبون:</span>
+                <h2 id="cashChangeResult" style="color:var(--success); font-size:1.4rem;">0 د.ع</h2>
+            </div>
+
+            <div style="display:flex; gap:5px;">
+                <button onclick="proceedToPrintAfterCash()" class="gold-btn" style="flex:1; padding:8px; background:var(--success); color:#fff;"><i class="fa-solid fa-check"></i> تأكيد والانتقال للطباعة</button>
+                <button onclick="closeModal('quickCashModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:8px;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🖨️ نافذة الطباعة الحرارية المزدوجة -->
+    <div id="printOptionsModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:380px; text-align:center;">
+            <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-print"></i> إتمام وطباعة الطلب</h3>
+            <p style="font-size:0.8rem; color:#aaa; margin-bottom:12px;">اطبع فاتورة الزبون وأمر المطبخ. لن يُفرغ الكاشير الطلب إلا بعد إتمام الطباعتين معاً.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <button id="btnPrintCustomerModal" onclick="executeCustomerPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:12px; font-size:0.92rem; flex-direction:column; gap:2px;">
+                    <span>🧾 1. طباعة فاتورة الزبون</span>
+                    <span id="custPrintBadge" style="font-size:0.72rem; font-weight:normal; color:#888;">(لم تُطبع)</span>
+                </button>
+                <button id="btnPrintKitchenModal" onclick="executeKitchenPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:12px; font-size:0.92rem; flex-direction:column; gap:2px;">
+                    <span>🔥 2. طباعة أمر تجهيز المطبخ</span>
+                    <span id="kitchenPrintBadge" style="font-size:0.72rem; font-weight:normal; color:#888;">(لم تُطبع)</span>
+                </button>
+            </div>
+
+            <div style="display:flex; gap:5px;">
+                <button onclick="tryFinalizeAndClearOrder()" class="gold-btn" style="flex:1; background:var(--success); color:#fff; padding:8px;">
+                    <i class="fa-solid fa-check"></i> إتمام وتفريغ السلة نهائياً
+                </button>
+                <button onclick="closeModal('printOptionsModal')" class="gold-btn" style="background:#444; color:#fff; width:auto; padding:8px;">إغلاق مؤقت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📜 سجل الفواتير المطبوعة -->
+    <div id="completedOrdersModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</h4>
+                <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <div style="display:flex; gap:5px; margin-bottom:6px;">
+                <input type="date" id="ordersLogDateInput" class="gold-input-inline" style="flex:1; font-size:0.8rem;" onchange="renderCompletedOrdersLog()">
+                <input type="text" id="ordersLogSearchInput" class="gold-input-inline" placeholder="🔍 رقم الطلب / الزبون / الهاتف" style="flex:1.3; font-size:0.8rem;" oninput="renderCompletedOrdersLog()">
+            </div>
+            <div id="ordersLogSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:6px; padding:6px 10px; font-size:0.78rem; color:#ccc; margin-bottom:8px; text-align:center;"></div>
+            <div id="completedOrdersList" style="max-height:300px; overflow-y:auto; font-size:0.8rem;"></div>
+            <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:8px;">مسح السجل بالكامل</button>
+        </div>
+    </div>
+
+    <!-- 💰 نافذة إدارة الصرفيات والمسحوبات والسُلف -->
+    <div id="expenseManagerModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--danger);"><i class="fa-solid fa-wallet"></i> إدارة الصرفيات والمسحوبات والسُلف</h4>
+                <button onclick="closeModal('expenseManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:8px; border-radius:6px; border:1px solid var(--card-border); margin-bottom:10px;">
+                <label class="section-label">نوع الصرفية:</label>
+                <select id="expenseTypeSelect" class="gold-input-inline" onchange="toggleExpenseTypeFields()" style="font-size:0.8rem; margin-bottom:5px;"></select>
+                <select id="expenseEmployeeSelect" class="gold-input-inline" style="display:none; font-size:0.8rem; margin-bottom:5px;"></select>
+                <label class="section-label">المبلغ (د.ع):</label>
+                <input type="number" id="expenseAmountInput" class="gold-input-inline" placeholder="أدخل المبلغ بالدينار..." style="font-size:0.85rem; margin-bottom:5px;">
+                <label class="section-label">ملاحظات / التفاصيل:</label>
+                <input type="text" id="expenseNoteInput" class="gold-input-inline" placeholder="اكتب تفاصيل الصرفية هنا..." style="font-size:0.8rem; margin-bottom:6px;">
+                <button onclick="addNewExpenseRecord()" class="gold-btn" style="background:var(--danger); color:#fff;">تسجيل الصرفية وخصمها من الصندوق</button>
+            </div>
+            <h5 style="color:var(--gold-bright); margin-bottom:5px;">صرفيات اليوم المسجلة:</h5>
+            <div id="expensesListTable" style="max-height:150px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 📊 كشف الحساب المالي اليومي وتصفية الدليفري -->
+    <div id="dailyReportModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--blue-accent);"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي وتصفية الحساب</h4>
+                <button onclick="closeModal('dailyReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <div style="display:flex; gap:5px; margin-bottom:8px;">
+                <input type="date" id="reportDateInput" class="gold-input-inline" style="flex:2;" onchange="renderDailyReport(this.value)">
+                <button onclick="renderDailyReport(document.getElementById('reportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
+            </div>
+            <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
+                <div id="reportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center; margin-bottom:5px;"></div>
+                <div id="reportCashierText" style="color:#aaa; text-align:center; margin-bottom:6px;"></div>
+                <hr style="border-color:#333; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="repTotalSales" style="color:var(--gold-primary);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>عدد الفواتير:</span> <strong id="repOrdersCount">0</strong> فاتورة</div>
+                <div style="display:flex; justify-content:space-between;"><span>مبيعات الكاش:</span> <strong id="repTotalCash" style="color:var(--success);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مبيعات الفيزا:</span> <strong id="repTotalVisa" style="color:var(--blue-accent);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <strong id="repTotalDelivery">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>صافي الوجبات:</span> <strong id="repNetFood">0</strong> د.ع</div>
+                <hr style="border-color:#333; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>إجمالي الصرفيات:</span> - <strong id="repTotalExpenses">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;"><span>الصافي الفعلي بالصندوق:</span> <strong id="repNetCashBox" style="color:var(--gold-bright);">0</strong> د.ع</div>
+            </div>
+            
+            <!-- 🛵 حاوية تصفية سائقي التوصيل والدليفري المباشرة -->
+            <div id="repDriversList" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- 📦 جرد الوجبات المباعة -->
+    <div id="itemsReportModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</h4>
+                <button onclick="closeModal('itemsReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <div style="display:flex; gap:5px; margin-bottom:8px;">
+                <input type="date" id="itemsReportDateInput" class="gold-input-inline" style="flex:2;" onchange="renderItemsReport(this.value)">
+                <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)" class="gold-btn" style="flex:1;">عرض</button>
+            </div>
+            <div style="background:#121215; padding:6px; border-radius:6px; margin-bottom:8px; font-size:0.8rem;">
+                <div id="itemsReportDateText" style="color:var(--gold-bright); font-weight:bold; text-align:center;"></div>
+                <div style="text-align:center; margin-top:3px;">إجمالي القطع المباعة: <strong id="repTotalItemsQty" style="color:var(--success);">0 قطعة</strong></div>
+            </div>
+            <div id="repItemsSoldListDetail" style="max-height:200px; overflow-y:auto; font-size:0.8rem;"></div>
+            <button onclick="exportItemsReportPDFAndWhatsApp()" class="gold-btn" style="margin-top:10px; background:#25D366; color:#fff;">
+                <i class="fa-brands fa-whatsapp"></i> إرسال تقرير الجرد عبر الواتساب
+            </button>
+        </div>
+    </div>
+
+    <!-- 🔒 تقفيل الشيفت والصندوق -->
+    <div id="shiftReportModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت والصندوق</h4>
+                <button onclick="closeModal('shiftReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
+                <div>الكاشير الحالي: <strong id="shiftCashierName" style="color:var(--gold-bright);">الرئيسي</strong></div>
+                <div>وقت بداية الشيفت: <strong id="shiftStartTime" style="color:#aaa;">--:--</strong></div>
+                <hr style="border-color:#333; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between;"><span>عدد الطلبات:</span> <strong id="shiftOrdersCount">0</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="shiftGrandTotal" style="color:var(--gold-primary);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الكاش:</span> <strong id="shiftTotalCash" style="color:var(--success);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الفيزا:</span> <strong id="shiftTotalVisa" style="color:var(--blue-accent);">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>خصم الصرفيات والسُلف:</span> - <strong id="shiftTotalExpenses">0</strong> د.e</div>
+                <hr style="border-color:#333; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;">
+                    <span>النقد الواجب تسليمه بالصندوق:</span>
+                    <strong id="shiftNetDrawerCash" style="color:var(--gold-bright);">0</strong> د.ع
+                </div>
+            </div>
+            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:10px;">
+                تأكيد تقفيل الشيفت وتسليم الصندوق 🔒
+            </button>
+        </div>
+    </div>
+
+    <!-- ✏️ محرر ملاحظات المطبخ السريعة -->
+    <div id="kitchenNotesManagerModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--purple-accent);"><i class="fa-solid fa-pen-to-square"></i> محرر ملاحظات المطبخ السريعة</h4>
+                <button onclick="closeModal('kitchenNotesManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <div style="display:flex; gap:4px; margin-bottom:8px;">
+                <input type="text" id="newKitchenNoteInput" class="gold-input-inline" placeholder="اكتب ملاحظة جديدة..." style="font-size:0.8rem; text-align:right;">
+                <button onclick="addKitchenNoteItem()" class="gold-btn" style="width:auto; padding:5px 10px;">إضافة</button>
+            </div>
+            <div id="kitchenNotesListTable" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 🕐 نافذة تحديد أوقات فتح وإغلاق استقبال الطلبات -->
+    <div id="workingHoursModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:380px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> أوقات فتح وإغلاق استقبال الطلبات</h4>
+                <button onclick="closeModal('workingHoursModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#fff; cursor:pointer; margin-bottom:10px;">
+                    <input type="checkbox" id="workHoursEnabledCheckbox" style="width:18px; height:18px;">
+                    تفعيل تقييد أوقات استقبال الطلبات بالمينيو الإلكتروني
+                </label>
+
+                <label class="section-label">وقت الفتح:</label>
+                <input type="time" id="workHoursOpenInput" class="gold-input-inline" style="margin-bottom:8px;">
+
+                <label class="section-label">وقت الإغلاق:</label>
+                <input type="time" id="workHoursCloseInput" class="gold-input-inline" style="margin-bottom:4px;">
+            </div>
+
+            <button onclick="saveWorkingHours()" class="gold-btn" style="background:var(--success); color:#fff;">
+                <i class="fa-solid fa-check"></i> حفظ أوقات الدوام
+            </button>
+        </div>
+    </div>
+
+    <!-- 🚫 نافذة إدارة النفاد والوجبات المنتهية -->
+    <div id="outOfStockModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية</h4>
+                <button onclick="closeModal('outOfStockModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <p style="font-size:0.75rem; color:#aaa; margin-bottom:8px;">اضغط على أي صنف لتحديده كـ "نافذ" فيختفي من إمكانية الطلب بالكاشير والمينيو الإلكتروني مؤقتاً.</p>
+            <div id="outOfStockListContainer" style="max-height:320px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 🏷️ نافذة إدارة الكوبونات وأكواد الخصم -->
+    <div id="couponsManagerModal" class="modal-overlay">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم</h4>
+                <button onclick="closeModal('couponsManagerModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+
+            <div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">
+                <label class="section-label">كود الكوبون:</label>
+                <input type="text" id="newCouponCodeInput" class="gold-input-inline" placeholder="مثال: MIM10" style="margin-bottom:6px; text-transform:uppercase;">
+
+                <label class="section-label">نوع الخصم:</label>
+                <select id="newCouponTypeSelect" class="gold-input-inline" style="margin-bottom:6px;">
+                    <option value="percent">نسبة مئوية %</option>
+                    <option value="amount">مبلغ ثابت (د.ع)</option>
+                </select>
+
+                <label class="section-label">قيمة الخصم:</label>
+                <input type="number" id="newCouponValueInput" class="gold-input-inline" placeholder="مثال: 10" style="margin-bottom:8px;">
+
+                <button onclick="addNewCoupon()" class="gold-btn" style="background:var(--success); color:#fff;">إضافة الكوبون</button>
+            </div>
+
+            <h5 style="color:var(--gold-bright); margin-bottom:5px;">الكوبونات المسجلة:</h5>
+            <div id="couponsListContainer" style="max-height:180px; overflow-y:auto; font-size:0.8rem;"></div>
+        </div>
+    </div>
+
+    <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
+    <script src="app.js?v=901"></script>
     <script>
-        function loginInventory() {
-            const pass = document.getElementById('invPassInput').value.trim();
-            const validInvPass = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
-            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
+        /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
+        var enteredPin = "";
 
-            if (pass === validInvPass || pass === validAdminPass || pass === "inv123" || pass === "123") {
-                document.getElementById('authOverlay').style.display = 'none';
-                document.getElementById('invMainApp').style.display = 'block';
-                renderInventoryTable();
-            } else {
-                document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
+        function pressPin(num) {
+            if (enteredPin.length < 6) {
+                enteredPin += String(num);
+                updatePinDisplay();
             }
         }
 
-        function filterInventoryTable(query) {
-            const q = query.toLowerCase();
-            const inv = getData('sys_inventory') || [];
-            const filtered = inv.filter(i => (i.name || '').toLowerCase().includes(q));
-            renderInventoryTableCustom(filtered);
+        function clearPin() {
+            enteredPin = "";
+            updatePinDisplay();
+            var errEl = document.getElementById('authError');
+            if (errEl) errEl.innerText = "";
         }
 
-        function renderInventoryTableCustom(invList) {
-            const tbody = document.getElementById('inventoryTableBody');
-            if (!tbody) return;
-
-            if (!invList || invList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مواد مطابقة للبحث</td></tr>`;
-                return;
-            }
-
-            let totalVal = 0;
-            let lowCount = 0;
-
-            tbody.innerHTML = invList.map((item, index) => {
-                const qty = Number(item.quantity) || 0;
-                const totalPrice = Number(item.totalPrice) || 0;
-                const minLimit = Number(item.minLimit) || 10;
-                
-                totalVal += totalPrice;
-
-                const costPerUnit = (totalPrice > 0 && qty > 0) 
-                    ? (totalPrice / qty) 
-                    : (Number(item.costPerUnit) || 0);
-
-                const isLow = qty <= minLimit;
-                if (isLow) lowCount++;
-
-                return `
-                    <tr style="border-bottom:1px solid var(--border);">
-                        <td style="padding:10px;">${index + 1}</td>
-                        <td style="padding:10px;">
-                            <input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input-inline" style="font-weight:bold;">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="number" value="${qty}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline" style="${isLow ? 'color:var(--danger); font-weight:bold;' : ''}">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="number" value="${totalPrice}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline">
-                        </td>
-                        <td style="padding:10px; color:var(--gold-bright); font-weight:bold;">
-                            ${Number(costPerUnit.toFixed(0)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}
-                        </td>
-                        <td style="padding:10px;">
-                            ${isLow ? '<span class="low-stock-badge">⚠️ منخفض</span>' : '<span class="normal-stock-badge">✅ ممتازة</span>'}
-                        </td>
-                        <td style="padding:10px; text-align:center;">
-                            <button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem; background:var(--danger); color:#fff; border:none; border-radius:4px; cursor:pointer;">حذف</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            // تحديث الكروت العلوية
-            const totalValEl = document.getElementById('kpiTotalInvValue');
-            const totalCountEl = document.getElementById('kpiTotalInvItems');
-            const lowCountEl = document.getElementById('kpiLowStockCount');
-            const alertBanner = document.getElementById('lowStockAlertBanner');
-
-            if (totalValEl) totalValEl.innerText = totalVal.toLocaleString() + ' د.ع';
-            if (totalCountEl) totalCountEl.innerText = invList.length + ' مادة';
-            if (lowCountEl) lowCountEl.innerText = lowCount + ' مادة';
-            if (alertBanner) alertBanner.style.display = lowCount > 0 ? 'block' : 'none';
-        }
-
-        function renderInventoryTable() {
-            const inv = getData('sys_inventory') || [];
-            renderInventoryTableCustom(inv);
-        }
-
-        function addNewInventoryItem() {
-            const name = document.getElementById('newInvName').value.trim();
-            const qty = Number(document.getElementById('newInvQty').value);
-            const unit = document.getElementById('newInvUnit').value.trim() || 'كغم';
-            const totalPrice = Number(document.getElementById('newInvPrice').value) || 0;
-            const minLimit = Number(document.getElementById('newInvMinLimit').value) || 10;
-
-            if (!name || isNaN(qty)) return alert("يرجى إدخال اسم المادة والكمية الكلية!");
-
-            const inv = getData('sys_inventory') || [];
-            const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
-
-            const newItem = {
-                id: Date.now(),
-                name: name,
-                quantity: qty,
-                unit: unit,
-                totalPrice: totalPrice,
-                costPerUnit: costPerUnit,
-                minLimit: minLimit
-            };
-
-            inv.push(newItem);
-            setData('sys_inventory', inv);
-
-            document.getElementById('newInvName').value = '';
-            document.getElementById('newInvQty').value = '';
-            document.getElementById('newInvUnit').value = '';
-            document.getElementById('newInvPrice').value = '';
-
-            renderInventoryTable();
-            alert("✅ تم إدخال المادة للمخزن بنجاح!");
-        }
-
-        function updateInvField(id, field, value) {
-            let inv = getData('sys_inventory') || [];
-            let item = inv.find(i => Number(i.id) === Number(id));
-
-            if (item) {
-                if (field === 'quantity' || field === 'totalPrice' || field === 'minLimit') {
-                    item[field] = Number(value);
-                } else {
-                    item[field] = value;
-                }
-
-                if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
-                    item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
-                } else if (item.quantity === 0) {
-                    item.costPerUnit = 0;
-                }
-
-                setData('sys_inventory', inv);
-                renderInventoryTable();
+        function updatePinDisplay() {
+            var display = document.getElementById('pinDisplay');
+            if (display) {
+                display.innerText = enteredPin.length > 0 ? "• ".repeat(enteredPin.length).trim() : ". . . .";
             }
         }
 
-        function deleteInvItem(id) {
-            if (confirm("هل أنت متأكد من حذف هذه المادة الأولية من المخزن والجرد؟")) {
-                let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
-                setData('sys_inventory', inv);
-                renderInventoryTable();
+        function submitPin() {
+            var passInput = document.getElementById('cashierPassInput');
+            if (passInput) passInput.value = enteredPin;
+            if (typeof loginCashier === 'function') {
+                loginCashier();
             }
+        }
+
+        // 💰 [إصلاح] زر الدرج: المتصفح لا يستطيع فتح درج النقود كهربائياً إطلاقاً.
+        // درج الكاشير الحراري يُفتح عادةً تلقائياً عند طباعة فاتورة الزبون (لأنه موصول
+        // بالطابعة عبر منفذ RJ11). لذلك هذا الزر يشرح ذلك بدل فتح نافذة طباعة فارغة مربكة.
+        function openCashDrawer() {
+            alert("💰 درج النقود يُفتح تلقائياً عند طباعة فاتورة الزبون (لأنه موصول بطابعة الكاشير).\n\nإذا لم يفتح، تحقق من توصيل كيبل الدرج بالطابعة.");
+        }
+
+        function toggleBrandMenu() {
+            const menu = document.getElementById('brandDropdownMenu');
+            if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        window.onclick = function(e) {
+            if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
+                const menu = document.getElementById('brandDropdownMenu');
+                if (menu && menu.style.display === 'block') menu.style.display = 'none';
+            }
+        };
+
+        function initOfflineNetworkMonitor() {
+            const badge = document.getElementById('offlineStatusBadge');
+            function updateOnlineStatus() {
+                if (badge) badge.style.display = navigator.onLine ? 'none' : 'inline-flex';
+            }
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initData();
+            initOfflineNetworkMonitor();
+            if (typeof initCashierPage === 'function') initCashierPage();
         });
     </script>
 </body>
