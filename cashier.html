@@ -50,7 +50,7 @@
             height: 100vh; width: 100vw;
         }
 
-        /* 🔒 شاشة تسجيل الدخول اللمسية */
+        /* 🔒 شاشة تسجيل الدخول اللمسية (تحديد هوية الكاشير المناوب فقط - ليست الحاجز الأمني الفعلي) */
         #authOverlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -365,6 +365,7 @@
 
             <input type="hidden" id="cashierPassInput">
             <p id="authError" style="color:var(--danger); font-size:0.78rem; height:18px; font-weight:bold; margin-top:4px;"></p>
+
         </div>
     </div>
 
@@ -492,6 +493,9 @@
                     <div id="liveOrdersContainer">
                         <p style="color:#aaa; text-align:center; padding:15px; font-size:0.8rem;">لا توجد طلبات جارية حالياً</p>
                     </div>
+
+                    <!-- 🛵 حسابات السائقين المعلقة (كانت مفقودة سابقاً فلم تكن تظهر إطلاقاً) -->
+                    <div id="drawerDeliverySettlementBox" style="margin-top:10px; background:#121215; border:1px solid var(--card-border); border-radius:10px; padding:8px;"></div>
                 </div>
             </aside>
 
@@ -547,11 +551,13 @@
             <p style="font-size:0.8rem; color:#aaa; margin-bottom:12px;">اطبع فاتورة الزبون وأمر المطبخ. لن يُفرغ الكاشير الطلب إلا بعد إتمام الطباعتين معاً.</p>
             
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
-                <button id="btnPrintCustomerModal" onclick="executeCustomerPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:10px; font-size:0.9rem;">
-                    🧾 1. طباعة فاتورة الزبون
+                <button id="btnPrintCustomerModal" onclick="executeCustomerPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:12px; font-size:0.92rem; flex-direction:column; gap:2px;">
+                    <span>🧾 1. طباعة فاتورة الزبون</span>
+                    <span id="custPrintBadge" style="font-size:0.72rem; font-weight:normal; color:#888;">(لم تُطبع)</span>
                 </button>
-                <button id="btnPrintKitchenModal" onclick="executeKitchenPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:10px; font-size:0.9rem;">
-                    🔥 2. طباعة أمر تجهيز المطبخ
+                <button id="btnPrintKitchenModal" onclick="executeKitchenPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:12px; font-size:0.92rem; flex-direction:column; gap:2px;">
+                    <span>🔥 2. طباعة أمر تجهيز المطبخ</span>
+                    <span id="kitchenPrintBadge" style="font-size:0.72rem; font-weight:normal; color:#888;">(لم تُطبع)</span>
                 </button>
             </div>
 
@@ -571,7 +577,12 @@
                 <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</h4>
                 <button onclick="closeModal('completedOrdersModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-            <div id="completedOrdersList" style="max-height:250px; overflow-y:auto; font-size:0.8rem;"></div>
+            <div style="display:flex; gap:5px; margin-bottom:6px;">
+                <input type="date" id="ordersLogDateInput" class="gold-input-inline" style="flex:1; font-size:0.8rem;" onchange="renderCompletedOrdersLog()">
+                <input type="text" id="ordersLogSearchInput" class="gold-input-inline" placeholder="🔍 رقم الطلب / الزبون / الهاتف" style="flex:1.3; font-size:0.8rem;" oninput="renderCompletedOrdersLog()">
+            </div>
+            <div id="ordersLogSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:6px; padding:6px 10px; font-size:0.78rem; color:#ccc; margin-bottom:8px; text-align:center;"></div>
+            <div id="completedOrdersList" style="max-height:300px; overflow-y:auto; font-size:0.8rem;"></div>
             <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:8px;">مسح السجل بالكامل</button>
         </div>
     </div>
@@ -764,9 +775,9 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
     <script>
-        /* 🔒 برمجة كيباد الـ PIN اللمسي */
+        /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
 
         function pressPin(num) {
@@ -798,7 +809,12 @@
             }
         }
 
-        function openCashDrawer() { window.print(); }
+        // 💰 [إصلاح] زر الدرج: المتصفح لا يستطيع فتح درج النقود كهربائياً إطلاقاً.
+        // درج الكاشير الحراري يُفتح عادةً تلقائياً عند طباعة فاتورة الزبون (لأنه موصول
+        // بالطابعة عبر منفذ RJ11). لذلك هذا الزر يشرح ذلك بدل فتح نافذة طباعة فارغة مربكة.
+        function openCashDrawer() {
+            alert("💰 درج النقود يُفتح تلقائياً عند طباعة فاتورة الزبون (لأنه موصول بطابعة الكاشير).\n\nإذا لم يفتح، تحقق من توصيل كيبل الدرج بالطابعة.");
+        }
 
         function toggleBrandMenu() {
             const menu = document.getElementById('brandDropdownMenu');
