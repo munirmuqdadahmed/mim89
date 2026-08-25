@@ -308,7 +308,11 @@ function setData(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
     if (db && key !== 'sys_items') {
         try {
-            db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: Date.now() });
+            db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: Date.now() })
+                .catch(err => {
+                    console.error("Cloud setData error [" + key + "]:", err);
+                    if (typeof showCloudErrorBanner === 'function') showCloudErrorBanner(translateFirestoreError(err));
+                });
         } catch(e) {}
     }
 }
@@ -428,7 +432,12 @@ function setupCloudRealtimeSync() {
             localStorage.setItem('sys_items', JSON.stringify(cloudItems));
             if (typeof refreshActiveUI === 'function') refreshActiveUI();
         }
-    }, err => console.log("خطأ بالمزامنة السحابية:", err));
+    }, err => {
+        console.error("خطأ بالمزامنة السحابية:", err);
+        if (typeof showCloudErrorBanner === 'function') {
+            showCloudErrorBanner("تعذّر استقبال تحديثات المينيو من السحابة.\n" + translateFirestoreError(err));
+        }
+    });
 }
 
 // 🔄🗂️ مزامنة لحظية موحّدة للأقسام (Categories) بين لوحة الإدارة، المينيو، والكاشير.
@@ -625,6 +634,112 @@ async function globalSystemSync(btnElement) {
             }, 500);
         }
     }
+}
+
+/* ==========================================
+   2.9 🩺 أداة تشخيص الاتصال السحابي (تكشف سبب عدم وصول التعديلات للأجهزة الأخرى)
+   ========================================== */
+
+// 🈺 ترجمة أكواد أخطاء Firestore لرسائل عربية واضحة تشرح السبب والحل
+function translateFirestoreError(err) {
+    const code = (err && err.code) ? String(err.code) : '';
+    if (code.includes('permission-denied')) {
+        return "🚫 قواعد الأمان بـ Firestore ترفض العملية.\nالسبب الأشهر: قواعد الوضع التجريبي (Test mode) انتهت صلاحيتها.\nالحل: Firebase Console → Firestore Database → Rules → عدّل التاريخ أو القواعد وانشرها.";
+    }
+    if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+        return "📡 تعذّر الوصول لخوادم Firebase (الجهاز أوفلاين أو الشبكة تحجب الاتصال).";
+    }
+    if (code.includes('unauthenticated')) {
+        return "🔑 القواعد تشترط تسجيل دخول، والنظام حالياً يعمل بدون تسجيل دخول Firebase.";
+    }
+    if (code.includes('not-found')) {
+        return "❓ قاعدة البيانات أو المستند غير موجود.";
+    }
+    return "⚠️ خطأ: " + code + " — " + ((err && err.message) ? err.message : 'غير معروف');
+}
+
+// 🔔 عرض تنبيه مرئي واضح عند فشل أي رفع سحابي (بدل ابتلاع الخطأ بصمت كما كان سابقاً)
+function showCloudErrorBanner(message) {
+    let banner = document.getElementById('mim89CloudErrorBanner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'mim89CloudErrorBanner';
+        banner.style.cssText = 'position:fixed; bottom:0; left:0; right:0; background:#7f1d1d; color:#fff; padding:12px 16px; font-family:Tajawal,sans-serif; font-size:0.85rem; font-weight:bold; z-index:99999; box-shadow:0 -4px 20px rgba(0,0,0,0.6); direction:rtl; text-align:right; white-space:pre-line; line-height:1.6;';
+        document.body.appendChild(banner);
+    }
+    banner.innerHTML = '<span style="float:left; cursor:pointer; font-size:1.1rem; padding:0 8px;" onclick="this.parentElement.remove()">✕</span>⚠️ <strong>التعديل لم يُرفع للسحابة!</strong> (محفوظ على هذا الجهاز فقط)\n' + message;
+}
+
+// 🩺 الفحص الشامل: يختبر القراءة والكتابة الفعلية على خوادم Firebase ويقرّر أين الخلل بدقة
+async function runCloudDiagnostics(btnElement) {
+    const lines = [];
+    let originalText = '';
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص...';
+        btnElement.disabled = true;
+    }
+
+    // 1) هل مكتبة Firebase محمّلة أصلاً؟
+    if (typeof firebase === 'undefined') {
+        lines.push("❌ مكتبة Firebase غير محمّلة بهذه الصفحة إطلاقاً (تحقق من الإنترنت أو من وسوم <script>).");
+        finishDiagnostics(lines, btnElement, originalText);
+        return;
+    }
+    lines.push("✅ مكتبة Firebase محمّلة.");
+
+    // 2) هل تم تهيئة الاتصال بقاعدة البيانات؟
+    if (!db) {
+        lines.push("❌ لم يتم تهيئة الاتصال بقاعدة البيانات (db غير جاهز).");
+        finishDiagnostics(lines, btnElement, originalText);
+        return;
+    }
+    lines.push("✅ الاتصال بقاعدة البيانات مُهيّأ.");
+
+    // 3) هل الجهاز متصل بالإنترنت؟
+    lines.push(navigator.onLine ? "✅ الجهاز متصل بالإنترنت." : "❌ الجهاز غير متصل بالإنترنت حالياً!");
+
+    // 4) اختبار قراءة حقيقية من الخادم (وليس من الكاش المحلي)
+    try {
+        const snap = await db.collection("menu_items").limit(1).get({ source: 'server' });
+        lines.push("✅ القراءة من السحابة تعمل (عدد الأصناف بالسحابة: " + (snap.empty ? "0" : "1 على الأقل") + ").");
+    } catch (err) {
+        lines.push("❌ فشل القراءة من السحابة:\n" + translateFirestoreError(err));
+        finishDiagnostics(lines, btnElement, originalText);
+        return;
+    }
+
+    // 5) اختبار كتابة حقيقية مع انتظار تأكيد الخادم فعلياً
+    //    (هذه أهم خطوة: الكتابة قد "تنجح" محلياً وتفشل على الخادم بصمت)
+    try {
+        const testRef = db.collection("system_store").doc("_mim89_diagnostic");
+        const ackPromise = new Promise((resolve, reject) => {
+            const timer = setTimeout(() => { unsub(); reject({ code: 'deadline-exceeded' }); }, 12000);
+            const unsub = testRef.onSnapshot({ includeMetadataChanges: true }, snap => {
+                if (snap.metadata && snap.metadata.hasPendingWrites === false && snap.exists) {
+                    clearTimeout(timer); unsub(); resolve(true);
+                }
+            }, err => { clearTimeout(timer); unsub(); reject(err); });
+        });
+
+        testRef.set({ content: "diagnostic", updatedAt: Date.now() }).catch(() => {});
+        await ackPromise;
+        lines.push("✅ الكتابة على السحابة تعمل وتم تأكيدها من الخادم.");
+        lines.push("\n🎉 الاتصال سليم بالكامل. إذا التعديل ما زال لا يصل لجهاز آخر، اضغط زر (مزامنة السحابة) على الجهاز الآخر أو أغلق الصفحة وافتحها من جديد.");
+    } catch (err) {
+        lines.push("❌ فشل تأكيد الكتابة على السحابة:\n" + translateFirestoreError(err));
+        lines.push("\n⚠️ هذا هو سبب عدم وصول تعديلاتك للكاشير والمينيو الإلكتروني: التعديل يُحفظ على جهازك فقط ولا يُرفع للسحابة.");
+    }
+
+    finishDiagnostics(lines, btnElement, originalText);
+}
+
+function finishDiagnostics(lines, btnElement, originalText) {
+    if (btnElement) {
+        btnElement.innerHTML = originalText;
+        btnElement.disabled = false;
+    }
+    alert("🩺 نتيجة فحص الاتصال السحابي:\n\n" + lines.join("\n"));
 }
 
 /* ==========================================
@@ -2924,7 +3039,10 @@ function updateItemInline(id, field, value) {
 
         if (db) {
             db.collection("menu_items").doc(String(id)).set(item, { merge: true })
-                .catch(err => console.error("Cloud inline update error:", err));
+                .catch(err => {
+                    console.error("Cloud inline update error:", err);
+                    showCloudErrorBanner(translateFirestoreError(err));
+                });
         }
 
         notifyMenuUpdated();
@@ -3012,17 +3130,45 @@ function saveItem() {
     localStorage.setItem('sys_items', JSON.stringify(items));
 
     if (db) {
-        db.collection("menu_items").doc(String(id)).set(itemData, { merge: true })
-            .then(() => {
+        // ⚠️ ملاحظة مهمة: مع تفعيل الحفظ دون اتصال، وعد set() قد ينجح محلياً حتى لو رفضه الخادم.
+        // لذلك ننتظر تأكيد الخادم الفعلي (hasPendingWrites === false) قبل إعلان النجاح.
+        const itemRef = db.collection("menu_items").doc(String(id));
+        let ackDone = false;
+
+        const ackTimer = setTimeout(() => {
+            if (!ackDone) {
+                ackDone = true;
+                if (typeof unsubAck === 'function') unsubAck();
+                showCloudErrorBanner("لم يصل تأكيد من خوادم Firebase خلال 12 ثانية.\nتحقق من الإنترنت أو من قواعد الأمان (Rules).");
+            }
+        }, 12000);
+
+        const unsubAck = itemRef.onSnapshot({ includeMetadataChanges: true }, snap => {
+            if (!ackDone && snap.metadata && snap.metadata.hasPendingWrites === false) {
+                ackDone = true;
+                clearTimeout(ackTimer);
+                unsubAck();
                 localStorage.setItem('mim89_last_menu_update', Date.now());
                 refreshActiveUI();
                 resetItemForm();
-                alert("🎉 تم حفظ الصنف وتحديث المينيو والكاشير والموقع أونلاين فوراً!");
-            })
-            .catch(e => {
-                console.error("❌ خطأ بالرفع السحابي:", e);
-                alert("تم الحفظ محلياً فقط، تحقق من الاتصال بالإنترنت.");
-            });
+                alert("🎉 تم حفظ الصنف ورفعه للسحابة بنجاح! سيظهر على الكاشير والمينيو الإلكتروني خلال ثوانٍ.");
+            }
+        }, err => {
+            if (!ackDone) {
+                ackDone = true;
+                clearTimeout(ackTimer);
+                showCloudErrorBanner(translateFirestoreError(err));
+            }
+        });
+
+        itemRef.set(itemData, { merge: true }).catch(e => {
+            if (!ackDone) {
+                ackDone = true;
+                clearTimeout(ackTimer);
+                if (typeof unsubAck === 'function') unsubAck();
+                showCloudErrorBanner(translateFirestoreError(e));
+            }
+        });
     } else {
         refreshActiveUI();
         resetItemForm();
