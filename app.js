@@ -85,9 +85,15 @@ try {
         db = firebase.firestore();
         console.log("تم الاتصال السحابي اللحظي بـ Firebase بنجاح! 🚀");
 
-        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            console.log("حالة التخزين المحلي Offline Persistence:", err.code);
-        });
+        // 🔧 التخزين المحلي دون اتصال يُفعّل فقط إذا لم يُعطّله المستخدم عبر (إصلاح المزامنة)،
+        // لأنه في بعض الشبكات/الأجهزة يعلق طابور الكتابة ويمنع رفع التعديلات للسحابة.
+        if (localStorage.getItem('mim89_disable_persistence') !== '1') {
+            db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                console.log("حالة التخزين المحلي Offline Persistence:", err.code);
+            });
+        } else {
+            console.log("⚙️ التخزين المحلي دون اتصال معطّل يدوياً على هذا الجهاز.");
+        }
     }
 } catch (e) {
     console.warn("جاري التشغيل بالنظام المحلي الحُر:", e);
@@ -712,25 +718,107 @@ async function runCloudDiagnostics(btnElement) {
         return;
     }
 
-    // 5) اختبار كتابة حقيقية: ننتظر رد الخادم على وعد set() نفسه، ونُظهر كود الخطأ الدقيق
-    //    (سابقاً كان كود الفحص يبتلع رسالة الخطأ الحقيقية ويُظهر مهلة زمنية مضللة — تم إصلاحه)
+    // 5) اختبار كتابة عبر REST API مباشرة (يتجاوز مكتبة Firestore وطابور التخزين المحلي)
+    //    هذا يحدد بدقة: هل المشكلة بالشبكة/القواعد، أم بطابور الكتابة المحلي المعلّق؟
+    lines.push("\n— — — اختبار متقدم — — —");
+
+    const PROJECT_ID = "mim89-ff938";
+    const API_KEY = "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI";
+    const restUrl = "https://firestore.googleapis.com/v1/projects/" + PROJECT_ID +
+                    "/databases/(default)/documents/system_store/_mim89_resttest?key=" + API_KEY;
+
+    let restWorked = false;
+    try {
+        const controller = new AbortController();
+        const to = setTimeout(() => controller.abort(), 15000);
+        const resp = await fetch(restUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { content: { stringValue: "rest-diagnostic" } } }),
+            signal: controller.signal
+        });
+        clearTimeout(to);
+
+        if (resp.ok) {
+            restWorked = true;
+            lines.push("✅ الكتابة عبر الاتصال المباشر (REST) نجحت!");
+        } else {
+            const body = await resp.text();
+            lines.push("❌ الكتابة المباشرة رُفضت من الخادم. رمز الحالة: " + resp.status);
+            if (resp.status === 403 || resp.status === 401) {
+                lines.push("🔒 السبب: قواعد الأمان (Rules) ترفض الكتابة فعلاً.");
+            } else if (resp.status === 404) {
+                lines.push("❓ السبب: قاعدة البيانات غير موجودة أو معرّف المشروع غير مطابق.");
+            } else {
+                lines.push("تفاصيل: " + body.substring(0, 200));
+            }
+        }
+    } catch (e) {
+        lines.push("❌ تعذّر حتى الاتصال المباشر بخوادم Firebase.");
+        lines.push("📡 السبب: الشبكة تحجب الاتصال بـ googleapis.com (جرّب شبكة إنترنت أخرى أو أطفئ Private Relay بالآيفون).");
+    }
+
+    // 6) اختبار الكتابة عبر مكتبة Firestore نفسها
+    let libWorked = false;
     try {
         const testRef = db.collection("system_store").doc("_mim89_diagnostic");
         await Promise.race([
             testRef.set({ content: "diagnostic", updatedAt: Date.now() }),
             new Promise((_, reject) => setTimeout(() => reject({ code: 'deadline-exceeded' }), 15000))
         ]);
-        lines.push("✅ الكتابة على السحابة تعمل وتم تأكيدها من الخادم.");
-        lines.push("\n🎉 الاتصال سليم بالكامل. إذا التعديل ما زال لا يصل لجهاز آخر، اضغط زر (مزامنة السحابة) على الجهاز الآخر أو أغلق الصفحة وافتحها من جديد.");
+        libWorked = true;
+        lines.push("✅ الكتابة عبر مكتبة Firestore تعمل أيضاً.");
     } catch (err) {
-        const rawCode = (err && err.code) ? err.code : 'غير معروف';
-        lines.push("❌ فشل الكتابة على السحابة.");
-        lines.push("🔎 كود الخطأ الحرفي من Firebase: [" + rawCode + "]");
-        lines.push(translateFirestoreError(err));
-        lines.push("\n⚠️ هذا هو سبب عدم وصول تعديلاتك للكاشير والمينيو: التعديل يُحفظ على جهازك فقط ولا يُرفع للسحابة.");
+        lines.push("❌ الكتابة عبر مكتبة Firestore فشلت [" + ((err && err.code) ? err.code : '?') + "].");
+    }
+
+    // 7) الخلاصة والتشخيص النهائي القاطع
+    lines.push("\n═══ الخلاصة ═══");
+    if (restWorked && libWorked) {
+        lines.push("🎉 كل شيء سليم! التعديلات سترفع للسحابة بشكل طبيعي.");
+    } else if (restWorked && !libWorked) {
+        lines.push("🎯 وجدنا السبب بدقة: الاتصال بالسحابة سليم تماماً،");
+        lines.push("لكن (التخزين المحلي دون اتصال) بالمكتبة عالق ويمنع إرسال الكتابات.");
+        lines.push("\n💡 الحل: اضغط زر (إصلاح المزامنة 🔧) الموجود بجانب زر الفحص،");
+        lines.push("سيقوم بتعطيل التخزين العالق وإعادة تشغيل الاتصال.");
+    } else if (!restWorked) {
+        lines.push("🎯 السبب: الكتابة مرفوضة/محجوبة على مستوى الخادم أو الشبكة نفسها.");
+        lines.push("جرّب: شبكة إنترنت مختلفة، أو أطفئ iCloud Private Relay من إعدادات الآيفون.");
     }
 
     finishDiagnostics(lines, btnElement, originalText);
+}
+
+
+// 🔧 إصلاح المزامنة العالقة: يعطّل التخزين المحلي دون اتصال ويعيد تشغيل الاتصال بالسحابة
+async function repairCloudSync(btnElement) {
+    if (!confirm("سيتم إعادة ضبط المزامنة السحابية وتحديث الصفحة.\nالبيانات المحفوظة على الجهاز لن تُحذف.\n\nهل تريد المتابعة؟")) return;
+
+    let originalText = '';
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإصلاح...';
+        btnElement.disabled = true;
+    }
+
+    try {
+        // تعطيل التخزين المحلي دون اتصال بشكل دائم لهذا الجهاز
+        localStorage.setItem('mim89_disable_persistence', '1');
+
+        if (db) {
+            try { await db.disableNetwork(); } catch (e) {}
+            try { await db.enableNetwork(); } catch (e) {}
+            try { await db.clearPersistence(); } catch (e) {
+                // clearPersistence يفشل إذا كان هناك اتصال نشط — سنكمل على أي حال بعد التحديث
+            }
+        }
+
+        alert("✅ تم إصلاح إعدادات المزامنة.\nسيتم تحديث الصفحة الآن، ثم اضغط (فحص الاتصال 🩺) مرة أخرى للتأكد.");
+        location.reload();
+    } catch (e) {
+        alert("⚠️ حدث خطأ أثناء الإصلاح: " + (e.message || e));
+        if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+    }
 }
 
 function finishDiagnostics(lines, btnElement, originalText) {
