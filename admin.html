@@ -178,7 +178,7 @@
         <div class="auth-card">
             <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة</h2>
             <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور الأدمن للوصول</p>
-            <input type="password" id="adminPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;">
+            <input type="password" id="adminPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeydown="if(event.key==='Enter') loginAdmin()">
             <p id="authError" style="color:var(--danger); font-size:0.8rem; margin:5px 0;"></p>
             <button onclick="loginAdmin()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">دخول النظام 🚀</button>
         </div>
