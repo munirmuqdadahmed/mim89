@@ -646,7 +646,10 @@ function translateFirestoreError(err) {
     if (code.includes('permission-denied')) {
         return "🚫 قواعد الأمان بـ Firestore ترفض العملية.\nالسبب الأشهر: قواعد الوضع التجريبي (Test mode) انتهت صلاحيتها.\nالحل: Firebase Console → Firestore Database → Rules → عدّل التاريخ أو القواعد وانشرها.";
     }
-    if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+    if (code.includes('deadline-exceeded')) {
+        return "⏱️ الخادم لم يرد خلال المهلة.\nإذا كانت القراءة تعمل والجهاز متصل، فالسبب الأرجح أن قواعد الأمان (Rules) ترفض الكتابة بصمت.\nالحل: Firebase Console → Firestore Database → Rules → تأكد أن سطر allow write يسمح بالكتابة.";
+    }
+    if (code.includes('unavailable')) {
         return "📡 تعذّر الوصول لخوادم Firebase (الجهاز أوفلاين أو الشبكة تحجب الاتصال).";
     }
     if (code.includes('unauthenticated')) {
@@ -709,26 +712,22 @@ async function runCloudDiagnostics(btnElement) {
         return;
     }
 
-    // 5) اختبار كتابة حقيقية مع انتظار تأكيد الخادم فعلياً
-    //    (هذه أهم خطوة: الكتابة قد "تنجح" محلياً وتفشل على الخادم بصمت)
+    // 5) اختبار كتابة حقيقية: ننتظر رد الخادم على وعد set() نفسه، ونُظهر كود الخطأ الدقيق
+    //    (سابقاً كان كود الفحص يبتلع رسالة الخطأ الحقيقية ويُظهر مهلة زمنية مضللة — تم إصلاحه)
     try {
         const testRef = db.collection("system_store").doc("_mim89_diagnostic");
-        const ackPromise = new Promise((resolve, reject) => {
-            const timer = setTimeout(() => { unsub(); reject({ code: 'deadline-exceeded' }); }, 12000);
-            const unsub = testRef.onSnapshot({ includeMetadataChanges: true }, snap => {
-                if (snap.metadata && snap.metadata.hasPendingWrites === false && snap.exists) {
-                    clearTimeout(timer); unsub(); resolve(true);
-                }
-            }, err => { clearTimeout(timer); unsub(); reject(err); });
-        });
-
-        testRef.set({ content: "diagnostic", updatedAt: Date.now() }).catch(() => {});
-        await ackPromise;
+        await Promise.race([
+            testRef.set({ content: "diagnostic", updatedAt: Date.now() }),
+            new Promise((_, reject) => setTimeout(() => reject({ code: 'deadline-exceeded' }), 15000))
+        ]);
         lines.push("✅ الكتابة على السحابة تعمل وتم تأكيدها من الخادم.");
         lines.push("\n🎉 الاتصال سليم بالكامل. إذا التعديل ما زال لا يصل لجهاز آخر، اضغط زر (مزامنة السحابة) على الجهاز الآخر أو أغلق الصفحة وافتحها من جديد.");
     } catch (err) {
-        lines.push("❌ فشل تأكيد الكتابة على السحابة:\n" + translateFirestoreError(err));
-        lines.push("\n⚠️ هذا هو سبب عدم وصول تعديلاتك للكاشير والمينيو الإلكتروني: التعديل يُحفظ على جهازك فقط ولا يُرفع للسحابة.");
+        const rawCode = (err && err.code) ? err.code : 'غير معروف';
+        lines.push("❌ فشل الكتابة على السحابة.");
+        lines.push("🔎 كود الخطأ الحرفي من Firebase: [" + rawCode + "]");
+        lines.push(translateFirestoreError(err));
+        lines.push("\n⚠️ هذا هو سبب عدم وصول تعديلاتك للكاشير والمينيو: التعديل يُحفظ على جهازك فقط ولا يُرفع للسحابة.");
     }
 
     finishDiagnostics(lines, btnElement, originalText);
