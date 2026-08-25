@@ -45,7 +45,7 @@
 </head>
 <body class="admin-body">
 
-    <!-- 🔐 نافذة القفل السري الخاصة بـ منير مقداد فقط (PIN: 1278900) -->
+    <!-- 🔐 نافذة القفل السري الخاصة بالمالك -->
     <div id="secretAuthModal" class="auth-overlay">
         <div class="auth-card">
             <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-vault"></i> الخزينة السرية لـ منير</h2>
@@ -62,7 +62,7 @@
         <header class="admin-header">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <span class="brand-badge">MIM89 FINANCIAL VAULT v21.0</span>
+                    <span class="brand-badge">MIM89 FINANCIAL VAULT v22.0</span>
                     <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">التحليل المالي السري، تفكيك التكاليف، وحسابات شركات التطبيقات</p>
                 </div>
                 
@@ -467,6 +467,7 @@
             document.getElementById('kpiRemainingCapital').innerText = remainingCapital.toLocaleString() + ' د.ع';
             document.getElementById('kpiPaybackTime').innerText = paybackText;
         }
+
     </script>
 </body>
 </html>
