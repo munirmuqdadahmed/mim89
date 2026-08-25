@@ -1830,6 +1830,11 @@ function tryFinalizeAndClearOrder() {
     completed.unshift(activePendingPrintOrder);
     setData('sys_completed_orders', completed);
 
+    // 📦 [إصلاح] خصم المواد الأولية من المخزن تلقائياً حسب وصفة كل صنف مباع
+    if (typeof deductInventoryFromRecipe === 'function') {
+        try { deductInventoryFromRecipe(activePendingPrintOrder.items); } catch (e) { console.error('خطأ بخصم المخزون:', e); }
+    }
+
     posCart = [];
     activeDiscountType = null;
     posDiscountAmount = 0;
@@ -2113,28 +2118,61 @@ function deleteExpenseRecord(id) {
 }
 
 function openCompletedOrdersModal() {
+    const dateInput = document.getElementById('ordersLogDateInput');
+    if (dateInput && !dateInput.value) dateInput.value = getTodayString();
+    renderCompletedOrdersLog();
+    openModal('completedOrdersModal');
+}
+
+// 📜 [مطوّر] سجل الفواتير مع اختيار التاريخ، البحث برقم الطلب/اسم الزبون/الهاتف، وملخص إجمالي
+function renderCompletedOrdersLog() {
     const container = document.getElementById('completedOrdersList');
     if (!container) return;
 
-    const completed = getData('sys_completed_orders') || [];
-    const today = getTodayString();
-    const todayOrders = completed.filter(o => o.dateDate === today);
+    const targetDate = document.getElementById('ordersLogDateInput')?.value || getTodayString();
+    const searchRaw = (document.getElementById('ordersLogSearchInput')?.value || '').trim().toLowerCase();
 
-    if (todayOrders.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#aaa; padding:15px;">لا توجد فواتير مطبوعة اليوم حتى الآن</p>`;
-    } else {
-        container.innerHTML = todayOrders.map(o => `
-            <div style="background:#181822; border:1px solid #333; padding:8px; border-radius:6px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <strong style="color:var(--gold-bright);">طلب #${o.orderNum} (${o.orderType})</strong>
-                    <div style="font-size:0.75rem; color:#ccc;">الزبون: ${o.customerName} | المجموع: ${cleanPrice(o.totalAmount).toLocaleString()} د.ع</div>
-                </div>
-                <button onclick="reprintCompletedOrder('${o.id}')" class="gold-btn btn-sm" style="width:auto; padding:3px 8px; font-size:0.75rem;">🖨️ إعادة طباعة</button>
-            </div>
-        `).join('');
+    const completed = getData('sys_completed_orders') || [];
+    let list = completed.filter(o => o.dateDate === targetDate);
+
+    if (searchRaw) {
+        list = list.filter(o =>
+            String(o.orderNum || '').includes(searchRaw) ||
+            String(o.customerName || '').toLowerCase().includes(searchRaw) ||
+            String(o.phone || '').includes(searchRaw)
+        );
     }
 
-    openModal('completedOrdersModal');
+    const summaryEl = document.getElementById('ordersLogSummary');
+    if (summaryEl) {
+        const totalSum = list.reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+        summaryEl.innerHTML = `عدد الفواتير: <strong style="color:var(--gold-bright);">${list.length}</strong> &nbsp;|&nbsp; الإجمالي: <strong style="color:var(--success);">${totalSum.toLocaleString('ar-IQ')} د.ع</strong>`;
+    }
+
+    if (list.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#aaa; padding:15px;">لا توجد فواتير مطابقة بهذا التاريخ</p>`;
+        return;
+    }
+
+    container.innerHTML = list.map(o => {
+        const typeIcon = o.orderType === 'توصيل' ? '🛵' : (o.orderType === 'سفري' ? '🛍️' : '🍽️');
+        return `
+        <div style="background:#181822; border:1px solid #333; padding:9px 10px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <div style="min-width:0;">
+                <strong style="color:var(--gold-bright); font-size:0.88rem;">#${o.orderNum} ${typeIcon} ${o.orderType}</strong>
+                <div style="font-size:0.74rem; color:#bbb; margin-top:2px;">
+                    ${o.timestamp || ''} • ${o.customerName || 'زبون مباشر'}
+                    ${o.driverName && o.driverName !== '-' ? ' • 🛵 ' + o.driverName : ''}
+                </div>
+                <div style="font-size:0.78rem; color:var(--success); font-weight:bold; margin-top:2px;">
+                    ${cleanPrice(o.totalAmount).toLocaleString('ar-IQ')} د.ع
+                    <span style="color:#888; font-weight:normal; font-size:0.72rem;">(${o.paymentMethod || 'كاش'})</span>
+                </div>
+            </div>
+            <button onclick="reprintCompletedOrder('${o.id}')" class="gold-btn btn-sm" style="width:auto; padding:6px 10px; font-size:0.75rem; white-space:nowrap;">🖨️ إعادة طباعة</button>
+        </div>
+        `;
+    }).join('');
 }
 
 // 🖨️🛡️ [مُعدّلة] إعادة الطباعة أصبحت تضع علامة isReprint:true على الطلب المؤقت،
@@ -2280,11 +2318,20 @@ function exportItemsReportPDFAndWhatsApp() {
 function openShiftReportModal() {
     const cashierName = activeCashierUser ? activeCashierUser.name : 'الرئيسي';
     const startTime = sessionStorage.getItem('shift_start_time') || '--:--';
-    
+    // 🕐 [إصلاح] الحساب يبدأ من لحظة بدء الشيفت الحالي فقط، وليس من بداية اليوم بالكامل،
+    // حتى لا يرى الكاشير الثاني مبيعات الكاشير الذي قبله عند التناوب بنفس اليوم.
+    const shiftStartTs = cleanPrice(sessionStorage.getItem('shift_start_timestamp')) || 0;
+
     const completed = getData('sys_completed_orders') || [];
     const today = getTodayString();
-    const todayOrders = completed.filter(o => o.dateDate === today);
-    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today);
+    const todayOrders = completed.filter(o =>
+        o.dateDate === today &&
+        (!shiftStartTs || cleanPrice(o.createdTimestamp) >= shiftStartTs)
+    );
+    const expenses = (getData('sys_expenses') || []).filter(e =>
+        e.dateDate === today &&
+        (!shiftStartTs || cleanPrice(e.createdTimestamp) >= shiftStartTs)
+    );
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalExp = 0;
 
