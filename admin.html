@@ -432,6 +432,28 @@
 
                 <button onclick="savePrinterSettings()" class="gold-btn btn-block" style="margin-top:15px;">حفظ الإعدادات</button>
             </div>
+
+            <!-- 🖨️ إعدادات جسر الطباعة المباشرة -->
+            <div class="card" style="max-width:550px; margin:15px auto 0 auto; border-color:#10b981;">
+                <h4 style="color:#10b981; margin-bottom:10px;"><i class="fa-solid fa-bolt"></i> جسر الطباعة المباشرة</h4>
+                <p style="font-size:0.78rem; color:#aaa; line-height:1.6; margin-bottom:12px;">
+                    البرنامج الذي يعمل على كمبيوتر المطعم ويرسل الفواتير للطابعتين مباشرة بدون نوافذ.
+                    اترك العنوان كما هو إذا كان الكاشير يعمل على نفس الكمبيوتر الذي يشغّل الجسر.
+                </p>
+
+                <label style="font-size:0.8rem; color:#aaa;">عنوان الجسر:</label>
+                <input type="text" id="printBridgeUrlInput" class="gold-input-inline" placeholder="http://localhost:8899" style="margin-bottom:8px; direction:ltr; text-align:left;">
+                <p style="font-size:0.72rem; color:#888; margin-bottom:10px;">
+                    💡 إذا كنت تستخدم الكاشير من جهاز آخر (آيباد مثلاً)، ضع عنوان كمبيوتر المطعم بدل localhost،
+                    مثال: <code style="color:var(--gold-bright);">http://192.168.0.50:8899</code>
+                    (العنوان يظهر في نافذة برنامج الجسر عند تشغيله)
+                </p>
+
+                <div style="display:flex; gap:8px;">
+                    <button onclick="savePrintBridgeSettings()" class="gold-btn" style="flex:1;">حفظ العنوان</button>
+                    <button onclick="testPrintBridge(this)" class="gold-btn" style="flex:1; background:#10b981; color:#fff; border:none;">🩺 فحص الجسر</button>
+                </div>
+            </div>
         </div>
 
         <!-- 7. حسابات الكاشيرية -->
@@ -494,7 +516,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=901"></script>
+    <script src="app.js?v=960"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -504,6 +526,7 @@
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('adminMainApp').style.display = 'block';
                 if (typeof initAdminPage === 'function') initAdminPage();
+                if (typeof startLiveSalesBadgeUpdater === 'function') startLiveSalesBadgeUpdater();
             } else {
                 document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
             }
@@ -526,6 +549,16 @@
             if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+            if (tabId === 'tabPrintersControl' && typeof getPrintBridgeUrl === 'function') {
+                const el = document.getElementById('printBridgeUrlInput');
+                if (el) el.value = getPrintBridgeUrl();
+            }
+        }
+
+        function savePrintBridgeSettings() {
+            const val = document.getElementById('printBridgeUrlInput').value.trim();
+            setPrintBridgeUrl(val || 'http://localhost:8899');
+            alert("✅ تم حفظ عنوان جسر الطباعة!");
         }
 
         function printPaperMenu() {
