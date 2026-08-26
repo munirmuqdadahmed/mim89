@@ -386,6 +386,7 @@
                     <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
                     <button onclick="openOutofStockModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
                     <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
+                    <button onclick="promptDrawerFloat(); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-coins"></i> 💰 تسجيل المدوّر (رصيد الصندوق الافتتاحي)</button>
                     <button onclick="openExpenseManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
                     <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
                     <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
@@ -398,6 +399,7 @@
                     <button onclick="location.reload(); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
                     <button onclick="runCloudDiagnostics(this); toggleBrandMenu();" style="color:#38bdf8;"><i class="fa-solid fa-stethoscope"></i> 🩺 فحص الاتصال السحابي</button>
                     <button onclick="repairCloudSync(this); toggleBrandMenu();" style="color:#f59e0b;"><i class="fa-solid fa-wrench"></i> 🔧 إصلاح المزامنة</button>
+                    <button onclick="testPrintBridge(this); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-print"></i> 🖨️ فحص جسر الطباعة</button>
                     <hr style="border-color:#333; margin:3px 0;">
                     <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
                 </div>
@@ -550,8 +552,20 @@
     <div id="printOptionsModal" class="modal-overlay">
         <div class="modal-body" style="max-width:380px; text-align:center;">
             <h3 style="color:var(--gold-primary); margin-bottom:8px;"><i class="fa-solid fa-print"></i> إتمام وطباعة الطلب</h3>
-            <p style="font-size:0.8rem; color:#aaa; margin-bottom:12px;">اطبع فاتورة الزبون وأمر المطبخ. لن يُفرغ الكاشير الطلب إلا بعد إتمام الطباعتين معاً.</p>
-            
+            <p style="font-size:0.8rem; color:#aaa; margin-bottom:12px;">اضغط الزر الأخضر لطباعة الفاتورتين معاً مباشرة على طابعتيهما بدون أي نافذة.</p>
+
+            <!-- 🚀 الطباعة المباشرة عبر جسر الطباعة (الطريقة السريعة) -->
+            <button id="btnPrintBothDirect" onclick="printBothViaBridge(this)" class="gold-btn" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:16px; font-size:1rem; font-weight:900; margin-bottom:10px; box-shadow:0 4px 14px rgba(16,185,129,0.4); flex-direction:column; gap:3px;">
+                <span>🖨️ طباعة الفاتورتين مباشرة</span>
+                <span style="font-size:0.7rem; font-weight:normal; opacity:0.9;">الكاشير + المطبخ معاً بدون نوافذ</span>
+            </button>
+
+            <div style="display:flex; align-items:center; gap:8px; margin:10px 0 8px 0;">
+                <div style="flex:1; height:1px; background:#333;"></div>
+                <span style="font-size:0.72rem; color:#666;">أو الطباعة اليدوية (احتياطي)</span>
+                <div style="flex:1; height:1px; background:#333;"></div>
+            </div>
+
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
                 <button id="btnPrintCustomerModal" onclick="executeCustomerPrintOnly()" class="gold-btn" style="background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary); padding:12px; font-size:0.92rem; flex-direction:column; gap:2px;">
                     <span>🧾 1. طباعة فاتورة الزبون</span>
@@ -634,6 +648,7 @@
                 <div style="display:flex; justify-content:space-between;"><span>أجور التوصيل:</span> <strong id="repTotalDelivery">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between;"><span>صافي الوجبات:</span> <strong id="repNetFood">0</strong> د.ع</div>
                 <hr style="border-color:#333; margin:5px 0;">
+                <div style="display:flex; justify-content:space-between; color:#10b981;"><span>💰 المدوّر (رصيد افتتاحي):</span> + <strong id="repOpeningFloat">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>إجمالي الصرفيات:</span> - <strong id="repTotalExpenses">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;"><span>الصافي الفعلي بالصندوق:</span> <strong id="repNetCashBox" style="color:var(--gold-bright);">0</strong> د.ع</div>
             </div>
@@ -680,7 +695,8 @@
                 <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="shiftGrandTotal" style="color:var(--gold-primary);">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between;"><span>مقبوظات الكاش:</span> <strong id="shiftTotalCash" style="color:var(--success);">0</strong> د.ع</div>
                 <div style="display:flex; justify-content:space-between;"><span>مقبوظات الفيزا:</span> <strong id="shiftTotalVisa" style="color:var(--blue-accent);">0</strong> د.ع</div>
-                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>خصم الصرفيات والسُلف:</span> - <strong id="shiftTotalExpenses">0</strong> د.e</div>
+                <div style="display:flex; justify-content:space-between; color:#10b981;"><span>💰 المدوّر (رصيد افتتاحي):</span> + <strong id="shiftOpeningFloat">0</strong> د.ع</div>
+                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>خصم الصرفيات والسُلف:</span> - <strong id="shiftTotalExpenses">0</strong> د.ع</div>
                 <hr style="border-color:#333; margin:5px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;">
                     <span>النقد الواجب تسليمه بالصندوق:</span>
@@ -777,7 +793,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=901"></script>
+    <script src="app.js?v=960"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
