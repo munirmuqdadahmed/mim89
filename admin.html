@@ -280,6 +280,9 @@
                     <button onclick="saveItem()" class="gold-btn" style="flex:2;">حفظ الصنف وتحديث المينيو 🚀</button>
                     <button onclick="resetItemForm()" class="gold-btn btn-danger" style="flex:1;">إلغاء</button>
                 </div>
+                <button onclick="restoreDefaultMenuItems()" class="gold-btn btn-block" style="margin-top:10px; background:#18181c; border:1px solid #444; color:#888; font-size:0.78rem; padding:8px;">
+                    🌱 استعادة الأصناف الافتراضية الناقصة (يدوياً)
+                </button>
             </div>
 
             <!-- جدول الأصناف -->
@@ -449,10 +452,13 @@
                     (العنوان يظهر في نافذة برنامج الجسر عند تشغيله)
                 </p>
 
-                <div style="display:flex; gap:8px;">
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
                     <button onclick="savePrintBridgeSettings()" class="gold-btn" style="flex:1;">حفظ العنوان</button>
                     <button onclick="testPrintBridge(this)" class="gold-btn" style="flex:1; background:#10b981; color:#fff; border:none;">🩺 فحص الجسر</button>
                 </div>
+                <button onclick="runTestPrint(this)" class="gold-btn btn-block" style="background:#3b82f6; color:#fff; border:none; padding:12px; font-weight:900;">
+                    🖨️ طباعة صفحة اختبار على الطابعتين
+                </button>
             </div>
         </div>
 
@@ -516,7 +522,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=960"></script>
+    <script src="app.js?v=970"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
