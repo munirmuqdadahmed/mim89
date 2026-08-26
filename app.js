@@ -2057,6 +2057,276 @@ function tryFinalizeAndClearOrder() {
 }
 
 /* ==========================================
+   7.5 🖨️ الطباعة المباشرة عبر جسر الطباعة المحلي (Print Bridge)
+   يرسل الفاتورتين لطابعتيهما مباشرة بدون أي نافذة طباعة.
+   يعمل فقط إذا كان برنامج الجسر مشغّلاً على كمبيوتر المطعم ونفس الشبكة.
+   ========================================== */
+
+// 🌐 عنوان جسر الطباعة (يُحفظ محلياً ويمكن تغييره من إعدادات الطابعات بالإدارة)
+function getPrintBridgeUrl() {
+    const saved = localStorage.getItem('sys_print_bridge_url');
+    if (saved && saved.trim()) return saved.trim().replace(/\/$/, '');
+    return 'http://localhost:8899';
+}
+
+function setPrintBridgeUrl(url) {
+    localStorage.setItem('sys_print_bridge_url', String(url || '').trim());
+}
+
+// 🔍 فحص هل جسر الطباعة يعمل حالياً
+async function checkPrintBridge() {
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 3000);
+        const resp = await fetch(getPrintBridgeUrl(), { signal: controller.signal });
+        clearTimeout(t);
+        if (!resp.ok) return { ok: false, error: 'الجسر رد برمز: ' + resp.status };
+        const data = await resp.json();
+        return { ok: true, data: data };
+    } catch (e) {
+        return { ok: false, error: 'تعذّر الوصول للجسر (تأكد أنه مشغّل على كمبيوتر المطعم وأنك على نفس الشبكة).' };
+    }
+}
+
+// 🧾 تحويل فاتورة الزبون إلى أسطر يفهمها الجسر
+function buildCustomerReceiptLines(ord) {
+    const lines = [];
+    lines.push({ text: 'MIM89 FAST FOOD', size: 'big', align: 'center', bold: true });
+    lines.push({ text: 'بغداد - القاهرة | فاتورة مبيعات', size: 'normal', align: 'center' });
+    lines.push({ separator: 'dash' });
+
+    lines.push({ text: 'رقم الطلب', size: 'normal', align: 'center' });
+    lines.push({ text: '#' + ord.orderNum, size: 'huge', align: 'center', bold: true });
+    lines.push({ separator: 'dash' });
+
+    lines.push({ text: 'التاريخ: ' + ord.dateDate + ' - ' + ord.timestamp, size: 'normal', align: 'right' });
+    lines.push({ text: 'الخدمة: ' + ord.orderType + (ord.driverName && ord.driverName !== '-' ? ' (السائق: ' + ord.driverName + ')' : ''), size: 'normal', align: 'right', bold: true });
+    lines.push({ text: 'الزبون: ' + (ord.customerName || 'زبون مباشر'), size: 'normal', align: 'right' });
+    lines.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
+    lines.push({ separator: 'solid' });
+
+    (ord.items || []).forEach(i => {
+        const total = cleanPrice(i.price) * cleanPrice(i.qty);
+        lines.push({ text: i.name + '   × ' + i.qty + '   ' + total.toLocaleString('en-US'), size: 'normal', align: 'right', bold: true });
+        if (i.itemNotes && i.itemNotes.length) {
+            lines.push({ text: '   (' + i.itemNotes.join(' - ') + ')', size: 'normal', align: 'right' });
+        }
+    });
+
+    lines.push({ separator: 'solid' });
+    lines.push({ text: 'المجموع: ' + cleanPrice(ord.subtotal).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+    if (cleanPrice(ord.discount) > 0) {
+        lines.push({ text: 'الخصم: -' + cleanPrice(ord.discount).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+    }
+    if (cleanPrice(ord.deliveryFee) > 0) {
+        lines.push({ text: 'التوصيل: +' + cleanPrice(ord.deliveryFee).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+    }
+    lines.push({ text: 'المطلوب: ' + cleanPrice(ord.totalAmount).toLocaleString('en-US') + ' د.ع', size: 'big', align: 'right', bold: true });
+
+    if (cleanPrice(ord.cashGiven) > 0) {
+        lines.push({ text: 'المستلم: ' + cleanPrice(ord.cashGiven).toLocaleString('en-US') + '  |  الباقي: ' + cleanPrice(ord.cashChange).toLocaleString('en-US'), size: 'normal', align: 'right' });
+    }
+
+    lines.push({ separator: 'dash' });
+    lines.push({ text: 'شكراً لزيارتكم MIM89', size: 'normal', align: 'center', bold: true });
+    lines.push({ text: 'أهلاً وسهلاً بكم', size: 'normal', align: 'center' });
+
+    return lines;
+}
+
+// 🔥 تحويل أمر المطبخ إلى أسطر يفهمها الجسر (خط كبير وواضح للطباخ)
+function buildKitchenTicketLines(ord) {
+    const lines = [];
+    lines.push({ text: '*** أمر تجهيز المطبخ ***', size: 'big', align: 'center', bold: true });
+    lines.push({ text: 'الوقت: ' + ord.timestamp, size: 'normal', align: 'center' });
+    lines.push({ separator: 'solid' });
+
+    lines.push({ text: 'رقم الطلب', size: 'normal', align: 'center' });
+    lines.push({ text: '#' + ord.orderNum, size: 'huge', align: 'center', bold: true });
+    lines.push({ separator: 'solid' });
+
+    lines.push({ text: 'النوع: ' + ord.orderType, size: 'big', align: 'right', bold: true });
+    lines.push({ text: 'الزبون: ' + (ord.customerName || 'زبون مباشر'), size: 'normal', align: 'right' });
+    lines.push({ separator: 'dash' });
+
+    (ord.items || []).forEach(i => {
+        lines.push({ text: '● ' + i.name + '   [× ' + i.qty + ']', size: 'big', align: 'right', bold: true });
+        if (i.itemNotes && i.itemNotes.length) {
+            lines.push({ text: '⚠ ملاحظة: ' + i.itemNotes.join(' - '), size: 'normal', align: 'right', bold: true });
+        }
+        lines.push({ separator: 'dash' });
+    });
+
+    return lines;
+}
+
+// 🖨️🚀 الطباعة المباشرة للفاتورتين معاً بضغطة واحدة (كل واحدة لطابعتها)
+async function printBothViaBridge(btnElement) {
+    if (!activePendingPrintOrder) {
+        alert('لا توجد فاتورة جاهزة للطباعة!');
+        return;
+    }
+
+    const ord = activePendingPrintOrder;
+    let originalText = '';
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الطباعة...';
+        btnElement.disabled = true;
+    }
+
+    const payload = {
+        jobs: [
+            { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true },
+            { printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }
+        ]
+    };
+
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 20000);
+        const resp = await fetch(getPrintBridgeUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        clearTimeout(t);
+
+        const result = await resp.json();
+
+        if (result.success) {
+            isCustomerPrinted = true;
+            isKitchenPrinted = true;
+            updatePrintStatusBadges();
+            if (btnElement) { btnElement.innerHTML = '✅ تمت الطباعة'; }
+            setTimeout(() => {
+                if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+            }, 1500);
+        } else {
+            let details = (result.results || []).map(r => (r.ok ? '✅ ' : '❌ ') + r.message).join('\n');
+            // نُعلّم ما نجح فعلاً حتى لا يضيع على الكاشير
+            (result.results || []).forEach(r => {
+                if (r.ok && r.printer === 'cashier') isCustomerPrinted = true;
+                if (r.ok && r.printer === 'kitchen') isKitchenPrinted = true;
+            });
+            updatePrintStatusBadges();
+            alert('⚠️ لم تكتمل الطباعة على كل الطابعات:\n\n' + details + '\n\nيمكنك استخدام أزرار الطباعة اليدوية بالأسفل كبديل.');
+            if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+        }
+    } catch (e) {
+        alert('❌ تعذّر الاتصال بجسر الطباعة.\n\nتأكد من:\n• تشغيل برنامج الجسر على كمبيوتر المطعم\n• أنك متصل بنفس شبكة الواي فاي\n\nيمكنك استخدام أزرار الطباعة اليدوية بالأسفل كبديل.');
+        if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+    }
+}
+
+// 🩺 فحص جسر الطباعة من واجهة الإدارة
+async function testPrintBridge(btnElement) {
+    let originalText = '';
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص...';
+        btnElement.disabled = true;
+    }
+
+    const res = await checkPrintBridge();
+
+    if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+
+    if (res.ok) {
+        const printers = res.data && res.data.printers ? res.data.printers : {};
+        alert('✅ جسر الطباعة يعمل بنجاح!\n\nالطابعات المسجّلة:\n• الكاشير: ' + (printers.cashier || '-') + '\n• المطبخ: ' + (printers.kitchen || '-'));
+    } else {
+        alert('❌ جسر الطباعة غير متاح.\n\n' + res.error + '\n\nالعنوان الحالي: ' + getPrintBridgeUrl() + '\n\nإذا كان الجسر يعمل على كمبيوتر آخر، غيّر العنوان من إعدادات الطابعات.');
+    }
+}
+
+/* ==========================================
+   7.9 💰 مدوّر الصندوق (الرصيد الافتتاحي) ومبيعات الشيفت اللحظية
+   ========================================== */
+
+// 💵 قراءة مدوّر الصندوق لليوم الحالي (المبلغ الموجود بالدرج قبل بدء البيع)
+function getDrawerOpeningFloat(dateStr) {
+    const target = dateStr || getTodayString();
+    const all = getData('sys_drawer_float') || {};
+    return cleanPrice(all[target]) || 0;
+}
+
+// 💾 حفظ مدوّر الصندوق لليوم الحالي
+function setDrawerOpeningFloat(amount, dateStr) {
+    const target = dateStr || getTodayString();
+    let all = getData('sys_drawer_float');
+    if (!all || Array.isArray(all)) all = {};
+    all[target] = cleanPrice(amount);
+    setData('sys_drawer_float', all);
+}
+
+// 📝 نافذة إدخال مدوّر الصندوق من الكاشير
+function promptDrawerFloat() {
+    const current = getDrawerOpeningFloat();
+    const input = prompt("💰 أدخل المدوّر (المبلغ الموجود بالصندوق قبل بدء البيع اليوم):", current || "0");
+    if (input === null) return;
+    const amount = cleanPrice(input);
+    setDrawerOpeningFloat(amount);
+    alert("✅ تم حفظ مدوّر الصندوق: " + amount.toLocaleString('ar-IQ') + " د.ع\nسيُحتسب ضمن تقرير التقفيل والكشف اليومي.");
+    if (typeof renderDailyReport === 'function') {
+        const d = document.getElementById('reportDateInput');
+        if (d && d.value) renderDailyReport(d.value);
+    }
+}
+
+// 📊 حساب ملخص مبيعات اليوم (يُستخدم بالأدمن والكاشير معاً)
+function computeTodaySalesSummary() {
+    const today = getTodayString();
+    const completed = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
+    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today);
+
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, totalExp = 0;
+
+    completed.forEach(o => {
+        const amt = cleanPrice(o.totalAmount);
+        totalSales += amt;
+        totalDelivery += cleanPrice(o.deliveryFee);
+        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) totalVisa += amt;
+        else totalCash += amt;
+    });
+
+    expenses.forEach(e => totalExp += cleanPrice(e.amount));
+
+    const float = getDrawerOpeningFloat(today);
+
+    return {
+        ordersCount: completed.length,
+        totalSales: totalSales,
+        totalCash: totalCash,
+        totalVisa: totalVisa,
+        totalDelivery: totalDelivery,
+        totalExpenses: totalExp,
+        openingFloat: float,
+        // الصافي الفعلي بالصندوق = المدوّر + مبيعات الكاش - الصرفيات
+        netInDrawer: Math.max(0, float + totalCash - totalExp)
+    };
+}
+
+// 🔄 تحديث شارة مبيعات الشيفت اللحظية بلوحة الإدارة (كانت لا تعمل إطلاقاً)
+function updateLiveShiftSalesBadge() {
+    const badge = document.getElementById('liveShiftSalesBadge');
+    if (!badge) return;
+    const s = computeTodaySalesSummary();
+    badge.innerHTML = s.totalSales.toLocaleString('ar-IQ') + ' د.ع' +
+        ' <span style="font-size:0.72rem; color:#aaa; font-weight:normal;">(' + s.ordersCount + ' فاتورة)</span>';
+}
+
+// ▶️ تشغيل تحديث دوري للشارة كل 20 ثانية بلوحة الإدارة
+let liveSalesBadgeTimer = null;
+function startLiveSalesBadgeUpdater() {
+    if (!document.getElementById('liveShiftSalesBadge')) return;
+    updateLiveShiftSalesBadge();
+    if (liveSalesBadgeTimer) clearInterval(liveSalesBadgeTimer);
+    liveSalesBadgeTimer = setInterval(updateLiveShiftSalesBadge, 20000);
+}
+
+/* ==========================================
    8. ترتيب وتصفية حساب سائقي التوصيل (الدليفري)
    ========================================== */
 
@@ -2436,7 +2706,10 @@ function renderDailyReport(targetDate) {
     if (document.getElementById('repTotalDelivery')) document.getElementById('repTotalDelivery').innerText = totalDelivery.toLocaleString('ar-IQ');
     if (document.getElementById('repNetFood')) document.getElementById('repNetFood').innerText = netFood.toLocaleString('ar-IQ');
     if (document.getElementById('repTotalExpenses')) document.getElementById('repTotalExpenses').innerText = totalExp.toLocaleString('ar-IQ');
-    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = Math.max(0, totalCash - totalExp).toLocaleString('ar-IQ');
+    const openFloat = getDrawerOpeningFloat(targetDate);
+    if (document.getElementById('repOpeningFloat')) document.getElementById('repOpeningFloat').innerText = openFloat.toLocaleString('ar-IQ');
+    // الصافي الفعلي بالصندوق يشمل المدوّر الافتتاحي
+    if (document.getElementById('repNetCashBox')) document.getElementById('repNetCashBox').innerText = Math.max(0, openFloat + totalCash - totalExp).toLocaleString('ar-IQ');
 
     openDriverSettlementModal();
 }
@@ -2556,7 +2829,9 @@ function openShiftReportModal() {
     if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
     if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
     if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExp.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = Math.max(0, totalCash - totalExp).toLocaleString('ar-IQ');
+    const shiftFloat = getDrawerOpeningFloat(today);
+    if (document.getElementById('shiftOpeningFloat')) document.getElementById('shiftOpeningFloat').innerText = shiftFloat.toLocaleString('ar-IQ');
+    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = Math.max(0, shiftFloat + totalCash - totalExp).toLocaleString('ar-IQ');
 
     openModal('shiftReportModal');
 }
@@ -2691,11 +2966,21 @@ function listenForIncomingOrders() {
                 const docId = String(lastIncomingCall.docId || lastIncomingCall.id || '');
                 const safeName = name.replace(/'/g, "\\'");
 
+                // 🛠️ [إصلاح مهم] كان هذا الزر يمرر 6 وسائط فقط بدون الوجبات (encodedItems)،
+                // فكان يصل اسم الزبون ورقمه للكاشير بينما تضيع كل وجبات الطلب!
+                // الآن نمرر الوجبات والمنطقة والعنوان كاملة تماماً مثل زر الكارت.
+                const bannerItems = Array.isArray(lastIncomingCall.items) ? lastIncomingCall.items
+                                  : (Array.isArray(lastIncomingCall.cart) ? lastIncomingCall.cart : []);
+                const bannerEncodedItems = encodeURIComponent(JSON.stringify(bannerItems));
+                const bannerArea = String(lastIncomingCall.area || '').replace(/'/g, "\\'");
+                const bannerAddress = String(lastIncomingCall.address || '').replace(/'/g, "\\'");
+                const itemsCount = bannerItems.length;
+
                 alertBanner.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px;">
-                        <span>📞 <strong>مكالمة واردة جديدة:</strong> ${name} (${phone})</span>
-                        <button class="gold-btn btn-sm" style="background:#000; color:#fff; font-size:0.75rem;" 
-                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id || ''}', '${phone}', '${safeName}', '', '')">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 10px; gap:8px;">
+                        <span>${itemsCount > 0 ? '🌐' : '📞'} <strong>${itemsCount > 0 ? 'طلب جديد من المينيو' : 'مكالمة واردة'}:</strong> ${name} (${phone})${itemsCount > 0 ? ' — ' + itemsCount + ' وجبات' : ''}</span>
+                        <button class="gold-btn btn-sm" style="background:#000; color:#fff; font-size:0.75rem; white-space:nowrap;" 
+                                onclick="loadIncomingCallToPos('${docId}', '${lastIncomingCall.id || ''}', '${phone}', '${safeName}', '${bannerArea}', '${bannerAddress}', '${bannerEncodedItems}')">
                             📥 نقل لكاشير المبيعات
                         </button>
                     </div>
@@ -2754,6 +3039,11 @@ function loadIncomingCallToPos(docId, orderId, phone, name, area, address, items
     }
     
     renderPosCart();
+
+    // ⚠️ تنبيه الكاشير إذا وصل الطلب بدون وجبات (حتى لا تُنسى وجبات الزبون)
+    if (itemsEncodedStr && itemsEncodedStr !== '' && posCart.length === 0) {
+        alert("⚠️ تنبيه: تم نقل بيانات الزبون لكن لم تُقرأ أي وجبة من الطلب!\nراجع الطلب في تبويب (الطلبات الواردة) وأضف الوجبات يدوياً.");
+    }
 
     if (db && docId && !docId.startsWith('temp_')) {
         db.collection("orders").doc(docId).update({ status: 'مقبول وكاشير' })
