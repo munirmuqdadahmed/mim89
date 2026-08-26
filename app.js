@@ -2016,7 +2016,7 @@ function executeKitchenPrintOnly() {
 // 🧹 إتمام وتفريغ السلة القسري الشامل (Hard Clear)
 // 🛡️ [مُعدّلة] أُضيفت حماية ضد إعادة حفظ الطلب من جديد عند "إعادة طباعة" طلب قديم من السجل،
 // وأُزيلت إعادة حساب رقم الطلب هنا لأنه أصبح يُحسب مرة واحدة فقط عند proceedToPrintAfterCash().
-function tryFinalizeAndClearOrder() {
+function tryFinalizeAndClearOrder(silentMode) {
     if (!activePendingPrintOrder) return;
 
     // 🛡️ منع تكرار حفظ نفس رقم الطلب القديم عند الضغط بالغلط أثناء إعادة الطباعة
@@ -2058,7 +2058,10 @@ function tryFinalizeAndClearOrder() {
     closeModal('printOptionsModal');
     renderDrawerDriverSettlement();
 
-    alert("🎉 تم إتمام وسحب الطلب بنجاح وتفريغ السلة بالكامل!");
+    // بالوضع الصامت (بعد الطباعة المباشرة الناجحة) لا نُظهر تنبيهاً يعطّل الكاشير
+    if (!silentMode) {
+        alert("🎉 تم إتمام وسحب الطلب بنجاح وتفريغ السلة بالكامل!");
+    }
 }
 
 /* ==========================================
@@ -2094,49 +2097,69 @@ async function checkPrintBridge() {
 }
 
 // 🧾 تحويل فاتورة الزبون إلى أسطر يفهمها الجسر
+// 📐 التنسيق مطابق للفاتورة الورقية المعتمدة: جدول بثلاثة أعمدة
+//    (الوجبة | العدد | المبلغ) مع رؤوس أعمدة واضحة.
 function buildCustomerReceiptLines(ord) {
-    const lines = [];
-    lines.push({ text: 'MIM89 FAST FOOD', size: 'big', align: 'center', bold: true });
-    lines.push({ text: 'بغداد - القاهرة | فاتورة مبيعات', size: 'normal', align: 'center' });
-    lines.push({ separator: 'dash' });
+    const L = [];
+    const COL_RATIOS = [0.52, 0.16, 0.32];
+    const COL_ALIGNS = ['right', 'center', 'left'];
 
-    lines.push({ text: 'رقم الطلب', size: 'normal', align: 'center' });
-    lines.push({ text: '#' + ord.orderNum, size: 'huge', align: 'center', bold: true });
-    lines.push({ separator: 'dash' });
+    L.push({ text: 'MIM89 FAST FOOD', size: 'big', align: 'center', bold: true });
+    L.push({ text: 'بغداد - القاهرة | فاتورة مبيعات', size: 'normal', align: 'center' });
+    L.push({ separator: 'dash' });
 
-    lines.push({ text: 'التاريخ: ' + ord.dateDate + ' - ' + ord.timestamp, size: 'normal', align: 'right' });
-    lines.push({ text: 'الخدمة: ' + ord.orderType + (ord.driverName && ord.driverName !== '-' ? ' (السائق: ' + ord.driverName + ')' : ''), size: 'normal', align: 'right', bold: true });
-    lines.push({ text: 'الزبون: ' + (ord.customerName || 'زبون مباشر'), size: 'normal', align: 'right' });
-    lines.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
-    lines.push({ separator: 'solid' });
+    L.push({ text: 'رقم الطلب', size: 'normal', align: 'center' });
+    L.push({ text: '#' + ord.orderNum, size: 'huge', align: 'center', bold: true });
+    L.push({ separator: 'dash' });
+
+    L.push({ text: 'التاريخ: ' + ord.dateDate + ' - ' + ord.timestamp, size: 'normal', align: 'right' });
+    L.push({ text: 'الخدمة: ' + ord.orderType, size: 'normal', align: 'right', bold: true });
+    if (ord.driverName && ord.driverName !== '-') {
+        L.push({ text: 'السائق: ' + ord.driverName, size: 'normal', align: 'right' });
+    }
+    L.push({ text: 'الزبون: ' + (ord.customerName || 'زبون مباشر'), size: 'normal', align: 'right' });
+    L.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
+    L.push({ separator: 'dash' });
+
+    // رؤوس أعمدة الجدول
+    L.push({ cols: ['الوجبة', 'العدد', 'المبلغ'], ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true });
+    L.push({ separator: 'solid' });
 
     (ord.items || []).forEach(i => {
-        const total = cleanPrice(i.price) * cleanPrice(i.qty);
-        lines.push({ text: i.name + '   × ' + i.qty + '   ' + total.toLocaleString('en-US'), size: 'normal', align: 'right', bold: true });
+        const lineTotal = cleanPrice(i.price) * cleanPrice(i.qty);
+        L.push({
+            cols: [String(i.name), String(cleanPrice(i.qty)), lineTotal.toLocaleString('en-US')],
+            ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true
+        });
         if (i.itemNotes && i.itemNotes.length) {
-            lines.push({ text: '   (' + i.itemNotes.join(' - ') + ')', size: 'normal', align: 'right' });
+            L.push({ text: '   (' + i.itemNotes.join(' - ') + ')', size: 'normal', align: 'right' });
         }
     });
 
-    lines.push({ separator: 'solid' });
-    lines.push({ text: 'المجموع: ' + cleanPrice(ord.subtotal).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+    L.push({ separator: 'dash' });
+
+    L.push({ text: 'المجموع: ' + cleanPrice(ord.subtotal).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
     if (cleanPrice(ord.discount) > 0) {
-        lines.push({ text: 'الخصم: -' + cleanPrice(ord.discount).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+        L.push({ text: 'الخصم: -' + cleanPrice(ord.discount).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
     }
     if (cleanPrice(ord.deliveryFee) > 0) {
-        lines.push({ text: 'التوصيل: +' + cleanPrice(ord.deliveryFee).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+        L.push({ text: 'التوصيل: +' + cleanPrice(ord.deliveryFee).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
     }
-    lines.push({ text: 'المطلوب: ' + cleanPrice(ord.totalAmount).toLocaleString('en-US') + ' د.ع', size: 'big', align: 'right', bold: true });
+
+    L.push({ text: 'المطلوب: ' + cleanPrice(ord.totalAmount).toLocaleString('en-US') + ' د.ع', size: 'big', align: 'right', bold: true });
 
     if (cleanPrice(ord.cashGiven) > 0) {
-        lines.push({ text: 'المستلم: ' + cleanPrice(ord.cashGiven).toLocaleString('en-US') + '  |  الباقي: ' + cleanPrice(ord.cashChange).toLocaleString('en-US'), size: 'normal', align: 'right' });
+        L.push({
+            text: 'المستلم: ' + cleanPrice(ord.cashGiven).toLocaleString('en-US') +
+                  '  |  الباقي: ' + cleanPrice(ord.cashChange).toLocaleString('en-US') + ' د.ع',
+            size: 'normal', align: 'right'
+        });
     }
 
-    lines.push({ separator: 'dash' });
-    lines.push({ text: 'شكراً لزيارتكم MIM89', size: 'normal', align: 'center', bold: true });
-    lines.push({ text: 'أهلاً وسهلاً بكم', size: 'normal', align: 'center' });
+    L.push({ separator: 'dash' });
+    L.push({ text: 'شكراً لزيارتكم MIM89 - أهلاً وسهلاً بكم', size: 'normal', align: 'center', bold: true });
 
-    return lines;
+    return L;
 }
 
 // 🔥 تحويل أمر المطبخ إلى أسطر يفهمها الجسر (خط كبير وواضح للطباخ)
@@ -2205,9 +2228,15 @@ async function printBothViaBridge(btnElement) {
             isKitchenPrinted = true;
             updatePrintStatusBadges();
             if (btnElement) { btnElement.innerHTML = '✅ تمت الطباعة'; }
+
+            // ✅ نجحت الطباعة على الطابعتين: نُتمّ الطلب ونفرّغ السلة تلقائياً
+            //    بدون الحاجة لضغط زر إضافي — هذا يوفّر خطوة كاملة على الكاشير.
             setTimeout(() => {
                 if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
-            }, 1500);
+                if (typeof tryFinalizeAndClearOrder === 'function') {
+                    tryFinalizeAndClearOrder(true);
+                }
+            }, 700);
         } else {
             let details = (result.results || []).map(r => (r.ok ? '✅ ' : '❌ ') + r.message).join('\n');
             // نُعلّم ما نجح فعلاً حتى لا يضيع على الكاشير
