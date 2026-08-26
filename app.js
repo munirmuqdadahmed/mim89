@@ -241,12 +241,17 @@ function initData() {
                     setData('sys_items', cloudItems);
                     refreshActiveUI();
                 } else {
-                    localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-                    // 🌱 تهيئة Firebase بكل العناصر الافتراضية حتى تصير هي المصدر الموحّد لكل الأجهزة
-                    DEFAULT_DATA.items.forEach(defItem => {
-                        db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
-                    });
+                    // ☝️ السحابة فارغة تماماً: هذه أول تهيئة للنظام على الإطلاق.
+                    // 🛠️ [حماية] نزرع الأصناف الافتراضية مرة واحدة فقط بالعمر، ونسجّل ذلك،
+                    // حتى لا تعود الأصناف المحذوفة للظهور لو حُذفت كلها لاحقاً عن قصد.
+                    if (localStorage.getItem('mim89_seeded_once') !== '1') {
+                        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+                        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+                        DEFAULT_DATA.items.forEach(defItem => {
+                            db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
+                        });
+                        localStorage.setItem('mim89_seeded_once', '1');
+                    }
                 }
             }).catch(err => console.error("Error fetching initial cloud data:", err));
         } else {
@@ -2215,9 +2220,95 @@ async function printBothViaBridge(btnElement) {
             if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
         }
     } catch (e) {
-        alert('❌ تعذّر الاتصال بجسر الطباعة.\n\nتأكد من:\n• تشغيل برنامج الجسر على كمبيوتر المطعم\n• أنك متصل بنفس شبكة الواي فاي\n\nيمكنك استخدام أزرار الطباعة اليدوية بالأسفل كبديل.');
+        alert('❌ تعذّر الاتصال بجسر الطباعة.\n\n' + diagnosePrintBridgeFailure() + '\n\n💡 يمكنك استخدام أزرار الطباعة اليدوية بالأسفل كبديل الآن.');
         if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
     }
+}
+
+// 🖨️🧪 طباعة تجريبية للتأكد من عمل الطابعتين فعلياً
+async function runTestPrint(btnElement) {
+    let originalText = '';
+    if (btnElement) {
+        originalText = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الطباعة...';
+        btnElement.disabled = true;
+    }
+
+    const testLines = [
+        { text: 'MIM89 FAST FOOD', size: 'big', align: 'center', bold: true },
+        { separator: 'dash' },
+        { text: 'صفحة اختبار الطباعة', size: 'normal', align: 'center' },
+        { text: '#TEST', size: 'huge', align: 'center', bold: true },
+        { separator: 'solid' },
+        { text: 'شاورما صاج عادي   × 2', size: 'normal', align: 'right', bold: true },
+        { text: 'وجبة شاورما دبل   × 1', size: 'normal', align: 'right', bold: true },
+        { separator: 'dash' },
+        { text: 'المجموع: 12,000 د.ع', size: 'big', align: 'right', bold: true },
+        { separator: 'dash' },
+        { text: 'إذا قرأت هذا النص بوضوح', size: 'normal', align: 'center' },
+        { text: 'فالطباعة تعمل بنجاح ✓', size: 'normal', align: 'center', bold: true }
+    ];
+
+    const payload = {
+        jobs: [
+            { printer: 'cashier', lines: testLines, openDrawer: false },
+            { printer: 'kitchen', lines: testLines, openDrawer: false }
+        ]
+    };
+
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 25000);
+        const resp = await fetch(getPrintBridgeUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        clearTimeout(t);
+
+        const result = await resp.json();
+        const details = (result.results || []).map(r => (r.ok ? '✅ ' : '❌ ') + r.message).join('\n');
+
+        if (result.success) {
+            alert('✅ نجحت الطباعة التجريبية على الطابعتين!\n\n' + details + '\n\nتحقق من الورق المطبوع: هل النص العربي واضح ومقروء؟');
+        } else {
+            alert('⚠️ نتيجة الطباعة التجريبية:\n\n' + details + '\n\nالطابعة التي فشلت: تأكد من تشغيلها ووجود ورق فيها واتصالها بالراوتر.');
+        }
+    } catch (e) {
+        alert('❌ لم يصل الطلب لجسر الطباعة أصلاً.\n\n' + diagnosePrintBridgeFailure());
+    } finally {
+        if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+    }
+}
+
+// 🔎 تشخيص سبب عدم الوصول لجسر الطباعة برسالة مفصّلة حسب الحالة
+function diagnosePrintBridgeFailure() {
+    const url = getPrintBridgeUrl();
+    const isHttpsPage = (location.protocol === 'https:');
+    const isLocalhostBridge = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(url);
+
+    let msg = 'العنوان المستخدم: ' + url + '\n\nالأسباب المحتملة بالترتيب:\n\n';
+
+    msg += '1) برنامج الجسر غير مشغّل حالياً على كمبيوتر المطعم.\n';
+    msg += '   الحل: شغّل ملف (تشغيل_جسر_الطباعة.bat) واتركه مفتوحاً.\n\n';
+
+    if (isHttpsPage && !isLocalhostBridge) {
+        msg += '2) ⚠️ سبب مرجّح جداً: الموقع يعمل عبر HTTPS بينما الجسر عبر HTTP\n';
+        msg += '   على عنوان شبكة داخلي — والمتصفح يحجب هذا الاتصال تلقائياً.\n';
+        msg += '   الحل: افتح الكاشير من نفس كمبيوتر الجسر واستخدم العنوان:\n';
+        msg += '   http://localhost:8899\n\n';
+    } else {
+        msg += '2) المكتبات المطلوبة غير مثبّتة، فالجسر يُغلق فور تشغيله.\n';
+        msg += '   الحل: شغّل ملف (1_تثبيت_المكتبات.bat) وتأكد من ظهور\n';
+        msg += '   كلمة Successfully installed.\n\n';
+    }
+
+    msg += '3) جدار حماية ويندوز يحجب المنفذ 8899.\n';
+    msg += '   الحل: عند أول تشغيل، اختر (Allow access) بنافذة الجدار الناري.\n\n';
+    msg += '4) الجهاز الحالي ليس على نفس شبكة الواي فاي حق المطعم.';
+
+    return msg;
 }
 
 // 🩺 فحص جسر الطباعة من واجهة الإدارة
@@ -2237,7 +2328,7 @@ async function testPrintBridge(btnElement) {
         const printers = res.data && res.data.printers ? res.data.printers : {};
         alert('✅ جسر الطباعة يعمل بنجاح!\n\nالطابعات المسجّلة:\n• الكاشير: ' + (printers.cashier || '-') + '\n• المطبخ: ' + (printers.kitchen || '-'));
     } else {
-        alert('❌ جسر الطباعة غير متاح.\n\n' + res.error + '\n\nالعنوان الحالي: ' + getPrintBridgeUrl() + '\n\nإذا كان الجسر يعمل على كمبيوتر آخر، غيّر العنوان من إعدادات الطابعات.');
+        alert('❌ جسر الطباعة غير متاح.\n\n' + diagnosePrintBridgeFailure());
     }
 }
 
@@ -3274,21 +3365,43 @@ function deleteInvItem(id) {
 
 function initAdminPage() {
     initData();
-    // 🌱🔧 إصلاح ومزامنة تلقائية: تزرع فقط الوجبات الافتراضية الناقصة من Firebase
-    // (اللي مو موجودة أصلاً بقاعدة البيانات) — تتحقق أول قبل الكتابة فلا تمس
-    // ولا تُرجع أي وجبة موجودة أو مُعدَّلة مسبقاً إلى قيمها القديمة إطلاقاً.
-    setTimeout(() => {
-        if (typeof db !== 'undefined' && db) {
-            DEFAULT_DATA.items.forEach(defItem => {
-                const ref = db.collection("menu_items").doc(String(defItem.id));
-                ref.get().then(docSnap => {
-                    if (!docSnap.exists) {
-                        ref.set(defItem, { merge: true }).catch(()=>{});
-                    }
-                }).catch(()=>{});
-            });
-        }
-    }, 1500);
+    // 🛠️ [إصلاح عطل خطير] كان هذا المكان يُعيد زرع الأصناف الافتراضية العشرة في
+    // Firebase عند كل فتح للوحة الإدارة — فأي صنف يحذفه صاحب المطعم كان يعود
+    // للظهور من جديد تلقائياً، وكأن الحذف لم يحدث إطلاقاً!
+    // (وكان الأثر يزداد وضوحاً بعد "إصلاح المزامنة" لأنه ينظّف الذاكرة المؤقتة.)
+    // تم إلغاء الزرع التلقائي نهائياً — لا يُزرع أي صنف افتراضي إلا يدوياً
+    // عبر زر "استعادة الأصناف الافتراضية" في تبويب الأصناف.
+}
+
+// 🌱 استعادة الأصناف الافتراضية يدوياً (بطلب صريح من المستخدم فقط)
+function restoreDefaultMenuItems() {
+    if (!confirm("سيتم إضافة الأصناف الافتراضية الناقصة فقط (لن يُعدّل أي صنف موجود حالياً).\n\nهل تريد المتابعة؟")) return;
+
+    if (!db) {
+        alert("⚠️ لا يوجد اتصال بالسحابة حالياً.");
+        return;
+    }
+
+    let added = 0, checked = 0;
+    const total = DEFAULT_DATA.items.length;
+
+    DEFAULT_DATA.items.forEach(defItem => {
+        const ref = db.collection("menu_items").doc(String(defItem.id));
+        ref.get().then(docSnap => {
+            checked++;
+            if (!docSnap.exists) {
+                ref.set(defItem, { merge: true }).then(() => { added++; }).catch(()=>{});
+            }
+            if (checked === total) {
+                setTimeout(() => {
+                    alert(added > 0
+                        ? "✅ تمت إضافة " + added + " صنف افتراضي ناقص."
+                        : "ℹ️ كل الأصناف الافتراضية موجودة بالفعل، لم تتم أي إضافة.");
+                    refreshActiveUI();
+                }, 800);
+            }
+        }).catch(()=>{ checked++; });
+    });
 }
 
 function loginAdmin() {
