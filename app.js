@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1210';
+const MIM89_APP_VERSION = '1220';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -2466,12 +2466,24 @@ async function printBothViaBridge(btnElement) {
         btnElement.disabled = true;
     }
 
-    const payload = {
-        jobs: [
-            { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true },
-            { printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }
-        ]
-    };
+    // 🛠️ [إصلاح] أي خطأ أثناء تجهيز محتوى الفاتورة (اسم زبون بصيغة غير متوقعة،
+    // وجبة بحقول ناقصة...) كان يوقف تنفيذ الزر بصمت فيبدو وكأنه "لا يعمل".
+    // الآن نجهّز المحتوى داخل حماية ونُظهر سبب الخطأ بدقة بدل الصمت.
+    let payload;
+    try {
+        payload = {
+            jobs: [
+                { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true },
+                { printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }
+            ]
+        };
+    } catch (prepErr) {
+        console.error('خطأ بتجهيز محتوى الفاتورة:', prepErr);
+        if (btnElement) { btnElement.innerHTML = originalText; btnElement.disabled = false; }
+        alert('❌ تعذّر تجهيز محتوى الفاتورة.\n\nالسبب: ' + (prepErr.message || prepErr) +
+              '\n\nاستخدم أزرار الطباعة اليدوية بالأسفل.');
+        return;
+    }
 
     try {
         const controller = new AbortController();
@@ -2718,30 +2730,41 @@ function startLiveSalesBadgeUpdater() {
 
 // 🕐 وقت بداية الشيفت المفتوح حالياً (مشترك بين كل الأجهزة عبر السحابة)
 function getShiftStartTs() {
-    const v = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
-    if (v > 0) return v;
+    // 🛠️ [إصلاح عطل مستمر] النسخة السابقة كانت تُثبّت بداية الشيفت على "لحظة أول
+    // فتح للصفحة"، فتُستبعد كل فواتير اليوم السابقة لتلك اللحظة — وهذا سبب ظهور
+    // السجل والكشف والتقفيل والجرد فارغة. وبما أن القيمة الخاطئة حُفظت على
+    // الأجهزة، لا يكفي إصلاح الحساب: يجب تصحيح القيمة المخزّنة نفسها.
+    //
+    // القاعدة الآن: الشيفت لا يُثبَّت إلا عندما يُقفله المستخدم صراحةً
+    // (sys_shift_explicit). قبل ذلك يُحتسب دائماً من أقدم فاتورة باليوم.
 
-    // 🛠️ [إصلاح عطل] كانت هذه الدالة تضبط بداية الشيفت على "اللحظة الحالية" عند أول
-    // استدعاء، فتُستبعد كل فواتير وصرفيات اليوم السابقة لتلك اللحظة — وهذا سبب ظهور
-    // سجل الفواتير وكشف الحساب والتقفيل والجرد فارغة تماماً.
-    // الآن: عند عدم وجود شيفت مفتوح نبدأه من أقدم فاتورة غير مُقفَّلة (أو بداية اليوم)
-    // حتى لا تختفي أي عملية.
+    const explicit = localStorage.getItem('sys_shift_explicit') === '1';
+    const stored = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
+
+    if (explicit && stored > 0) return stored;
+
+    // نحسب البداية من أقدم فاتورة/صرفية اليوم، وإلا من منتصف الليل
     let start = new Date();
     start.setHours(0, 0, 0, 0);
     let startTs = start.getTime();
 
     try {
-        const all = getData('sys_completed_orders') || [];
         const today = getTodayString();
-        const todays = all.filter(o => o.dateDate === today && cleanPrice(o.createdTimestamp) > 0);
-        if (todays.length > 0) {
-            const oldest = Math.min(...todays.map(o => cleanPrice(o.createdTimestamp)));
+        const orders = (getData('sys_completed_orders') || [])
+            .filter(o => o.dateDate === today && cleanPrice(o.createdTimestamp) > 0)
+            .map(o => cleanPrice(o.createdTimestamp));
+        const exps = (getData('sys_expenses') || [])
+            .filter(e => e.dateDate === today && cleanPrice(e.createdTimestamp) > 0)
+            .map(e => cleanPrice(e.createdTimestamp));
+
+        const all = orders.concat(exps);
+        if (all.length > 0) {
+            const oldest = Math.min.apply(null, all);
             if (oldest > 0 && oldest < startTs) startTs = oldest;
         }
     } catch (e) {}
 
     localStorage.setItem('sys_shift_start_ts', String(startTs));
-    setData('sys_shift_meta', { startTs: startTs, startedAt: new Date(startTs).toLocaleString('ar-IQ') });
     return startTs;
 }
 
@@ -2755,6 +2778,7 @@ function getShiftStartLabel() {
 function startNewShift() {
     const now = Date.now();
     localStorage.setItem('sys_shift_start_ts', String(now));
+    localStorage.setItem('sys_shift_explicit', '1');   // تثبيت صريح بعد التقفيل
     setData('sys_shift_meta', {
         startTs: now,
         startedAt: new Date().toLocaleString('ar-IQ'),
