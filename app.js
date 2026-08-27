@@ -24,6 +24,9 @@ const MIM89_VERSION = "1100";
 /* ==========================================
    1. المتغيرات العامة والاتصال السحابي بـ Firebase
    ========================================== */
+
+// 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
+const MIM89_APP_VERSION = '1200';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -172,46 +175,31 @@ const DEFAULT_DATA = {
     items: []
 };
 
-// 🧠 التصنيف الذكي الآلي مع احترام خيار المستخدم
+// 🗂️ قراءة رقم قسم الصنف كما هو مسجّل — بدون أي تخمين.
+// 🛠️ [إصلاح مهم] كان هنا "تصنيف ذكي" يخمّن القسم من اسم الصنف ويربطه بأرقام
+// أقسام قديمة ثابتة (شاورما=8، ريزو=5 ...). وبما أن أقسامك تغيّرت وأرقامها
+// أصبحت مختلفة، كان هذا التخمين يضع الأصناف تحت أقسام خاطئة تماماً
+// (مثل ظهور أصناف الريزو داخل قسم المشروبات).
+// الآن: القسم هو ما اخترته أنت فقط، ولا أحد يغيّره.
 function getItemCategory(item) {
-    if (!item) return 1;
-    let rawCat = item.categoryId !== undefined ? item.categoryId : (item.catId !== undefined ? item.catId : item.category);
-    let parsed = cleanPrice(rawCat);
-    if (parsed > 0) return parsed;
-    
-    if (item.name) {
-        const name = item.name.trim();
-        if (name.includes('شاورما')) return 8; 
-        if (name.includes('بركر') && name.includes('لحم')) return 2; 
-        if (name.includes('بركر') && (name.includes('دجاج') || name.includes('سلايدر'))) return 3; 
-        if (name.includes('ريزو')) return 5; 
-        if (name.includes('كنتاكي') || name.includes('بروستد') || name.includes('ستربس')) return 6; 
-        if (name.includes('فنكر') || name.includes('بطاطس') || name.includes('فرنش فريز')) return 7; 
-        if (name.includes('صوص') || name.includes('ثومية') || name.includes('مقبلات') || name.includes('مخلل') || name.includes('كاتشب') || name.includes('مايونيز')) return 9; 
-        if (name.includes('سندويش') || name.includes('ساندويش') || name.includes('صاج') || name.includes('زنجر') || name.includes('سكالوب') || name.includes('فاهيتا') || name.includes('تورتيلا')) return 4; 
-        if (name.includes('عرض') || name.includes('عائلي') || name.includes('ليمتد')) return 1; 
-        if (name.includes('إضافة') || name.includes('اضافة') || name.includes('جبن') || name.includes('شريحة')) return 10; 
-    }
-    return 1;
+    if (!item) return 0;
+    const raw = (item.categoryId !== undefined && item.categoryId !== null) ? item.categoryId
+              : ((item.catId !== undefined && item.catId !== null) ? item.catId : item.category);
+    return cleanPrice(raw);
 }
 
+// 🛠️ [مُعطّلة] كانت هذه الدالة تُعيد كتابة أقسام كل الأصناف تلقائياً عند كل
+// تحديث للواجهة، فتفسد تصنيفك اليدوي. أصبحت لا تفعل شيئاً.
 function autoFixItemCategories() {
-    let items = getData('sys_items');
-    if (Array.isArray(items) && items.length > 0) {
-        let updated = false;
-        items.forEach(i => {
-            const correctCat = getItemCategory(i);
-            if (cleanPrice(i.categoryId) !== correctCat) {
-                i.categoryId = correctCat;
-                i.catId = correctCat;
-                i.category = correctCat;
-                updated = true;
-            }
-        });
-        if (updated) {
-            localStorage.setItem('sys_items', JSON.stringify(items));
-        }
-    }
+    // لا تغيير تلقائي — التصنيف يدوي بالكامل من لوحة الإدارة.
+}
+
+// 🔍 حصر الأصناف التي لا تنتمي لأي قسم موجود حالياً (تحتاج تصحيحاً يدوياً)
+function findOrphanItems() {
+    const items = getData('sys_items') || [];
+    const cats = getData('sys_categories') || [];
+    const validIds = cats.map(c => cleanPrice(c.id));
+    return items.filter(i => !validIds.includes(getItemCategory(i)));
 }
 
 function normalizeArabicArea(str) {
@@ -291,6 +279,7 @@ async function initData() {
     setupCategoriesRealtimeSync();
     startPeriodicCloudPull();
     updateSyncIndicator(false);
+    renderStatusBadge();
 }
 
 // ☁️⬇️ سحب أحدث الأصناف والأقسام من الخادم مباشرة (وليس من الذاكرة المؤقتة)
@@ -339,6 +328,7 @@ async function pullLatestFromCloud() {
     }
 
     localStorage.setItem('mim89_last_pull', String(Date.now()));
+    if (typeof renderStatusBadge === 'function') renderStatusBadge();
 
     if (changed) {
         autoFixItemCategories();
@@ -654,6 +644,33 @@ function startPeriodicCloudPull() {
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) pullLatestFromCloud().then(() => updateSyncIndicator(false));
     });
+}
+
+// 🏷️ لوحة حالة صغيرة: النسخة + عدد الأصناف والأقسام + آخر سحب من السحابة.
+// الغرض منها: معرفة فوراً هل الجهاز يشغّل آخر تحديث أم نسخة قديمة محفوظة بالمتصفح.
+function renderStatusBadge() {
+    let el = document.getElementById('mim89StatusBadge');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'mim89StatusBadge';
+        el.style.cssText = 'position:fixed; bottom:6px; left:6px; z-index:99998;' +
+            'background:rgba(16,185,129,0.92); color:#fff; font-family:Tajawal,sans-serif;' +
+            'font-size:0.68rem; font-weight:bold; padding:4px 10px; border-radius:8px;' +
+            'direction:rtl; box-shadow:0 2px 10px rgba(0,0,0,0.5); cursor:pointer;';
+        el.title = 'اضغط لتحديث البيانات من السحابة فوراً';
+        el.onclick = function() {
+            el.innerHTML = '⏳ جاري السحب...';
+            pullLatestFromCloud().then(() => renderStatusBadge());
+        };
+        document.body.appendChild(el);
+    }
+
+    const items = (getData('sys_items') || []).length;
+    const cats = (getData('sys_categories') || []).length;
+    const lastPull = cleanPrice(localStorage.getItem('mim89_last_pull'));
+    const t = lastPull ? new Date(lastPull).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+    el.innerHTML = 'v' + MIM89_APP_VERSION + ' • 🍔 ' + items + ' • 🗂️ ' + cats + ' • ☁️ ' + t;
 }
 
 // 🟢 مؤشر مرئي صغير يوضّح آخر تحديث من السحابة
@@ -4090,6 +4107,52 @@ function updateItemInline(id, field, value) {
 
         notifyMenuUpdated();
     }
+}
+
+// 🧰 أداة تصحيح أقسام الأصناف: تعرض كل صنف مع قائمة لاختيار قسمه الصحيح
+function renderCategoryFixerTable() {
+    const tbody = document.getElementById('categoryFixerTable');
+    if (!tbody) return;
+
+    const items = getData('sys_items') || [];
+    const cats = getData('sys_categories') || [];
+    const validIds = cats.map(c => cleanPrice(c.id));
+
+    const searchVal = (document.getElementById('fixerSearchInput')?.value || '').toLowerCase();
+    const onlyOrphans = document.getElementById('fixerOnlyOrphans')?.checked;
+
+    let list = items;
+    if (searchVal) list = list.filter(i => String(i.name).toLowerCase().includes(searchVal));
+    if (onlyOrphans) list = list.filter(i => !validIds.includes(getItemCategory(i)));
+
+    const statsEl = document.getElementById('fixerStats');
+    if (statsEl) {
+        const orphans = items.filter(i => !validIds.includes(getItemCategory(i))).length;
+        statsEl.innerHTML = 'إجمالي الأصناف: <strong style="color:#fff;">' + items.length + '</strong>' +
+            ' &nbsp;|&nbsp; بلا قسم صحيح: <strong style="color:' + (orphans > 0 ? 'var(--danger)' : 'var(--success)') + ';">' + orphans + '</strong>';
+    }
+
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#888; padding:15px;">لا توجد أصناف مطابقة</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(item => {
+        const cur = getItemCategory(item);
+        const isOrphan = !validIds.includes(cur);
+        const options = cats.map(c =>
+            '<option value="' + c.id + '"' + (cleanPrice(c.id) === cur ? ' selected' : '') + '>' + c.name + '</option>'
+        ).join('');
+
+        return '<tr' + (isOrphan ? ' style="background:rgba(239,68,68,0.12);"' : '') + '>' +
+            '<td><img src="' + (item.image || item.img || '') + '" width="38" height="38" style="object-fit:cover; border-radius:6px;" onerror="this.style.display=\'none\'"></td>' +
+            '<td><strong style="font-size:0.85rem;">' + item.name + '</strong>' +
+                (isOrphan ? '<div style="font-size:0.7rem; color:var(--danger);">⚠️ قسمه غير موجود</div>' : '') + '</td>' +
+            '<td><select class="gold-input-inline" style="font-size:0.8rem; padding:5px;" onchange="updateItemInline(\'' + item.id + '\', \'categoryId\', this.value); setTimeout(renderCategoryFixerTable, 400);">' +
+                '<option value="">— اختر القسم —</option>' + options +
+            '</select></td>' +
+        '</tr>';
+    }).join('');
 }
 
 function renderAdminItems() {
