@@ -229,62 +229,115 @@ function normalizeArabicArea(str) {
         .toLowerCase();
 }
 
-function initData() {
-    let currentItems = getData('sys_items');
+/* ==========================================================================
+   🛡️ [إصلاح عطل مدمّر] الحماية من عودة البيانات التجريبية
+   --------------------------------------------------------------------------
+   العطل السابق: عند فحص "هل السحابة فارغة؟" كان الكود يستخدم get() العادية،
+   وهي مع تفعيل التخزين دون اتصال قد تُرجع نتيجة فارغة من الذاكرة المؤقتة
+   حتى لو كانت السحابة مليئة بالبيانات الحقيقية!
+   النتيجة: أي جهاز تُمسح ذاكرته (متصفح الآيفون يمسحها دورياً) يفتح الصفحة،
+   يظن أن قاعدة البيانات فارغة، فيزرع الأصناف التجريبية فوق كل أصنافك وأسعارك.
+   --------------------------------------------------------------------------
+   الإصلاح: أي فحص للفراغ يتم من الخادم مباشرة { source: 'server' }، بالإضافة
+   إلى علامة تهيئة محفوظة في السحابة نفسها تمنع الزرع نهائياً بعد أول مرة.
+   ========================================================================== */
 
-    if (!currentItems || !Array.isArray(currentItems) || currentItems.length === 0) {
-        if (db) {
-            db.collection("menu_items").get().then(snapshot => {
-                if (!snapshot.empty) {
-                    let cloudItems = [];
-                    snapshot.forEach(doc => cloudItems.push({ ...doc.data(), docId: doc.id }));
-                    setData('sys_items', cloudItems);
-                    refreshActiveUI();
+// 🔒 هل سبق أن تمت تهيئة النظام؟ (العلامة محفوظة بالسحابة لا بالجهاز)
+async function isSystemInitializedOnCloud() {
+    if (!db) return true;   // بلا اتصال: نمنع الزرع احتياطاً
+    try {
+        const doc = await db.collection("system_store").doc("sys_initialized").get({ source: 'server' });
+        return doc.exists;
+    } catch (e) {
+        // تعذّر الوصول للخادم: نمنع الزرع احتياطاً لحماية البيانات
+        console.warn("تعذّر التحقق من علامة التهيئة، سيتم منع الزرع احتياطاً:", e);
+        return true;
+    }
+}
+
+function markSystemInitialized() {
+    if (!db) return;
+    db.collection("system_store").doc("sys_initialized")
+        .set({ initialized: true, at: Date.now() })
+        .catch(() => {});
+}
+
+async function initData() {
+    // ---------- 1) الأصناف ----------
+    const localItems = getData('sys_items');
+    const needItems = !localItems || !Array.isArray(localItems) || localItems.length === 0;
+
+    if (needItems && db) {
+        try {
+            // ✅ القراءة من الخادم مباشرة — لا من الذاكرة المؤقتة
+            const snap = await db.collection("menu_items").get({ source: 'server' });
+
+            if (!snap.empty) {
+                const cloudItems = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    cloudItems.push({ ...d, docId: doc.id, id: d.id || doc.id });
+                });
+                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                markSystemInitialized();
+                refreshActiveUI();
+            } else {
+                // الخادم أكّد أن المجموعة فارغة — نزرع فقط إن لم يسبق تهيئة النظام
+                const already = await isSystemInitializedOnCloud();
+                if (!already) {
+                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+                    DEFAULT_DATA.items.forEach(defItem => {
+                        db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
+                    });
+                    markSystemInitialized();
+                    console.log("🌱 تهيئة أولى: تم زرع الأصناف الافتراضية.");
                 } else {
-                    // ☝️ السحابة فارغة تماماً: هذه أول تهيئة للنظام على الإطلاق.
-                    // 🛠️ [حماية] نزرع الأصناف الافتراضية مرة واحدة فقط بالعمر، ونسجّل ذلك،
-                    // حتى لا تعود الأصناف المحذوفة للظهور لو حُذفت كلها لاحقاً عن قصد.
-                    if (localStorage.getItem('mim89_seeded_once') !== '1') {
-                        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                        localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-                        DEFAULT_DATA.items.forEach(defItem => {
-                            db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
-                        });
-                        localStorage.setItem('mim89_seeded_once', '1');
-                    }
+                    console.warn("⛔ مُنع زرع الأصناف الافتراضية: النظام مُهيّأ مسبقاً (حماية من فقدان البيانات).");
                 }
-            }).catch(err => console.error("Error fetching initial cloud data:", err));
-        } else {
+            }
+        } catch (err) {
+            // فشل الوصول للخادم (أوفلاين): لا نزرع أي شيء إطلاقاً
+            console.warn("⛔ تعذّر جلب الأصناف من الخادم — لن يتم زرع أي بيانات افتراضية:", err);
+        }
+    } else if (needItems && !db) {
+        // بلا اتصال سحابي نهائياً (تشغيل محلي بحت)
+        if (localStorage.getItem('mim89_seeded_once') !== '1') {
             localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
+            localStorage.setItem('mim89_seeded_once', '1');
         }
     }
 
-    // 🛠️ إصلاح خطأ عدم توحيد الأقسام: لا نمسح الأقسام المحفوظة محلياً/سحابياً بعد كل تحميل صفحة.
-    // نزرع القيم الافتراضية فقط أول مرة (عندما لا توجد بيانات إطلاقاً)، ثم نعتمد على السحابة كمصدر موحّد.
+    // ---------- 2) الأقسام ----------
     if (!localStorage.getItem('sys_categories')) {
         if (db) {
-            db.collection("system_store").doc("sys_categories").get().then(docSnap => {
-                if (docSnap.exists && docSnap.data() && docSnap.data().content) {
-                    try {
-                        const cloudCats = JSON.parse(docSnap.data().content);
-                        if (Array.isArray(cloudCats) && cloudCats.length > 0) {
-                            localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
-                            refreshActiveUI();
-                            return;
-                        }
-                    } catch (e) {}
+            try {
+                const catDoc = await db.collection("system_store").doc("sys_categories").get({ source: 'server' });
+                if (catDoc.exists && catDoc.data() && catDoc.data().content) {
+                    const cloudCats = JSON.parse(catDoc.data().content);
+                    if (Array.isArray(cloudCats) && cloudCats.length > 0) {
+                        localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
+                        markSystemInitialized();
+                        refreshActiveUI();
+                    }
+                } else {
+                    const already = await isSystemInitializedOnCloud();
+                    if (!already) {
+                        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+                        setData('sys_categories', DEFAULT_DATA.categories);
+                        markSystemInitialized();
+                    } else {
+                        console.warn("⛔ مُنع زرع الأقسام الافتراضية: النظام مُهيّأ مسبقاً.");
+                    }
                 }
-                // لا يوجد شيء بالسحابة بعد: نزرع الافتراضي محلياً وسحابياً معاً
-                localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                setData('sys_categories', DEFAULT_DATA.categories);
-            }).catch(() => {
-                localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-            });
+            } catch (e) {
+                console.warn("⛔ تعذّر جلب الأقسام من الخادم — لن يتم زرع أي أقسام افتراضية:", e);
+            }
         } else {
             localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
         }
     }
 
+    // ---------- 3) بقية الإعدادات (محلية بحتة، لا تمس السحابة) ----------
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
@@ -428,6 +481,12 @@ function setupCloudRealtimeSync() {
     if (!db) return;
 
     db.collection("menu_items").onSnapshot(snapshot => {
+        // 🛡️ لقطة فارغة قد تصل من الذاكرة المؤقتة لحظة الاتصال — نتجاهلها
+        //    حتى لا تُمسح الأصناف المحفوظة محلياً بالخطأ.
+        if (snapshot.empty) {
+            console.warn("⚠️ وصلت لقطة فارغة من menu_items — تم تجاهلها حماية للبيانات.");
+            return;
+        }
         if (!snapshot.empty) {
             let cloudItems = [];
             snapshot.forEach(doc => {
@@ -591,6 +650,53 @@ function refreshActiveUI() {
         if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
+    }
+}
+
+// 🚑 استعادة طارئة: يسحب كل الأصناف والأقسام من الخادم مباشرة ويستبدل المحلية.
+// يُستخدم إذا لاحظت أن الجهاز يعرض بيانات قديمة أو تجريبية.
+async function forceRestoreFromCloud(btnElement) {
+    if (!db) { alert("⚠️ لا يوجد اتصال بالسحابة حالياً."); return; }
+    if (!confirm("سيتم سحب الأصناف والأقسام من السحابة واستبدال نسخة هذا الجهاز.\n\nهل تريد المتابعة؟")) return;
+
+    let original = '';
+    if (btnElement) {
+        original = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري السحب...';
+        btnElement.disabled = true;
+    }
+
+    try {
+        const snap = await db.collection("menu_items").get({ source: 'server' });
+        if (snap.empty) {
+            alert("⚠️ لا توجد أصناف على الخادم إطلاقاً!\nلم يتم تغيير أي شيء على هذا الجهاز حمايةً لبياناتك.");
+            return;
+        }
+
+        const items = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            items.push({ ...d, docId: doc.id, id: d.id || doc.id });
+        });
+        localStorage.setItem('sys_items', JSON.stringify(items));
+
+        let catsCount = 0;
+        const catDoc = await db.collection("system_store").doc("sys_categories").get({ source: 'server' });
+        if (catDoc.exists && catDoc.data() && catDoc.data().content) {
+            const cats = JSON.parse(catDoc.data().content);
+            if (Array.isArray(cats) && cats.length > 0) {
+                localStorage.setItem('sys_categories', JSON.stringify(cats));
+                catsCount = cats.length;
+            }
+        }
+
+        markSystemInitialized();
+        refreshActiveUI();
+        alert("✅ تمت الاستعادة من السحابة بنجاح!\n\nالأصناف: " + items.length + "\nالأقسام: " + catsCount);
+    } catch (e) {
+        alert("❌ تعذّرت الاستعادة: " + (e.message || e));
+    } finally {
+        if (btnElement) { btnElement.innerHTML = original; btnElement.disabled = false; }
     }
 }
 
