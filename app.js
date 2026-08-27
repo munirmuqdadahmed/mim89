@@ -13,7 +13,7 @@ document.addEventListener('keydown', event => {
 });
 
 // 🔖 رقم نسخة المحرك — يظهر على الشاشة للتأكد من تحميل آخر تحديث
-const MIM89_VERSION = "1200";
+const MIM89_VERSION = "1100";
 
 /* ==========================================================================
    MIM89 FAST FOOD - Master Core Engine (v31.0 - Order Sequence & Menu Sync Fix)
