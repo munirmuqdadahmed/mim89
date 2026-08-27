@@ -212,6 +212,9 @@
                     <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
                         <i class="fa-solid fa-rotate"></i> مزامنة السحابة 🔄
                     </button>
+                    <button onclick="forceRestoreFromCloud(this)" class="gold-btn btn-sm" style="background:#8b5cf6; color:#fff; border:none;">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> استعادة من السحابة 🚑
+                    </button>
                     <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm" style="background:#3b82f6; color:#fff; border:none;">
                         <i class="fa-solid fa-stethoscope"></i> فحص الاتصال 🩺
                     </button>
@@ -533,7 +536,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1010"></script>
+    <script src="app.js?v=1020"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
