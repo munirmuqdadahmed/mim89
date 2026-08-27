@@ -162,19 +162,11 @@ const DEFAULT_DATA = {
         { id: 6, name: "شرائح سكالوب دجاج", quantity: 50, unit: "كغم", totalPrice: 300000, costPerUnit: 6000 },
         { id: 7, name: "شرائح زنجر سبايسي", quantity: 50, unit: "كغم", totalPrice: 325000, costPerUnit: 6500 }
     ],
-    items: [
-        { id: 101, categoryId: 1, catId: 1, category: 1, name: "عرض ليمتد 89 العائلي", price: 15000, image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500", ingredients: "تشكيلة عائلية مميزة من وجبات MIM89", recipe: [] },
-        { id: 102, categoryId: 1, catId: 1, category: 1, name: "عرض شاورما دبل دجاج", price: 10000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبتين شاورما دجاج دبل مع صوص وبطاطس", recipe: [{ invId: 1, qty: 0.3 }, { invId: 2, qty: 2 }] },
-        { id: 301, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج عادي", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج، شاورما دجاج طازجة، صلصة ثومية، مخلل", recipe: [{ invId: 1, qty: 0.12 }, { invId: 2, qty: 1 }, { invId: 3, qty: 0.1 }, { invId: 4, qty: 1 }] },
-        { id: 302, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما", price: 3000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج، بطاطس مقلية، ثومية، خبز طازج", recipe: [{ invId: 1, qty: 0.12 }, { invId: 3, qty: 0.1 }] },
-        { id: 303, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج دبل", price: 4500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خبز صاج دبل مع كمية دجاج مضاعفة", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 2 }] },
-        { id: 304, categoryId: 8, catId: 8, category: 8, name: "شاورما صاج سوبر", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "شاورما دجاج حجم سوبر مع الصوصات والبطاطس", recipe: [{ invId: 1, qty: 0.22 }, { invId: 2, qty: 2 }] },
-        { id: 305, categoryId: 8, catId: 8, category: 8, name: "شاورما عربي", price: 5500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "قطع شاورما عربي مقطعة مع بطاطس وثومية", recipe: [{ invId: 1, qty: 0.2 }, { invId: 2, qty: 1.5 }] },
-        { id: 306, categoryId: 8, catId: 8, category: 8, name: "شاورما 89 الخاص", price: 5000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "خلطة شاورما MIM89 الخاصة مع الجبن والصوص", recipe: [{ invId: 1, qty: 0.25 }, { invId: 2, qty: 2 }] },
-        { id: 307, categoryId: 8, catId: 8, category: 8, name: "وجبة شاورما دبل", price: 7500, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "وجبة شاورما مضاعفة الدجاج مع المقبلات", recipe: [{ invId: 1, qty: 0.3 }, { invId: 3, qty: 0.2 }] },
-        { id: 308, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 250 غرام", price: 7000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "ربع كغم شاورما دجاج صافي بدون خبز", recipe: [{ invId: 1, qty: 0.25 }] },
-        { id: 309, categoryId: 8, catId: 8, category: 8, name: "شاورما وزن 500 غرام", price: 13000, image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=500", ingredients: "نصف كغم شاورما دجاج صافي طازج", recipe: [{ invId: 1, qty: 0.5 }] }
-    ]
+    // 🛡️ [حماية نهائية] أُفرغت قائمة الأصناف الافتراضية عمداً.
+    // كانت هذه القائمة (عرض ليمتد 89، شاورما صاج عادي...) تُزرع تلقائياً
+    // فوق أصناف المطعم الحقيقية عند أي خلل بالاتصال أو مسح لذاكرة المتصفح.
+    // بإفراغها نهائياً يصبح رجوع البيانات التجريبية مستحيلاً تقنياً.
+    items: []
 };
 
 // 🧠 التصنيف الذكي الآلي مع احترام خيار المستخدم
@@ -283,29 +275,16 @@ async function initData() {
                 refreshActiveUI();
             } else {
                 // الخادم أكّد أن المجموعة فارغة — نزرع فقط إن لم يسبق تهيئة النظام
-                const already = await isSystemInitializedOnCloud();
-                if (!already) {
-                    localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-                    DEFAULT_DATA.items.forEach(defItem => {
-                        db.collection("menu_items").doc(String(defItem.id)).set(defItem, { merge: true }).catch(()=>{});
-                    });
-                    markSystemInitialized();
-                    console.log("🌱 تهيئة أولى: تم زرع الأصناف الافتراضية.");
-                } else {
-                    console.warn("⛔ مُنع زرع الأصناف الافتراضية: النظام مُهيّأ مسبقاً (حماية من فقدان البيانات).");
-                }
+                // ⛔ لا نزرع أي أصناف افتراضية إطلاقاً — تُضاف الأصناف يدوياً من لوحة الإدارة فقط.
+                console.warn("ℹ️ لا توجد أصناف على الخادم. أضف أصنافك من لوحة الإدارة.");
+                markSystemInitialized();
             }
         } catch (err) {
             // فشل الوصول للخادم (أوفلاين): لا نزرع أي شيء إطلاقاً
             console.warn("⛔ تعذّر جلب الأصناف من الخادم — لن يتم زرع أي بيانات افتراضية:", err);
         }
-    } else if (needItems && !db) {
-        // بلا اتصال سحابي نهائياً (تشغيل محلي بحت)
-        if (localStorage.getItem('mim89_seeded_once') !== '1') {
-            localStorage.setItem('sys_items', JSON.stringify(DEFAULT_DATA.items));
-            localStorage.setItem('mim89_seeded_once', '1');
-        }
     }
+    // ⛔ لا يوجد أي مسار آخر يكتب أصنافاً افتراضية — لا محلياً ولا سحابياً.
 
     // ---------- 2) الأقسام ----------
     if (!localStorage.getItem('sys_categories')) {
@@ -530,25 +509,50 @@ function setupCategoriesRealtimeSync() {
 }
 
 // ➕ إضافة قسم جديد للمينيو (يظهر فوراً في الإدارة، الكاشير، والمينيو الإلكتروني)
-function addNewMenuCategory() {
+// 💾☁️ حفظ الأقسام مباشرة على السحابة مع انتظار تأكيد الخادم فعلياً.
+// لا يُعلن النجاح إلا بعد وصول التأكيد — فلا توجد رسائل نجاح كاذبة.
+async function saveCategoriesToCloud(categories) {
+    localStorage.setItem('sys_categories', JSON.stringify(categories));
+    if (typeof renderAdminCategories === 'function') renderAdminCategories();
+    if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
+    if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+    refreshActiveUI();
+
+    if (!db) return { ok: false, error: 'لا يوجد اتصال بالسحابة' };
+
+    try {
+        await db.collection("system_store").doc("sys_categories")
+            .set({ content: JSON.stringify(categories), updatedAt: Date.now() });
+        return { ok: true };
+    } catch (e) {
+        showCloudErrorBanner(translateFirestoreError(e));
+        return { ok: false, error: e.message || String(e) };
+    }
+}
+
+async function addNewMenuCategory() {
     const input = document.getElementById('newCategoryNameInput');
     const name = input ? input.value.trim() : '';
     if (!name) return alert("⚠️ يرجى كتابة اسم القسم أولاً!");
 
     let categories = getData('sys_categories') || [];
+    if (categories.some(c => String(c.name).trim() === name)) {
+        return alert("⚠️ يوجد قسم بنفس الاسم بالفعل!");
+    }
+
     const newId = categories.length > 0 ? Math.max(...categories.map(c => cleanPrice(c.id))) + 1 : 1;
     categories.push({ id: newId, name: name });
 
-    setData('sys_categories', categories);
+    const res = await saveCategoriesToCloud(categories);
     if (input) input.value = '';
 
-    if (typeof renderAdminCategories === 'function') renderAdminCategories();
-    if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
-    alert("✅ تم إضافة القسم وتوحيده على كل الأجهزة بنجاح!");
+    alert(res.ok
+        ? "✅ تم إضافة القسم وحفظه على السحابة — سيظهر فوراً بالكاشير والمينيو الإلكتروني."
+        : "⚠️ حُفظ القسم على هذا الجهاز فقط ولم يصل للسحابة!\n" + (res.error || ''));
 }
 
 // ✏️ تعديل اسم قسم موجود
-function renameMenuCategory(catId) {
+async function renameMenuCategory(catId) {
     let categories = getData('sys_categories') || [];
     const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(catId));
     if (!cat) return;
@@ -557,10 +561,11 @@ function renameMenuCategory(catId) {
     if (!newName || !newName.trim()) return;
 
     cat.name = newName.trim();
-    setData('sys_categories', categories);
+    const res = await saveCategoriesToCloud(categories);
 
-    if (typeof renderAdminCategories === 'function') renderAdminCategories();
-    if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
+    alert(res.ok
+        ? "✅ تم تعديل اسم القسم وحفظه على السحابة."
+        : "⚠️ حُفظ التعديل على هذا الجهاز فقط ولم يصل للسحابة!");
 }
 
 // 🗑️ حذف قسم (بشرط عدم وجود أصناف مرتبطة به لتفادي أصناف بلا قسم)
@@ -575,11 +580,12 @@ function deleteMenuCategory(catId) {
     if (confirm("هل أنت متأكد من حذف هذا القسم؟")) {
         let categories = getData('sys_categories') || [];
         categories = categories.filter(c => cleanPrice(c.id) !== cleanPrice(catId));
-        setData('sys_categories', categories);
 
-        if (typeof renderAdminCategories === 'function') renderAdminCategories();
-        if (typeof renderPosCategoriesBar === 'function') renderPosCategoriesBar();
-        if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
+        saveCategoriesToCloud(categories).then(res => {
+            alert(res.ok
+                ? "✅ تم حذف القسم من السحابة وكل الأجهزة."
+                : "⚠️ حُذف من هذا الجهاز فقط ولم يصل للسحابة!");
+        });
     }
 }
 
@@ -613,8 +619,8 @@ function renderCategoriesManagementList() {
 }
 
 // ➕ إضافة قسم من نافذة تبويب الإدارة (نسخة مرتبطة بحقل tabCategoriesControl) ثم تحديث الجدول فوراً
-function addNewMenuCategoryFromAdminTab() {
-    addNewMenuCategory();
+async function addNewMenuCategoryFromAdminTab() {
+    await addNewMenuCategory();
     renderCategoriesManagementList();
 }
 
@@ -3882,35 +3888,11 @@ function initAdminPage() {
     // عبر زر "استعادة الأصناف الافتراضية" في تبويب الأصناف.
 }
 
-// 🌱 استعادة الأصناف الافتراضية يدوياً (بطلب صريح من المستخدم فقط)
+// 🛡️ حُذفت دالة "استعادة الأصناف الافتراضية" نهائياً.
+// لا يوجد في النظام أي أصناف افتراضية بعد الآن — الأصناف تُضاف من لوحة الإدارة،
+// وتُستعاد عند الحاجة من ملف النسخة الاحتياطية (تبويب النسخ الاحتياطي).
 function restoreDefaultMenuItems() {
-    if (!confirm("سيتم إضافة الأصناف الافتراضية الناقصة فقط (لن يُعدّل أي صنف موجود حالياً).\n\nهل تريد المتابعة؟")) return;
-
-    if (!db) {
-        alert("⚠️ لا يوجد اتصال بالسحابة حالياً.");
-        return;
-    }
-
-    let added = 0, checked = 0;
-    const total = DEFAULT_DATA.items.length;
-
-    DEFAULT_DATA.items.forEach(defItem => {
-        const ref = db.collection("menu_items").doc(String(defItem.id));
-        ref.get().then(docSnap => {
-            checked++;
-            if (!docSnap.exists) {
-                ref.set(defItem, { merge: true }).then(() => { added++; }).catch(()=>{});
-            }
-            if (checked === total) {
-                setTimeout(() => {
-                    alert(added > 0
-                        ? "✅ تمت إضافة " + added + " صنف افتراضي ناقص."
-                        : "ℹ️ كل الأصناف الافتراضية موجودة بالفعل، لم تتم أي إضافة.");
-                    refreshActiveUI();
-                }, 800);
-            }
-        }).catch(()=>{ checked++; });
-    });
+    alert("ℹ️ لم تعد هناك أصناف افتراضية بالنظام (حمايةً لبياناتك من الاستبدال).\n\nلاستعادة أصنافك، استخدم تبويب: 💾 النسخ الاحتياطي ← استعادة من ملف.");
 }
 
 function loginAdmin() {
@@ -4327,27 +4309,34 @@ function exportFullSystemBackup() {
             passwords: getData('sys_passwords')
         };
 
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `MIM89_POS_BACKUP_${getTodayString()}.json`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
+        // 🛠️ [إصلاح] كان التنزيل يستخدم رابط data: وهو يفشل بصمت مع الملفات
+        // الكبيرة (صور الأصناف محفوظة بصيغة base64 فيتضخم حجم الملف).
+        // الحل: استخدام Blob الذي لا حدّ لحجمه عملياً.
+        const jsonText = JSON.stringify(fullBackup, null, 2);
+        const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
 
-        let waMessage = `📦 *نسخة احتياطية لنظام MIM89 POS* 📦\n`;
-        waMessage += `----------------------------------\n`;
-        waMessage += `📅 *التاريخ:* ${fullBackup.backupDate}\n`;
-        waMessage += `👥 *عدد الزبائن المسجلين:* ${fullBackup.customers.length} زبون\n`;
-        waMessage += `🍔 *عدد وجبات المينيو:* ${fullBackup.items.length} وجبة\n`;
-        waMessage += `🧾 *إجمالي الفواتير المنجزة:* ${fullBackup.completedOrders.length} فاتورة\n`;
-        waMessage += `----------------------------------\n`;
-        waMessage += `تم استخراج وتنزيل نسخة JSON الاحتياطية بنجاح على الجهاز.`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'MIM89_BACKUP_' + getTodayString() + '.json';
+        document.body.appendChild(a);
+        a.click();
 
-        const myPhone = "9647750008630";
-        window.open(`https://api.whatsapp.com/send?phone=${myPhone}&text=${encodeURIComponent(waMessage)}`, '_blank');
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 1500);
 
-        alert("✅ تم تنزيل ملف النسخة الاحتياطية (JSON) وإرسال ملخص للواتساب بنجاح!");
+        const sizeKB = Math.round(blob.size / 1024);
+
+        alert("✅ تم تنزيل النسخة الاحتياطية بنجاح!\n\n" +
+              "📁 اسم الملف: MIM89_BACKUP_" + getTodayString() + ".json\n" +
+              "📏 الحجم: " + sizeKB + " كيلوبايت\n\n" +
+              "🍔 الأصناف: " + fullBackup.items.length + "\n" +
+              "🗂️ الأقسام: " + (fullBackup.categories || []).length + "\n" +
+              "👥 الزبائن: " + fullBackup.customers.length + "\n" +
+              "🧾 الفواتير: " + fullBackup.completedOrders.length + "\n\n" +
+              "💡 ابحث عنه في مجلد التنزيلات (Downloads) واحفظه بمكان آمن.");
     } catch (err) {
         console.error("Backup error:", err);
         alert("⚠️ حدث خطأ أثناء استخراج النسخة الاحتياطية.");
