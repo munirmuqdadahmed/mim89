@@ -510,6 +510,17 @@
             </div>
 
             <div class="card" style="max-width:500px; margin:15px auto 0 auto; border-color:var(--danger);">
+                <h4 style="color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-trash"></i> مسح سجل الفواتير</h4>
+                <p style="font-size:0.78rem; color:#ccc; line-height:1.6; margin-bottom:10px;">
+                    مسح السجل متاح من هنا فقط (وليس من الكاشير) حفاظاً على سلامة السجلات المالية.
+                    تأكد من استخراج نسخة احتياطية قبل المسح.
+                </p>
+                <button onclick="clearCompletedOrdersHistory()" class="gold-btn btn-block" style="background:var(--danger); color:#fff;">
+                    🗑️ مسح سجل الفواتير بالكامل
+                </button>
+            </div>
+
+            <div class="card" style="max-width:500px; margin:15px auto 0 auto; border-color:var(--danger);">
                 <h4 style="color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-triangle-exclamation"></i> تنبيه أمان مهم</h4>
                 <p style="font-size:0.78rem; color:#ccc; line-height:1.6;">
                     كلمات المرور هذه تحمي فقط واجهة المتصفح، وليست حماية حقيقية لقاعدة البيانات بالسحابة.
@@ -522,7 +533,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=980"></script>
+    <script src="app.js?v=1010"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
