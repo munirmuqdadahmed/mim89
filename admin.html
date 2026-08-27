@@ -245,6 +245,7 @@
             <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
             <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
             <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabBackupControl', this)"><i class="fa-solid fa-cloud-arrow-down"></i> 💾 النسخ الاحتياطي</button>
         </div>
 
         <!-- 1. تبويب إدارة الأصناف والمينيو -->
@@ -533,10 +534,48 @@
             </div>
         </div>
 
+        <!-- 💾 تبويب النسخ الاحتياطي والاستعادة -->
+        <div id="tabBackupControl" class="tab-content" style="margin-top:15px; display:none;">
+
+            <div class="card" style="max-width:600px; margin:0 auto 15px auto; border-color:var(--success);">
+                <h4 style="color:var(--success); margin-bottom:10px;"><i class="fa-solid fa-download"></i> استخراج نسخة احتياطية</h4>
+                <p style="font-size:0.8rem; color:#ccc; line-height:1.7; margin-bottom:12px;">
+                    يُنزّل ملفاً واحداً يحتوي على <strong>كل شيء</strong>: الأصناف، الأسعار، الصور،
+                    الأقسام، المخزن، دليل الزبائن، السائقين، مناطق التوصيل، وسجل الفواتير.
+                    <br><br>
+                    💡 <strong>احفظ الملف بمكان آمن</strong> (أرسله لنفسك على الواتساب أو الإيميل).
+                    لو حدث أي خلل مستقبلاً، تستعيد كل شيء بضغطة واحدة بدل إعادة الإدخال يدوياً.
+                </p>
+
+                <div id="backupStatsBox" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.82rem;"></div>
+
+                <button onclick="exportFullSystemBackup()" class="gold-btn btn-block" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; padding:14px; font-weight:900; font-size:0.95rem;">
+                    💾 استخراج نسخة احتياطية الآن
+                </button>
+                <p style="font-size:0.72rem; color:#888; margin-top:8px; text-align:center;">
+                    يُنصح بتكرارها أسبوعياً، وبعد أي تعديل كبير على المينيو
+                </p>
+            </div>
+
+            <div class="card" style="max-width:600px; margin:0 auto; border-color:#f59e0b;">
+                <h4 style="color:#f59e0b; margin-bottom:10px;"><i class="fa-solid fa-upload"></i> استعادة من نسخة احتياطية</h4>
+                <p style="font-size:0.8rem; color:#ccc; line-height:1.7; margin-bottom:12px;">
+                    ⚠️ <strong>انتبه:</strong> الاستعادة تستبدل البيانات الحالية بالكامل ببيانات الملف.
+                    استخدمها فقط إذا فقدت بياناتك أو حدث خلل كبير.
+                </p>
+
+                <label for="backupFileInput" class="gold-btn btn-block" style="background:#18181c; border:1px dashed #f59e0b; color:#f59e0b; padding:14px; cursor:pointer; text-align:center; display:block;">
+                    📂 اختر ملف النسخة الاحتياطية (JSON)
+                </label>
+                <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;" onchange="importFullSystemBackup(this)">
+            </div>
+
+        </div>
+
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1020"></script>
+    <script src="app.js?v=1030"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -569,9 +608,34 @@
             if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+            if (tabId === 'tabBackupControl') renderBackupStats();
             if (tabId === 'tabPrintersControl' && typeof getPrintBridgeUrl === 'function') {
                 const el = document.getElementById('printBridgeUrlInput');
                 if (el) el.value = getPrintBridgeUrl();
+            }
+        }
+
+        function renderBackupStats() {
+            const box = document.getElementById('backupStatsBox');
+            if (!box) return;
+            try {
+                const items = getData('sys_items') || [];
+                const cats = getData('sys_categories') || [];
+                const customers = getData('sys_customers') || [];
+                const orders = getData('sys_completed_orders') || [];
+                const inv = getData('sys_inventory') || [];
+
+                box.innerHTML =
+                    '<div style="color:var(--gold-bright); font-weight:900; margin-bottom:8px;">📦 ما سيتم حفظه:</div>' +
+                    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">' +
+                    '<div>🍔 الأصناف: <strong style="color:#fff;">' + items.length + '</strong></div>' +
+                    '<div>🗂️ الأقسام: <strong style="color:#fff;">' + cats.length + '</strong></div>' +
+                    '<div>📦 مواد المخزن: <strong style="color:#fff;">' + inv.length + '</strong></div>' +
+                    '<div>👥 الزبائن: <strong style="color:#fff;">' + customers.length + '</strong></div>' +
+                    '<div style="grid-column:1/-1;">🧾 الفواتير المحفوظة: <strong style="color:#fff;">' + orders.length + '</strong></div>' +
+                    '</div>';
+            } catch (e) {
+                box.innerHTML = '<span style="color:var(--danger);">تعذّر قراءة البيانات</span>';
             }
         }
 
