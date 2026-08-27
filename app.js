@@ -12,6 +12,9 @@ document.addEventListener('keydown', event => {
   }
 });
 
+// 🔖 رقم نسخة المحرك — يظهر على الشاشة للتأكد من تحميل آخر تحديث
+const MIM89_VERSION = "1100";
+
 /* ==========================================================================
    MIM89 FAST FOOD - Master Core Engine (v31.0 - Order Sequence & Menu Sync Fix)
    مشروع الفايربيس: mim89-ff938 | نظام الكاشير المباشر والمينيو ودليل الزبائن CRM
@@ -255,68 +258,7 @@ function markSystemInitialized() {
 }
 
 async function initData() {
-    // ---------- 1) الأصناف ----------
-    const localItems = getData('sys_items');
-    const needItems = !localItems || !Array.isArray(localItems) || localItems.length === 0;
-
-    if (needItems && db) {
-        try {
-            // ✅ القراءة من الخادم مباشرة — لا من الذاكرة المؤقتة
-            const snap = await db.collection("menu_items").get({ source: 'server' });
-
-            if (!snap.empty) {
-                const cloudItems = [];
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    cloudItems.push({ ...d, docId: doc.id, id: d.id || doc.id });
-                });
-                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-                markSystemInitialized();
-                refreshActiveUI();
-            } else {
-                // الخادم أكّد أن المجموعة فارغة — نزرع فقط إن لم يسبق تهيئة النظام
-                // ⛔ لا نزرع أي أصناف افتراضية إطلاقاً — تُضاف الأصناف يدوياً من لوحة الإدارة فقط.
-                console.warn("ℹ️ لا توجد أصناف على الخادم. أضف أصنافك من لوحة الإدارة.");
-                markSystemInitialized();
-            }
-        } catch (err) {
-            // فشل الوصول للخادم (أوفلاين): لا نزرع أي شيء إطلاقاً
-            console.warn("⛔ تعذّر جلب الأصناف من الخادم — لن يتم زرع أي بيانات افتراضية:", err);
-        }
-    }
-    // ⛔ لا يوجد أي مسار آخر يكتب أصنافاً افتراضية — لا محلياً ولا سحابياً.
-
-    // ---------- 2) الأقسام ----------
-    if (!localStorage.getItem('sys_categories')) {
-        if (db) {
-            try {
-                const catDoc = await db.collection("system_store").doc("sys_categories").get({ source: 'server' });
-                if (catDoc.exists && catDoc.data() && catDoc.data().content) {
-                    const cloudCats = JSON.parse(catDoc.data().content);
-                    if (Array.isArray(cloudCats) && cloudCats.length > 0) {
-                        localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
-                        markSystemInitialized();
-                        refreshActiveUI();
-                    }
-                } else {
-                    const already = await isSystemInitializedOnCloud();
-                    if (!already) {
-                        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-                        setData('sys_categories', DEFAULT_DATA.categories);
-                        markSystemInitialized();
-                    } else {
-                        console.warn("⛔ مُنع زرع الأقسام الافتراضية: النظام مُهيّأ مسبقاً.");
-                    }
-                }
-            } catch (e) {
-                console.warn("⛔ تعذّر جلب الأقسام من الخادم — لن يتم زرع أي أقسام افتراضية:", e);
-            }
-        } else {
-            localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
-        }
-    }
-
-    // ---------- 3) بقية الإعدادات (محلية بحتة، لا تمس السحابة) ----------
+    // ---------- الإعدادات المحلية أولاً (سريعة، لا تنتظر الشبكة) ----------
     if (!localStorage.getItem('sys_inventory')) localStorage.setItem('sys_inventory', JSON.stringify(DEFAULT_DATA.inventory));
     if (!localStorage.getItem('sys_passwords')) localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_printer_settings')) localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
@@ -333,9 +275,78 @@ async function initData() {
     if (!localStorage.getItem('sys_working_hours')) localStorage.setItem('sys_working_hours', JSON.stringify({ open: "10:00", close: "23:59", enabled: false }));
     if (!localStorage.getItem('sys_out_of_stock')) localStorage.setItem('sys_out_of_stock', JSON.stringify([]));
     if (!localStorage.getItem('sys_coupons')) localStorage.setItem('sys_coupons', JSON.stringify([]));
+    if (!localStorage.getItem('sys_items')) localStorage.setItem('sys_items', JSON.stringify([]));
+    if (!localStorage.getItem('sys_categories')) localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+
+    // نعرض ما لدينا فوراً حتى لا ينتظر الكاشير الشبكة
+    refreshActiveUI();
+
+    // ---------- ثم نسحب النسخة الحيّة من الخادم دائماً ----------
+    // 🛠️ [إصلاح جوهري] كان الجلب يتم فقط إذا كانت ذاكرة الجهاز فارغة، فأي جهاز
+    // لديه نسخة قديمة لا يجلب من السحابة إطلاقاً عند التشغيل، ويظل يعرض القديم
+    // إن تعثّرت المزامنة اللحظية. الآن نسحب من الخادم في كل مرة تُفتح الصفحة.
+    await pullLatestFromCloud();
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
+    startPeriodicCloudPull();
+    updateSyncIndicator(false);
+}
+
+// ☁️⬇️ سحب أحدث الأصناف والأقسام من الخادم مباشرة (وليس من الذاكرة المؤقتة)
+async function pullLatestFromCloud() {
+    if (!db) return { ok: false, reason: 'offline' };
+
+    let changed = false;
+
+    // 1) الأصناف
+    try {
+        const snap = await db.collection("menu_items").get({ source: 'server' });
+        const cloudItems = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            cloudItems.push({
+                ...d,
+                docId: doc.id,
+                id: d.id || doc.id,
+                categoryId: cleanPrice(d.categoryId || d.catId || d.category || 1)
+            });
+        });
+
+        // نكتب فقط إذا كانت السحابة تحتوي فعلاً على أصناف (حماية من المسح بالخطأ)
+        if (cloudItems.length > 0) {
+            const before = localStorage.getItem('sys_items');
+            const after = JSON.stringify(cloudItems);
+            if (before !== after) { localStorage.setItem('sys_items', after); changed = true; }
+        }
+    } catch (e) {
+        console.warn("تعذّر سحب الأصناف من الخادم:", e);
+    }
+
+    // 2) الأقسام
+    try {
+        const catDoc = await db.collection("system_store").doc("sys_categories").get({ source: 'server' });
+        if (catDoc.exists && catDoc.data() && catDoc.data().content) {
+            const cats = JSON.parse(catDoc.data().content);
+            if (Array.isArray(cats) && cats.length > 0) {
+                const before = localStorage.getItem('sys_categories');
+                const after = JSON.stringify(cats);
+                if (before !== after) { localStorage.setItem('sys_categories', after); changed = true; }
+            }
+        }
+    } catch (e) {
+        console.warn("تعذّر سحب الأقسام من الخادم:", e);
+    }
+
+    localStorage.setItem('mim89_last_pull', String(Date.now()));
+
+    if (changed) {
+        autoFixItemCategories();
+        refreshActiveUI();
+        console.log("☁️ تم تحديث المينيو من السحابة.");
+    }
+
+    return { ok: true, changed: changed };
 }
 
 function getData(key) {
@@ -622,6 +633,41 @@ function renderCategoriesManagementList() {
 async function addNewMenuCategoryFromAdminTab() {
     await addNewMenuCategory();
     renderCategoriesManagementList();
+}
+
+// 🔁 سحب دوري صامت من الخادم كل 60 ثانية — ضمان إضافي بأن الجهاز
+// لا يبقى على نسخة قديمة حتى لو تعثّرت المزامنة اللحظية.
+let cloudPullTimer = null;
+function startPeriodicCloudPull() {
+    if (cloudPullTimer) clearInterval(cloudPullTimer);
+    cloudPullTimer = setInterval(() => {
+        if (navigator.onLine) {
+            pullLatestFromCloud().then(r => {
+                if (r && r.changed) updateSyncIndicator(true);
+                else updateSyncIndicator(false);
+            });
+        }
+    }, 60000);
+
+    // وعند عودة الاتصال أو العودة للصفحة نسحب فوراً
+    window.addEventListener('online', () => pullLatestFromCloud().then(() => updateSyncIndicator(true)));
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) pullLatestFromCloud().then(() => updateSyncIndicator(false));
+    });
+}
+
+// 🟢 مؤشر مرئي صغير يوضّح آخر تحديث من السحابة
+function updateSyncIndicator(highlight) {
+    const el = document.getElementById('cloudSyncIndicator');
+    if (!el) return;
+    const t = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+    el.innerHTML = '<i class="fa-solid fa-cloud" style="color:#10b981;"></i> ' + t;
+    el.title = 'آخر تحديث من السحابة: ' + t;
+    if (highlight) {
+        el.style.transition = 'none';
+        el.style.background = 'rgba(16,185,129,0.35)';
+        setTimeout(() => { el.style.transition = 'background 1s'; el.style.background = 'transparent'; }, 100);
+    }
 }
 
 // ⚡ قناة المزامنة الفورية اللحظية بين التبويبات المفتوحة
@@ -1469,6 +1515,22 @@ function saveOrderLocally(orderData) {
 /* ==========================================
    5. نقطة البيع POS والدليفري (cashier.html)
    ========================================== */
+
+// 🔖 عرض شارة رقم النسخة على الشاشة (أداة تحقق بصرية سريعة)
+function showVersionBadge() {
+    let el = document.getElementById('mim89VersionBadge');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'mim89VersionBadge';
+        el.style.cssText =
+            'position:fixed; bottom:6px; left:6px; z-index:99998;' +
+            'background:rgba(16,185,129,0.92); color:#fff; font-family:Tajawal,sans-serif;' +
+            'font-size:0.68rem; font-weight:900; padding:3px 9px; border-radius:6px;' +
+            'pointer-events:none; letter-spacing:0.5px; box-shadow:0 2px 8px rgba(0,0,0,0.5);';
+        document.body.appendChild(el);
+    }
+    el.innerText = 'v' + MIM89_VERSION;
+}
 
 function initCashierPage() { 
     initData(); 
@@ -4669,6 +4731,7 @@ window.addEventListener('storage', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     initData();
+    if (typeof showVersionBadge === 'function') showVersionBadge();
     if (document.body.classList.contains('public-menu-body')) {
         loadPublicMenu();
     }
