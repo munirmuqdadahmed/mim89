@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1200';
+const MIM89_APP_VERSION = '1210';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -2720,11 +2720,29 @@ function startLiveSalesBadgeUpdater() {
 function getShiftStartTs() {
     const v = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
     if (v > 0) return v;
-    // لا يوجد شيفت مفتوح: نفتح واحداً الآن تلقائياً
-    const now = Date.now();
-    localStorage.setItem('sys_shift_start_ts', String(now));
-    setData('sys_shift_meta', { startTs: now, startedAt: new Date().toLocaleString('ar-IQ') });
-    return now;
+
+    // 🛠️ [إصلاح عطل] كانت هذه الدالة تضبط بداية الشيفت على "اللحظة الحالية" عند أول
+    // استدعاء، فتُستبعد كل فواتير وصرفيات اليوم السابقة لتلك اللحظة — وهذا سبب ظهور
+    // سجل الفواتير وكشف الحساب والتقفيل والجرد فارغة تماماً.
+    // الآن: عند عدم وجود شيفت مفتوح نبدأه من أقدم فاتورة غير مُقفَّلة (أو بداية اليوم)
+    // حتى لا تختفي أي عملية.
+    let start = new Date();
+    start.setHours(0, 0, 0, 0);
+    let startTs = start.getTime();
+
+    try {
+        const all = getData('sys_completed_orders') || [];
+        const today = getTodayString();
+        const todays = all.filter(o => o.dateDate === today && cleanPrice(o.createdTimestamp) > 0);
+        if (todays.length > 0) {
+            const oldest = Math.min(...todays.map(o => cleanPrice(o.createdTimestamp)));
+            if (oldest > 0 && oldest < startTs) startTs = oldest;
+        }
+    } catch (e) {}
+
+    localStorage.setItem('sys_shift_start_ts', String(startTs));
+    setData('sys_shift_meta', { startTs: startTs, startedAt: new Date(startTs).toLocaleString('ar-IQ') });
+    return startTs;
 }
 
 function getShiftStartLabel() {
@@ -2747,15 +2765,26 @@ function startNewShift() {
 // 📦 كل فواتير الشيفت المفتوح (بغض النظر عن التاريخ)
 function getShiftOrders() {
     const startTs = getShiftStartTs();
+    const today = getTodayString();
     const all = getData('sys_completed_orders') || [];
-    return all.filter(o => cleanPrice(o.createdTimestamp) >= startTs);
+    return all.filter(o => {
+        const ts = cleanPrice(o.createdTimestamp);
+        // الفواتير القديمة التي لا تحمل ختماً زمنياً: نعتمد تاريخها حتى لا تُفقد
+        if (!ts) return o.dateDate === today;
+        return ts >= startTs;
+    });
 }
 
 // 💸 كل صرفيات الشيفت المفتوح
 function getShiftExpenses() {
     const startTs = getShiftStartTs();
+    const today = getTodayString();
     const all = getData('sys_expenses') || [];
-    return all.filter(e => cleanPrice(e.createdTimestamp) >= startTs);
+    return all.filter(e => {
+        const ts = cleanPrice(e.createdTimestamp);
+        if (!ts) return e.dateDate === today;
+        return ts >= startTs;
+    });
 }
 
 // 🧾 الطلبات التي خرجت مع سائق ولم تُصفَّ ذمتها بعد (بذمة السائقين)
@@ -3187,7 +3216,10 @@ function renderCompletedOrdersLog() {
                     <span style="color:#888; font-weight:normal; font-size:0.72rem;">(${o.paymentMethod || 'كاش'})</span>
                 </div>
             </div>
-            <button onclick="reprintCompletedOrder('${o.id}')" class="gold-btn btn-sm" style="width:auto; padding:6px 10px; font-size:0.75rem; white-space:nowrap;">🖨️ إعادة طباعة</button>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <button onclick="reprintCustomerOnly('${o.id}', this)" class="gold-btn btn-sm" style="width:auto; padding:6px 8px; font-size:0.7rem; white-space:nowrap; background:#222; color:var(--gold-bright); border:1px solid var(--gold-primary);">🧾 فاتورة الزبون</button>
+                <button onclick="reprintKitchenOnly('${o.id}', this)" class="gold-btn btn-sm" style="width:auto; padding:6px 8px; font-size:0.7rem; white-space:nowrap; background:#7f1d1d; color:#fff; border:none;">🔥 أمر المطبخ</button>
+            </div>
         </div>
         `;
     }).join('');
@@ -3205,6 +3237,67 @@ function reprintCompletedOrder(orderId) {
         updatePrintStatusBadges();
         closeModal('completedOrdersModal');
         openModal('printOptionsModal');
+    }
+}
+
+// 🖨️ إعادة طباعة أمر المطبخ وحده مباشرة عبر الجسر (لو ضاعت ورقة المطبخ)
+async function reprintKitchenOnly(orderId, btnElement) {
+    const completed = getData('sys_completed_orders') || [];
+    const ord = completed.find(o => String(o.id) === String(orderId));
+    if (!ord) return alert("لم يُعثر على الفاتورة!");
+
+    let original = '';
+    if (btnElement) {
+        original = btnElement.innerHTML;
+        btnElement.innerHTML = '⏳';
+        btnElement.disabled = true;
+    }
+
+    try {
+        const resp = await fetch(getPrintBridgeUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobs: [{ printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }] })
+        });
+        const r = await resp.json();
+        alert(r.success ? "✅ أُعيدت طباعة أمر المطبخ للطلب #" + ord.orderNum
+                        : "⚠️ لم تكتمل الطباعة:\n" + (r.results || []).map(x => x.message).join('\n'));
+    } catch (e) {
+        // الجسر غير متاح: نعود للطباعة اليدوية عبر المتصفح
+        activePendingPrintOrder = { ...ord, isReprint: true };
+        executeKitchenPrintOnly();
+    } finally {
+        if (btnElement) { btnElement.innerHTML = original; btnElement.disabled = false; }
+    }
+}
+
+// 🧾 إعادة طباعة فاتورة الزبون وحدها مباشرة عبر الجسر
+async function reprintCustomerOnly(orderId, btnElement) {
+    const completed = getData('sys_completed_orders') || [];
+    const ord = completed.find(o => String(o.id) === String(orderId));
+    if (!ord) return alert("لم يُعثر على الفاتورة!");
+
+    let original = '';
+    if (btnElement) {
+        original = btnElement.innerHTML;
+        btnElement.innerHTML = '⏳';
+        btnElement.disabled = true;
+    }
+
+    try {
+        const resp = await fetch(getPrintBridgeUrl(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobs: [{ printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: false }] })
+        });
+        const r = await resp.json();
+        alert(r.success ? "✅ أُعيدت طباعة فاتورة الزبون للطلب #" + ord.orderNum
+                        : "⚠️ لم تكتمل الطباعة:\n" + (r.results || []).map(x => x.message).join('\n'));
+    } catch (e) {
+        activePendingPrintOrder = { ...ord, isReprint: true };
+        executeCustomerPrintOnly();
+    } finally {
+        if (btnElement) { btnElement.innerHTML = original; btnElement.disabled = false; }
     }
 }
 
