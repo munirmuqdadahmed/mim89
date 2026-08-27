@@ -594,9 +594,34 @@
                     فيظهر السجل والكشف والتقفيل فارغين.
                 </p>
                 <div id="storageDiagBox" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:12px;"></div>
-                <button onclick="cleanupStorage()" class="gold-btn btn-block" style="background:var(--danger); color:#fff; padding:12px; font-weight:900;">
-                    🧹 تنظيف الذاكرة وتحرير مساحة
-                </button>
+                <div style="background:#0d0d12; border:1px solid #10b981; border-radius:8px; padding:12px; margin-bottom:12px;">
+                    <div style="color:#10b981; font-weight:900; font-size:0.85rem; margin-bottom:6px;">
+                        الخطوة 1️⃣ — ارفع الفواتير للسحابة أولاً
+                    </div>
+                    <p style="font-size:0.76rem; color:#bbb; line-height:1.6; margin-bottom:10px;">
+                        فواتيرك محفوظة على هذا الجهاز فقط لأن الرفع القديم كان يفشل.
+                        هذا الزر يرفع كل فاتورة كمستند مستقل — <strong>لا يحذف شيئاً</strong>.
+                    </p>
+                    <button onclick="migrateOrdersToCloud(this)" class="gold-btn btn-block" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; padding:12px; font-weight:900;">
+                        ☁️ رفع الفواتير للسحابة
+                    </button>
+                </div>
+
+                <div style="background:#0d0d12; border:1px solid var(--danger); border-radius:8px; padding:12px;">
+                    <div style="color:var(--danger); font-weight:900; font-size:0.85rem; margin-bottom:6px;">
+                        الخطوة 2️⃣ — نظّف الذاكرة (بعد نجاح الرفع فقط)
+                    </div>
+                    <p style="font-size:0.76rem; color:#bbb; line-height:1.6; margin-bottom:10px;">
+                        <strong style="color:#fff;">ما الذي يُحذف بالضبط؟</strong><br>
+                        • صور الأصناف من ذاكرة هذا الجهاز — <span style="color:#10b981;">تبقى بالسحابة وتُسترجع تلقائياً</span><br>
+                        • الفواتير الأقدم من آخر 150 — <span style="color:#10b981;">تبقى بالسحابة</span><br>
+                        • الطلبات الواردة القديمة المعالَجة<br><br>
+                        <strong style="color:#10b981;">لا يُحذف:</strong> أي صنف، قسم، سعر، زبون، مخزن، أو صرفية.
+                    </p>
+                    <button onclick="cleanupStorage()" class="gold-btn btn-block" style="background:var(--danger); color:#fff; padding:12px; font-weight:900;">
+                        🧹 تنظيف الذاكرة وتحرير مساحة
+                    </button>
+                </div>
             </div>
 
             <div class="card" style="max-width:600px; margin:0 auto; border-color:#f59e0b;">
@@ -617,7 +642,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1230"></script>
+    <script src="app.js?v=1240"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
