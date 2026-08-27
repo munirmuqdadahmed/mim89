@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1230';
+const MIM89_APP_VERSION = '1240';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -277,6 +277,24 @@ async function initData() {
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
+    // 🚨 فحص تلقائي للذاكرة عند التشغيل — ينبّه قبل أن تتوقف الفواتير عن الحفظ
+    setTimeout(() => {
+        try {
+            const u = getStorageUsage();
+            const pct = Math.round((u.totalBytes / 5242880) * 100);
+            if (pct >= 90) {
+                const orders = (getData('sys_completed_orders') || []).length;
+                const st = getOrdersMigrationStatus();
+                const safe = st && st.failed === 0;
+                alert('🚨 ذاكرة هذا الجهاز ممتلئة (' + pct + '%)!\n\n' +
+                      'الفواتير الجديدة قد لا تُحفظ، وقد يظهر السجل والكشف فارغين.\n\n' +
+                      (safe ? '✅ فواتيرك مرفوعة للسحابة — افتح الإدارة ← النسخ الاحتياطي ← تنظيف الذاكرة.'
+                            : '⚠️ لديك ' + orders + ' فاتورة لم تُرفع للسحابة بعد.\n' +
+                              'افتح الإدارة ← النسخ الاحتياطي ← اضغط «رفع الفواتير للسحابة» أولاً.'));
+            }
+        } catch (e) {}
+    }, 3000);
+
     startPeriodicCloudPull();
     updateSyncIndicator(false);
     renderStatusBadge();
@@ -455,13 +473,18 @@ function safeLocalSet(key, jsonText) {
     }
 }
 
+// 📛 مفاتيح لا تُرفع للسحابة كمستند واحد لأنها تنمو بلا حدود وتتجاوز
+// حد Firestore (1 ميغابايت للمستند) فيفشل الرفع دائماً برسالة invalid-argument.
+// الفواتير تُرفع بدلاً من ذلك كمستند مستقل لكل فاتورة (مجموعة completed_orders).
+const NEVER_PUSH_WHOLE = ['sys_completed_orders', 'sys_live_orders', 'sys_items'];
+
 function setData(key, val) {
     const res = safeLocalSet(key, JSON.stringify(val));
     if (!res.ok && res.quota) {
         alert('⚠️ ذاكرة المتصفح ممتلئة تماماً ولم يُحفظ (' + key + ')!\n\n' +
               'افتح لوحة الإدارة ← النسخ الاحتياطي ← "تنظيف الذاكرة".');
     }
-    if (db && key !== 'sys_items') {
+    if (db && NEVER_PUSH_WHOLE.indexOf(key) === -1) {
         try {
             db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: Date.now() })
                 .catch(err => {
@@ -4645,6 +4668,70 @@ function updateAllSystemPasswords() {
    13. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
    ========================================== */
 
+// 🚑 إنقاذ الفواتير: يرفع كل فاتورة محلية للسحابة كمستند مستقل (يتجاوز حد 1 ميغا)
+// ثم — وفقط بعد التأكد من نجاح الرفع — يمكن تحرير المساحة بأمان بلا فقدان شيء.
+async function migrateOrdersToCloud(btnElement) {
+    if (!db) { alert("⚠️ لا يوجد اتصال بالسحابة. لا تنظّف الذاكرة قبل نجاح الرفع."); return; }
+
+    const orders = getData('sys_completed_orders') || [];
+    if (orders.length === 0) { alert("لا توجد فواتير محلية للرفع."); return; }
+
+    if (!confirm("سيتم رفع " + orders.length + " فاتورة إلى السحابة، كل فاتورة كمستند مستقل.\n\n" +
+                 "لن يُحذف أي شيء في هذه الخطوة — الرفع فقط.\n\nهل تريد المتابعة؟")) return;
+
+    let original = '';
+    if (btnElement) {
+        original = btnElement.innerHTML;
+        btnElement.disabled = true;
+    }
+
+    let done = 0, failed = 0;
+    const failedIds = [];
+
+    for (let i = 0; i < orders.length; i++) {
+        const o = orders[i];
+        const id = String(o.id || ('ORD_' + o.orderNum + '_' + o.createdTimestamp));
+        try {
+            await db.collection("completed_orders").doc(id).set(o, { merge: true });
+            done++;
+        } catch (e) {
+            failed++;
+            failedIds.push(o.orderNum);
+            console.error('فشل رفع الفاتورة', o.orderNum, e);
+        }
+
+        if (btnElement && i % 5 === 0) {
+            btnElement.innerHTML = '⏳ ' + (i + 1) + ' / ' + orders.length;
+        }
+    }
+
+    // نسجّل نتيجة الرفع ليعرف زر التنظيف أن الحذف آمن
+    localStorage.setItem('mim89_orders_migrated', JSON.stringify({
+        at: Date.now(), total: orders.length, uploaded: done, failed: failed
+    }));
+
+    if (btnElement) { btnElement.innerHTML = original; btnElement.disabled = false; }
+    renderStorageDiagnostics();
+
+    if (failed === 0) {
+        alert("✅ تم رفع كل الفواتير للسحابة بنجاح (" + done + " فاتورة).\n\n" +
+              "الآن أصبح تنظيف الذاكرة آمناً تماماً — الفواتير محفوظة بالسحابة.");
+    } else {
+        alert("⚠️ رُفعت " + done + " فاتورة، وفشلت " + failed + ".\n\n" +
+              "أرقام الفواتير التي فشلت: " + failedIds.slice(0, 10).join(', ') +
+              "\n\n❌ لا تنظّف الذاكرة الآن — أعد المحاولة أو تحقق من الإنترنت.");
+    }
+}
+
+// 🔍 هل الفواتير مرفوعة بالكامل؟ (يستخدمه زر التنظيف لمنع الحذف غير الآمن)
+function getOrdersMigrationStatus() {
+    try {
+        const raw = localStorage.getItem('mim89_orders_migrated');
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) { return null; }
+}
+
 // 🧹 تشخيص وتنظيف ذاكرة المتصفح — الحل المباشر لتوقف حفظ الفواتير
 function renderStorageDiagnostics() {
     const box = document.getElementById('storageDiagBox');
@@ -4685,11 +4772,30 @@ function renderStorageDiagnostics() {
 
 // 🧹 تحرير مساحة: يحذف صور الأصناف من الذاكرة المحلية (تبقى بالسحابة) ويقلّص الأرشيف
 function cleanupStorage() {
+    const orders = getData('sys_completed_orders') || [];
+    const status = getOrdersMigrationStatus();
+
+    // 🛡️ حماية من فقدان الفواتير: لا نسمح بالتنظيف قبل التأكد من رفعها للسحابة
+    if (orders.length > 150) {
+        const safe = status && status.failed === 0 && status.total >= orders.length;
+        if (!safe) {
+            alert("⛔ التنظيف متوقف حمايةً لفواتيرك!\n\n" +
+                  "لديك " + orders.length + " فاتورة على هذا الجهاز، ولم يتأكد رفعها للسحابة بعد.\n" +
+                  "لو نظّفنا الآن ستُفقد الفواتير الزائدة نهائياً.\n\n" +
+                  "✅ الخطوة الصحيحة:\n" +
+                  "1) اضغط أولاً: «رفع الفواتير للسحابة»\n" +
+                  "2) انتظر رسالة النجاح\n" +
+                  "3) ثم عُد واضغط «تنظيف الذاكرة»");
+            return;
+        }
+    }
+
     if (!confirm("سيتم تحرير مساحة بالطرق التالية:\n\n" +
-                 "• حذف صور الأصناف من ذاكرة هذا الجهاز (تبقى محفوظة بالسحابة)\n" +
-                 "• الإبقاء على آخر 150 فاتورة محلياً (الباقي محفوظ بالسحابة)\n" +
-                 "• حذف الطلبات الواردة القديمة\n\n" +
-                 "لن تُحذف أي بيانات من السحابة. هل تريد المتابعة؟")) return;
+                 "• حذف صور الأصناف من ذاكرة هذا الجهاز (الصور تبقى بالسحابة وتُسترجع تلقائياً)\n" +
+                 "• الإبقاء على آخر 150 فاتورة على الجهاز (الباقي محفوظ بالسحابة)\n" +
+                 "• حذف الطلبات الواردة القديمة المعالَجة\n\n" +
+                 "❗ لن يُحذف أي شيء من السحابة، ولا أي صنف أو قسم أو سعر.\n\n" +
+                 "هل تريد المتابعة؟")) return;
 
     const before = getStorageUsage().totalBytes;
 
