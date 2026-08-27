@@ -180,15 +180,28 @@
             border: 1px solid var(--gold-primary);
             border-radius: 12px;
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
-            width: 290px;
+            width: 300px;
             z-index: 200;
-            overflow: hidden;
             padding: 6px 0;
+            max-height: 78vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .menu-section-title {
+            color: var(--gold-bright);
+            font-size: 0.72rem;
+            font-weight: 900;
+            padding: 10px 16px 5px 16px;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid #22222a;
+            margin-bottom: 3px;
+            background: #101015;
         }
 
         .brand-dropdown button {
             width: 100%;
-            padding: 10px 16px;
+            padding: 9px 16px;
             background: none;
             border: none;
             color: #f3f4f6;
@@ -382,26 +395,38 @@
                     <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
                 </button>
                 <div id="brandDropdownMenu" class="brand-dropdown">
-                    <button onclick="openCashDrawer(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-key"></i> فتح الدرج / الصندوق</button>
-                    <button onclick="openWorkingHoursModal(); toggleBrandMenu();" style="color:var(--gold-bright);"><i class="fa-solid fa-clock"></i> تحديد أوقات فتح وإغلاق الطلبات</button>
-                    <button onclick="openOutofStockModal(); toggleBrandMenu();" style="color:var(--danger);"><i class="fa-solid fa-box-archive"></i> إدارة النفاد والوجبات المنتهية 🚫</button>
-                    <button onclick="openCouponsManagerModal(); toggleBrandMenu();" style="color:var(--purple-accent);"><i class="fa-solid fa-ticket"></i> إدارة الكوبونات وأكواد الخصم 🏷️</button>
-                    <button onclick="promptDrawerFloat(); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-coins"></i> 💰 تسجيل المدوّر (رصيد الصندوق الافتتاحي)</button>
-                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-wallet"></i> الصرفيات والسُلف اليومية</button>
-                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير المطبوعة</button>
-                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line"></i> كشف الحساب المالي اليومي</button>
-                    <button onclick="openDriverSettlementModal(); openModal('dailyReportModal'); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-motorcycle"></i> تصفية واستلام حساب الدليفري</button>
+
+                    <div class="menu-section-title">💰 الصندوق والمال</div>
+                    <button onclick="promptDrawerFloat(); toggleBrandMenu();"><i class="fa-solid fa-coins" style="color:#10b981;"></i> تسجيل المدوّر (رصيد افتتاحي)</button>
+                    <button onclick="openExpenseManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-wallet" style="color:var(--danger);"></i> الصرفيات والسُلف</button>
+                    <button onclick="openPendingDeliveriesModal(); toggleBrandMenu();"><i class="fa-solid fa-motorcycle" style="color:#10b981;"></i> الطلبات بذمة السائقين <span id="pendingDeliveryBadge" style="background:var(--danger); color:#fff; border-radius:10px; padding:1px 7px; font-size:0.68rem; margin-right:auto; display:none;">0</span></button>
+                    <button onclick="openShiftReportModal(); toggleBrandMenu();"><i class="fa-solid fa-lock" style="color:var(--gold-bright);"></i> تقفيل الشيفت والصندوق</button>
+
+                    <div class="menu-section-title">📊 التقارير</div>
+                    <button onclick="openCompletedOrdersModal(); toggleBrandMenu();"><i class="fa-solid fa-receipt"></i> سجل الفواتير</button>
+                    <button onclick="openDailyReportModal(); toggleBrandMenu();"><i class="fa-solid fa-chart-line" style="color:var(--blue-accent);"></i> كشف الحساب اليومي</button>
                     <button onclick="openItemsReportModal(); toggleBrandMenu();"><i class="fa-solid fa-boxes-stacked"></i> جرد الوجبات المباعة</button>
-                    <button onclick="openShiftReportModal(); toggleBrandMenu();"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</button>
-                    <hr style="border-color:#333; margin:3px 0;">
-                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square"></i> تعديل ملاحظات المطبخ السريعة</button>
+
+                    <div class="menu-section-title">🍔 المينيو والطلبات</div>
+                    <button onclick="openOutofStockModal(); toggleBrandMenu();"><i class="fa-solid fa-box-archive" style="color:var(--danger);"></i> إدارة النفاد</button>
+                    <button onclick="openCouponsManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-ticket" style="color:var(--purple-accent);"></i> الكوبونات وأكواد الخصم</button>
+                    <button onclick="openWorkingHoursModal(); toggleBrandMenu();"><i class="fa-solid fa-clock"></i> أوقات استقبال الطلبات</button>
+                    <button onclick="openKitchenNotesManagerModal(); toggleBrandMenu();"><i class="fa-solid fa-pen-to-square"></i> ملاحظات المطبخ السريعة</button>
+
+                    <div class="menu-section-title">⚙️ النظام والصيانة</div>
+                    <button onclick="openCashDrawer(); toggleBrandMenu();"><i class="fa-solid fa-key"></i> فتح الدرج</button>
                     <button onclick="unlockIpadAudio(); toggleBrandMenu();"><i class="fa-solid fa-bell"></i> تفعيل التنبيه الصوتي</button>
-                    <button onclick="location.reload(); toggleBrandMenu();"><i class="fa-solid fa-rotate"></i> تحديث ومزامنة النظام</button>
-                    <button onclick="runCloudDiagnostics(this); toggleBrandMenu();" style="color:#38bdf8;"><i class="fa-solid fa-stethoscope"></i> 🩺 فحص الاتصال السحابي</button>
-                    <button onclick="repairCloudSync(this); toggleBrandMenu();" style="color:#f59e0b;"><i class="fa-solid fa-wrench"></i> 🔧 إصلاح المزامنة</button>
-                    <button onclick="testPrintBridge(this); toggleBrandMenu();" style="color:#10b981;"><i class="fa-solid fa-print"></i> 🖨️ فحص جسر الطباعة</button>
-                    <hr style="border-color:#333; margin:3px 0;">
-                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
+                    <button onclick="location.reload();"><i class="fa-solid fa-rotate"></i> تحديث النظام</button>
+                    <button onclick="toggleMaintenanceTools()" style="color:#888;"><i class="fa-solid fa-screwdriver-wrench"></i> أدوات الفحص المتقدمة <span id="maintArrow" style="margin-right:auto;">▼</span></button>
+
+                    <div id="maintenanceTools" style="display:none; background:#0d0d12;">
+                        <button onclick="runCloudDiagnostics(this); toggleBrandMenu();" style="color:#38bdf8; padding-right:28px;"><i class="fa-solid fa-stethoscope"></i> فحص الاتصال السحابي</button>
+                        <button onclick="testPrintBridge(this); toggleBrandMenu();" style="color:#10b981; padding-right:28px;"><i class="fa-solid fa-print"></i> فحص جسر الطباعة</button>
+                        <button onclick="repairCloudSync(this); toggleBrandMenu();" style="color:#f59e0b; padding-right:28px;"><i class="fa-solid fa-wrench"></i> إصلاح المزامنة</button>
+                    </div>
+
+                    <hr style="border:none; border-top:1px solid #2a2a35; margin:6px 0;">
+                    <button onclick="confirmCloseShiftAndLogout()" style="color:var(--danger); font-weight:900;"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج والتسليم</button>
                 </div>
             </div>
 
@@ -435,6 +460,12 @@
                             <div id="driverSelectBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid var(--gold-primary); flex-shrink:0;">
                                 <span class="section-label" style="color:var(--gold-bright); font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-motorcycle"></i> حدد السائق / التطبيق:</span>
                                 <select id="posDriverSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;"></select>
+                            </div>
+
+                            <!-- 🗺️ منطقة التوصيل — تحدد أجور التوصيل تلقائياً حسب إعدادات الإدارة -->
+                            <div id="posAreaBox" style="display:none; margin: 2px 0; background:#121214; padding:5px 6px; border-radius:6px; border:1px solid #10b981; flex-shrink:0;">
+                                <span class="section-label" style="color:#10b981; font-weight:800; margin-bottom:2px;"><i class="fa-solid fa-location-dot"></i> منطقة التوصيل:</span>
+                                <select id="posAreaSelect" class="gold-input-inline" style="font-size:0.8rem; text-align:right; cursor:pointer; padding:6px;" onchange="onPosAreaChanged()"></select>
                             </div>
 
                             <span class="section-label">طريقة الدفع:</span>
@@ -599,7 +630,24 @@
             </div>
             <div id="ordersLogSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:6px; padding:6px 10px; font-size:0.78rem; color:#ccc; margin-bottom:8px; text-align:center;"></div>
             <div id="completedOrdersList" style="max-height:300px; overflow-y:auto; font-size:0.8rem;"></div>
-            <button onclick="clearCompletedOrdersHistory()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:8px;">مسح السجل بالكامل</button>
+            <p style="font-size:0.72rem; color:#666; margin-top:10px; text-align:center; line-height:1.5;">
+                🔒 مسح السجل متاح من لوحة الإدارة فقط
+            </p>
+        </div>
+    </div>
+
+    <!-- 🛵 نافذة الطلبات بذمة السائقين (لم تُستلم مبالغها بعد) -->
+    <div id="pendingDeliveriesModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:460px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
+                <h4 style="color:var(--gold-primary);"><i class="fa-solid fa-motorcycle"></i> الطلبات بذمة السائقين</h4>
+                <button onclick="closeModal('pendingDeliveriesModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
+            </div>
+            <p style="font-size:0.75rem; color:#aaa; margin-bottom:8px; line-height:1.5;">
+                كل طلب خرج مع سائق ولم يُستلم مبلغه بعد. اضغط "تم التسليم" عند عودة السائق بالمبلغ.
+            </p>
+            <div id="pendingDeliveriesSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:10px; margin-bottom:10px;"></div>
+            <div id="pendingDeliveriesList" style="max-height:340px; overflow-y:auto;"></div>
         </div>
     </div>
 
@@ -682,30 +730,20 @@
 
     <!-- 🔒 تقفيل الشيفت والصندوق -->
     <div id="shiftReportModal" class="modal-overlay">
-        <div class="modal-body">
+        <div class="modal-body" style="max-width:460px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--card-border); padding-bottom:6px;">
-                <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقرير تقفيل الشيفت والصندوق</h4>
+                <h4 style="color:#3b82f6;"><i class="fa-solid fa-lock"></i> تقفيل الشيفت والصندوق</h4>
                 <button onclick="closeModal('shiftReportModal')" class="gold-btn" style="width:auto; padding:2px 6px;">✕</button>
             </div>
-            <div style="background:#121215; padding:8px; border-radius:6px; font-size:0.8rem; line-height:1.6;">
-                <div>الكاشير الحالي: <strong id="shiftCashierName" style="color:var(--gold-bright);">الرئيسي</strong></div>
-                <div>وقت بداية الشيفت: <strong id="shiftStartTime" style="color:#aaa;">--:--</strong></div>
-                <hr style="border-color:#333; margin:5px 0;">
-                <div style="display:flex; justify-content:space-between;"><span>عدد الطلبات:</span> <strong id="shiftOrdersCount">0</strong></div>
-                <div style="display:flex; justify-content:space-between;"><span>إجمالي المبيعات:</span> <strong id="shiftGrandTotal" style="color:var(--gold-primary);">0</strong> د.ع</div>
-                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الكاش:</span> <strong id="shiftTotalCash" style="color:var(--success);">0</strong> د.ع</div>
-                <div style="display:flex; justify-content:space-between;"><span>مقبوظات الفيزا:</span> <strong id="shiftTotalVisa" style="color:var(--blue-accent);">0</strong> د.ع</div>
-                <div style="display:flex; justify-content:space-between; color:#10b981;"><span>💰 المدوّر (رصيد افتتاحي):</span> + <strong id="shiftOpeningFloat">0</strong> د.ع</div>
-                <div style="display:flex; justify-content:space-between; color:var(--danger);"><span>خصم الصرفيات والسُلف:</span> - <strong id="shiftTotalExpenses">0</strong> د.ع</div>
-                <hr style="border-color:#333; margin:5px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:bold; background:#222; padding:5px; border-radius:5px; margin-top:5px;">
-                    <span>النقد الواجب تسليمه بالصندوق:</span>
-                    <strong id="shiftNetDrawerCash" style="color:var(--gold-bright);">0</strong> د.ع
-                </div>
-            </div>
-            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:10px;">
-                تأكيد تقفيل الشيفت وتسليم الصندوق 🔒
+
+            <div id="shiftReportBody" style="max-height:60vh; overflow-y:auto;"></div>
+
+            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn" style="background:var(--danger); color:#fff; margin-top:12px; padding:12px; font-weight:900;">
+                🔒 تأكيد التقفيل وبدء شيفت جديد
             </button>
+            <p style="font-size:0.7rem; color:#666; margin-top:8px; text-align:center; line-height:1.5;">
+                الفواتير تبقى محفوظة بالسجل — التقفيل يصفّر العدادات فقط
+            </p>
         </div>
     </div>
 
@@ -793,7 +831,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=980"></script>
+    <script src="app.js?v=1010"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
@@ -834,6 +872,15 @@
             alert("💰 درج النقود يُفتح تلقائياً عند طباعة فاتورة الزبون (لأنه موصول بطابعة الكاشير).\n\nإذا لم يفتح، تحقق من توصيل كيبل الدرج بالطابعة.");
         }
 
+        function toggleMaintenanceTools() {
+            const box = document.getElementById('maintenanceTools');
+            const arrow = document.getElementById('maintArrow');
+            if (!box) return;
+            const open = box.style.display === 'block';
+            box.style.display = open ? 'none' : 'block';
+            if (arrow) arrow.innerText = open ? '▼' : '▲';
+        }
+
         function toggleBrandMenu() {
             const menu = document.getElementById('brandDropdownMenu');
             if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
@@ -856,9 +903,21 @@
             updateOnlineStatus();
         }
 
+        function refreshPendingDeliveryBadge() {
+            const badge = document.getElementById('pendingDeliveryBadge');
+            if (!badge || typeof getUnsettledDeliveryOrders !== 'function') return;
+            try {
+                const n = getUnsettledDeliveryOrders().length;
+                badge.innerText = n;
+                badge.style.display = n > 0 ? 'inline-block' : 'none';
+            } catch (e) {}
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initOfflineNetworkMonitor();
             if (typeof initCashierPage === 'function') initCashierPage();
+            setInterval(refreshPendingDeliveryBadge, 15000);
+            setTimeout(refreshPendingDeliveryBadge, 2000);
         });
     </script>
 </body>
