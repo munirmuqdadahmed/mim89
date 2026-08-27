@@ -423,6 +423,7 @@
                         <button onclick="runCloudDiagnostics(this); toggleBrandMenu();" style="color:#38bdf8; padding-right:28px;"><i class="fa-solid fa-stethoscope"></i> فحص الاتصال السحابي</button>
                         <button onclick="testPrintBridge(this); toggleBrandMenu();" style="color:#10b981; padding-right:28px;"><i class="fa-solid fa-print"></i> فحص جسر الطباعة</button>
                         <button onclick="repairCloudSync(this); toggleBrandMenu();" style="color:#f59e0b; padding-right:28px;"><i class="fa-solid fa-wrench"></i> إصلاح المزامنة</button>
+                        <button onclick="forceRestoreFromCloud(this); toggleBrandMenu();" style="color:#8b5cf6; padding-right:28px;"><i class="fa-solid fa-cloud-arrow-down"></i> استعادة المينيو من السحابة</button>
                     </div>
 
                     <hr style="border:none; border-top:1px solid #2a2a35; margin:6px 0;">
@@ -831,7 +832,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=1010"></script>
+    <script src="app.js?v=1020"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
