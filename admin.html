@@ -586,6 +586,19 @@
                 </p>
             </div>
 
+            <div class="card" style="max-width:600px; margin:0 auto 15px auto; border-color:var(--danger);">
+                <h4 style="color:var(--danger); margin-bottom:10px;"><i class="fa-solid fa-broom"></i> ذاكرة الجهاز (مهم جداً)</h4>
+                <p style="font-size:0.8rem; color:#ccc; line-height:1.7; margin-bottom:12px;">
+                    ذاكرة المتصفح محدودة (~5 ميغابايت). صور الأصناف تستهلك معظمها،
+                    وعند امتلائها <strong style="color:var(--danger);">تتوقف الفواتير عن الحفظ</strong>
+                    فيظهر السجل والكشف والتقفيل فارغين.
+                </p>
+                <div id="storageDiagBox" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:12px;"></div>
+                <button onclick="cleanupStorage()" class="gold-btn btn-block" style="background:var(--danger); color:#fff; padding:12px; font-weight:900;">
+                    🧹 تنظيف الذاكرة وتحرير مساحة
+                </button>
+            </div>
+
             <div class="card" style="max-width:600px; margin:0 auto; border-color:#f59e0b;">
                 <h4 style="color:#f59e0b; margin-bottom:10px;"><i class="fa-solid fa-upload"></i> استعادة من نسخة احتياطية</h4>
                 <p style="font-size:0.8rem; color:#ccc; line-height:1.7; margin-bottom:12px;">
@@ -604,7 +617,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1220"></script>
+    <script src="app.js?v=1230"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -638,7 +651,7 @@
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
             if (tabId === 'tabFixerControl' && typeof renderCategoryFixerTable === 'function') renderCategoryFixerTable();
-            if (tabId === 'tabBackupControl') renderBackupStats();
+            if (tabId === 'tabBackupControl') { renderBackupStats(); if (typeof renderStorageDiagnostics === 'function') renderStorageDiagnostics(); }
             if (tabId === 'tabPrintersControl' && typeof getPrintBridgeUrl === 'function') {
                 const el = document.getElementById('printBridgeUrlInput');
                 if (el) el.value = getPrintBridgeUrl();
