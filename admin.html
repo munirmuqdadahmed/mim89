@@ -209,12 +209,6 @@
                     <button onclick="printPaperMenu()" class="gold-btn btn-sm" style="background:#ffd700; color:#000; border:none; font-weight:900;">
                         <i class="fa-solid fa-print"></i> 📋 استخراج المينيو الورقي
                     </button>
-                    <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
-                        <i class="fa-solid fa-rotate"></i> مزامنة السحابة 🔄
-                    </button>
-                    <button onclick="forceRestoreFromCloud(this)" class="gold-btn btn-sm" style="background:#8b5cf6; color:#fff; border:none;">
-                        <i class="fa-solid fa-cloud-arrow-down"></i> استعادة من السحابة 🚑
-                    </button>
                     <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm" style="background:#3b82f6; color:#fff; border:none;">
                         <i class="fa-solid fa-stethoscope"></i> فحص الاتصال 🩺
                     </button>
@@ -284,16 +278,13 @@
                     <button onclick="saveItem()" class="gold-btn" style="flex:2;">حفظ الصنف وتحديث المينيو 🚀</button>
                     <button onclick="resetItemForm()" class="gold-btn btn-danger" style="flex:1;">إلغاء</button>
                 </div>
-                <button onclick="restoreDefaultMenuItems()" class="gold-btn btn-block" style="margin-top:10px; background:#18181c; border:1px solid #444; color:#888; font-size:0.78rem; padding:8px;">
-                    🌱 استعادة الأصناف الافتراضية الناقصة (يدوياً)
-                </button>
             </div>
 
             <!-- جدول الأصناف -->
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="color:var(--gold-primary); margin:0;"><i class="fa-solid fa-pen-to-square"></i> الأصناف الحالية (تعديل مباشر من الجدول)</h4>
-                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتم الحفظ والتحديث المباشر</span>
+                    <span style="font-size:0.75rem; color:#10b981; font-weight:bold;">☁️ الحفظ فوري ومباشر على السحابة وكل الأجهزة</span>
                 </div>
                 <div style="overflow-x:auto;">
                     <table class="data-table">
@@ -575,7 +566,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1030"></script>
+    <script src="app.js?v=1100"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
