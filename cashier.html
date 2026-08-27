@@ -261,44 +261,42 @@
         }
 
         /* 🍔 شريط الأقسام المباشر */
-        /* 🛠️ [إصلاح] كان الشريط يستخدم flex-wrap فيتغيّر ارتفاعه ويقفز لأعلى وأسفل
-           كلما تغيّر عدد الأقسام أو طول أسمائها. الآن صف واحد ثابت الارتفاع
-           يُمرَّر أفقياً، فلا يتحرك المحتوى تحته إطلاقاً. */
+        /* 🛠️ شريط الأقسام: كل الأقسام ظاهرة دفعة واحدة بدون أي تمرير،
+           بارتفاع ثابت لا يتحرك، وأزرار عريضة مناسبة لشاشات اللمس. */
         .categories-bar {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            gap: 8px !important;
-            padding: 6px 2px !important;
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)) !important;
+            gap: 6px !important;
+            padding: 8px 4px !important;
             margin-bottom: 10px !important;
             width: 100% !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            min-height: 52px !important;
-            max-height: 52px !important;
-            align-items: center;
-            scrollbar-width: thin;
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
+            overflow: visible !important;
             border-bottom: 1px solid var(--card-border);
         }
-        .categories-bar::-webkit-scrollbar { height: 4px; }
-        .categories-bar::-webkit-scrollbar-thumb { background: var(--gold-primary); border-radius: 4px; }
 
         .category-tab {
             background: #181820 !important;
             border: 1px solid #2e2e3a !important;
-            color: #a0a0b0 !important;
-            padding: 8px 16px !important;
-            border-radius: 12px !important;
+            color: #d0d0dd !important;
+            padding: 12px 8px !important;      /* أكبر للمس المريح */
+            border-radius: 10px !important;
             cursor: pointer !important;
-            white-space: nowrap !important;
-            font-size: 0.88rem !important;
-            font-weight: 700 !important;
-            transition: all 0.2s ease;
-            display: inline-flex;
+            font-size: 0.82rem !important;
+            font-weight: 800 !important;
+            transition: all 0.15s ease;
+            display: flex !important;
             align-items: center;
-            gap: 6px;
-            flex-shrink: 0 !important;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.25;
+            min-height: 48px;                   /* مساحة لمس كافية */
+            word-break: break-word;
+            -webkit-tap-highlight-color: rgba(245,158,11,0.3);
+            touch-action: manipulation;
+        }
+        .category-tab:active {
+            transform: scale(0.96);
+            background: #2a2a35 !important;
         }
 
         .category-tab.active, .category-tab:hover {
@@ -843,7 +841,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=1210"></script>
+    <script src="app.js?v=1220"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
