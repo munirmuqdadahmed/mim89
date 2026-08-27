@@ -432,6 +432,7 @@
                 <div id="offlineStatusBadge" class="offline-status-badge">
                     <i class="fa-solid fa-wifi"></i> أوفلاين (حفظ محلي)
                 </div>
+                <span id="cloudSyncIndicator" style="font-size:0.72rem; color:#888; padding:3px 8px; border-radius:6px; border:1px solid #2a2a36;" title="آخر تحديث من السحابة"></span>
                 <span id="activeCashierName" style="color:var(--gold-bright); font-size:0.85rem; font-weight:800;"></span>
                 <button onclick="openCashDrawer()" class="gold-btn" style="padding:5px 10px; font-size:0.75rem; background:#222; color:#fff; border:1px solid #444; width:auto;"><i class="fa-solid fa-box-open"></i> الدرج</button>
             </div>
@@ -829,7 +830,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=1100"></script>
+    <script src="app.js?v=1110"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
@@ -912,6 +913,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            if (typeof showVersionBadge === 'function') showVersionBadge();
             initOfflineNetworkMonitor();
             if (typeof initCashierPage === 'function') initCashierPage();
             setInterval(refreshPendingDeliveryBadge, 15000);
