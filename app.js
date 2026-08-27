@@ -1392,6 +1392,7 @@ function loginCashier() {
         
         loadPosDirectMenu('all');
         loadDriversAndAppDropdowns();
+        loadPosDeliveryAreas();
         listenForIncomingOrders();
     } else {
         if (document.getElementById('authError')) document.getElementById('authError').innerText = "الرمز السري غير صحيح!";
@@ -1421,6 +1422,11 @@ function selectOrderType(btnElement) {
     if (driverBox) {
         driverBox.style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
     }
+    const areaBox = document.getElementById('posAreaBox');
+    if (areaBox) {
+        areaBox.style.display = (selectedPosOrderType === 'delivery') ? 'block' : 'none';
+        if (selectedPosOrderType === 'delivery') loadPosDeliveryAreas();
+    }
     renderPosCart();
 }
 
@@ -1428,6 +1434,63 @@ function selectPaymentMethod(btnElement) {
     document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
     selectedPosPaymentMethod = btnElement.getAttribute('data-value');
+}
+
+// 🛵💰 [إصلاح جوهري] حساب أجور التوصيل بالكاشير من قائمة المناطق المسجّلة.
+// كان الكود سابقاً يبحث عن كلمة "القاهرة" داخل خانة اسم الزبون! فإذا لم يكتبها
+// الكاشير، تُحتسب أجور توصيل على زبون داخل القاهرة رغم أن التوصيل مجاني له.
+// الآن يوجد اختيار منطقة صريح، والسعر يُقرأ من إعدادات الإدارة مباشرة.
+function getPosDeliveryFee() {
+    if (selectedPosOrderType !== 'delivery') return 0;
+
+    const areaSelect = document.getElementById('posAreaSelect');
+    const selectedArea = areaSelect ? areaSelect.value : '';
+    const areas = getData('sys_areas') || [];
+
+    // 1) مطابقة مباشرة للمنطقة المختارة من القائمة
+    if (selectedArea) {
+        const found = areas.find(a => String(a.name) === String(selectedArea));
+        if (found) return cleanPrice(found.price);
+    }
+
+    // 2) لم تُختر منطقة: نحاول استنتاجها من نص بيانات الزبون (توافق مع الطلبات القديمة)
+    const custInput = document.getElementById('posCustName')?.value || '';
+    if (custInput) {
+        const norm = normalizeArabicArea(custInput);
+        const matched = areas.find(a => {
+            const an = normalizeArabicArea(a.name);
+            return an && norm && (norm === an || norm.includes(an));
+        });
+        if (matched) return cleanPrice(matched.price);
+    }
+
+    // 3) منطقة غير معروفة: نستخدم سعر افتراضي عام
+    return 2500;
+}
+
+// 🗺️ تعبئة قائمة مناطق التوصيل بالكاشير من إعدادات الإدارة
+function loadPosDeliveryAreas() {
+    const select = document.getElementById('posAreaSelect');
+    if (!select) return;
+
+    const areas = getData('sys_areas') || [];
+    const previous = select.value;
+
+    let html = '';
+    areas.forEach(a => {
+        const price = cleanPrice(a.price);
+        const label = price === 0 ? 'مجاني 🎉' : price.toLocaleString('ar-IQ') + ' د.ع';
+        html += '<option value="' + a.name + '">📍 ' + a.name + ' — ' + label + '</option>';
+    });
+    html += '<option value="__other__">✏️ منطقة أخرى (2,500 د.ع)</option>';
+
+    select.innerHTML = html;
+    if (previous) select.value = previous;
+}
+
+// 🔄 عند تغيير المنطقة: نُعيد حساب المجاميع فوراً
+function onPosAreaChanged() {
+    renderPosCart();
 }
 
 function loadDriversAndAppDropdowns() {
@@ -1530,6 +1593,7 @@ function addToPosCart(itemId) {
     }
     recalculateActiveDiscount();
     renderPosCart();
+    prefetchOrderNumber();   // ⚡ نبدأ جلب رقم الطلب مبكراً
 }
 
 function changePosCartQty(id, change) {
@@ -1702,12 +1766,7 @@ function renderPosCart() {
 
     list.innerHTML = cartContentHtml;
 
-    let deliveryFee = 0;
-    if (selectedPosOrderType === 'delivery') {
-        const custInput = document.getElementById('posCustName')?.value || '';
-        const normInput = normalizeArabicArea(custInput);
-        deliveryFee = (normInput.includes('قاهره') || normInput.includes('قاهرة')) ? 0 : 2500;
-    }
+    const deliveryFee = getPosDeliveryFee();
 
     const finalNetTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
     if (totalEl) {
@@ -1723,6 +1782,26 @@ function renderPosCart() {
    6. حاسبة النقد وإجراءات الطباعة والإنهاء
    ========================================== */
 
+// ⚡ [تسريع] نجلب رقم الطلب من السحابة مسبقاً أثناء انشغال الكاشير بالحساب،
+// بدل انتظاره لحظة الضغط على الطباعة. هذا يلغي التأخير الأول تماماً.
+let prefetchedOrderNumber = null;
+let prefetchInFlight = false;
+
+function prefetchOrderNumber() {
+    if (prefetchInFlight || prefetchedOrderNumber !== null) return;
+    prefetchInFlight = true;
+    getNextOrderNumberFromCloud()
+        .then(num => { prefetchedOrderNumber = num; })
+        .catch(() => { prefetchedOrderNumber = null; })
+        .finally(() => { prefetchInFlight = false; });
+}
+
+function consumePrefetchedOrderNumber() {
+    const n = prefetchedOrderNumber;
+    prefetchedOrderNumber = null;
+    return n;
+}
+
 function openQuickCashModal() {
     if (!posCart || posCart.length === 0) {
         return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
@@ -1736,13 +1815,7 @@ function openQuickCashModal() {
     }
 
     const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    let deliveryFee = 0;
-
-    if (selectedPosOrderType === 'delivery') {
-        const custInput = document.getElementById('posCustName')?.value || '';
-        const normInput = normalizeArabicArea(custInput);
-        deliveryFee = (normInput.includes('قاهره') || normInput.includes('قاهرة')) ? 0 : 2500;
-    }
+    const deliveryFee = getPosDeliveryFee();
 
     const netTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
 
@@ -1768,12 +1841,7 @@ function setCashGiven(amount) {
 
 function calculateCashChange() {
     const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    let deliveryFee = 0;
-    if (selectedPosOrderType === 'delivery') {
-        const custInput = document.getElementById('posCustName')?.value || '';
-        const normInput = normalizeArabicArea(custInput);
-        deliveryFee = (normInput.includes('قاهره') || normInput.includes('قاهرة')) ? 0 : 2500;
-    }
+    const deliveryFee = getPosDeliveryFee();
 
     const netTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
     const cashGiven = cleanPrice(document.getElementById('cashGivenInput')?.value || 0);
@@ -1796,12 +1864,7 @@ function calculateCashChange() {
 // هذا يمنع نهائياً تكرار نفس رقم الطلب (مثل مشكلة تكرار #301 سابقاً).
 async function proceedToPrintAfterCash() {
     const subtotal = posCart.reduce((sum, i) => sum + (cleanPrice(i.price) * cleanPrice(i.qty)), 0);
-    let deliveryFee = 0;
-    if (selectedPosOrderType === 'delivery') {
-        const custInput = document.getElementById('posCustName')?.value || '';
-        const normInput = normalizeArabicArea(custInput);
-        deliveryFee = (normInput.includes('قاهره') || normInput.includes('قاهرة')) ? 0 : 2500;
-    }
+    const deliveryFee = getPosDeliveryFee();
 
     const netTotal = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
     const cashGiven = cleanPrice(document.getElementById('cashGivenInput')?.value || 0);
@@ -1822,16 +1885,17 @@ async function proceedToPrintAfterCash() {
         confirmBtn.disabled = true;
     }
 
-    let orderNumSeq;
-    try {
-        orderNumSeq = await getNextOrderNumberFromCloud();
-    } catch (e) {
-        orderNumSeq = getOrderSequence();
-    } finally {
-        if (confirmBtn) {
-            confirmBtn.innerHTML = originalBtnText;
-            confirmBtn.disabled = false;
+    let orderNumSeq = consumePrefetchedOrderNumber();
+    if (orderNumSeq === null) {
+        try {
+            orderNumSeq = await getNextOrderNumberFromCloud();
+        } catch (e) {
+            orderNumSeq = getOrderSequence();
         }
+    }
+    if (confirmBtn) {
+        confirmBtn.innerHTML = originalBtnText;
+        confirmBtn.disabled = false;
     }
 
     activePendingPrintOrder = {
@@ -1840,7 +1904,7 @@ async function proceedToPrintAfterCash() {
         customerName: custNameRaw,
         phone: custNameRaw.includes('هاتف:') ? custNameRaw.split('هاتف:')[1].trim().split(' ')[0] : '-',
         orderType: selectedPosOrderType === 'delivery' ? 'توصيل' : (selectedPosOrderType === 'takeaway' ? 'سفري' : 'صالة'),
-        area: selectedPosOrderType === 'delivery' ? (custNameRaw.includes('|') ? custNameRaw.split('|').slice(2).join(' ') : 'توصيل محلي') : 'داخل المطعم',
+        area: selectedPosOrderType === 'delivery' ? (document.getElementById('posAreaSelect')?.value === '__other__' ? 'منطقة أخرى' : (document.getElementById('posAreaSelect')?.value || 'توصيل محلي')) : 'داخل المطعم',
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا / ماستر',
         driverName: driverName,
         items: posCart.map(i => ({
@@ -2121,15 +2185,23 @@ function buildCustomerReceiptLines(ord) {
     L.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
     L.push({ separator: 'dash' });
 
-    // رؤوس أعمدة الجدول
-    L.push({ cols: ['الوجبة', 'العدد', 'المبلغ'], ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true });
+    // 🛡️ حماية توافق: نرسل مع كل سطر أعمدة نصاً مكافئاً في المفتاح text.
+    //    الجسر الحديث يقرأ cols ويتجاهل text (يفحص cols أولاً)،
+    //    أما الجسر القديم فيقرأ text فتُطبع الأصناف بدل أن تظهر أسطر فارغة.
+    L.push({
+        cols: ['الوجبة', 'العدد', 'المبلغ'],
+        text: 'الوجبة          العدد     المبلغ',
+        ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true, align: 'right'
+    });
     L.push({ separator: 'solid' });
 
     (ord.items || []).forEach(i => {
-        const lineTotal = cleanPrice(i.price) * cleanPrice(i.qty);
+        const qty = cleanPrice(i.qty);
+        const lineTotal = cleanPrice(i.price) * qty;
         L.push({
-            cols: [String(i.name), String(cleanPrice(i.qty)), lineTotal.toLocaleString('en-US')],
-            ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true
+            cols: [String(i.name), String(qty), lineTotal.toLocaleString('en-US')],
+            text: String(i.name) + '   × ' + qty + '   ' + lineTotal.toLocaleString('en-US'),
+            ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true, align: 'right'
         });
         if (i.itemNotes && i.itemNotes.length) {
             L.push({ text: '   (' + i.itemNotes.join(' - ') + ')', size: 'normal', align: 'right' });
@@ -2397,9 +2469,9 @@ function promptDrawerFloat() {
 
 // 📊 حساب ملخص مبيعات اليوم (يُستخدم بالأدمن والكاشير معاً)
 function computeTodaySalesSummary() {
-    const today = getTodayString();
-    const completed = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
-    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today);
+    // 🔄 يعتمد على الشيفت المفتوح وليس على تاريخ اليوم
+    const completed = getShiftOrders();
+    const expenses = getShiftExpenses();
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalDelivery = 0, totalExp = 0;
 
@@ -2413,7 +2485,7 @@ function computeTodaySalesSummary() {
 
     expenses.forEach(e => totalExp += cleanPrice(e.amount));
 
-    const float = getDrawerOpeningFloat(today);
+    const float = getDrawerOpeningFloat(getTodayString());
 
     return {
         ordersCount: completed.length,
@@ -2444,6 +2516,169 @@ function startLiveSalesBadgeUpdater() {
     updateLiveShiftSalesBadge();
     if (liveSalesBadgeTimer) clearInterval(liveSalesBadgeTimer);
     liveSalesBadgeTimer = setInterval(updateLiveShiftSalesBadge, 20000);
+}
+
+/* ==========================================
+   7.95 🔄 نظام الشيفت: كل الحسابات تُبنى على الشيفت المفتوح وليس على التاريخ
+   المشكلة سابقاً: التقارير كانت تُصفّر تلقائياً عند منتصف الليل حتى لو الشيفت
+   ما زال مفتوحاً — فيضيع حساب الفترة الممتدة بعد منتصف الليل.
+   الآن: لا شيء يُصفّر إلا عند "تقفيل الشيفت" صراحةً.
+   ========================================== */
+
+// 🕐 وقت بداية الشيفت المفتوح حالياً (مشترك بين كل الأجهزة عبر السحابة)
+function getShiftStartTs() {
+    const v = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
+    if (v > 0) return v;
+    // لا يوجد شيفت مفتوح: نفتح واحداً الآن تلقائياً
+    const now = Date.now();
+    localStorage.setItem('sys_shift_start_ts', String(now));
+    setData('sys_shift_meta', { startTs: now, startedAt: new Date().toLocaleString('ar-IQ') });
+    return now;
+}
+
+function getShiftStartLabel() {
+    const meta = getData('sys_shift_meta');
+    if (meta && meta.startedAt) return meta.startedAt;
+    return new Date(getShiftStartTs()).toLocaleString('ar-IQ');
+}
+
+// 🔓 بدء شيفت جديد (يُستدعى بعد التقفيل)
+function startNewShift() {
+    const now = Date.now();
+    localStorage.setItem('sys_shift_start_ts', String(now));
+    setData('sys_shift_meta', {
+        startTs: now,
+        startedAt: new Date().toLocaleString('ar-IQ'),
+        cashier: activeCashierUser ? activeCashierUser.name : 'الرئيسي'
+    });
+}
+
+// 📦 كل فواتير الشيفت المفتوح (بغض النظر عن التاريخ)
+function getShiftOrders() {
+    const startTs = getShiftStartTs();
+    const all = getData('sys_completed_orders') || [];
+    return all.filter(o => cleanPrice(o.createdTimestamp) >= startTs);
+}
+
+// 💸 كل صرفيات الشيفت المفتوح
+function getShiftExpenses() {
+    const startTs = getShiftStartTs();
+    const all = getData('sys_expenses') || [];
+    return all.filter(e => cleanPrice(e.createdTimestamp) >= startTs);
+}
+
+// 🧾 الطلبات التي خرجت مع سائق ولم تُصفَّ ذمتها بعد (بذمة السائقين)
+function getUnsettledDeliveryOrders() {
+    return getShiftOrders().filter(o =>
+        o.orderType === 'توصيل' &&
+        o.driverName && o.driverName !== '-' &&
+        !o.isSettled
+    );
+}
+
+// ✅ تعليم طلب توصيل بأنه سُلّم ووصل مبلغه (عند عودة السائق)
+function markDeliveryOrderSettled(orderId) {
+    let all = getData('sys_completed_orders') || [];
+    const ord = all.find(o => String(o.id) === String(orderId));
+    if (!ord) return;
+
+    if (!confirm('تأكيد استلام مبلغ الطلب #' + ord.orderNum + ' (' +
+                 cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') + ' د.ع) من السائق ' +
+                 ord.driverName + '؟')) return;
+
+    ord.isSettled = true;
+    ord.settledTimestamp = Date.now();
+    ord.settledBy = activeCashierUser ? activeCashierUser.name : 'الرئيسي';
+    setData('sys_completed_orders', all);
+
+    renderPendingDeliveriesList();
+    renderDrawerDriverSettlement();
+    alert('✅ تم تسجيل استلام المبلغ وتصفية الطلب #' + ord.orderNum);
+}
+
+// 🛵 شاشة "الطلبات بذمة السائقين" — تعرض كل طلب خرج ولم يُصفَّ بعد
+function openPendingDeliveriesModal() {
+    renderPendingDeliveriesList();
+    openModal('pendingDeliveriesModal');
+}
+
+function renderPendingDeliveriesList() {
+    const container = document.getElementById('pendingDeliveriesList');
+    const summaryEl = document.getElementById('pendingDeliveriesSummary');
+    if (!container) return;
+
+    const pending = getUnsettledDeliveryOrders();
+
+    if (summaryEl) {
+        const total = pending.reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+        const fees = pending.reduce((s, o) => s + cleanPrice(o.deliveryFee), 0);
+        summaryEl.innerHTML =
+            '<div style="display:flex; justify-content:space-around; text-align:center; flex-wrap:wrap; gap:8px;">' +
+            '<div><div style="font-size:0.7rem; color:#aaa;">طلبات بالشارع</div>' +
+            '<strong style="color:var(--danger); font-size:1.1rem;">' + pending.length + '</strong></div>' +
+            '<div><div style="font-size:0.7rem; color:#aaa;">مبالغ لم تُستلم</div>' +
+            '<strong style="color:var(--gold-bright); font-size:1.1rem;">' + total.toLocaleString('ar-IQ') + '</strong></div>' +
+            '<div><div style="font-size:0.7rem; color:#aaa;">منها أجور توصيل</div>' +
+            '<strong style="color:#aaa; font-size:1.1rem;">' + fees.toLocaleString('ar-IQ') + '</strong></div>' +
+            '</div>';
+    }
+
+    if (pending.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--success); padding:20px; font-weight:bold;">✅ لا توجد طلبات معلقة — كل السائقين صفّوا ذممهم</p>';
+        return;
+    }
+
+    // تجميع حسب السائق
+    const byDriver = {};
+    pending.forEach(o => {
+        const d = o.driverName || 'غير محدد';
+        if (!byDriver[d]) byDriver[d] = [];
+        byDriver[d].push(o);
+    });
+
+    container.innerHTML = Object.keys(byDriver).map(driver => {
+        const orders = byDriver[driver];
+        const dTotal = orders.reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+        const dFees = orders.reduce((s, o) => s + cleanPrice(o.deliveryFee), 0);
+
+        const rows = orders.map(o => {
+            const mins = Math.floor((Date.now() - cleanPrice(o.createdTimestamp)) / 60000);
+            const timeColor = mins > 45 ? 'var(--danger)' : (mins > 25 ? '#f59e0b' : '#888');
+            return `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:#121215; padding:8px 10px; border-radius:6px; margin-bottom:5px;">
+                <div style="min-width:0;">
+                    <strong style="color:var(--gold-bright); font-size:0.85rem;">#${o.orderNum}</strong>
+                    <span style="font-size:0.75rem; color:#ccc;"> — ${o.customerName || 'زبون'}</span>
+                    <div style="font-size:0.72rem; color:${timeColor};">⏱ خرج قبل ${mins} دقيقة • ${o.area || ''}</div>
+                    <div style="font-size:0.8rem; color:var(--success); font-weight:bold;">${cleanPrice(o.totalAmount).toLocaleString('ar-IQ')} د.ع</div>
+                </div>
+                <button onclick="markDeliveryOrderSettled('${o.id}')" class="gold-btn btn-sm"
+                        style="background:var(--success); color:#fff; border:none; padding:8px 10px; font-size:0.72rem; white-space:nowrap; font-weight:900;">
+                    ✅ تم التسليم<br><span style="font-size:0.65rem; font-weight:normal;">واستلام المبلغ</span>
+                </button>
+            </div>`;
+        }).join('');
+
+        return `
+        <div style="background:#1a1a22; border:1px solid var(--gold-primary); border-radius:8px; padding:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px dashed #444; padding-bottom:6px;">
+                <strong style="color:#fff;">🛵 ${driver}</strong>
+                <span style="background:var(--danger); color:#fff; padding:2px 8px; border-radius:4px; font-size:0.72rem; font-weight:bold;">${orders.length} طلب</span>
+            </div>
+            ${rows}
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #444; padding-top:8px; margin-top:6px;">
+                <div style="font-size:0.75rem; color:#aaa;">
+                    المقبوض: <strong style="color:#fff;">${dTotal.toLocaleString('ar-IQ')}</strong> —
+                    التوصيل: <strong style="color:#fff;">${dFees.toLocaleString('ar-IQ')}</strong><br>
+                    <span style="color:var(--success); font-weight:bold;">الصافي للصندوق: ${(dTotal - dFees).toLocaleString('ar-IQ')} د.ع</span>
+                </div>
+                <button onclick="settleDriverAccount('${driver}')" class="gold-btn btn-sm"
+                        style="background:var(--gold-primary); color:#000; border:none; padding:8px 10px; font-size:0.72rem; font-weight:900; white-space:nowrap;">
+                    تصفية الكل
+                </button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 /* ==========================================
@@ -2911,56 +3146,195 @@ function exportItemsReportPDFAndWhatsApp() {
 }
 
 function openShiftReportModal() {
-    const cashierName = activeCashierUser ? activeCashierUser.name : 'الرئيسي';
-    const startTime = sessionStorage.getItem('shift_start_time') || '--:--';
-    // 🕐 [إصلاح] الحساب يبدأ من لحظة بدء الشيفت الحالي فقط، وليس من بداية اليوم بالكامل،
-    // حتى لا يرى الكاشير الثاني مبيعات الكاشير الذي قبله عند التناوب بنفس اليوم.
-    const shiftStartTs = cleanPrice(sessionStorage.getItem('shift_start_timestamp')) || 0;
-
-    const completed = getData('sys_completed_orders') || [];
-    const today = getTodayString();
-    const todayOrders = completed.filter(o =>
-        o.dateDate === today &&
-        (!shiftStartTs || cleanPrice(o.createdTimestamp) >= shiftStartTs)
-    );
-    const expenses = (getData('sys_expenses') || []).filter(e =>
-        e.dateDate === today &&
-        (!shiftStartTs || cleanPrice(e.createdTimestamp) >= shiftStartTs)
-    );
-
-    let totalSales = 0, totalCash = 0, totalVisa = 0, totalExp = 0;
-
-    todayOrders.forEach(o => {
-        const amt = cleanPrice(o.totalAmount);
-        totalSales += amt;
-        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
-            totalVisa += amt;
-        } else {
-            totalCash += amt;
-        }
-    });
-
-    expenses.forEach(e => totalExp += cleanPrice(e.amount));
-
-    if (document.getElementById('shiftCashierName')) document.getElementById('shiftCashierName').innerText = cashierName;
-    if (document.getElementById('shiftStartTime')) document.getElementById('shiftStartTime').innerText = startTime;
-    if (document.getElementById('shiftOrdersCount')) document.getElementById('shiftOrdersCount').innerText = todayOrders.length;
-    if (document.getElementById('shiftGrandTotal')) document.getElementById('shiftGrandTotal').innerText = totalSales.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftTotalCash')) document.getElementById('shiftTotalCash').innerText = totalCash.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftTotalVisa')) document.getElementById('shiftTotalVisa').innerText = totalVisa.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftTotalExpenses')) document.getElementById('shiftTotalExpenses').innerText = totalExp.toLocaleString('ar-IQ');
-    const shiftFloat = getDrawerOpeningFloat(today);
-    if (document.getElementById('shiftOpeningFloat')) document.getElementById('shiftOpeningFloat').innerText = shiftFloat.toLocaleString('ar-IQ');
-    if (document.getElementById('shiftNetDrawerCash')) document.getElementById('shiftNetDrawerCash').innerText = Math.max(0, shiftFloat + totalCash - totalExp).toLocaleString('ar-IQ');
-
+    renderShiftClosingReport();
     openModal('shiftReportModal');
 }
 
-function confirmCloseShiftAndLogout() {
-    if (confirm("هل أنت متأكد من إغلاق الشيفت وتسليم الصندوق الخزينة؟")) {
-        sessionStorage.clear();
-        location.reload();
+// 📋 تقرير تقفيل الشيفت الشامل: مبيعات + صرفيات + دليفري + تسوية الصندوق
+function renderShiftClosingReport() {
+    const container = document.getElementById('shiftReportBody');
+    if (!container) return;
+
+    const orders = getShiftOrders();
+    const expenses = getShiftExpenses();
+    const float = getDrawerOpeningFloat(getTodayString());
+
+    let totalSales = 0, cash = 0, visa = 0, deliveryFees = 0, discounts = 0;
+    let dineIn = 0, takeaway = 0, delivery = 0;
+
+    orders.forEach(o => {
+        const amt = cleanPrice(o.totalAmount);
+        totalSales += amt;
+        deliveryFees += cleanPrice(o.deliveryFee);
+        discounts += cleanPrice(o.discount);
+        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) visa += amt; else cash += amt;
+        if (o.orderType === 'توصيل') delivery++;
+        else if (o.orderType === 'سفري') takeaway++;
+        else dineIn++;
+    });
+
+    const totalExp = expenses.reduce((s, e) => s + cleanPrice(e.amount), 0);
+
+    // الطلبات التي خرجت مع سائق ولم تُستلم مبالغها بعد
+    const pending = getUnsettledDeliveryOrders();
+    const pendingAmount = pending.reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+
+    // النقد المتوقع بالصندوق = المدوّر + الكاش المستلم فعلياً - الصرفيات
+    // (نستثني مبالغ الطلبات التي ما زالت بذمة السائقين لأنها لم تصل الصندوق بعد)
+    const pendingCash = pending
+        .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
+        .reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+
+    const expectedCash = float + cash - totalExp - pendingCash;
+
+    const row = (label, value, color, bold) =>
+        '<div style="display:flex; justify-content:space-between; padding:3px 0;' +
+        (bold ? ' font-weight:900; font-size:0.92rem;' : '') + '">' +
+        '<span>' + label + '</span><strong style="color:' + (color || '#fff') + ';">' + value + '</strong></div>';
+
+    let html = '';
+
+    html += '<div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">';
+    html += '<div style="color:var(--gold-bright); font-weight:900; margin-bottom:6px; text-align:center;">🕐 بيانات الشيفت</div>';
+    html += row('الكاشير:', activeCashierUser ? activeCashierUser.name : 'الرئيسي');
+    html += row('بدأ في:', getShiftStartLabel(), '#aaa');
+    html += row('عدد الفواتير:', orders.length + ' فاتورة', 'var(--gold-bright)', true);
+    html += '</div>';
+
+    html += '<div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">';
+    html += '<div style="color:var(--gold-bright); font-weight:900; margin-bottom:6px; text-align:center;">💰 المبيعات</div>';
+    html += row('🍽️ صالة:', dineIn + ' طلب', '#ccc');
+    html += row('🛍️ سفري:', takeaway + ' طلب', '#ccc');
+    html += row('🛵 توصيل:', delivery + ' طلب', '#ccc');
+    html += '<hr style="border-color:#333; margin:5px 0;">';
+    html += row('إجمالي المبيعات:', totalSales.toLocaleString('ar-IQ') + ' د.ع', 'var(--gold-primary)', true);
+    html += row('منها كاش:', cash.toLocaleString('ar-IQ') + ' د.ع', 'var(--success)');
+    html += row('منها فيزا:', visa.toLocaleString('ar-IQ') + ' د.ع', 'var(--blue-accent)');
+    if (discounts > 0) html += row('⚠️ إجمالي الخصومات:', '-' + discounts.toLocaleString('ar-IQ') + ' د.ع', 'var(--danger)');
+    html += row('أجور التوصيل المحصّلة:', deliveryFees.toLocaleString('ar-IQ') + ' د.ع', '#aaa');
+    html += '</div>';
+
+    html += '<div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">';
+    html += '<div style="color:var(--danger); font-weight:900; margin-bottom:6px; text-align:center;">💸 الصرفيات (' + expenses.length + ')</div>';
+    if (expenses.length === 0) {
+        html += '<p style="color:#777; text-align:center; margin:0; font-size:0.78rem;">لا توجد صرفيات بهذا الشيفت</p>';
+    } else {
+        expenses.forEach(e => {
+            html += '<div style="display:flex; justify-content:space-between; font-size:0.76rem; border-bottom:1px solid #222; padding:3px 0;">' +
+                    '<span style="color:#bbb;">' + (e.type || '') + ' — ' + (e.note || '') + '</span>' +
+                    '<strong style="color:var(--danger); white-space:nowrap;">' + cleanPrice(e.amount).toLocaleString('ar-IQ') + '</strong></div>';
+        });
+        html += '<hr style="border-color:#333; margin:5px 0;">';
+        html += row('إجمالي الصرفيات:', '-' + totalExp.toLocaleString('ar-IQ') + ' د.ع', 'var(--danger)', true);
     }
+    html += '</div>';
+
+    // قسم الدليفري المعلّق — الأهم لمعرفة أين المبالغ
+    html += '<div style="background:#121215; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem; border:1px solid ' + (pending.length > 0 ? 'var(--danger)' : '#333') + ';">';
+    html += '<div style="color:' + (pending.length > 0 ? 'var(--danger)' : 'var(--success)') + '; font-weight:900; margin-bottom:6px; text-align:center;">🛵 طلبات بذمة السائقين</div>';
+    if (pending.length === 0) {
+        html += '<p style="color:var(--success); text-align:center; margin:0; font-size:0.8rem; font-weight:bold;">✅ كل الطلبات مُصفّاة</p>';
+    } else {
+        pending.forEach(o => {
+            html += '<div style="display:flex; justify-content:space-between; font-size:0.76rem; border-bottom:1px solid #222; padding:3px 0;">' +
+                    '<span style="color:#bbb;">#' + o.orderNum + ' — ' + o.driverName + '</span>' +
+                    '<strong style="color:var(--gold-bright); white-space:nowrap;">' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + '</strong></div>';
+        });
+        html += '<hr style="border-color:#333; margin:5px 0;">';
+        html += row('عدد الطلبات المعلقة:', pending.length + ' طلب', 'var(--danger)', true);
+        html += row('مبالغ لم تصل الصندوق:', pendingAmount.toLocaleString('ar-IQ') + ' د.ع', 'var(--danger)', true);
+        html += '<p style="font-size:0.72rem; color:#f59e0b; margin-top:6px; line-height:1.5;">⚠️ هذه المبالغ ما زالت مع السائقين ولم تُحتسب ضمن النقد المتوقع بالصندوق.</p>';
+    }
+    html += '</div>';
+
+    // تسوية الصندوق
+    html += '<div style="background:#1a1a22; padding:12px; border-radius:8px; border:2px solid var(--gold-primary); font-size:0.85rem;">';
+    html += '<div style="color:var(--gold-bright); font-weight:900; margin-bottom:8px; text-align:center;">🧮 تسوية الصندوق</div>';
+    html += row('المدوّر (رصيد افتتاحي):', '+' + float.toLocaleString('ar-IQ'), '#10b981');
+    html += row('مبيعات الكاش:', '+' + cash.toLocaleString('ar-IQ'), 'var(--success)');
+    html += row('الصرفيات:', '-' + totalExp.toLocaleString('ar-IQ'), 'var(--danger)');
+    if (pendingCash > 0) html += row('مبالغ مع السائقين:', '-' + pendingCash.toLocaleString('ar-IQ'), 'var(--danger)');
+    html += '<hr style="border-color:var(--gold-primary); margin:8px 0;">';
+    html += row('💵 النقد المتوقع بالدرج:', expectedCash.toLocaleString('ar-IQ') + ' د.ع', 'var(--gold-bright)', true);
+    html += '<div style="margin-top:10px;">';
+    html += '<label style="font-size:0.78rem; color:#aaa; display:block; margin-bottom:4px;">✋ أدخل النقد المعدود فعلياً بالدرج:</label>';
+    html += '<input type="number" id="actualCashInput" class="gold-input-inline" placeholder="عُدّ النقد واكتب المبلغ..." style="font-size:1rem; text-align:center; padding:8px;" oninput="calculateCashDifference(' + expectedCash + ')">';
+    html += '<div id="cashDifferenceResult" style="margin-top:8px; text-align:center; font-size:0.9rem; font-weight:900;"></div>';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+// 🔍 حساب فرق الصندوق (عجز أو زيادة) — أهم أداة لكشف الفروقات
+function calculateCashDifference(expected) {
+    const el = document.getElementById('cashDifferenceResult');
+    const input = document.getElementById('actualCashInput');
+    if (!el || !input) return;
+
+    if (!input.value) { el.innerHTML = ''; return; }
+
+    const actual = cleanPrice(input.value);
+    const diff = actual - cleanPrice(expected);
+
+    if (diff === 0) {
+        el.innerHTML = '<span style="color:var(--success);">✅ الصندوق مطابق تماماً</span>';
+    } else if (diff > 0) {
+        el.innerHTML = '<span style="color:#f59e0b;">⬆️ زيادة: ' + diff.toLocaleString('ar-IQ') + ' د.ع</span>';
+    } else {
+        el.innerHTML = '<span style="color:var(--danger);">⬇️ عجز: ' + Math.abs(diff).toLocaleString('ar-IQ') + ' د.ع</span>';
+    }
+}
+
+function confirmCloseShiftAndLogout() {
+    const pending = getUnsettledDeliveryOrders();
+    if (pending.length > 0) {
+        if (!confirm('⚠️ تنبيه: يوجد ' + pending.length + ' طلب ما زال بذمة السائقين ولم تُستلم مبالغه.\n\nهل تريد المتابعة بالتقفيل رغم ذلك؟')) return;
+    }
+
+    const actualEl = document.getElementById('actualCashInput');
+    const actualCash = actualEl ? cleanPrice(actualEl.value) : 0;
+    if (!actualCash) {
+        if (!confirm('لم تُدخل النقد المعدود فعلياً بالدرج.\nيُنصح بإدخاله لتسجيل أي فرق.\n\nهل تريد المتابعة؟')) return;
+    }
+
+    if (!confirm('تأكيد نهائي: سيتم تقفيل الشيفت وتصفير عدادات المبيعات والتقارير.\nالفواتير تبقى محفوظة بالسجل.\n\nهل أنت متأكد؟')) return;
+
+    // 📝 أرشفة ملخص الشيفت قبل التصفير (للرجوع إليه من الإدارة)
+    const s = computeTodaySalesSummary();
+    const pendingCash = getUnsettledDeliveryOrders()
+        .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
+        .reduce((sum, o) => sum + cleanPrice(o.totalAmount), 0);
+    const expected = s.openingFloat + s.totalCash - s.totalExpenses - pendingCash;
+
+    let archive = getData('sys_shift_archive');
+    if (!Array.isArray(archive)) archive = [];
+    archive.unshift({
+        id: 'SHIFT_' + Date.now(),
+        cashier: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
+        startedAt: getShiftStartLabel(),
+        closedAt: new Date().toLocaleString('ar-IQ'),
+        dateDate: getTodayString(),
+        ordersCount: s.ordersCount,
+        totalSales: s.totalSales,
+        totalCash: s.totalCash,
+        totalVisa: s.totalVisa,
+        totalExpenses: s.totalExpenses,
+        openingFloat: s.openingFloat,
+        pendingDeliveryAmount: pendingCash,
+        expectedCash: expected,
+        actualCash: actualCash,
+        difference: actualCash ? (actualCash - expected) : null
+    });
+    if (archive.length > 200) archive = archive.slice(0, 200);
+    setData('sys_shift_archive', archive);
+
+    // 🔄 بدء شيفت جديد: التقارير تُصفَّر من هنا فقط (وليس عند منتصف الليل)
+    startNewShift();
+    sessionStorage.clear();
+
+    alert('✅ تم تقفيل الشيفت بنجاح.\nالفواتير محفوظة بالسجل، والعدادات بدأت من جديد.');
+    location.reload();
 }
 
 /* ==========================================
