@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1220';
+const MIM89_APP_VERSION = '1230';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -327,6 +327,36 @@ async function pullLatestFromCloud() {
         console.warn("تعذّر سحب الأقسام من الخادم:", e);
     }
 
+    // 3) الفواتير المكتملة (آخر 200) — تُدمج مع المحلية بلا تكرار
+    try {
+        const ordSnap = await db.collection("completed_orders")
+            .orderBy("createdTimestamp", "desc").limit(200).get({ source: 'server' });
+
+        if (!ordSnap.empty) {
+            const cloudOrders = [];
+            ordSnap.forEach(d => cloudOrders.push(d.data()));
+
+            const localOrders = getData('sys_completed_orders') || [];
+            const seen = {};
+            const merged = [];
+
+            cloudOrders.concat(localOrders).forEach(o => {
+                const key = String(o.id || (o.orderNum + '_' + o.createdTimestamp));
+                if (!seen[key]) { seen[key] = true; merged.push(o); }
+            });
+
+            merged.sort((a, b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp));
+            const trimmed = merged.slice(0, 300);
+
+            if (JSON.stringify(trimmed) !== JSON.stringify(localOrders)) {
+                safeLocalSet('sys_completed_orders', JSON.stringify(trimmed));
+                changed = true;
+            }
+        }
+    } catch (e) {
+        console.warn("تعذّر سحب الفواتير من الخادم:", e);
+    }
+
     localStorage.setItem('mim89_last_pull', String(Date.now()));
     if (typeof renderStatusBadge === 'function') renderStatusBadge();
 
@@ -348,8 +378,89 @@ function getData(key) {
     }
 }
 
+// 📊 قياس المساحة المستخدمة من ذاكرة المتصفح (localStorage)
+function getStorageUsage() {
+    let total = 0;
+    const breakdown = {};
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            const v = localStorage.getItem(k) || '';
+            const size = (k.length + v.length) * 2; // تقريب: حرفان لكل بايت
+            total += size;
+            breakdown[k] = size;
+        }
+    } catch (e) {}
+    return { totalBytes: total, totalMB: (total / 1048576).toFixed(2), breakdown: breakdown };
+}
+
+// 🛟 حفظ آمن: يكتشف امتلاء الذاكرة ويحرّر مساحة تلقائياً بدل الفشل الصامت.
+// هذا هو السبب الأشهر لعدم حفظ الفواتير: صور الأصناف (base64) تملأ الذاكرة
+// فلا يبقى مكان للفواتير، وتفشل عملية الحفظ دون أي رسالة.
+function safeLocalSet(key, jsonText) {
+    try {
+        localStorage.setItem(key, jsonText);
+        return { ok: true };
+    } catch (e) {
+        const isQuota = e && (e.name === 'QuotaExceededError' ||
+                              e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+                              String(e).includes('quota'));
+        if (!isQuota) return { ok: false, error: e, quota: false };
+
+        console.warn('⚠️ ذاكرة المتصفح ممتلئة — جاري تحرير مساحة...');
+
+        // 1) تقليص أرشيف الفواتير القديمة (نُبقي آخر 150 فاتورة)
+        try {
+            const orders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
+            if (Array.isArray(orders) && orders.length > 150) {
+                localStorage.setItem('sys_completed_orders', JSON.stringify(orders.slice(0, 150)));
+            }
+        } catch (e2) {}
+
+        // 2) تقليص أرشيف الشيفتات
+        try {
+            const arch = JSON.parse(localStorage.getItem('sys_shift_archive') || '[]');
+            if (Array.isArray(arch) && arch.length > 30) {
+                localStorage.setItem('sys_shift_archive', JSON.stringify(arch.slice(0, 30)));
+            }
+        } catch (e2) {}
+
+        // 3) حذف الطلبات الواردة القديمة
+        try { localStorage.removeItem('sys_live_orders'); } catch (e2) {}
+
+        // إعادة المحاولة
+        try {
+            localStorage.setItem(key, jsonText);
+            return { ok: true, freed: true };
+        } catch (e3) {
+            // ما زالت ممتلئة: نحرّر صور الأصناف من الذاكرة المحلية (تبقى بالسحابة)
+            try {
+                const items = JSON.parse(localStorage.getItem('sys_items') || '[]');
+                if (Array.isArray(items) && items.length > 0) {
+                    const light = items.map(it => {
+                        const copy = { ...it };
+                        if (typeof copy.image === 'string' && copy.image.startsWith('data:')) {
+                            copy.image = '';   // تُسترجع من السحابة عند الحاجة
+                        }
+                        return copy;
+                    });
+                    localStorage.setItem('sys_items', JSON.stringify(light));
+                }
+                localStorage.setItem(key, jsonText);
+                return { ok: true, freed: true, droppedImages: true };
+            } catch (e4) {
+                return { ok: false, error: e4, quota: true };
+            }
+        }
+    }
+}
+
 function setData(key, val) {
-    localStorage.setItem(key, JSON.stringify(val));
+    const res = safeLocalSet(key, JSON.stringify(val));
+    if (!res.ok && res.quota) {
+        alert('⚠️ ذاكرة المتصفح ممتلئة تماماً ولم يُحفظ (' + key + ')!\n\n' +
+              'افتح لوحة الإدارة ← النسخ الاحتياطي ← "تنظيف الذاكرة".');
+    }
     if (db && key !== 'sys_items') {
         try {
             db.collection("system_store").doc(key).set({ content: JSON.stringify(val), updatedAt: Date.now() })
@@ -4533,6 +4644,79 @@ function updateAllSystemPasswords() {
 /* ==========================================
    13. التصدير والاسترجاع التلقائي للنسخ الاحتياطية
    ========================================== */
+
+// 🧹 تشخيص وتنظيف ذاكرة المتصفح — الحل المباشر لتوقف حفظ الفواتير
+function renderStorageDiagnostics() {
+    const box = document.getElementById('storageDiagBox');
+    if (!box) return;
+
+    const u = getStorageUsage();
+    const entries = Object.keys(u.breakdown)
+        .map(k => ({ key: k, kb: Math.round(u.breakdown[k] / 1024) }))
+        .sort((a, b) => b.kb - a.kb)
+        .slice(0, 6);
+
+    const pct = Math.min(100, Math.round((u.totalBytes / 5242880) * 100)); // الحد ~5 ميغا
+    const color = pct > 85 ? 'var(--danger)' : (pct > 60 ? '#f59e0b' : 'var(--success)');
+
+    let html = '<div style="font-weight:900; color:' + color + '; margin-bottom:8px; font-size:0.95rem;">' +
+        'المساحة المستخدمة: ' + u.totalMB + ' ميغابايت (' + pct + '%)</div>';
+
+    html += '<div style="background:#0d0d12; border-radius:6px; height:14px; overflow:hidden; margin-bottom:10px;">' +
+        '<div style="width:' + pct + '%; height:100%; background:' + color + ';"></div></div>';
+
+    if (pct > 85) {
+        html += '<p style="color:var(--danger); font-size:0.8rem; font-weight:bold; line-height:1.6;">' +
+            '⚠️ الذاكرة شبه ممتلئة — هذا يمنع حفظ الفواتير الجديدة ويجعل السجل والكشف يظهران فارغين.' +
+            '<br>اضغط "تنظيف الذاكرة" بالأسفل.</p>';
+    }
+
+    html += '<div style="font-size:0.78rem; color:#aaa; margin-top:8px;">الأكبر حجماً:</div>';
+    entries.forEach(e => {
+        html += '<div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#ccc; border-bottom:1px solid #222; padding:3px 0;">' +
+            '<span>' + e.key + '</span><strong>' + e.kb + ' KB</strong></div>';
+    });
+
+    const orders = (getData('sys_completed_orders') || []).length;
+    html += '<div style="margin-top:10px; font-size:0.8rem; color:#ccc;">🧾 الفواتير المحفوظة حالياً: <strong style="color:#fff;">' + orders + '</strong></div>';
+
+    box.innerHTML = html;
+}
+
+// 🧹 تحرير مساحة: يحذف صور الأصناف من الذاكرة المحلية (تبقى بالسحابة) ويقلّص الأرشيف
+function cleanupStorage() {
+    if (!confirm("سيتم تحرير مساحة بالطرق التالية:\n\n" +
+                 "• حذف صور الأصناف من ذاكرة هذا الجهاز (تبقى محفوظة بالسحابة)\n" +
+                 "• الإبقاء على آخر 150 فاتورة محلياً (الباقي محفوظ بالسحابة)\n" +
+                 "• حذف الطلبات الواردة القديمة\n\n" +
+                 "لن تُحذف أي بيانات من السحابة. هل تريد المتابعة؟")) return;
+
+    const before = getStorageUsage().totalBytes;
+
+    try {
+        const items = getData('sys_items') || [];
+        const light = items.map(it => {
+            const c = { ...it };
+            if (typeof c.image === 'string' && c.image.startsWith('data:')) c.image = '';
+            return c;
+        });
+        localStorage.setItem('sys_items', JSON.stringify(light));
+    } catch (e) {}
+
+    try {
+        const orders = getData('sys_completed_orders') || [];
+        if (orders.length > 150) localStorage.setItem('sys_completed_orders', JSON.stringify(orders.slice(0, 150)));
+    } catch (e) {}
+
+    try { localStorage.removeItem('sys_live_orders'); } catch (e) {}
+
+    const after = getStorageUsage().totalBytes;
+    const freedKB = Math.round((before - after) / 1024);
+
+    renderStorageDiagnostics();
+    alert("✅ تم تحرير " + freedKB + " كيلوبايت.\n\nستُسترجع صور الأصناف تلقائياً من السحابة عند الحاجة.");
+    refreshActiveUI();
+}
 
 function exportFullSystemBackup() {
     try {
