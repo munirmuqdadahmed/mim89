@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1240';
+const MIM89_APP_VERSION = '1250';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -373,6 +373,26 @@ async function pullLatestFromCloud() {
         }
     } catch (e) {
         console.warn("تعذّر سحب الفواتير من الخادم:", e);
+    }
+
+    // 4) الإعدادات المشتركة — أهمها أوقات العمل حتى يعرف الزبون أن المطعم مغلق
+    //    🛠️ [إصلاح] كانت هذه الإعدادات تُرفع للسحابة لكن لا تُسحب أبداً، فتغيير
+    //    أوقات الإغلاق من الكاشير لم يكن يصل للمينيو الإلكتروني إطلاقاً.
+    const SHARED_KEYS = ['sys_working_hours', 'sys_areas', 'sys_out_of_stock', 'sys_coupons'];
+    for (const key of SHARED_KEYS) {
+        try {
+            const d = await db.collection("system_store").doc(key).get({ source: 'server' });
+            if (d.exists && d.data() && d.data().content) {
+                const before = localStorage.getItem(key);
+                const after = d.data().content;
+                if (before !== after) {
+                    localStorage.setItem(key, after);
+                    changed = true;
+                }
+            }
+        } catch (e) {
+            console.warn('تعذّر سحب ' + key + ':', e);
+        }
     }
 
     localStorage.setItem('mim89_last_pull', String(Date.now()));
@@ -783,6 +803,9 @@ function startPeriodicCloudPull() {
 // 🏷️ لوحة حالة صغيرة: النسخة + عدد الأصناف والأقسام + آخر سحب من السحابة.
 // الغرض منها: معرفة فوراً هل الجهاز يشغّل آخر تحديث أم نسخة قديمة محفوظة بالمتصفح.
 function renderStatusBadge() {
+    // 🙈 لا تظهر هذه الشارة للزبائن إطلاقاً — هي أداة تشخيص للكاشير والإدارة فقط.
+    if (document.body && document.body.classList.contains('public-menu-body')) return;
+
     let el = document.getElementById('mim89StatusBadge');
     if (!el) {
         el = document.createElement('div');
@@ -1550,6 +1573,14 @@ function calculateDeliveryCost() {
 window.submitOrderToCashier = function() {
     try {
         if (!cart || cart.length === 0) return alert("⚠️ السلة فارغة! يرجى إضافة وجبات أولاً.");
+
+        // 🚫 حارس أوقات العمل: يمنع وصول طلبات بعد الإغلاق
+        try {
+            if (typeof isRestaurantCurrentlyOpen === 'function' && !isRestaurantCurrentlyOpen()) {
+                const wh = getData('sys_working_hours') || {};
+                return alert("🔴 المطعم مغلق حالياً ولا يستقبل طلبات.\n\nنفتح الساعة " + (wh.open || '10:00') + ".\nنعتذر منكم ونسعد بخدمتكم بأوقات العمل.");
+            }
+        } catch (e) {}
         
         const nameInput = document.getElementById('custName');
         const phoneInput = document.getElementById('custPhone');
