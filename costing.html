@@ -3,206 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- إعدادات الشاشة الكاملة للايباد والآيفون -->
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 Vault">
 
-    <title>MIM89 POS - الخزينة السرية والتكاليف</title>
+    <title>MIM89 - الخزينة المالية</title>
 
-    <!-- Google Fonts, FontAwesome & CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Firebase SDKs -->
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        .capital-box {
-            background: #18181c;
-            border: 1px solid var(--gold-primary);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
+        body.admin-body { padding: 12px; }
+
+        .period-bar {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            background: #14141c; border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 10px; margin-bottom: 14px;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .app-kpi-card {
-            background: #16161f;
-            border: 1px solid #3b82f6;
-            border-radius: 12px;
-            padding: 12px;
+        .period-btn {
+            background: #1c1c24; border: 1px solid #2e2e3a; color: #bbb;
+            padding: 9px 16px; border-radius: 9px; font-size: 0.83rem;
+            font-weight: 800; cursor: pointer; font-family: 'Tajawal', sans-serif;
+            min-height: 42px;
+        }
+        .period-btn.active {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
+            color: #000; border-color: var(--gold-bright);
+        }
+
+        /* البطاقة الرئيسية: الوارد الفعلي بالصندوق */
+        .drawer-hero {
+            background: linear-gradient(135deg, #0d3b2e 0%, #0a2620 100%);
+            border: 2px solid var(--success-green);
+            border-radius: 16px; padding: 20px; margin-bottom: 14px;
             text-align: center;
         }
+        .drawer-hero .label { color: #8fdcc0; font-size: 0.85rem; font-weight: 800; }
+        .drawer-hero .value { color: #fff; font-size: 2.4rem; font-weight: 900; margin: 6px 0; letter-spacing: -1px; }
+        .drawer-hero .sub { color: #7fbfa8; font-size: 0.76rem; }
+
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px; margin-bottom: 14px;
+        }
+        .kpi {
+            background: #16161f; border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .kpi .t { color: #999; font-size: 0.75rem; font-weight: 700; display: block; margin-bottom: 5px; }
+        .kpi .v { font-size: 1.25rem; font-weight: 900; }
+
+        .calc-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 0; border-bottom: 1px solid #22222c; font-size: 0.87rem;
+        }
+        .calc-row:last-child { border-bottom: none; }
+        .calc-total {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 13px 0 4px 0; margin-top: 6px;
+            border-top: 2px solid var(--gold-primary);
+            font-size: 1.05rem; font-weight: 900;
+        }
+
+        .sec-title {
+            color: var(--gold-primary); font-size: 1rem; font-weight: 900;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .data-table td, .data-table th { padding: 8px 10px; font-size: 0.82rem; }
+        .num { font-variant-numeric: tabular-nums; }
     </style>
 </head>
 <body class="admin-body">
 
-    <!-- 🔐 نافذة القفل السري الخاصة بالمالك -->
+    <!-- 🔐 القفل السري -->
     <div id="secretAuthModal" class="auth-overlay">
         <div class="auth-card">
-            <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-vault"></i> الخزينة السرية لـ منير</h2>
-            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل الرمز السري الخاص بالمالك للوصول</p>
-            <input type="password" id="secretPassInput" class="gold-input-inline" placeholder="•••••••" style="text-align:center; font-size:1.2rem; padding:10px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') checkSecretPass()">
+            <h2 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-vault"></i> الخزينة المالية</h2>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل الرمز السري الخاص بالمالك</p>
+            <input type="password" id="secretPassInput" class="gold-input-inline" placeholder="•••••••" style="text-align:center; font-size:1.2rem; padding:12px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') checkSecretPass()">
             <p id="secretErr" style="color:var(--danger-red); font-size:0.8rem; margin:5px 0;"></p>
-            <button onclick="checkSecretPass()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">فتح الخزينة المالية 🔑</button>
+            <button onclick="checkSecretPass()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">فتح الخزينة 🔑</button>
         </div>
     </div>
 
-    <!-- 📊 الواجهة المالية الرئيسية -->
     <div class="container" id="mainFinancialApp" style="display:none;">
-        
+
         <header class="admin-header">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div>
-                    <span class="brand-badge">MIM89 FINANCIAL VAULT v22.0</span>
-                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:4px; margin-bottom:0;">التحليل المالي السري، تفكيك التكاليف، وحسابات شركات التطبيقات</p>
+                    <span class="brand-badge">MIM89 الخزينة المالية</span>
+                    <p style="color:var(--text-muted); font-size:0.78rem; margin-top:4px; margin-bottom:0;">
+                        الوارد الفعلي • المبيعات • المصاريف • الأرباح
+                    </p>
                 </div>
-                
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none;">
-                        <i class="fa-solid fa-rotate"></i> تحديث ومزامنة
-                    </button>
                     <a href="admin.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">
                         <i class="fa-solid fa-user-shield"></i> الأدمن
                     </a>
                     <a href="cashier.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">
                         <i class="fa-solid fa-cash-register"></i> الكاشير
                     </a>
-                    <button onclick="location.reload()" class="gold-btn btn-danger btn-sm"><i class="fa-solid fa-lock"></i> قفل الشاشة</button>
+                    <button onclick="location.reload()" class="gold-btn btn-danger btn-sm"><i class="fa-solid fa-lock"></i> قفل</button>
                 </div>
             </div>
         </header>
 
-        <!-- 🏦 شريط إدخال رأس المال والتحليل الزمني لسداده -->
-        <div class="capital-box">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <i class="fa-solid fa-piggy-bank" style="font-size:2rem; color:var(--gold-primary);"></i>
-                <div>
-                    <h4 style="color:#fff; margin:0;">رأس المال المستثمر (تأسيس المطعم)</h4>
-                    <small style="color:#aaa;">حدد إجمالي ميزانية التجهيز والديكورات لحساب فترة الاسترداد الآلية</small>
-                </div>
-            </div>
-            <div style="display:flex; gap:8px; width:100%; max-width:320px;">
-                <input type="number" id="capitalInput" class="gold-input-inline" placeholder="رأس المال (د.ع)" style="font-size:1rem;">
-                <button onclick="saveCapitalInvestment()" class="gold-btn" style="white-space:nowrap;">حفظ رأس المال</button>
-            </div>
-        </div>
-
-        <!-- 💰 المؤشرات المالية العليا -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:20px;">
-            <div class="live-kpi-card">
-                <span style="color:#aaa; font-size:0.8rem;">إجمالي مبيعات الشهر</span>
-                <h3 id="kpiMonthlySales" style="color:var(--gold-bright); font-size:1.3rem; margin-top:4px;">0 د.ع</h3>
-            </div>
-            <div class="live-kpi-card">
-                <span style="color:#aaa; font-size:0.8rem;">كلفة المواد (Food Cost)</span>
-                <h3 id="kpiFoodCost" style="color:var(--danger-red); font-size:1.3rem; margin-top:4px;">0 د.ع</h3>
-            </div>
-            <div class="live-kpi-card">
-                <span style="color:#aaa; font-size:0.8rem;">المصاريف الثابتة الشهرية</span>
-                <h3 id="kpiFixedExpenses" style="color:#f59e0b; font-size:1.3rem; margin-top:4px;">0 د.ع</h3>
-            </div>
-            <div class="live-kpi-card">
-                <span style="color:#aaa; font-size:0.8rem;">صافي الأرباح المتبقية</span>
-                <h3 id="kpiNetProfit" style="color:var(--success-green); font-size:1.3rem; margin-top:4px;">0 د.ع</h3>
-            </div>
-            <div class="live-kpi-card" style="border-color:var(--gold-primary);">
-                <span style="color:#aaa; font-size:0.8rem;">المتبقي لسداد رأس المال</span>
-                <h3 id="kpiRemainingCapital" style="color:#38bdf8; font-size:1.3rem; margin-top:4px;">0 د.ع</h3>
-            </div>
-            <div class="live-kpi-card" style="border-color:var(--gold-primary);">
-                <span style="color:#aaa; font-size:0.8rem;">الوقت المقدر لتغطية رأس المال</span>
-                <h3 id="kpiPaybackTime" style="color:var(--gold-bright); font-size:1.1rem; margin-top:6px;">0 شهر</h3>
+        <!-- اختيار الفترة -->
+        <div class="period-bar">
+            <span style="color:#888; font-size:0.8rem; font-weight:800;">📅 الفترة:</span>
+            <button class="period-btn active" data-p="today" onclick="setPeriod('today', this)">اليوم</button>
+            <button class="period-btn" data-p="yesterday" onclick="setPeriod('yesterday', this)">أمس</button>
+            <button class="period-btn" data-p="week" onclick="setPeriod('week', this)">آخر 7 أيام</button>
+            <button class="period-btn" data-p="month" onclick="setPeriod('month', this)">هذا الشهر</button>
+            <button class="period-btn" data-p="all" onclick="setPeriod('all', this)">الكل</button>
+            <div style="display:flex; gap:5px; align-items:center; margin-right:auto;">
+                <input type="date" id="fromDate" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="setPeriod('custom', null)">
+                <span style="color:#666;">→</span>
+                <input type="date" id="toDate" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="setPeriod('custom', null)">
             </div>
         </div>
 
-        <!-- 📱 كشف حسابات مستحقات تطبيقات الطلبات (حساب شهري) -->
-        <div class="card" style="border-color:#38bdf8;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-                <h4 style="color:#38bdf8; margin:0;"><i class="fa-solid fa-mobile-screen-button"></i> مستحقات تطبيقات الطلبات المترتبة لشهر (بداية كل شهر)</h4>
-                <span style="font-size:0.75rem; color:#aaa;">📱 يتم تحصيل هذه المبالغ رسمياً من الشركة شهرياً</span>
-            </div>
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:12px;">
-                <div class="app-kpi-card">
-                    <span style="color:#ccc; font-size:0.8rem;">📱 تطبيق طلباتي (Talabatey)</span>
-                    <h3 id="appBalanceTalabatey" style="color:#38bdf8; font-size:1.2rem; margin-top:4px;">0 د.ع</h3>
-                </div>
-                <div class="app-kpi-card">
-                    <span style="color:#ccc; font-size:0.8rem;">📱 تطبيق توترز (Toters)</span>
-                    <h3 id="appBalanceToters" style="color:#a855f7; font-size:1.2rem; margin-top:4px;">0 د.ع</h3>
-                </div>
-                <div class="app-kpi-card">
-                    <span style="color:#ccc; font-size:0.8rem;">📱 تطبيق بلي (Bale)</span>
-                    <h3 id="appBalanceBale" style="color:#10b981; font-size:1.2rem; margin-top:4px;">0 د.ع</h3>
-                </div>
-            </div>
+        <!-- 💰 الوارد الفعلي بالصندوق -->
+        <div class="drawer-hero">
+            <span class="label">💵 الوارد الفعلي بالصندوق (نقداً)</span>
+            <div class="value num" id="heroDrawer">0 د.ع</div>
+            <span class="sub" id="heroSub">المدوّر + مبيعات الكاش − الصرفيات − المبالغ مع السائقين</span>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
-            <!-- 🏢 قسم المصاريف الثابتة والتشغيلية الشهرية -->
+        <!-- المؤشرات -->
+        <div class="kpi-grid">
+            <div class="kpi"><span class="t">إجمالي المبيعات</span><div class="v num" id="kSales" style="color:var(--gold-bright);">0</div></div>
+            <div class="kpi"><span class="t">عدد الفواتير</span><div class="v num" id="kOrders" style="color:#fff;">0</div></div>
+            <div class="kpi"><span class="t">متوسط الفاتورة</span><div class="v num" id="kAvg" style="color:#38bdf8;">0</div></div>
+            <div class="kpi"><span class="t">تكلفة المواد</span><div class="v num" id="kCost" style="color:var(--danger-red);">0</div></div>
+            <div class="kpi"><span class="t">مجمل الربح</span><div class="v num" id="kGross" style="color:var(--success-green);">0</div></div>
+            <div class="kpi"><span class="t">صافي الربح</span><div class="v num" id="kNet" style="color:var(--success-green);">0</div></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; margin-bottom:14px;">
+
+            <!-- تفصيل الصندوق -->
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:12px;"><i class="fa-solid fa-building-columns"></i> المصاريف الثابتة والتشغيلية الشهرية</h4>
-                <div style="display:flex; gap:8px; margin-bottom:12px;">
-                    <input type="text" id="expName" class="gold-input-inline" placeholder="اسم المصرف (إيجار، رواتب...)" style="flex:2;">
-                    <input type="number" id="expAmount" class="gold-input-inline" placeholder="المبلغ (د.ع)" style="flex:1;">
-                    <button onclick="addFixedExpense()" class="gold-btn" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i> إضافة</button>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>نوع المصرف</th>
-                                <th>المبلغ الشهري</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody id="fixedExpensesTableBody"></tbody>
-                    </table>
-                </div>
+                <div class="sec-title"><i class="fa-solid fa-calculator"></i> كيف حُسب الوارد بالصندوق</div>
+                <div id="drawerBreakdown"></div>
             </div>
 
-            <!-- 🛠️ محرك تفكيك وتحديد تكلفة الوجبة -->
+            <!-- تفصيل المبيعات -->
             <div class="card">
-                <h4 style="color:var(--gold-primary); margin-bottom:12px;"><i class="fa-solid fa-utensils"></i> تفكيك مكونات وتكلفة الصنف</h4>
-                <div style="margin-bottom:10px;">
-                    <label style="color:#aaa; font-size:0.8rem; display:block; margin-bottom:4px;">اختر الصنف لتفكيكه وتحديد تكلفته الدقيقة:</label>
-                    <select id="itemCostSelect" class="gold-input-inline" onchange="loadItemRecipeBreakdown()"></select>
-                </div>
-
-                <div style="display:flex; gap:6px; margin-bottom:12px; background:#121215; padding:8px; border-radius:8px; border:1px solid var(--card-border);">
-                    <select id="recipeInvSelect" class="gold-input-inline" style="flex:2;"></select>
-                    <input type="number" id="recipeQtyInput" class="gold-input-inline" placeholder="الكمية" style="flex:1;">
-                    <button onclick="addIngredientToItem()" class="gold-btn btn-sm" style="white-space:nowrap;">ربط المادة</button>
-                </div>
-
-                <div id="itemRecipeDetails"></div>
+                <div class="sec-title"><i class="fa-solid fa-chart-pie"></i> تفصيل المبيعات</div>
+                <div id="salesBreakdown"></div>
             </div>
+
         </div>
 
-        <!-- 📋 جدول تكاليف وأرباح جميع الأصناف -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; margin-bottom:14px;">
+
+            <!-- المصاريف -->
+            <div class="card">
+                <div class="sec-title" style="color:var(--danger-red);"><i class="fa-solid fa-wallet"></i> المصاريف</div>
+                <div id="expensesBreakdown"></div>
+            </div>
+
+            <!-- الأصناف الأكثر ربحاً -->
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-trophy"></i> الأصناف الأكثر مبيعاً</div>
+                <div id="topItems" style="max-height:320px; overflow-y:auto;"></div>
+            </div>
+
+        </div>
+
+        <!-- المصاريف الثابتة الشهرية -->
         <div class="card">
-            <h4 style="color:var(--gold-primary); margin-bottom:12px;"><i class="fa-solid fa-list-check"></i> كشف تكاليف ونسب أرباح جميع وجبات المينيو</h4>
+            <div class="sec-title"><i class="fa-solid fa-building-columns"></i> المصاريف الثابتة الشهرية (إيجار، رواتب...)</div>
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <input type="text" id="expName" class="gold-input-inline" placeholder="اسم المصرف" style="flex:2; min-width:150px;">
+                <input type="number" id="expAmount" class="gold-input-inline" placeholder="المبلغ الشهري" style="flex:1; min-width:110px;">
+                <button onclick="addFixedExpense()" class="gold-btn" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i> إضافة</button>
+            </div>
             <div style="overflow-x:auto;">
                 <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>الوجبة</th>
-                            <th>سعر البيع</th>
-                            <th>تكلفة المكونات</th>
-                            <th>صافي ربح الوجبة</th>
-                            <th>نسبة هامش الربح</th>
-                            <th>إجراء</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>المصرف</th><th>شهرياً</th><th>يومياً (تقريبي)</th><th>إجراء</th></tr></thead>
+                    <tbody id="fixedExpensesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- رأس المال -->
+        <div class="card">
+            <div class="sec-title"><i class="fa-solid fa-piggy-bank"></i> رأس المال المستثمر واسترداده</div>
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <input type="number" id="capitalInput" class="gold-input-inline" placeholder="رأس المال (د.ع)" style="flex:2; min-width:160px;">
+                <button onclick="saveCapitalInvestment()" class="gold-btn" style="white-space:nowrap;">حفظ</button>
+            </div>
+            <div id="capitalBox"></div>
+        </div>
+
+        <!-- تكلفة الأصناف -->
+        <div class="card">
+            <div class="sec-title"><i class="fa-solid fa-list-check"></i> تكلفة وأرباح الأصناف</div>
+            <p style="font-size:0.76rem; color:#888; margin-bottom:10px;">
+                💡 الأصناف التي لم تُربط بمواد من المخزن تظهر تكلفتها صفراً — اربط موادها من الأسفل ليصبح حساب الأرباح دقيقاً.
+            </p>
+            <div style="display:flex; gap:6px; margin-bottom:12px; background:#121215; padding:10px; border-radius:8px; flex-wrap:wrap;">
+                <select id="itemCostSelect" class="gold-input-inline" style="flex:2; min-width:170px;" onchange="loadItemRecipeBreakdown()"></select>
+                <select id="recipeInvSelect" class="gold-input-inline" style="flex:2; min-width:150px;"></select>
+                <input type="number" id="recipeQtyInput" class="gold-input-inline" placeholder="الكمية" style="flex:1; min-width:90px;" step="0.01">
+                <button onclick="addIngredientToItem()" class="gold-btn btn-sm" style="white-space:nowrap;">ربط المادة</button>
+            </div>
+            <div id="itemRecipeDetails" style="margin-bottom:14px;"></div>
+            <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+                <table class="data-table">
+                    <thead><tr><th>الوجبة</th><th>السعر</th><th>التكلفة</th><th>الربح</th><th>الهامش</th></tr></thead>
                     <tbody id="allCostingTableBody"></tbody>
                 </table>
             </div>
@@ -210,16 +228,15 @@
 
     </div>
 
-    <!-- المحرك البرمجي الرئيسي -->
     <script src="app.js?v=1250"></script>
     <script>
         const OWNER_PIN = "1278900";
+        let currentPeriod = 'today';
 
         function checkSecretPass() {
             const input = document.getElementById('secretPassInput').value.trim();
-            const validPin = typeof getSystemPassword === 'function' ? getSystemPassword('costing') : OWNER_PIN;
-
-            if (input === validPin || input === OWNER_PIN) {
+            const valid = typeof getSystemPassword === 'function' ? getSystemPassword('costing') : OWNER_PIN;
+            if (input === valid || input === OWNER_PIN) {
                 document.getElementById('secretAuthModal').style.display = 'none';
                 document.getElementById('mainFinancialApp').style.display = 'block';
                 initCostingApp();
@@ -229,245 +246,464 @@
         }
 
         function initCostingApp() {
-            initData();
+            try { initData(); } catch (e) {}
             loadCapitalInvestment();
-            renderFixedExpenses();
             loadItemsDropdown();
             loadInventoryDropdown();
-            renderAllItemsCostTable();
-            calculateGlobalDashboard();
-            calculateAppsMonthlyBalances();
+            setPeriod('today', document.querySelector('.period-btn[data-p="today"]'));
         }
 
-        function loadCapitalInvestment() {
-            const capital = localStorage.getItem('sys_capital_investment') || 0;
-            document.getElementById('capitalInput').value = capital;
+        /* ==========================================================
+           تحديد الفترة الزمنية
+           ========================================================== */
+        function setPeriod(p, btn) {
+            currentPeriod = p;
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            refreshAllFinancials();
         }
 
-        function saveCapitalInvestment() {
-            const capital = Number(document.getElementById('capitalInput').value);
-            localStorage.setItem('sys_capital_investment', capital);
-            calculateGlobalDashboard();
-            alert("✅ تم حفظ قيمة رأس المال بنجاح!");
-        }
+        function getPeriodRange() {
+            const today = new Date();
+            const fmt = d => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return y + '-' + m + '-' + dd;
+            };
 
-        function renderFixedExpenses() {
-            const expenses = getData('sys_fixed_expenses');
-            const tbody = document.getElementById('fixedExpensesTableBody');
-            if (!tbody) return;
-
-            if (expenses.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#888;">لا توجد مصاريف ثابتة مسجلة</td></tr>`;
-                return;
+            if (currentPeriod === 'custom') {
+                const f = document.getElementById('fromDate').value;
+                const t = document.getElementById('toDate').value;
+                return { from: f || '0000-01-01', to: t || '9999-12-31', label: 'من ' + (f || '—') + ' إلى ' + (t || '—') };
             }
-
-            tbody.innerHTML = expenses.map((exp, idx) => `
-                <tr>
-                    <td><strong>${exp.name}</strong></td>
-                    <td style="color:var(--gold-bright); font-weight:bold;">${Number(exp.amount).toLocaleString()} د.ع</td>
-                    <td><button class="gold-btn btn-danger btn-sm" onclick="deleteExpense(${idx})">حذف</button></td>
-                </tr>
-            `).join('');
-            calculateGlobalDashboard();
+            if (currentPeriod === 'today')  return { from: fmt(today), to: fmt(today), label: 'اليوم' };
+            if (currentPeriod === 'yesterday') {
+                const y = new Date(today); y.setDate(y.getDate() - 1);
+                return { from: fmt(y), to: fmt(y), label: 'أمس' };
+            }
+            if (currentPeriod === 'week') {
+                const w = new Date(today); w.setDate(w.getDate() - 6);
+                return { from: fmt(w), to: fmt(today), label: 'آخر 7 أيام' };
+            }
+            if (currentPeriod === 'month') {
+                const m = new Date(today.getFullYear(), today.getMonth(), 1);
+                return { from: fmt(m), to: fmt(today), label: 'هذا الشهر' };
+            }
+            return { from: '0000-01-01', to: '9999-12-31', label: 'كل الفترات' };
         }
 
-        function addFixedExpense() {
-            const name = document.getElementById('expName').value.trim();
-            const amount = Number(document.getElementById('expAmount').value);
-            if (!name || !amount) return alert("أدخل اسم المصرف والمبلغ");
-
-            const expenses = getData('sys_fixed_expenses');
-            expenses.push({ name, amount });
-            setData('sys_fixed_expenses', expenses);
-
-            document.getElementById('expName').value = '';
-            document.getElementById('expAmount').value = '';
-            renderFixedExpenses();
+        function inRange(dateStr, r) {
+            if (!dateStr) return false;
+            return dateStr >= r.from && dateStr <= r.to;
         }
 
-        function deleteExpense(idx) {
-            let expenses = getData('sys_fixed_expenses');
-            expenses.splice(idx, 1);
-            setData('sys_fixed_expenses', expenses);
-            renderFixedExpenses();
-        }
-
-        function getItemCost(item) {
-            if (!item.recipe || !Array.isArray(item.recipe)) return 0;
-            const inventory = getData('sys_inventory');
+        /* ==========================================================
+           🛠️ [إصلاح جوهري] حساب تكلفة المواد بشكل صحيح
+           كان الكود يقرأ الوصفة من عنصر الفاتورة، وعناصر الفاتورة لا تحمل
+           وصفة إطلاقاً (فقط الاسم والسعر والعدد) — فكانت التكلفة صفراً دائماً.
+           الآن: نبحث عن الصنف الأصلي في المينيو بواسطة المعرّف أو الاسم،
+           ونحسب تكلفته من وصفته ومواد المخزن.
+           ========================================================== */
+        function getRecipeCostForMenuItem(menuItem) {
+            if (!menuItem || !Array.isArray(menuItem.recipe)) return 0;
+            const inventory = getData('sys_inventory') || [];
             let cost = 0;
-            item.recipe.forEach(r => {
-                const inv = inventory.find(i => Number(i.id) === Number(r.invId));
+            menuItem.recipe.forEach(r => {
+                const inv = inventory.find(i => cleanPrice(i.id) === cleanPrice(r.invId));
                 if (inv) {
-                    const unitCost = inv.costPerUnit || (inv.quantity > 0 ? (Number(inv.totalPrice) / Number(inv.quantity)) : 0);
-                    cost += (Number(r.qty) * unitCost);
+                    const q = cleanPrice(inv.quantity);
+                    const unitCost = cleanPrice(inv.costPerUnit) || (q > 0 ? cleanPrice(inv.totalPrice) / q : 0);
+                    cost += unitCost * (parseFloat(r.qty) || 0);
                 }
             });
             return cost;
         }
 
+        function getCostOfSoldItem(soldItem) {
+            const items = getData('sys_items') || [];
+            let menuItem = items.find(i => String(i.id) === String(soldItem.id));
+            if (!menuItem) menuItem = items.find(i => String(i.name).trim() === String(soldItem.name).trim());
+            return getRecipeCostForMenuItem(menuItem);
+        }
+
+        /* ==========================================================
+           المحرك المالي
+           ========================================================== */
+        function computeFinancials() {
+            const r = getPeriodRange();
+            const orders = (getData('sys_completed_orders') || []).filter(o => inRange(o.dateDate, r));
+            const dailyExp = (getData('sys_expenses') || []).filter(e => inRange(e.dateDate, r));
+
+            let sales = 0, cash = 0, visa = 0, delivery = 0, discounts = 0, foodCost = 0;
+            let cDine = 0, cTake = 0, cDeliv = 0;
+            const itemStats = {};
+
+            orders.forEach(o => {
+                const amt = cleanPrice(o.totalAmount);
+                sales += amt;
+                delivery += cleanPrice(o.deliveryFee);
+                discounts += cleanPrice(o.discount);
+
+                if (String(o.paymentMethod || '').includes('فيزا')) visa += amt; else cash += amt;
+                if (o.orderType === 'توصيل') cDeliv++;
+                else if (o.orderType === 'سفري') cTake++;
+                else cDine++;
+
+                (o.items || []).forEach(it => {
+                    const qty = cleanPrice(it.qty);
+                    const lineRevenue = cleanPrice(it.price) * qty;
+                    const unitCost = getCostOfSoldItem(it);
+                    foodCost += unitCost * qty;
+
+                    const key = String(it.name);
+                    if (!itemStats[key]) itemStats[key] = { qty: 0, revenue: 0, cost: 0 };
+                    itemStats[key].qty += qty;
+                    itemStats[key].revenue += lineRevenue;
+                    itemStats[key].cost += unitCost * qty;
+                });
+            });
+
+            const dailyExpTotal = dailyExp.reduce((s, e) => s + cleanPrice(e.amount), 0);
+
+            // المصاريف الثابتة موزّعة على أيام الفترة
+            const fixed = getData('sys_fixed_expenses') || [];
+            const fixedMonthly = fixed.reduce((s, e) => s + cleanPrice(e.amount), 0);
+            let days = 1;
+            if (r.from !== '0000-01-01') {
+                const d1 = new Date(r.from), d2 = new Date(r.to);
+                days = Math.max(1, Math.round((d2 - d1) / 86400000) + 1);
+            } else {
+                days = 30;
+            }
+            const fixedShare = (fixedMonthly / 30) * days;
+
+            // المبالغ النقدية التي ما زالت مع السائقين (لم تصل الصندوق)
+            const pendingCash = orders.filter(o =>
+                o.orderType === 'توصيل' && o.driverName && o.driverName !== '-' &&
+                !o.isSettled && !String(o.paymentMethod || '').includes('فيزا')
+            ).reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
+
+            // المدوّر: نجمع أرصدة الأيام داخل الفترة
+            let float = 0;
+            try {
+                const floats = getData('sys_drawer_float') || {};
+                Object.keys(floats).forEach(d => { if (inRange(d, r)) float += cleanPrice(floats[d]); });
+            } catch (e) {}
+
+            const actualDrawer = float + cash - dailyExpTotal - pendingCash;
+            const gross = sales - foodCost;
+            const net = gross - dailyExpTotal - fixedShare;
+
+            return {
+                range: r, orders: orders, ordersCount: orders.length,
+                sales, cash, visa, delivery, discounts, foodCost,
+                cDine, cTake, cDeliv,
+                dailyExp, dailyExpTotal, fixedMonthly, fixedShare, days,
+                pendingCash, float, actualDrawer, gross, net,
+                itemStats,
+                avg: orders.length ? Math.round(sales / orders.length) : 0
+            };
+        }
+
+        function money(n) { return cleanPrice(Math.round(n)).toLocaleString('ar-IQ') + ' د.ع'; }
+
+        function refreshAllFinancials() {
+            const f = computeFinancials();
+
+            document.getElementById('heroDrawer').innerText = money(f.actualDrawer);
+            document.getElementById('heroSub').innerText =
+                f.range.label + ' • المدوّر + الكاش − الصرفيات' + (f.pendingCash > 0 ? ' − مبالغ مع السائقين' : '');
+
+            document.getElementById('kSales').innerText = money(f.sales);
+            document.getElementById('kOrders').innerText = f.ordersCount;
+            document.getElementById('kAvg').innerText = money(f.avg);
+            document.getElementById('kCost').innerText = money(f.foodCost);
+            document.getElementById('kGross').innerText = money(f.gross);
+            const netEl = document.getElementById('kNet');
+            netEl.innerText = money(f.net);
+            netEl.style.color = f.net >= 0 ? 'var(--success-green)' : 'var(--danger-red)';
+
+            const row = (l, v, c, bold) =>
+                '<div class="calc-row"' + (bold ? ' style="font-weight:900;"' : '') + '>' +
+                '<span style="color:#bbb;">' + l + '</span>' +
+                '<strong class="num" style="color:' + (c || '#fff') + ';">' + v + '</strong></div>';
+
+            // كيف حُسب الصندوق
+            let d = '';
+            d += row('💰 المدوّر (رصيد افتتاحي)', '+ ' + money(f.float), '#10b981');
+            d += row('💵 مبيعات الكاش', '+ ' + money(f.cash), 'var(--success-green)');
+            d += row('💳 مبيعات الفيزا (لا تدخل الدرج)', money(f.visa), '#666');
+            d += row('🧾 الصرفيات النقدية', '− ' + money(f.dailyExpTotal), 'var(--danger-red)');
+            if (f.pendingCash > 0) {
+                d += row('🛵 مبالغ ما زالت مع السائقين', '− ' + money(f.pendingCash), 'var(--danger-red)');
+            }
+            d += '<div class="calc-total"><span>💵 الوارد الفعلي بالصندوق</span>' +
+                 '<strong class="num" style="color:var(--gold-bright);">' + money(f.actualDrawer) + '</strong></div>';
+            if (f.pendingCash > 0) {
+                d += '<p style="font-size:0.73rem; color:#f59e0b; margin-top:10px; line-height:1.6;">⚠️ يوجد ' +
+                     money(f.pendingCash) + ' لم تصل الصندوق بعد لأنها مع سائقي التوصيل.</p>';
+            }
+            document.getElementById('drawerBreakdown').innerHTML = d;
+
+            // تفصيل المبيعات
+            let s = '';
+            s += row('🍽️ صالة', f.cDine + ' طلب', '#ccc');
+            s += row('🛍️ سفري', f.cTake + ' طلب', '#ccc');
+            s += row('🛵 توصيل', f.cDeliv + ' طلب', '#ccc');
+            s += row('🚚 أجور التوصيل المحصّلة', money(f.delivery), '#aaa');
+            if (f.discounts > 0) s += row('🏷️ الخصومات الممنوحة', '− ' + money(f.discounts), 'var(--danger-red)');
+            s += row('📦 تكلفة المواد', '− ' + money(f.foodCost), 'var(--danger-red)');
+            s += '<div class="calc-total"><span>مجمل الربح</span>' +
+                 '<strong class="num" style="color:var(--success-green);">' + money(f.gross) + '</strong></div>';
+            const margin = f.sales > 0 ? ((f.gross / f.sales) * 100).toFixed(1) : 0;
+            s += '<p style="font-size:0.76rem; color:#888; margin-top:8px;">هامش الربح الإجمالي: <strong style="color:var(--gold-bright);">' + margin + '%</strong></p>';
+            document.getElementById('salesBreakdown').innerHTML = s;
+
+            // المصاريف
+            let e = '';
+            if (f.dailyExp.length === 0) {
+                e += '<p style="color:#777; font-size:0.8rem; text-align:center; padding:8px;">لا توجد صرفيات نقدية بهذه الفترة</p>';
+            } else {
+                f.dailyExp.slice(0, 12).forEach(x => {
+                    e += '<div class="calc-row" style="font-size:0.79rem;">' +
+                         '<span style="color:#bbb;">' + (x.type || '') + ' — ' + (x.note || '') +
+                         '<br><span style="color:#666; font-size:0.7rem;">' + (x.dateDate || '') + '</span></span>' +
+                         '<strong class="num" style="color:var(--danger-red);">' + money(x.amount) + '</strong></div>';
+                });
+                if (f.dailyExp.length > 12) {
+                    e += '<p style="font-size:0.73rem; color:#666; text-align:center; padding:5px;">+ ' + (f.dailyExp.length - 12) + ' صرفية أخرى</p>';
+                }
+            }
+            e += '<div class="calc-total" style="font-size:0.95rem;"><span>الصرفيات النقدية</span>' +
+                 '<strong class="num" style="color:var(--danger-red);">' + money(f.dailyExpTotal) + '</strong></div>';
+            e += row('المصاريف الثابتة (حصة ' + f.days + ' يوم)', money(f.fixedShare), '#f59e0b');
+            e += '<div class="calc-total"><span>إجمالي المصاريف</span>' +
+                 '<strong class="num" style="color:var(--danger-red);">' + money(f.dailyExpTotal + f.fixedShare) + '</strong></div>';
+            document.getElementById('expensesBreakdown').innerHTML = e;
+
+            // الأصناف الأكثر مبيعاً
+            const arr = Object.keys(f.itemStats).map(k => ({ name: k, ...f.itemStats[k] }))
+                .sort((a, b) => b.revenue - a.revenue).slice(0, 20);
+            let t = '';
+            if (arr.length === 0) {
+                t = '<p style="color:#777; font-size:0.8rem; text-align:center; padding:14px;">لا توجد مبيعات بهذه الفترة</p>';
+            } else {
+                arr.forEach((it, i) => {
+                    const profit = it.revenue - it.cost;
+                    t += '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #22222c;">' +
+                         '<div style="min-width:0;"><strong style="font-size:0.83rem; color:#fff;">' + (i + 1) + '. ' + it.name + '</strong>' +
+                         '<div style="font-size:0.72rem; color:#888;">' + it.qty + ' قطعة • ربح ' + money(profit) + '</div></div>' +
+                         '<strong class="num" style="color:var(--gold-bright); font-size:0.85rem; white-space:nowrap;">' + money(it.revenue) + '</strong></div>';
+                });
+            }
+            document.getElementById('topItems').innerHTML = t;
+
+            renderFixedExpenses();
+            renderCapital(f);
+            renderAllItemsCostTable();
+        }
+
+        /* ==========================================================
+           المصاريف الثابتة
+           ========================================================== */
+        function renderFixedExpenses() {
+            const list = getData('sys_fixed_expenses') || [];
+            const tbody = document.getElementById('fixedExpensesTableBody');
+            if (!tbody) return;
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">لا توجد مصاريف ثابتة مسجلة</td></tr>';
+                return;
+            }
+            tbody.innerHTML = list.map((x, i) =>
+                '<tr><td><strong>' + x.name + '</strong></td>' +
+                '<td class="num" style="color:var(--gold-bright);">' + money(x.amount) + '</td>' +
+                '<td class="num" style="color:#888;">' + money(cleanPrice(x.amount) / 30) + '</td>' +
+                '<td><button class="gold-btn btn-danger btn-sm" onclick="deleteExpense(' + i + ')">حذف</button></td></tr>'
+            ).join('');
+        }
+
+        function addFixedExpense() {
+            const name = document.getElementById('expName').value.trim();
+            const amount = cleanPrice(document.getElementById('expAmount').value);
+            if (!name || !amount) return alert("أدخل اسم المصرف والمبلغ");
+            const list = getData('sys_fixed_expenses') || [];
+            list.push({ name, amount });
+            setData('sys_fixed_expenses', list);
+            document.getElementById('expName').value = '';
+            document.getElementById('expAmount').value = '';
+            refreshAllFinancials();
+        }
+
+        function deleteExpense(i) {
+            if (!confirm("حذف هذا المصرف؟")) return;
+            const list = getData('sys_fixed_expenses') || [];
+            list.splice(i, 1);
+            setData('sys_fixed_expenses', list);
+            refreshAllFinancials();
+        }
+
+        /* ==========================================================
+           رأس المال
+           ========================================================== */
+        function loadCapitalInvestment() {
+            document.getElementById('capitalInput').value = localStorage.getItem('sys_capital_investment') || '';
+        }
+
+        function saveCapitalInvestment() {
+            localStorage.setItem('sys_capital_investment', String(cleanPrice(document.getElementById('capitalInput').value)));
+            refreshAllFinancials();
+            alert("✅ تم حفظ رأس المال");
+        }
+
+        function renderCapital(f) {
+            const capital = cleanPrice(localStorage.getItem('sys_capital_investment'));
+            const box = document.getElementById('capitalBox');
+            if (!box) return;
+
+            if (!capital) {
+                box.innerHTML = '<p style="color:#777; font-size:0.82rem;">أدخل رأس المال أعلاه لحساب مدة استرداده من الأرباح.</p>';
+                return;
+            }
+
+            // نحسب الربح الشهري التقديري من أداء الفترة الحالية
+            const dailyNet = f.days > 0 ? (f.net / f.days) : 0;
+            const monthlyNet = dailyNet * 30;
+
+            let html = '';
+            html += '<div class="calc-row"><span style="color:#bbb;">رأس المال</span><strong class="num">' + money(capital) + '</strong></div>';
+            html += '<div class="calc-row"><span style="color:#bbb;">صافي ربح الفترة (' + f.days + ' يوم)</span><strong class="num" style="color:' + (f.net >= 0 ? 'var(--success-green)' : 'var(--danger-red)') + ';">' + money(f.net) + '</strong></div>';
+            html += '<div class="calc-row"><span style="color:#bbb;">الربح الشهري التقديري</span><strong class="num" style="color:#38bdf8;">' + money(monthlyNet) + '</strong></div>';
+
+            if (monthlyNet > 0) {
+                const months = (capital / monthlyNet);
+                html += '<div class="calc-total"><span>⏱️ مدة استرداد رأس المال</span><strong style="color:var(--gold-bright);">' +
+                        (months < 1 ? 'أقل من شهر' : months.toFixed(1) + ' شهر تقريباً') + '</strong></div>';
+            } else {
+                html += '<div class="calc-total"><span>⏱️ مدة الاسترداد</span><strong style="color:var(--danger-red);">يتطلب أرباحاً موجبة</strong></div>';
+            }
+            html += '<p style="font-size:0.72rem; color:#666; margin-top:8px;">التقدير مبني على أداء الفترة المختارة أعلاه.</p>';
+            box.innerHTML = html;
+        }
+
+        /* ==========================================================
+           تكلفة الأصناف والوصفات
+           ========================================================== */
         function loadItemsDropdown() {
-            const items = getData('sys_items');
-            const select = document.getElementById('itemCostSelect');
-            if (!select) return;
-            select.innerHTML = items.map(i => `<option value="${i.id}">${i.name} (${Number(i.price).toLocaleString()} د.ع)</option>`).join('');
+            const items = getData('sys_items') || [];
+            const sel = document.getElementById('itemCostSelect');
+            if (!sel) return;
+            sel.innerHTML = items.map(i =>
+                '<option value="' + i.id + '">' + i.name + ' (' + cleanPrice(i.price).toLocaleString('ar-IQ') + ')</option>'
+            ).join('');
             loadItemRecipeBreakdown();
         }
 
         function loadInventoryDropdown() {
-            const inventory = getData('sys_inventory');
-            const select = document.getElementById('recipeInvSelect');
-            if (!select) return;
-            select.innerHTML = inventory.map(i => {
-                const unitCost = i.costPerUnit || (i.quantity > 0 ? (Number(i.totalPrice) / Number(i.quantity)) : 0);
-                return `<option value="${i.id}">${i.name} (${Number(unitCost.toFixed(0)).toLocaleString()} د.ع / ${i.unit})</option>`;
+            const inv = getData('sys_inventory') || [];
+            const sel = document.getElementById('recipeInvSelect');
+            if (!sel) return;
+            sel.innerHTML = inv.map(i => {
+                const q = cleanPrice(i.quantity);
+                const c = cleanPrice(i.costPerUnit) || (q > 0 ? cleanPrice(i.totalPrice) / q : 0);
+                return '<option value="' + i.id + '">' + i.name + ' (' + Math.round(c).toLocaleString('ar-IQ') + ' / ' + (i.unit || 'وحدة') + ')</option>';
             }).join('');
         }
 
         function loadItemRecipeBreakdown() {
-            const itemId = document.getElementById('itemCostSelect').value;
-            const items = getData('sys_items');
-            const inventory = getData('sys_inventory');
-            const item = items.find(i => Number(i.id) === Number(itemId));
+            const id = document.getElementById('itemCostSelect')?.value;
+            const items = getData('sys_items') || [];
+            const inv = getData('sys_inventory') || [];
+            const item = items.find(i => String(i.id) === String(id));
+            const box = document.getElementById('itemRecipeDetails');
+            if (!item || !box) return;
 
-            if (!item) return;
+            const cost = getRecipeCostForMenuItem(item);
+            const price = cleanPrice(item.price);
+            const profit = price - cost;
+            const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
 
-            let cost = getItemCost(item);
-            let profit = item.price - cost;
-            let margin = item.price > 0 ? ((profit / item.price) * 100).toFixed(1) : 0;
-
-            let recipeHtml = '';
-            if (item.recipe && item.recipe.length > 0) {
-                recipeHtml = item.recipe.map(r => {
-                    const inv = inventory.find(i => Number(i.id) === Number(r.invId));
-                    const unitCost = inv ? (inv.costPerUnit || (inv.quantity > 0 ? (Number(inv.totalPrice) / Number(inv.quantity)) : 0)) : 0;
-                    const invCost = unitCost * r.qty;
-                    return `
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:4px 0; font-size:0.8rem;">
-                            <span>● ${inv ? inv.name : 'مادة'} (${r.qty} ${inv ? inv.unit : ''})</span>
-                            <strong style="color:#ffd700;">${Number(invCost.toFixed(0)).toLocaleString()} د.ع</strong>
-                        </div>
-                    `;
+            let rows = '';
+            if (Array.isArray(item.recipe) && item.recipe.length > 0) {
+                rows = item.recipe.map((r, idx) => {
+                    const m = inv.find(i => cleanPrice(i.id) === cleanPrice(r.invId));
+                    const q = m ? cleanPrice(m.quantity) : 0;
+                    const uc = m ? (cleanPrice(m.costPerUnit) || (q > 0 ? cleanPrice(m.totalPrice) / q : 0)) : 0;
+                    return '<div class="calc-row" style="font-size:0.8rem;">' +
+                        '<span style="color:#bbb;">● ' + (m ? m.name : 'مادة محذوفة') + ' (' + r.qty + ' ' + (m ? m.unit : '') + ')</span>' +
+                        '<span><strong class="num" style="color:var(--gold-bright);">' + money(uc * (parseFloat(r.qty) || 0)) + '</strong>' +
+                        ' <button onclick="removeIngredient(' + idx + ')" style="background:none; border:none; color:var(--danger-red); cursor:pointer; font-size:0.9rem;">✕</button></span></div>';
                 }).join('');
             } else {
-                recipeHtml = `<p style="color:#777; text-align:center; font-size:0.8rem;">لم يتم ربط مواد أولية بعد</p>`;
+                rows = '<p style="color:#777; font-size:0.8rem; text-align:center; padding:8px;">لم تُربط مواد بهذا الصنف بعد</p>';
             }
 
-            document.getElementById('itemRecipeDetails').innerHTML = `
-                <div style="background:#121215; padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-top:8px;">
-                    ${recipeHtml}
-                    <hr style="border-color:#333; margin:8px 0;">
-                    <div style="display:flex; justify-content:space-between; color:var(--gold-bright); font-size:0.85rem; font-weight:bold;">
-                        <span>الكلفة: ${Number(cost.toFixed(0)).toLocaleString()} د.ع</span>
-                        <span>الربح: ${Number(profit.toFixed(0)).toLocaleString()} د.ع (${margin}%)</span>
-                    </div>
-                </div>
-            `;
+            box.innerHTML = '<div style="background:#121215; padding:12px; border-radius:8px; border:1px solid var(--card-border);">' +
+                rows +
+                '<div class="calc-total" style="font-size:0.9rem;"><span>التكلفة: <strong class="num" style="color:var(--danger-red);">' + money(cost) + '</strong></span>' +
+                '<span>الربح: <strong class="num" style="color:var(--success-green);">' + money(profit) + '</strong> (' + margin + '%)</span></div>' +
+                '</div>';
         }
 
         function addIngredientToItem() {
             const itemId = document.getElementById('itemCostSelect').value;
             const invId = document.getElementById('recipeInvSelect').value;
-            const qty = Number(document.getElementById('recipeQtyInput').value);
+            const qty = parseFloat(document.getElementById('recipeQtyInput').value);
+            if (!qty || qty <= 0) return alert("أدخل الكمية المستهلكة في الوجبة");
 
-            if (!qty) return alert("أدخل الكمية المستهلكة في الوجبة");
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item) return;
 
-            let items = getData('sys_items');
-            let item = items.find(i => Number(i.id) === Number(itemId));
+            if (!Array.isArray(item.recipe)) item.recipe = [];
+            const ex = item.recipe.find(r => cleanPrice(r.invId) === cleanPrice(invId));
+            if (ex) ex.qty = qty; else item.recipe.push({ invId: cleanPrice(invId), qty: qty });
 
-            if (item) {
-                if (!item.recipe) item.recipe = [];
-                const exist = item.recipe.find(r => Number(r.invId) === Number(invId));
-                if (exist) { exist.qty = qty; } else { item.recipe.push({ invId: Number(invId), qty }); }
-
-                setData('sys_items', items);
-                loadItemRecipeBreakdown();
-                renderAllItemsCostTable();
-                calculateGlobalDashboard();
+            localStorage.setItem('sys_items', JSON.stringify(items));
+            if (typeof db !== 'undefined' && db) {
+                db.collection("menu_items").doc(String(item.id)).set({ recipe: item.recipe }, { merge: true }).catch(() => {});
             }
+
+            document.getElementById('recipeQtyInput').value = '';
+            loadItemRecipeBreakdown();
+            refreshAllFinancials();
+        }
+
+        function removeIngredient(idx) {
+            const itemId = document.getElementById('itemCostSelect').value;
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item || !Array.isArray(item.recipe)) return;
+            item.recipe.splice(idx, 1);
+            localStorage.setItem('sys_items', JSON.stringify(items));
+            if (typeof db !== 'undefined' && db) {
+                db.collection("menu_items").doc(String(item.id)).set({ recipe: item.recipe }, { merge: true }).catch(() => {});
+            }
+            loadItemRecipeBreakdown();
+            refreshAllFinancials();
         }
 
         function renderAllItemsCostTable() {
-            const items = getData('sys_items');
+            const items = getData('sys_items') || [];
             const tbody = document.getElementById('allCostingTableBody');
+            if (!tbody) return;
 
             tbody.innerHTML = items.map(item => {
-                const cost = getItemCost(item);
-                const profit = item.price - cost;
-                const margin = item.price > 0 ? ((profit / item.price) * 100).toFixed(1) : 0;
+                const cost = getRecipeCostForMenuItem(item);
+                const price = cleanPrice(item.price);
+                const profit = price - cost;
+                const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
+                const noRecipe = !Array.isArray(item.recipe) || item.recipe.length === 0;
 
-                return `
-                    <tr>
-                        <td><strong>${item.name}</strong></td>
-                        <td>${Number(item.price).toLocaleString()} د.ع</td>
-                        <td style="color:var(--danger-red);">${Number(cost.toFixed(0)).toLocaleString()} د.ع</td>
-                        <td style="color:var(--success-green); font-weight:bold;">${Number(profit.toFixed(0)).toLocaleString()} د.ع</td>
-                        <td style="color:var(--gold-bright); font-weight:bold;">${margin}%</td>
-                        <td><button class="gold-btn btn-sm" style="padding:2px 8px; font-size:0.75rem;" onclick="document.getElementById('itemCostSelect').value='${item.id}'; loadItemRecipeBreakdown();">تعديل المكونات</button></td>
-                    </tr>
-                `;
+                return '<tr' + (noRecipe ? ' style="opacity:0.55;"' : '') + '>' +
+                    '<td><strong>' + item.name + '</strong>' + (noRecipe ? '<div style="font-size:0.68rem; color:#f59e0b;">⚠️ بلا مواد</div>' : '') + '</td>' +
+                    '<td class="num">' + money(price) + '</td>' +
+                    '<td class="num" style="color:var(--danger-red);">' + money(cost) + '</td>' +
+                    '<td class="num" style="color:var(--success-green);">' + money(profit) + '</td>' +
+                    '<td class="num" style="color:var(--gold-bright);">' + (noRecipe ? '—' : margin + '%') + '</td>' +
+                    '</tr>';
             }).join('');
         }
-
-        function calculateAppsMonthlyBalances() {
-            const completed = getData('sys_completed_orders') || [];
-            let talabateyTotal = 0, totersTotal = 0, baleTotal = 0;
-
-            completed.forEach(ord => {
-                const driverOrApp = String(ord.driverName || '').toLowerCase();
-                const total = Number(ord.totalAmount || 0);
-
-                if (driverOrApp.includes("طلباتي")) talabateyTotal += total;
-                else if (driverOrApp.includes("توترز")) totersTotal += total;
-                else if (driverOrApp.includes("بلي")) baleTotal += total;
-            });
-
-            document.getElementById('appBalanceTalabatey').innerText = talabateyTotal.toLocaleString() + ' د.ع';
-            document.getElementById('appBalanceToters').innerText = totersTotal.toLocaleString() + ' د.ع';
-            document.getElementById('appBalanceBale').innerText = baleTotal.toLocaleString() + ' د.ع';
-        }
-
-        function calculateGlobalDashboard() {
-            const completed = getData('sys_completed_orders');
-            const expenses = getData('sys_fixed_expenses');
-            const capitalInvestment = Number(localStorage.getItem('sys_capital_investment') || 0);
-
-            let totalSales = 0;
-            let totalFoodCost = 0;
-
-            completed.forEach(ord => {
-                totalSales += Number(ord.totalAmount || 0);
-                if (ord.items && Array.isArray(ord.items)) {
-                    ord.items.forEach(item => {
-                        totalFoodCost += (getItemCost(item) * item.qty);
-                    });
-                }
-            });
-
-            const totalFixedExp = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-            const netProfit = totalSales - totalFoodCost - totalFixedExp;
-            const remainingCapital = Math.max(0, capitalInvestment - netProfit);
-
-            let paybackText = "غير محدد";
-            if (capitalInvestment === 0) {
-                paybackText = "لم يحدد رأس المال";
-            } else if (remainingCapital <= 0) {
-                paybackText = "تم السداد بالكامل 🎉";
-            } else if (netProfit > 0) {
-                const months = (remainingCapital / netProfit).toFixed(1);
-                paybackText = `${months} شهر تقريباً`;
-            } else {
-                paybackText = "يتطلب أرباح صافية";
-            }
-
-            document.getElementById('kpiMonthlySales').innerText = totalSales.toLocaleString() + ' د.ع';
-            document.getElementById('kpiFoodCost').innerText = Number(totalFoodCost.toFixed(0)).toLocaleString() + ' د.ع';
-            document.getElementById('kpiFixedExpenses').innerText = totalFixedExp.toLocaleString() + ' د.ع';
-            document.getElementById('kpiNetProfit').innerText = Number(netProfit.toFixed(0)).toLocaleString() + ' د.ع';
-            document.getElementById('kpiRemainingCapital').innerText = remainingCapital.toLocaleString() + ' د.ع';
-            document.getElementById('kpiPaybackTime').innerText = paybackText;
-        }
-
     </script>
 </body>
 </html>
