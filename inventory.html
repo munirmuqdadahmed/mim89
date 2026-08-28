@@ -3,460 +3,902 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- إعدادات الشاشة الكاملة للآيباد والآيفون -->
+
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 Inventory">
-    <meta name="mobile-web-app-capable" content="yes">
 
-    <title>MIM89 POS - إدارة المخزن والجرد التلقائي</title>
+    <title>MIM89 - إدارة المخزن والتكاليف</title>
 
-    <!-- Google Fonts, FontAwesome & CSS الموحد -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Firebase SDKs -->
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        :root {
-            --bg-main: #0f0f12;
-            --bg-card: #18181c;
-            --gold-primary: #f59e0b;
-            --gold-bright: #fbbf24;
-            --text-light: #f3f4f6;
-            --danger: #ef4444;
-            --success: #10b981;
-            --border: #2a2a32;
+        body.admin-body { padding: 12px; }
+
+        .inv-tabs {
+            display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
+            margin-bottom: 14px; scrollbar-width: none;
+        }
+        .inv-tabs::-webkit-scrollbar { display: none; }
+        .inv-tab {
+            background: #18181c; border: 1px solid var(--card-border); color: var(--text-muted);
+            padding: 11px 18px; border-radius: 10px; font-size: 0.84rem; font-weight: 800;
+            cursor: pointer; white-space: nowrap; font-family: 'Tajawal', sans-serif;
+            min-height: 44px; flex-shrink: 0;
+        }
+        .inv-tab.active {
+            background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright));
+            color: #000; border-color: var(--gold-bright);
         }
 
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Tajawal', 'Segoe UI', sans-serif; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .kpi { background: #16161f; border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; text-align: center; }
+        .kpi .t { color: #999; font-size: 0.74rem; font-weight: 700; display: block; margin-bottom: 5px; }
+        .kpi .v { font-size: 1.2rem; font-weight: 900; }
 
-        body { 
-            background-color: var(--bg-main); 
-            color: var(--text-light); 
-            padding: 15px; 
-            font-size: 14px; 
-            user-select: none;
-        }
+        .sec-title { color: var(--gold-primary); font-size: 1rem; font-weight: 900; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .num { font-variant-numeric: tabular-nums; }
 
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
-        
-        .header-title { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid var(--gold-primary); 
-            padding-bottom: 12px; 
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .data-table td, .data-table th { padding: 8px 9px; font-size: 0.81rem; }
+        .badge-ok   { background: rgba(16,185,129,0.18); color: var(--success-green); border: 1px solid var(--success-green); padding: 2px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 800; }
+        .badge-low  { background: rgba(245,158,11,0.18); color: #f59e0b; border: 1px solid #f59e0b; padding: 2px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 800; }
+        .badge-out  { background: rgba(239,68,68,0.18); color: var(--danger-red); border: 1px solid var(--danger-red); padding: 2px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 800; }
 
-        .card { 
-            background: var(--bg-card); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            padding: 18px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        .add-grid { 
-            display: grid; 
-            grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr auto; 
-            gap: 10px; 
-            align-items: center; 
-        }
-
-        @media (max-width: 900px) {
-            .add-grid { grid-template-columns: 1fr 1fr; }
-        }
-
-        @media (max-width: 550px) {
-            .add-grid { grid-template-columns: 1fr; }
-        }
-
-        .gold-input-inline {
-            background: #101014;
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 9px 12px;
-            border-radius: 6px;
-            font-size: 0.88rem;
-            width: 100%;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        .gold-input-inline:focus {
-            border-color: var(--gold-primary);
-            box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 14px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .kpi-card h5 {
-            color: #aaa;
-            font-size: 0.8rem;
-            margin-bottom: 6px;
-        }
-
-        .kpi-card .val {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--gold-bright);
-        }
-
-        /* شاشة الدخول */
-        .auth-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 14, 0.96);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-        }
-
-        .auth-card {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-primary);
-            padding: 25px 20px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.2);
-        }
-
-        .low-stock-badge {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .normal-stock-badge {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-            border: 1px solid var(--success);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; align-items: end; }
+        .hint { font-size: 0.75rem; color: #888; line-height: 1.6; }
     </style>
 </head>
 <body class="admin-body">
 
-    <!-- 🔐 شاشة الدخول للمخزن -->
+    <!-- 🔐 الدخول -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-card">
             <h2 style="color:var(--gold-primary); margin-bottom:10px; font-weight:900;">
                 <i class="fa-solid fa-boxes-stacked"></i> مخزن MIM89
             </h2>
-            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور المخزن أو الأدمن للوصول</p>
-            <input type="password" id="invPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:10px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') loginInventory()">
-            <p id="authError" style="color:var(--danger); font-size:0.8rem; margin:5px 0; font-weight:bold;"></p>
-            <button onclick="loginInventory()" class="gold-btn btn-block" style="margin-top:10px; padding:12px; width:100%;">دخول لوحة المخزن 🚀</button>
+            <p style="color:#aaa; font-size:0.85rem; margin-bottom:15px;">أدخل كلمة مرور المخزن أو الأدمن</p>
+            <input type="password" id="invPassInput" class="gold-input-inline" placeholder="••••••••" style="text-align:center; font-size:1.1rem; padding:12px; margin-bottom:10px;" onkeypress="if(event.key==='Enter') loginInventory()">
+            <p id="authError" style="color:var(--danger-red); font-size:0.8rem; margin:5px 0; font-weight:bold;"></p>
+            <button onclick="loginInventory()" class="gold-btn btn-block" style="margin-top:10px; padding:12px;">دخول 🚀</button>
         </div>
     </div>
 
-    <!-- 📦 الواجهة الرئيسية للمخزن -->
     <div class="container" id="invMainApp" style="display:none;">
-        
-        <header class="header-title">
-            <div>
-                <h1 style="color:var(--gold-primary); font-size:1.4rem; font-weight:900;">
-                    <i class="fa-solid fa-boxes-stacked"></i> MIM89 - إدارة المخزن والخصم الآلي
-                </h1>
-                <p style="color:#aaa; font-size:0.78rem; margin-top:3px;">متابعة الكميات، أسعار الشراء، والحد الأدنى للنواقص</p>
-            </div>
-            
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <button onclick="globalSystemSync(this)" class="gold-btn btn-sm" style="background:#10b981; color:#fff; border:none; padding:8px 12px;">
-                    <i class="fa-solid fa-rotate"></i> تحديث ومزامنة 🔄
-                </button>
-                <a href="admin.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-user-shield"></i> الأدمن
-                </a>
-                <a href="costing.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-vault"></i> الخزينة
-                </a>
-                <a href="cashier.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none; padding:8px 12px;">
-                    <i class="fa-solid fa-cash-register"></i> الكاشير
-                </a>
-                <button onclick="location.reload()" class="gold-btn btn-danger btn-sm" style="padding:8px 12px; background:var(--danger); color:#fff; border:none; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+
+        <header class="admin-header">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <span class="brand-badge">MIM89 المخزن</span>
+                    <p style="color:var(--text-muted); font-size:0.78rem; margin-top:4px; margin-bottom:0;">
+                        المواد • المشتريات • الجرد الفعلي • تفكيك المبيعات • الهدر
+                    </p>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <a href="admin.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">الأدمن</a>
+                    <a href="costing.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">الخزينة</a>
+                    <a href="cashier.html" class="gold-btn btn-sm" style="background:#18181c; border:1px solid var(--gold-primary); color:var(--gold-bright); text-decoration:none;">الكاشير</a>
+                    <button onclick="location.reload()" class="gold-btn btn-danger btn-sm">خروج</button>
+                </div>
             </div>
         </header>
 
-        <!-- 📊 كروت مؤشرات المخزن -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h5>إجمالي القيمة النقدية للمخزون</h5>
-                <div class="val" id="kpiTotalInvValue">0 د.ع</div>
-            </div>
-            <div class="kpi-card">
-                <h5>إجمالي عدد المواد الأولية</h5>
-                <div class="val" id="kpiTotalInvItems">0 مادة</div>
-            </div>
-            <div class="kpi-card" style="border-color:var(--danger);">
-                <h5>مواد أوشكت على النفاد</h5>
-                <div class="val" id="kpiLowStockCount" style="color:var(--danger);">0 مادة</div>
-            </div>
+        <div class="inv-tabs">
+            <button class="inv-tab active" onclick="switchInvTab('tabStock', this)"><i class="fa-solid fa-warehouse"></i> المواد والمخزون</button>
+            <button class="inv-tab" onclick="switchInvTab('tabPurchase', this)"><i class="fa-solid fa-truck"></i> المشتريات</button>
+            <button class="inv-tab" onclick="switchInvTab('tabCount', this)"><i class="fa-solid fa-clipboard-check"></i> 🔍 الجرد الفعلي</button>
+            <button class="inv-tab" onclick="switchInvTab('tabUsage', this)"><i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات</button>
+            <button class="inv-tab" onclick="switchInvTab('tabVariance', this)" style="border-color:var(--danger-red); color:#ff9b9b;"><i class="fa-solid fa-triangle-exclamation"></i> ⚠️ الهدر والفروقات</button>
         </div>
 
-        <!-- ⚠️ شريط تنبيه النواقص المباشر -->
-        <div id="lowStockAlertBanner" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid var(--danger); padding:10px 14px; border-radius:8px; margin-bottom:15px; color:#fff; font-size:0.85rem;">
-            <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger); font-size:1rem; margin-left:6px;"></i>
-            <strong>تنبيه المخزون:</strong> يوجد مواد انخفضت عن الحد الأدنى، يرجى إعادة التجهيز فوراً!
-        </div>
-
-        <!-- ➕ إضافة مادة جديدة للمخزن -->
-        <div class="card">
-            <h4 style="color:var(--gold-primary); margin-bottom:12px; font-size:1.05rem;">
-                <i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة للجرد
-            </h4>
-            <div class="add-grid">
-                <input type="text" id="newInvName" class="gold-input-inline" placeholder="اسم المادة (مثلاً: صدور دجاج طازجة)">
-                <input type="number" id="newInvQty" class="gold-input-inline" placeholder="الكمية الكلية">
-                <input type="text" id="newInvUnit" class="gold-input-inline" placeholder="الوحدة (كغم/قطعة/علبة)">
-                <input type="number" id="newInvPrice" class="gold-input-inline" placeholder="إجمالي الشراء (د.ع)">
-                <input type="number" id="newInvMinLimit" class="gold-input-inline" placeholder="حد التنبيه (مثلاً 10)" value="10">
-                <button onclick="addNewInventoryItem()" class="gold-btn" style="padding:9px 16px; font-weight:bold; white-space:nowrap; background:linear-gradient(135deg, var(--gold-primary), var(--gold-bright)); color:#000; border:none; border-radius:6px; cursor:pointer;">
-                    <i class="fa-solid fa-save"></i> حفظ المادة
-                </button>
+        <!-- ============ 1. المواد والمخزون ============ -->
+        <div id="tabStock" class="inv-page">
+            <div class="kpi-grid">
+                <div class="kpi"><span class="t">قيمة المخزون الحالية</span><div class="v num" id="kpiInvValue" style="color:var(--gold-bright);">0</div></div>
+                <div class="kpi"><span class="t">عدد المواد</span><div class="v num" id="kpiInvCount" style="color:#fff;">0</div></div>
+                <div class="kpi"><span class="t">مواد أوشكت على النفاد</span><div class="v num" id="kpiLow" style="color:#f59e0b;">0</div></div>
+                <div class="kpi"><span class="t">مواد نفدت</span><div class="v num" id="kpiOut" style="color:var(--danger-red);">0</div></div>
             </div>
-        </div>
 
-        <!-- 📋 جدول المواد المسجلة وحساب كلفة الوحدة -->
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-                <div>
-                    <h4 style="color:var(--gold-primary); margin:0; font-size:1.05rem;">
-                        <i class="fa-solid fa-list-check"></i> قائمة مواد المخزن والتكلفة التلقائية (تعديل مباشر)
-                    </h4>
-                    <span style="font-size:0.75rem; color:#aaa;">⚡ يتحدث سعر الكيلو/القطعة آلياً عند تغيير الكمية أو المبلغ الكلي</span>
-                </div>
-                
-                <div style="width:230px;">
-                    <input type="text" id="invSearchInput" class="gold-input-inline" placeholder="🔍 بحث في المواد..." onkeyup="filterInventoryTable(this.value)">
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة</div>
+                <div class="form-grid">
+                    <div><label class="hint">اسم المادة</label><input type="text" id="newInvName" class="gold-input-inline" placeholder="صدور دجاج"></div>
+                    <div><label class="hint">الكمية</label><input type="number" id="newInvQty" class="gold-input-inline" placeholder="100" step="0.01"></div>
+                    <div><label class="hint">الوحدة</label><input type="text" id="newInvUnit" class="gold-input-inline" placeholder="كغم"></div>
+                    <div><label class="hint">إجمالي الشراء</label><input type="number" id="newInvPrice" class="gold-input-inline" placeholder="500000"></div>
+                    <div><label class="hint">حد التنبيه</label><input type="number" id="newInvMinLimit" class="gold-input-inline" value="10" step="0.01"></div>
+                    <button onclick="addNewInventoryItem()" class="gold-btn" style="min-height:42px;">حفظ المادة</button>
                 </div>
             </div>
-            
-            <div style="overflow-x:auto;">
-                <table class="data-table" style="width:100%; border-collapse:collapse;">
-                    <thead>
-                        <tr style="background:#121216; color:var(--gold-primary); font-size:0.85rem; border-bottom:1px solid var(--border);">
-                            <th style="padding:10px; text-align:right; width: 4%;">#</th>
-                            <th style="padding:10px; text-align:right; width: 22%;">اسم المادة الأولية</th>
-                            <th style="padding:10px; text-align:right; width: 14%;">الكمية المتبقية</th>
-                            <th style="padding:10px; text-align:right; width: 10%;">الوحدة</th>
-                            <th style="padding:10px; text-align:right; width: 18%;">إجمالي الشراء (د.ع)</th>
-                            <th style="padding:10px; text-align:right; width: 16%;">كلفة الوحدة (تلقائي)</th>
-                            <th style="padding:10px; text-align:right; width: 10%;">حالة المخزون</th>
-                            <th style="padding:10px; text-align:center; width: 6%;">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryTableBody"></tbody>
-                </table>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                    <div class="sec-title" style="margin:0;"><i class="fa-solid fa-list-check"></i> المواد المسجلة</div>
+                    <input type="text" id="invSearchInput" class="gold-input-inline" placeholder="🔍 بحث..." style="width:220px;" onkeyup="renderInventoryTable()">
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>المادة</th><th>المتبقي</th><th>الوحدة</th>
+                            <th>كلفة الوحدة</th><th>قيمة المخزون</th><th>الحالة</th><th></th>
+                        </tr></thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ 2. المشتريات ============ -->
+        <div id="tabPurchase" class="inv-page" style="display:none;">
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-truck"></i> تسجيل شراء جديد</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    تسجيل الشراء يزيد الكمية بالمخزن ويُعيد حساب كلفة الوحدة بطريقة <strong>المتوسط المرجّح</strong>
+                    — وهي الطريقة المحاسبية الصحيحة عند اختلاف أسعار الشراء بين المرات.
+                </p>
+                <div class="form-grid">
+                    <div><label class="hint">المادة</label><select id="purchaseInvSelect" class="gold-input-inline"></select></div>
+                    <div><label class="hint">الكمية المشتراة</label><input type="number" id="purchaseQty" class="gold-input-inline" placeholder="50" step="0.01"></div>
+                    <div><label class="hint">إجمالي المبلغ المدفوع</label><input type="number" id="purchaseCost" class="gold-input-inline" placeholder="250000"></div>
+                    <div><label class="hint">المورّد (اختياري)</label><input type="text" id="purchaseSupplier" class="gold-input-inline" placeholder="اسم المورّد"></div>
+                    <button onclick="addPurchase()" class="gold-btn" style="min-height:42px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none;">تسجيل الشراء</button>
+                </div>
+                <div id="purchasePreview" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <div class="sec-title" style="margin:0;"><i class="fa-solid fa-receipt"></i> سجل المشتريات</div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <input type="date" id="purchFrom" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="renderPurchases()">
+                        <span style="color:#666;">→</span>
+                        <input type="date" id="purchTo" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="renderPurchases()">
+                    </div>
+                </div>
+                <div id="purchTotalBox" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:10px; margin-bottom:10px; text-align:center; font-size:0.85rem;"></div>
+                <div style="overflow-x:auto; max-height:420px; overflow-y:auto;">
+                    <table class="data-table">
+                        <thead><tr><th>التاريخ</th><th>المادة</th><th>الكمية</th><th>المبلغ</th><th>كلفة الوحدة</th><th>المورّد</th></tr></thead>
+                        <tbody id="purchasesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ 3. الجرد الفعلي ============ -->
+        <div id="tabCount" class="inv-page" style="display:none;">
+            <div class="card" style="border-color:#38bdf8;">
+                <div class="sec-title" style="color:#38bdf8;"><i class="fa-solid fa-clipboard-check"></i> جرد فعلي جديد</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    <strong style="color:#fff;">هذه أهم أداة لكشف الهدر والسرقة.</strong> عُدّ كل مادة موجودة فعلياً بالمخزن واكتب الكمية.
+                    النظام يقارنها بما يفترض وجوده ويحسب قيمة الفرق بالدينار.
+                    <br>يُنصح بعمله <strong style="color:var(--gold-bright);">أسبوعياً</strong> على الأقل للمواد الغالية (اللحوم والدجاج).
+                </p>
+
+                <div style="overflow-x:auto; max-height:460px; overflow-y:auto; margin-bottom:12px;">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>المادة</th><th>حسب النظام</th><th>الموجود فعلياً</th><th>الفرق</th><th>قيمة الفرق</th>
+                        </tr></thead>
+                        <tbody id="countTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="countSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:10px; padding:14px; margin-bottom:12px;"></div>
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button onclick="saveStockCount()" class="gold-btn" style="flex:2; min-width:200px; background:linear-gradient(135deg,#38bdf8,#0284c7); color:#fff; border:none; padding:12px; font-weight:900;">
+                        💾 حفظ الجرد وتصحيح المخزون
+                    </button>
+                    <button onclick="clearCountInputs()" class="gold-btn btn-danger" style="flex:1; min-width:120px;">مسح المدخلات</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-clock-rotate-left"></i> سجل عمليات الجرد السابقة</div>
+                <div id="countsHistory"></div>
+            </div>
+        </div>
+
+        <!-- ============ 4. تفكيك المبيعات ============ -->
+        <div id="tabUsage" class="inv-page" style="display:none;">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <div class="sec-title" style="margin:0;"><i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات إلى مواد خام</div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <input type="date" id="usageFrom" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="renderUsageReport()">
+                        <span style="color:#666;">→</span>
+                        <input type="date" id="usageTo" class="gold-input-inline" style="width:auto; font-size:0.78rem;" onchange="renderUsageReport()">
+                    </div>
+                </div>
+                <p class="hint" style="margin-bottom:12px;">
+                    يحسب <strong style="color:#fff;">الاستهلاك النظري</strong>: كل وجبة مباعة تُفكَّك إلى موادها حسب وصفتها،
+                    فتعرف كم كيلو دجاج وكم خبزة استُهلكت فعلياً حسب المبيعات، وكم كلّفتك كل مادة.
+                </p>
+
+                <div id="usageSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:10px; padding:14px; margin-bottom:12px;"></div>
+
+                <div style="overflow-x:auto; max-height:460px; overflow-y:auto;">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>المادة</th><th>الكمية المستهلكة</th><th>كلفة الوحدة</th><th>إجمالي التكلفة</th><th>% من التكلفة</th>
+                        </tr></thead>
+                        <tbody id="usageTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-utensils"></i> الوجبات الأكثر استهلاكاً للمواد</div>
+                <div id="usageByMeal" style="max-height:340px; overflow-y:auto;"></div>
+            </div>
+        </div>
+
+        <!-- ============ 5. الهدر والفروقات ============ -->
+        <div id="tabVariance" class="inv-page" style="display:none;">
+            <div class="card" style="border-color:var(--danger-red);">
+                <div class="sec-title" style="color:var(--danger-red);"><i class="fa-solid fa-triangle-exclamation"></i> تحليل الهدر والفروقات</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    يقارن بين <strong style="color:#38bdf8;">الاستهلاك النظري</strong> (حسب المبيعات والوصفات)
+                    و<strong style="color:#f59e0b;">الاستهلاك الفعلي</strong> (حسب الجرد والمشتريات).
+                    <br><strong style="color:var(--danger-red);">الفرق بينهما = هدر أو سوء استخدام أو سرقة.</strong>
+                </p>
+
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+                    <span class="hint">بين جردَين:</span>
+                    <select id="varianceFromCount" class="gold-input-inline" style="width:auto; min-width:180px;" onchange="renderVarianceReport()"></select>
+                    <span style="color:#666;">→</span>
+                    <select id="varianceToCount" class="gold-input-inline" style="width:auto; min-width:180px;" onchange="renderVarianceReport()"></select>
+                </div>
+
+                <div id="varianceContent"></div>
             </div>
         </div>
 
     </div>
 
-    <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1250"></script>
+    <script src="app.js?v=1260"></script>
     <script>
+        /* ==========================================================
+           الدخول والتنقل
+           ========================================================== */
         function loginInventory() {
             const pass = document.getElementById('invPassInput').value.trim();
-            const validInvPass = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
-            const validAdminPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
-
-            if (pass === validInvPass || pass === validAdminPass || pass === "inv123" || pass === "123") {
+            const vInv = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
+            const vAdm = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
+            if (pass === vInv || pass === vAdm || pass === "inv123" || pass === "123") {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('invMainApp').style.display = 'block';
-                renderInventoryTable();
+                initInventoryApp();
             } else {
                 document.getElementById('authError').innerText = "كلمة المرور غير صحيحة!";
             }
         }
 
-        function filterInventoryTable(query) {
-            const q = query.toLowerCase();
-            const inv = getData('sys_inventory') || [];
-            const filtered = inv.filter(i => (i.name || '').toLowerCase().includes(q));
-            renderInventoryTableCustom(filtered);
+        function switchInvTab(id, btn) {
+            document.querySelectorAll('.inv-page').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.inv-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).style.display = 'block';
+            if (btn) btn.classList.add('active');
+
+            if (id === 'tabPurchase') { loadPurchaseDropdown(); renderPurchases(); }
+            if (id === 'tabCount')    { renderCountTable(); renderCountsHistory(); }
+            if (id === 'tabUsage')    renderUsageReport();
+            if (id === 'tabVariance') { loadVarianceSelectors(); renderVarianceReport(); }
         }
 
-        function renderInventoryTableCustom(invList) {
+        function initInventoryApp() {
+            try { initData(); } catch (e) {}
+            const today = getTodayString();
+            const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 30);
+            const mStr = monthAgo.toISOString().slice(0, 10);
+            ['purchFrom', 'usageFrom'].forEach(x => { const el = document.getElementById(x); if (el) el.value = mStr; });
+            ['purchTo', 'usageTo'].forEach(x => { const el = document.getElementById(x); if (el) el.value = today; });
+            renderInventoryTable();
+        }
+
+        function money(n) { return cleanPrice(Math.round(n)).toLocaleString('ar-IQ'); }
+        function qtyFmt(n) { const v = parseFloat(n) || 0; return (Math.round(v * 100) / 100).toLocaleString('ar-IQ'); }
+        function unitCostOf(inv) {
+            const q = parseFloat(inv.quantity) || 0;
+            return cleanPrice(inv.costPerUnit) || (q > 0 ? cleanPrice(inv.totalPrice) / q : 0);
+        }
+        function inRange(d, f, t) { return d && d >= f && d <= t; }
+
+        /* ==========================================================
+           1) المواد والمخزون
+           ========================================================== */
+        function renderInventoryTable() {
+            const inv = getData('sys_inventory') || [];
+            const q = (document.getElementById('invSearchInput')?.value || '').toLowerCase();
+            const list = q ? inv.filter(i => String(i.name).toLowerCase().includes(q)) : inv;
             const tbody = document.getElementById('inventoryTableBody');
             if (!tbody) return;
 
-            if (!invList || invList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد مواد مطابقة للبحث</td></tr>`;
+            let totalValue = 0, low = 0, out = 0;
+            inv.forEach(i => {
+                const qty = parseFloat(i.quantity) || 0;
+                totalValue += unitCostOf(i) * qty;
+                const min = parseFloat(i.minLimit) || 10;
+                if (qty <= 0) out++; else if (qty <= min) low++;
+            });
+
+            document.getElementById('kpiInvValue').innerText = money(totalValue);
+            document.getElementById('kpiInvCount').innerText = inv.length;
+            document.getElementById('kpiLow').innerText = low;
+            document.getElementById('kpiOut').innerText = out;
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888; padding:18px;">لا توجد مواد</td></tr>';
                 return;
             }
 
-            let totalVal = 0;
-            let lowCount = 0;
-
-            tbody.innerHTML = invList.map((item, index) => {
-                const qty = Number(item.quantity) || 0;
-                const totalPrice = Number(item.totalPrice) || 0;
-                const minLimit = Number(item.minLimit) || 10;
-                
-                totalVal += totalPrice;
-
-                const costPerUnit = (totalPrice > 0 && qty > 0) 
-                    ? (totalPrice / qty) 
-                    : (Number(item.costPerUnit) || 0);
-
-                const isLow = qty <= minLimit;
-                if (isLow) lowCount++;
-
-                return `
-                    <tr style="border-bottom:1px solid var(--border);">
-                        <td style="padding:10px;">${index + 1}</td>
-                        <td style="padding:10px;">
-                            <input type="text" value="${item.name || ''}" onchange="updateInvField(${item.id}, 'name', this.value)" class="gold-input-inline" style="font-weight:bold;">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="number" value="${qty}" placeholder="الكمية" onchange="updateInvField(${item.id}, 'quantity', this.value)" class="gold-input-inline" style="${isLow ? 'color:var(--danger); font-weight:bold;' : ''}">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="text" value="${item.unit || 'كغم'}" placeholder="كغم/قطعة" onchange="updateInvField(${item.id}, 'unit', this.value)" class="gold-input-inline">
-                        </td>
-                        <td style="padding:10px;">
-                            <input type="number" value="${totalPrice}" placeholder="إجمالي الشراء" onchange="updateInvField(${item.id}, 'totalPrice', this.value)" class="gold-input-inline">
-                        </td>
-                        <td style="padding:10px; color:var(--gold-bright); font-weight:bold;">
-                            ${Number(costPerUnit.toFixed(0)).toLocaleString()} د.ع / ${item.unit || 'وحدة'}
-                        </td>
-                        <td style="padding:10px;">
-                            ${isLow ? '<span class="low-stock-badge">⚠️ منخفض</span>' : '<span class="normal-stock-badge">✅ ممتازة</span>'}
-                        </td>
-                        <td style="padding:10px; text-align:center;">
-                            <button onclick="deleteInvItem(${item.id})" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem; background:var(--danger); color:#fff; border:none; border-radius:4px; cursor:pointer;">حذف</button>
-                        </td>
-                    </tr>
-                `;
+            tbody.innerHTML = list.map(i => {
+                const qty = parseFloat(i.quantity) || 0;
+                const uc = unitCostOf(i);
+                const min = parseFloat(i.minLimit) || 10;
+                const badge = qty <= 0 ? '<span class="badge-out">نفدت</span>'
+                            : (qty <= min ? '<span class="badge-low">منخفضة</span>' : '<span class="badge-ok">جيدة</span>');
+                return '<tr>' +
+                    '<td><input type="text" value="' + (i.name || '') + '" class="gold-input-inline" style="font-weight:bold;" onchange="updateInvField(' + i.id + ', \'name\', this.value)"></td>' +
+                    '<td><input type="number" value="' + qty + '" step="0.01" class="gold-input-inline num" style="width:90px;' + (qty <= min ? 'color:var(--danger-red);' : '') + '" onchange="updateInvField(' + i.id + ', \'quantity\', this.value)"></td>' +
+                    '<td><input type="text" value="' + (i.unit || 'كغم') + '" class="gold-input-inline" style="width:70px;" onchange="updateInvField(' + i.id + ', \'unit\', this.value)"></td>' +
+                    '<td class="num" style="color:var(--gold-bright); font-weight:bold;">' + money(uc) + '</td>' +
+                    '<td class="num" style="color:#38bdf8;">' + money(uc * qty) + '</td>' +
+                    '<td>' + badge + '</td>' +
+                    '<td><button onclick="deleteInvItem(' + i.id + ')" class="gold-btn btn-danger btn-sm">حذف</button></td>' +
+                    '</tr>';
             }).join('');
-
-            // تحديث الكروت العلوية
-            const totalValEl = document.getElementById('kpiTotalInvValue');
-            const totalCountEl = document.getElementById('kpiTotalInvItems');
-            const lowCountEl = document.getElementById('kpiLowStockCount');
-            const alertBanner = document.getElementById('lowStockAlertBanner');
-
-            if (totalValEl) totalValEl.innerText = totalVal.toLocaleString() + ' د.ع';
-            if (totalCountEl) totalCountEl.innerText = invList.length + ' مادة';
-            if (lowCountEl) lowCountEl.innerText = lowCount + ' مادة';
-            if (alertBanner) alertBanner.style.display = lowCount > 0 ? 'block' : 'none';
-        }
-
-        function renderInventoryTable() {
-            const inv = getData('sys_inventory') || [];
-            renderInventoryTableCustom(inv);
         }
 
         function addNewInventoryItem() {
             const name = document.getElementById('newInvName').value.trim();
-            const qty = Number(document.getElementById('newInvQty').value);
+            const qty = parseFloat(document.getElementById('newInvQty').value);
             const unit = document.getElementById('newInvUnit').value.trim() || 'كغم';
-            const totalPrice = Number(document.getElementById('newInvPrice').value) || 0;
-            const minLimit = Number(document.getElementById('newInvMinLimit').value) || 10;
+            const totalPrice = cleanPrice(document.getElementById('newInvPrice').value);
+            const minLimit = parseFloat(document.getElementById('newInvMinLimit').value) || 10;
 
-            if (!name || isNaN(qty)) return alert("يرجى إدخال اسم المادة والكمية الكلية!");
+            if (!name || isNaN(qty)) return alert("أدخل اسم المادة والكمية");
 
             const inv = getData('sys_inventory') || [];
-            const costPerUnit = qty > 0 ? (totalPrice / qty) : 0;
-
-            const newItem = {
-                id: Date.now(),
-                name: name,
-                quantity: qty,
-                unit: unit,
-                totalPrice: totalPrice,
-                costPerUnit: costPerUnit,
-                minLimit: minLimit
-            };
-
-            inv.push(newItem);
+            inv.push({
+                id: Date.now(), name, quantity: qty, unit, totalPrice,
+                costPerUnit: qty > 0 ? totalPrice / qty : 0, minLimit
+            });
             setData('sys_inventory', inv);
 
-            document.getElementById('newInvName').value = '';
-            document.getElementById('newInvQty').value = '';
-            document.getElementById('newInvUnit').value = '';
-            document.getElementById('newInvPrice').value = '';
-
+            ['newInvName','newInvQty','newInvUnit','newInvPrice'].forEach(x => document.getElementById(x).value = '');
             renderInventoryTable();
-            alert("✅ تم إدخال المادة للمخزن بنجاح!");
+            alert("✅ تمت إضافة المادة");
         }
 
         function updateInvField(id, field, value) {
-            let inv = getData('sys_inventory') || [];
-            let item = inv.find(i => Number(i.id) === Number(id));
-
-            if (item) {
-                if (field === 'quantity' || field === 'totalPrice' || field === 'minLimit') {
-                    item[field] = Number(value);
-                } else {
-                    item[field] = value;
-                }
-
-                if (item.totalPrice && item.quantity && Number(item.quantity) > 0) {
-                    item.costPerUnit = Number(item.totalPrice) / Number(item.quantity);
-                } else if (item.quantity === 0) {
-                    item.costPerUnit = 0;
-                }
-
-                setData('sys_inventory', inv);
-                renderInventoryTable();
-            }
+            const inv = getData('sys_inventory') || [];
+            const item = inv.find(i => cleanPrice(i.id) === cleanPrice(id));
+            if (!item) return;
+            item[field] = (field === 'quantity' || field === 'totalPrice' || field === 'minLimit') ? (parseFloat(value) || 0) : value;
+            const q = parseFloat(item.quantity) || 0;
+            if (item.totalPrice && q > 0) item.costPerUnit = cleanPrice(item.totalPrice) / q;
+            setData('sys_inventory', inv);
+            renderInventoryTable();
         }
 
         function deleteInvItem(id) {
-            if (confirm("هل أنت متأكد من حذف هذه المادة الأولية من المخزن والجرد؟")) {
-                let inv = getData('sys_inventory').filter(i => Number(i.id) !== Number(id));
-                setData('sys_inventory', inv);
-                renderInventoryTable();
+            if (!confirm("حذف هذه المادة من المخزن؟")) return;
+            setData('sys_inventory', (getData('sys_inventory') || []).filter(i => cleanPrice(i.id) !== cleanPrice(id)));
+            renderInventoryTable();
+        }
+
+        /* ==========================================================
+           2) المشتريات — بالمتوسط المرجّح
+           ========================================================== */
+        function loadPurchaseDropdown() {
+            const inv = getData('sys_inventory') || [];
+            const sel = document.getElementById('purchaseInvSelect');
+            if (!sel) return;
+            sel.innerHTML = inv.map(i =>
+                '<option value="' + i.id + '">' + i.name + ' (متبقي: ' + qtyFmt(i.quantity) + ' ' + (i.unit || '') + ')</option>'
+            ).join('');
+        }
+
+        function addPurchase() {
+            const invId = document.getElementById('purchaseInvSelect').value;
+            const qty = parseFloat(document.getElementById('purchaseQty').value);
+            const cost = cleanPrice(document.getElementById('purchaseCost').value);
+            const supplier = document.getElementById('purchaseSupplier').value.trim();
+
+            if (!qty || qty <= 0) return alert("أدخل الكمية المشتراة");
+            if (!cost || cost <= 0) return alert("أدخل المبلغ المدفوع");
+
+            const inv = getData('sys_inventory') || [];
+            const item = inv.find(i => cleanPrice(i.id) === cleanPrice(invId));
+            if (!item) return alert("المادة غير موجودة");
+
+            const oldQty = parseFloat(item.quantity) || 0;
+            const oldCost = unitCostOf(item);
+            const newUnitCost = cost / qty;
+
+            // 📐 المتوسط المرجّح: يمنع تشوّه التكلفة عند اختلاف أسعار الشراء
+            const totalQty = oldQty + qty;
+            const weighted = totalQty > 0 ? ((oldQty * oldCost) + cost) / totalQty : newUnitCost;
+
+            item.quantity = totalQty;
+            item.costPerUnit = weighted;
+            item.totalPrice = weighted * totalQty;
+            setData('sys_inventory', inv);
+
+            const purchases = getData('sys_purchases') || [];
+            purchases.unshift({
+                id: 'PUR_' + Date.now(),
+                invId: cleanPrice(invId), invName: item.name,
+                qty, unit: item.unit || '', totalCost: cost, unitCost: newUnitCost,
+                supplier: supplier || '-',
+                dateDate: getTodayString(), createdTimestamp: Date.now()
+            });
+            setData('sys_purchases', purchases);
+
+            ['purchaseQty','purchaseCost','purchaseSupplier'].forEach(x => document.getElementById(x).value = '');
+            loadPurchaseDropdown();
+            renderPurchases();
+            renderInventoryTable();
+
+            alert('✅ سُجّل الشراء\n\n' + item.name +
+                  '\nالكمية الجديدة: ' + qtyFmt(totalQty) + ' ' + (item.unit || '') +
+                  '\nكلفة الوحدة السابقة: ' + money(oldCost) +
+                  '\nكلفة الشراء الحالي: ' + money(newUnitCost) +
+                  '\nالكلفة بعد المتوسط المرجّح: ' + money(weighted));
+        }
+
+        function renderPurchases() {
+            const f = document.getElementById('purchFrom')?.value || '0000-01-01';
+            const t = document.getElementById('purchTo')?.value || '9999-12-31';
+            const list = (getData('sys_purchases') || []).filter(p => inRange(p.dateDate, f, t));
+            const tbody = document.getElementById('purchasesTableBody');
+            if (!tbody) return;
+
+            const total = list.reduce((s, p) => s + cleanPrice(p.totalCost), 0);
+            const box = document.getElementById('purchTotalBox');
+            if (box) box.innerHTML = 'عدد عمليات الشراء: <strong style="color:#fff;">' + list.length +
+                '</strong> &nbsp;|&nbsp; إجمالي المصروف على المشتريات: <strong style="color:var(--gold-bright);">' + money(total) + ' د.ع</strong>';
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888; padding:18px;">لا توجد مشتريات بهذه الفترة</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(p =>
+                '<tr><td style="font-size:0.75rem; color:#aaa;">' + p.dateDate + '</td>' +
+                '<td><strong>' + p.invName + '</strong></td>' +
+                '<td class="num">' + qtyFmt(p.qty) + ' ' + (p.unit || '') + '</td>' +
+                '<td class="num" style="color:var(--danger-red);">' + money(p.totalCost) + '</td>' +
+                '<td class="num" style="color:var(--gold-bright);">' + money(p.unitCost) + '</td>' +
+                '<td style="font-size:0.76rem; color:#aaa;">' + (p.supplier || '-') + '</td></tr>'
+            ).join('');
+        }
+
+        /* ==========================================================
+           3) الجرد الفعلي
+           ========================================================== */
+        function renderCountTable() {
+            const inv = getData('sys_inventory') || [];
+            const tbody = document.getElementById('countTableBody');
+            if (!tbody) return;
+
+            if (inv.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:18px;">لا توجد مواد</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = inv.map(i => {
+                const sysQty = parseFloat(i.quantity) || 0;
+                return '<tr data-inv="' + i.id + '">' +
+                    '<td><strong>' + i.name + '</strong><div style="font-size:0.7rem; color:#777;">' + money(unitCostOf(i)) + ' / ' + (i.unit || '') + '</div></td>' +
+                    '<td class="num" style="color:#38bdf8;">' + qtyFmt(sysQty) + ' ' + (i.unit || '') + '</td>' +
+                    '<td><input type="number" step="0.01" class="gold-input-inline num count-input" data-inv="' + i.id + '" data-sys="' + sysQty + '" data-cost="' + unitCostOf(i) + '" placeholder="عُدّ واكتب" style="width:110px;" oninput="updateCountRow(this)"></td>' +
+                    '<td class="num diff-cell" style="color:#666;">—</td>' +
+                    '<td class="num value-cell" style="color:#666;">—</td>' +
+                    '</tr>';
+            }).join('');
+            updateCountSummary();
+        }
+
+        function updateCountRow(input) {
+            const tr = input.closest('tr');
+            const sys = parseFloat(input.dataset.sys) || 0;
+            const cost = parseFloat(input.dataset.cost) || 0;
+            const diffCell = tr.querySelector('.diff-cell');
+            const valCell = tr.querySelector('.value-cell');
+
+            if (input.value === '') {
+                diffCell.innerHTML = '—'; diffCell.style.color = '#666';
+                valCell.innerHTML = '—'; valCell.style.color = '#666';
+                updateCountSummary(); return;
+            }
+
+            const actual = parseFloat(input.value) || 0;
+            const diff = actual - sys;           // سالب = عجز (هدر/سرقة)
+            const value = diff * cost;
+
+            diffCell.innerHTML = (diff > 0 ? '+' : '') + qtyFmt(diff);
+            diffCell.style.color = diff < 0 ? 'var(--danger-red)' : (diff > 0 ? '#f59e0b' : 'var(--success-green)');
+            valCell.innerHTML = (value > 0 ? '+' : '') + money(value);
+            valCell.style.color = value < 0 ? 'var(--danger-red)' : (value > 0 ? '#f59e0b' : 'var(--success-green)');
+
+            updateCountSummary();
+        }
+
+        function updateCountSummary() {
+            const inputs = document.querySelectorAll('.count-input');
+            let counted = 0, lossValue = 0, gainValue = 0, lossItems = 0;
+
+            inputs.forEach(inp => {
+                if (inp.value === '') return;
+                counted++;
+                const sys = parseFloat(inp.dataset.sys) || 0;
+                const cost = parseFloat(inp.dataset.cost) || 0;
+                const diff = (parseFloat(inp.value) || 0) - sys;
+                const v = diff * cost;
+                if (v < 0) { lossValue += Math.abs(v); lossItems++; }
+                else if (v > 0) gainValue += v;
+            });
+
+            const box = document.getElementById('countSummary');
+            if (!box) return;
+
+            const net = gainValue - lossValue;
+            box.innerHTML =
+                '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; text-align:center;">' +
+                '<div><div class="hint">مواد تم عدّها</div><strong style="color:#fff; font-size:1.1rem;">' + counted + ' / ' + inputs.length + '</strong></div>' +
+                '<div><div class="hint">مواد بها عجز</div><strong style="color:var(--danger-red); font-size:1.1rem;">' + lossItems + '</strong></div>' +
+                '<div><div class="hint">قيمة العجز</div><strong style="color:var(--danger-red); font-size:1.1rem;">' + money(lossValue) + '</strong></div>' +
+                '<div><div class="hint">قيمة الزيادة</div><strong style="color:#f59e0b; font-size:1.1rem;">' + money(gainValue) + '</strong></div>' +
+                '<div><div class="hint">الصافي</div><strong style="color:' + (net < 0 ? 'var(--danger-red)' : 'var(--success-green)') + '; font-size:1.1rem;">' + (net > 0 ? '+' : '') + money(net) + '</strong></div>' +
+                '</div>' +
+                (lossValue > 0 ? '<p style="font-size:0.78rem; color:#f59e0b; margin-top:12px; line-height:1.6; text-align:center;">⚠️ العجز يعني مواد اختفت دون بيع: هدر بالتحضير، تلف، أو سحب غير مسجّل.</p>' : '');
+        }
+
+        function clearCountInputs() {
+            document.querySelectorAll('.count-input').forEach(i => { i.value = ''; updateCountRow(i); });
+        }
+
+        function saveStockCount() {
+            const inputs = document.querySelectorAll('.count-input');
+            const lines = [];
+            let lossValue = 0, gainValue = 0;
+
+            inputs.forEach(inp => {
+                if (inp.value === '') return;
+                const invId = cleanPrice(inp.dataset.inv);
+                const sys = parseFloat(inp.dataset.sys) || 0;
+                const cost = parseFloat(inp.dataset.cost) || 0;
+                const actual = parseFloat(inp.value) || 0;
+                const diff = actual - sys;
+                const v = diff * cost;
+                if (v < 0) lossValue += Math.abs(v); else gainValue += v;
+                lines.push({ invId, systemQty: sys, actualQty: actual, diff, unitCost: cost, value: v });
+            });
+
+            if (lines.length === 0) return alert("لم تُدخل أي كمية فعلية. عُدّ المواد واكتب الكميات أولاً.");
+
+            if (!confirm('سيتم حفظ الجرد وتصحيح كميات ' + lines.length + ' مادة لتطابق الواقع.\n\n' +
+                         'قيمة العجز المسجّل: ' + money(lossValue) + ' د.ع\n\nهل تريد المتابعة؟')) return;
+
+            // تصحيح المخزون ليطابق الجرد الفعلي
+            const inv = getData('sys_inventory') || [];
+            lines.forEach(l => {
+                const it = inv.find(i => cleanPrice(i.id) === l.invId);
+                if (it) {
+                    it.quantity = l.actualQty;
+                    it.totalPrice = unitCostOf(it) * l.actualQty;
+                }
+            });
+            setData('sys_inventory', inv);
+
+            const counts = getData('sys_stock_counts') || [];
+            counts.unshift({
+                id: 'CNT_' + Date.now(),
+                dateDate: getTodayString(),
+                createdTimestamp: Date.now(),
+                lines, lossValue, gainValue, netValue: gainValue - lossValue,
+                itemsCounted: lines.length
+            });
+            setData('sys_stock_counts', counts.slice(0, 60));
+
+            clearCountInputs();
+            renderCountTable();
+            renderCountsHistory();
+            renderInventoryTable();
+            alert('✅ حُفظ الجرد وصُحّح المخزون.\n\nقيمة العجز: ' + money(lossValue) + ' د.ع');
+        }
+
+        function renderCountsHistory() {
+            const counts = getData('sys_stock_counts') || [];
+            const box = document.getElementById('countsHistory');
+            if (!box) return;
+
+            if (counts.length === 0) {
+                box.innerHTML = '<p style="color:#777; font-size:0.82rem; text-align:center; padding:14px;">لم تُسجَّل أي عملية جرد بعد</p>';
+                return;
+            }
+
+            box.innerHTML = counts.slice(0, 15).map(c =>
+                '<div style="display:flex; justify-content:space-between; align-items:center; background:#121215; padding:10px 12px; border-radius:8px; margin-bottom:6px; border:1px solid ' +
+                (c.lossValue > 0 ? 'rgba(239,68,68,0.35)' : 'var(--card-border)') + ';">' +
+                '<div><strong style="font-size:0.85rem;">' + c.dateDate + '</strong>' +
+                '<div style="font-size:0.72rem; color:#888;">' + c.itemsCounted + ' مادة • ' + new Date(c.createdTimestamp).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'}) + '</div></div>' +
+                '<div style="text-align:left;">' +
+                (c.lossValue > 0 ? '<div style="color:var(--danger-red); font-weight:900; font-size:0.9rem;">عجز ' + money(c.lossValue) + '</div>' : '<div style="color:var(--success-green); font-weight:900; font-size:0.9rem;">لا عجز</div>') +
+                (c.gainValue > 0 ? '<div style="color:#f59e0b; font-size:0.72rem;">زيادة ' + money(c.gainValue) + '</div>' : '') +
+                '</div></div>'
+            ).join('');
+        }
+
+        /* ==========================================================
+           4) تفكيك المبيعات — الاستهلاك النظري
+           ========================================================== */
+        function computeTheoreticalUsage(from, to) {
+            const orders = (getData('sys_completed_orders') || []).filter(o => inRange(o.dateDate, from, to));
+            const items = getData('sys_items') || [];
+            const inv = getData('sys_inventory') || [];
+
+            const usage = {};      // invId -> {qty, cost}
+            const mealUsage = {};  // اسم الوجبة -> {qty, cost}
+            let unlinkedMeals = {};
+
+            orders.forEach(o => {
+                (o.items || []).forEach(si => {
+                    const soldQty = cleanPrice(si.qty);
+                    let mi = items.find(x => String(x.id) === String(si.id));
+                    if (!mi) mi = items.find(x => String(x.name).trim() === String(si.name).trim());
+
+                    if (!mi || !Array.isArray(mi.recipe) || mi.recipe.length === 0) {
+                        unlinkedMeals[si.name] = (unlinkedMeals[si.name] || 0) + soldQty;
+                        return;
+                    }
+
+                    let mealCost = 0;
+                    mi.recipe.forEach(r => {
+                        const m = inv.find(i => cleanPrice(i.id) === cleanPrice(r.invId));
+                        if (!m) return;
+                        const consumed = (parseFloat(r.qty) || 0) * soldQty;
+                        const uc = unitCostOf(m);
+                        if (!usage[m.id]) usage[m.id] = { name: m.name, unit: m.unit || '', qty: 0, cost: 0, unitCost: uc };
+                        usage[m.id].qty += consumed;
+                        usage[m.id].cost += consumed * uc;
+                        mealCost += consumed * uc;
+                    });
+
+                    if (!mealUsage[si.name]) mealUsage[si.name] = { qty: 0, cost: 0 };
+                    mealUsage[si.name].qty += soldQty;
+                    mealUsage[si.name].cost += mealCost;
+                });
+            });
+
+            return { usage, mealUsage, unlinkedMeals, ordersCount: orders.length };
+        }
+
+        function renderUsageReport() {
+            const f = document.getElementById('usageFrom')?.value || '0000-01-01';
+            const t = document.getElementById('usageTo')?.value || '9999-12-31';
+            const r = computeTheoreticalUsage(f, t);
+
+            const arr = Object.keys(r.usage).map(k => r.usage[k]).sort((a, b) => b.cost - a.cost);
+            const totalCost = arr.reduce((s, x) => s + x.cost, 0);
+
+            const unlinkedCount = Object.keys(r.unlinkedMeals).length;
+            const sumBox = document.getElementById('usageSummary');
+            if (sumBox) {
+                sumBox.innerHTML =
+                    '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; text-align:center;">' +
+                    '<div><div class="hint">الفواتير بالفترة</div><strong style="color:#fff; font-size:1.15rem;">' + r.ordersCount + '</strong></div>' +
+                    '<div><div class="hint">مواد استُهلكت</div><strong style="color:#38bdf8; font-size:1.15rem;">' + arr.length + '</strong></div>' +
+                    '<div><div class="hint">إجمالي تكلفة المواد</div><strong style="color:var(--danger-red); font-size:1.15rem;">' + money(totalCost) + '</strong></div>' +
+                    '</div>' +
+                    (unlinkedCount > 0
+                        ? '<p style="font-size:0.78rem; color:#f59e0b; margin-top:12px; line-height:1.6;">⚠️ يوجد <strong>' + unlinkedCount +
+                          '</strong> صنف مباع بلا وصفة مرتبطة — تكلفته غير محسوبة. اربط مواده من صفحة الخزينة ليصبح التقرير دقيقاً.</p>'
+                        : '');
+            }
+
+            const tbody = document.getElementById('usageTableBody');
+            if (tbody) {
+                if (arr.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:18px;">لا يوجد استهلاك بهذه الفترة (أو لم تُربط وصفات بالأصناف)</td></tr>';
+                } else {
+                    tbody.innerHTML = arr.map(x => {
+                        const pct = totalCost > 0 ? ((x.cost / totalCost) * 100).toFixed(1) : 0;
+                        return '<tr><td><strong>' + x.name + '</strong></td>' +
+                            '<td class="num" style="color:#38bdf8;">' + qtyFmt(x.qty) + ' ' + x.unit + '</td>' +
+                            '<td class="num">' + money(x.unitCost) + '</td>' +
+                            '<td class="num" style="color:var(--danger-red); font-weight:bold;">' + money(x.cost) + '</td>' +
+                            '<td><div style="display:flex; align-items:center; gap:6px;">' +
+                            '<div style="flex:1; background:#0d0d12; height:8px; border-radius:4px; overflow:hidden;">' +
+                            '<div style="width:' + pct + '%; height:100%; background:var(--gold-primary);"></div></div>' +
+                            '<span class="num" style="font-size:0.75rem; color:#aaa;">' + pct + '%</span></div></td></tr>';
+                    }).join('');
+                }
+            }
+
+            const mealArr = Object.keys(r.mealUsage).map(k => ({ name: k, ...r.mealUsage[k] }))
+                .sort((a, b) => b.cost - a.cost).slice(0, 25);
+            const mealBox = document.getElementById('usageByMeal');
+            if (mealBox) {
+                if (mealArr.length === 0) {
+                    mealBox.innerHTML = '<p style="color:#777; font-size:0.82rem; text-align:center; padding:14px;">لا توجد بيانات</p>';
+                } else {
+                    mealBox.innerHTML = mealArr.map((m, i) =>
+                        '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #22222c;">' +
+                        '<div><strong style="font-size:0.83rem;">' + (i + 1) + '. ' + m.name + '</strong>' +
+                        '<div style="font-size:0.72rem; color:#888;">' + m.qty + ' قطعة مباعة</div></div>' +
+                        '<strong class="num" style="color:var(--danger-red); font-size:0.84rem;">' + money(m.cost) + '</strong></div>'
+                    ).join('');
+                }
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initData();
-        });
+        /* ==========================================================
+           5) الهدر والفروقات — النظري مقابل الفعلي
+           ========================================================== */
+        function loadVarianceSelectors() {
+            const counts = getData('sys_stock_counts') || [];
+            const a = document.getElementById('varianceFromCount');
+            const b = document.getElementById('varianceToCount');
+            if (!a || !b) return;
+
+            if (counts.length < 2) {
+                a.innerHTML = b.innerHTML = '<option value="">— لا توجد عمليات جرد كافية —</option>';
+                return;
+            }
+
+            const opts = counts.map((c, i) =>
+                '<option value="' + i + '">' + c.dateDate + ' (' + new Date(c.createdTimestamp).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'}) + ')</option>'
+            ).join('');
+
+            a.innerHTML = opts; b.innerHTML = opts;
+            a.value = '1';  // الجرد الأقدم
+            b.value = '0';  // الجرد الأحدث
+        }
+
+        function renderVarianceReport() {
+            const box = document.getElementById('varianceContent');
+            if (!box) return;
+
+            const counts = getData('sys_stock_counts') || [];
+            if (counts.length < 2) {
+                box.innerHTML =
+                    '<div style="text-align:center; padding:24px;">' +
+                    '<p style="color:#f59e0b; font-size:0.9rem; font-weight:bold; margin-bottom:10px;">تحتاج عمليتَي جرد على الأقل</p>' +
+                    '<p class="hint">هذا التقرير يقارن ما بين جردَين: كم <strong>يفترض</strong> أن تستهلك حسب المبيعات، ' +
+                    'وكم <strong>استهلكت فعلاً</strong> حسب الجرد والمشتريات.<br><br>' +
+                    'افتح تبويب «الجرد الفعلي» واعمل جرداً الآن، ثم كرّره بعد أسبوع — وسيظهر لك التقرير تلقائياً.</p></div>';
+                return;
+            }
+
+            const iFrom = parseInt(document.getElementById('varianceFromCount').value);
+            const iTo = parseInt(document.getElementById('varianceToCount').value);
+            if (isNaN(iFrom) || isNaN(iTo)) { box.innerHTML = ''; return; }
+
+            const cFrom = counts[iFrom], cTo = counts[iTo];
+            if (!cFrom || !cTo) { box.innerHTML = ''; return; }
+
+            if (cFrom.createdTimestamp >= cTo.createdTimestamp) {
+                box.innerHTML = '<p style="color:var(--danger-red); text-align:center; padding:18px;">اختر جرداً أقدم في الخانة الأولى وأحدث في الثانية.</p>';
+                return;
+            }
+
+            const fromDate = cFrom.dateDate, toDate = cTo.dateDate;
+            const theo = computeTheoreticalUsage(fromDate, toDate);
+
+            // المشتريات بين الجردَين
+            const purchases = (getData('sys_purchases') || []).filter(p =>
+                cleanPrice(p.createdTimestamp) > cleanPrice(cFrom.createdTimestamp) &&
+                cleanPrice(p.createdTimestamp) <= cleanPrice(cTo.createdTimestamp)
+            );
+            const purchasedByInv = {};
+            purchases.forEach(p => { purchasedByInv[p.invId] = (purchasedByInv[p.invId] || 0) + (parseFloat(p.qty) || 0); });
+
+            const inv = getData('sys_inventory') || [];
+            const rows = [];
+            let totalLossValue = 0, totalTheoCost = 0;
+
+            cFrom.lines.forEach(lf => {
+                const lt = cTo.lines.find(x => cleanPrice(x.invId) === cleanPrice(lf.invId));
+                if (!lt) return;
+
+                const material = inv.find(i => cleanPrice(i.id) === cleanPrice(lf.invId));
+                const name = material ? material.name : 'مادة محذوفة';
+                const unit = material ? (material.unit || '') : '';
+                const uc = lt.unitCost || (material ? unitCostOf(material) : 0);
+
+                const opening = lf.actualQty;
+                const purchased = purchasedByInv[lf.invId] || 0;
+                const closing = lt.actualQty;
+
+                // الاستهلاك الفعلي = افتتاحي + مشتريات − ختامي
+                const actualUsed = opening + purchased - closing;
+                const theoUsed = theo.usage[lf.invId] ? theo.usage[lf.invId].qty : 0;
+                const variance = actualUsed - theoUsed;   // موجب = استهلاك زائد (هدر/سرقة)
+                const varianceValue = variance * uc;
+                const pct = theoUsed > 0 ? ((variance / theoUsed) * 100) : (actualUsed > 0 ? 100 : 0);
+
+                if (varianceValue > 0) totalLossValue += varianceValue;
+                totalTheoCost += theoUsed * uc;
+
+                rows.push({ name, unit, opening, purchased, closing, actualUsed, theoUsed, variance, varianceValue, uc, pct });
+            });
+
+            rows.sort((a, b) => b.varianceValue - a.varianceValue);
+
+            const lossPct = totalTheoCost > 0 ? ((totalLossValue / totalTheoCost) * 100).toFixed(1) : 0;
+
+            let html = '';
+            html += '<div style="background:#121215; border:1px solid ' + (totalLossValue > 0 ? 'var(--danger-red)' : 'var(--success-green)') +
+                '; border-radius:10px; padding:16px; margin-bottom:14px;">' +
+                '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; text-align:center;">' +
+                '<div><div class="hint">الفترة</div><strong style="color:#fff; font-size:0.9rem;">' + fromDate + ' → ' + toDate + '</strong></div>' +
+                '<div><div class="hint">تكلفة الاستهلاك النظري</div><strong style="color:#38bdf8; font-size:1.1rem;">' + money(totalTheoCost) + '</strong></div>' +
+                '<div><div class="hint">قيمة الهدر / الفاقد</div><strong style="color:var(--danger-red); font-size:1.35rem;">' + money(totalLossValue) + '</strong></div>' +
+                '<div><div class="hint">نسبة الهدر</div><strong style="color:' + (lossPct > 5 ? 'var(--danger-red)' : '#f59e0b') + '; font-size:1.35rem;">' + lossPct + '%</strong></div>' +
+                '</div>';
+
+            if (lossPct > 5) {
+                html += '<p style="font-size:0.8rem; color:var(--danger-red); margin-top:14px; line-height:1.7; font-weight:bold;">' +
+                    '🚨 نسبة الهدر مرتفعة. بالمطاعم المنضبطة تكون بحدود 2-3%. راجع المواد الأعلى بالقائمة أدناه.</p>';
+            } else if (totalLossValue > 0) {
+                html += '<p style="font-size:0.8rem; color:#f59e0b; margin-top:14px; line-height:1.7;">' +
+                    'نسبة الهدر ضمن المعقول، لكن راقب المواد الأعلى بالقائمة.</p>';
+            } else {
+                html += '<p style="font-size:0.8rem; color:var(--success-green); margin-top:14px; line-height:1.7; font-weight:bold;">' +
+                    '✅ ممتاز — لا يوجد فاقد يُذكر بهذه الفترة.</p>';
+            }
+            html += '</div>';
+
+            html += '<div style="overflow-x:auto; max-height:480px; overflow-y:auto;"><table class="data-table"><thead><tr>' +
+                '<th>المادة</th><th>افتتاحي</th><th>مشتريات</th><th>ختامي</th>' +
+                '<th>استهلاك فعلي</th><th>يفترض (نظري)</th><th>الفرق</th><th>قيمة الفاقد</th>' +
+                '</tr></thead><tbody>';
+
+            if (rows.length === 0) {
+                html += '<tr><td colspan="8" style="text-align:center; color:#888; padding:18px;">لا توجد مواد مشتركة بين الجردَين</td></tr>';
+            } else {
+                rows.forEach(r => {
+                    const bad = r.varianceValue > 0;
+                    const heavy = r.pct > 10 && r.varianceValue > 0;
+                    html += '<tr' + (heavy ? ' style="background:rgba(239,68,68,0.12);"' : '') + '>' +
+                        '<td><strong>' + r.name + '</strong>' + (heavy ? '<div style="font-size:0.68rem; color:var(--danger-red);">⚠️ فاقد مرتفع</div>' : '') + '</td>' +
+                        '<td class="num" style="color:#aaa;">' + qtyFmt(r.opening) + '</td>' +
+                        '<td class="num" style="color:#10b981;">+' + qtyFmt(r.purchased) + '</td>' +
+                        '<td class="num" style="color:#aaa;">' + qtyFmt(r.closing) + '</td>' +
+                        '<td class="num" style="color:#f59e0b; font-weight:bold;">' + qtyFmt(r.actualUsed) + '</td>' +
+                        '<td class="num" style="color:#38bdf8;">' + qtyFmt(r.theoUsed) + '</td>' +
+                        '<td class="num" style="color:' + (bad ? 'var(--danger-red)' : 'var(--success-green)') + '; font-weight:bold;">' +
+                            (r.variance > 0 ? '+' : '') + qtyFmt(r.variance) + ' ' + r.unit +
+                            '<div style="font-size:0.68rem;">' + (r.pct > 0 ? '+' : '') + r.pct.toFixed(0) + '%</div></td>' +
+                        '<td class="num" style="color:' + (bad ? 'var(--danger-red)' : 'var(--success-green)') + '; font-weight:900;">' +
+                            (r.varianceValue > 0 ? money(r.varianceValue) : '—') + '</td>' +
+                        '</tr>';
+                });
+            }
+            html += '</tbody></table></div>';
+
+            html += '<div style="background:#121215; border-radius:8px; padding:12px; margin-top:14px;">' +
+                '<div style="color:var(--gold-bright); font-weight:900; font-size:0.85rem; margin-bottom:8px;">📖 كيف تقرأ هذا التقرير</div>' +
+                '<p class="hint">' +
+                '<strong style="color:#38bdf8;">الاستهلاك النظري:</strong> ما كان يجب استهلاكه حسب الوجبات المباعة ووصفاتها.<br>' +
+                '<strong style="color:#f59e0b;">الاستهلاك الفعلي:</strong> افتتاحي + مشتريات − ختامي (من الجرد الحقيقي).<br>' +
+                '<strong style="color:var(--danger-red);">الفرق الموجب:</strong> استُهلك أكثر مما بيع — هدر بالتحضير، تلف، أوزان زائدة، أو سحب غير مسجّل.<br><br>' +
+                '💡 <strong>للحصول على دقة عالية:</strong> اربط وصفة كل صنف بالمواد من صفحة الخزينة، واعمل الجرد بانتظام وبنفس التوقيت.' +
+                '</p></div>';
+
+            box.innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { try { initData(); } catch (e) {} });
     </script>
 </body>
 </html>
