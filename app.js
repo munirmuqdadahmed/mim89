@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1250';
+const MIM89_APP_VERSION = '1260';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -355,13 +355,22 @@ async function pullLatestFromCloud() {
             ordSnap.forEach(d => cloudOrders.push(d.data()));
 
             const localOrders = getData('sys_completed_orders') || [];
-            const seen = {};
-            const merged = [];
 
+            // 🛠️ [إصلاح] كان الدمج يُفضّل نسخة السحابة دائماً، فيُلغي أي تصفية
+            // أو تعديل تم محلياً ولم يُرفع بعد. الآن الأحدث تعديلاً هو الذي يفوز.
+            const byKey = {};
             cloudOrders.concat(localOrders).forEach(o => {
                 const key = String(o.id || (o.orderNum + '_' + o.createdTimestamp));
-                if (!seen[key]) { seen[key] = true; merged.push(o); }
+                const stamp = cleanPrice(o.lastModified) || cleanPrice(o.settledTimestamp) || cleanPrice(o.createdTimestamp);
+                const prev = byKey[key];
+                if (!prev) { byKey[key] = o; return; }
+                const prevStamp = cleanPrice(prev.lastModified) || cleanPrice(prev.settledTimestamp) || cleanPrice(prev.createdTimestamp);
+                if (stamp > prevStamp) byKey[key] = o;
+                // عند التساوي: نُبقي المُصفّى حمايةً من عودة الطلبات المصفّاة
+                else if (stamp === prevStamp && o.isSettled && !prev.isSettled) byKey[key] = o;
             });
+
+            const merged = Object.keys(byKey).map(k => byKey[k]);
 
             merged.sort((a, b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp));
             const trimmed = merged.slice(0, 300);
@@ -785,6 +794,7 @@ let cloudPullTimer = null;
 function startPeriodicCloudPull() {
     if (cloudPullTimer) clearInterval(cloudPullTimer);
     cloudPullTimer = setInterval(() => {
+        if (isCashierBusy()) return;   // لا نقاطع الكاشير أثناء إدخال الطلب
         if (navigator.onLine) {
             pullLatestFromCloud().then(r => {
                 if (r && r.changed) updateSyncIndicator(true);
@@ -861,12 +871,37 @@ function notifyMenuUpdated() {
     if (typeof refreshActiveUI === 'function') refreshActiveUI();
 }
 
+// 🚦 هل الكاشير مشغول الآن؟ (سلة فيها أصناف، أو يكتب بحقل، أو نافذة مفتوحة)
+// 🛠️ [إصلاح] كان التحديث الدوري يعيد بناء شبكة الأصناف كل دقيقة فيقفز العرض
+// إلى قسم "الكل" ويقطع على الكاشير أثناء إدخال الطلب.
+function isCashierBusy() {
+    try {
+        if (typeof posCart !== 'undefined' && posCart && posCart.length > 0) return true;
+        if (typeof activePendingPrintOrder !== 'undefined' && activePendingPrintOrder) return true;
+
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return true;
+
+        const modals = document.querySelectorAll('.modal-overlay');
+        for (let i = 0; i < modals.length; i++) {
+            if (modals[i].style.display === 'flex' || modals[i].style.display === 'block') return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+// 🏷️ القسم المختار حالياً بشبكة الكاشير (نحافظ عليه عبر التحديثات)
+let currentPosCategory = 'all';
+
 function refreshActiveUI() {
     autoFixItemCategories();
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
-        if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu('all');
+        // نؤجّل إعادة البناء إن كان الكاشير منشغلاً، ونعيد نفس القسم لا "الكل"
+        if (!isCashierBusy()) {
+            if (typeof loadPosDirectMenu === 'function') loadPosDirectMenu(currentPosCategory);
+        }
         if (typeof listenForIncomingOrders === 'function') listenForIncomingOrders();
     } else if (document.getElementById('adminItemsTable')) {
         if (typeof renderAdminCategories === 'function') renderAdminCategories();
@@ -1873,14 +1908,17 @@ function renderPosCategoriesBar() {
     if (!catBar) return;
 
     const categories = getData('sys_categories') || [];
-    let html = `<button class="category-tab active" onclick="loadPosDirectMenu('all', this)">الكل 🍔</button>`;
+    const cur = String(currentPosCategory);
+    let html = `<button class="category-tab${cur === 'all' ? ' active' : ''}" onclick="loadPosDirectMenu('all', this)">الكل 🍔</button>`;
     categories.forEach(c => {
-        html += `<button class="category-tab" onclick="loadPosDirectMenu('${c.id}', this)">${c.name}</button>`;
+        const isActive = String(c.id) === cur;
+        html += `<button class="category-tab${isActive ? ' active' : ''}" onclick="loadPosDirectMenu('${c.id}', this)">${c.name}</button>`;
     });
     catBar.innerHTML = html;
 }
 
 function loadPosDirectMenu(catId = 'all', btnElement = null) {
+    currentPosCategory = catId;   // نحفظ الاختيار ليبقى بعد أي تحديث
     if (btnElement) {
         document.querySelectorAll('#posCategoriesBar .category-tab').forEach(b => b.classList.remove('active'));
         btnElement.classList.add('active');
@@ -2895,41 +2933,44 @@ function startLiveSalesBadgeUpdater() {
 
 // 🕐 وقت بداية الشيفت المفتوح حالياً (مشترك بين كل الأجهزة عبر السحابة)
 function getShiftStartTs() {
-    // 🛠️ [إصلاح عطل مستمر] النسخة السابقة كانت تُثبّت بداية الشيفت على "لحظة أول
-    // فتح للصفحة"، فتُستبعد كل فواتير اليوم السابقة لتلك اللحظة — وهذا سبب ظهور
-    // السجل والكشف والتقفيل والجرد فارغة. وبما أن القيمة الخاطئة حُفظت على
-    // الأجهزة، لا يكفي إصلاح الحساب: يجب تصحيح القيمة المخزّنة نفسها.
-    //
-    // القاعدة الآن: الشيفت لا يُثبَّت إلا عندما يُقفله المستخدم صراحةً
-    // (sys_shift_explicit). قبل ذلك يُحتسب دائماً من أقدم فاتورة باليوم.
-
-    const explicit = localStorage.getItem('sys_shift_explicit') === '1';
+    // 🛠️ [إصلاح] كانت الدالة تُعيد الحساب من منتصف الليل في كل مرة ما لم يكن
+    // الشيفت "مثبّتاً صراحةً" — فعند تجاوز الساعة 12 ليلاً تختفي فواتير الليلة
+    // السابقة وتتصفّر التقارير رغم أن الشيفت لم يُقفل بعد.
+    // الآن: القيمة المخزّنة تُحترم دائماً، ولا تتغيّر إلا عند تقفيل الشيفت.
     const stored = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
+    if (stored > 0) return stored;
 
-    if (explicit && stored > 0) return stored;
+    // أول تشغيل فقط: نحدد بداية منطقية للشيفت المفتوح
+    let startTs;
 
-    // نحسب البداية من أقدم فاتورة/صرفية اليوم، وإلا من منتصف الليل
-    let start = new Date();
-    start.setHours(0, 0, 0, 0);
-    let startTs = start.getTime();
-
+    // إن وُجد أرشيف تقفيل سابق، نبدأ من لحظة آخر تقفيل
     try {
-        const today = getTodayString();
-        const orders = (getData('sys_completed_orders') || [])
-            .filter(o => o.dateDate === today && cleanPrice(o.createdTimestamp) > 0)
-            .map(o => cleanPrice(o.createdTimestamp));
-        const exps = (getData('sys_expenses') || [])
-            .filter(e => e.dateDate === today && cleanPrice(e.createdTimestamp) > 0)
-            .map(e => cleanPrice(e.createdTimestamp));
-
-        const all = orders.concat(exps);
-        if (all.length > 0) {
-            const oldest = Math.min.apply(null, all);
-            if (oldest > 0 && oldest < startTs) startTs = oldest;
+        const arch = getData('sys_shift_archive');
+        if (Array.isArray(arch) && arch.length > 0 && arch[0].closedTs) {
+            startTs = cleanPrice(arch[0].closedTs);
         }
     } catch (e) {}
 
+    // وإلا من أقدم فاتورة غير مؤرشفة، وإلا من منتصف ليلة اليوم
+    if (!startTs) {
+        const midnight = new Date();
+        midnight.setHours(0, 0, 0, 0);
+        startTs = midnight.getTime();
+
+        try {
+            const all = (getData('sys_completed_orders') || [])
+                .map(o => cleanPrice(o.createdTimestamp))
+                .filter(t => t > 0);
+            if (all.length > 0) {
+                const oldest = Math.min.apply(null, all);
+                // نأخذ الأقدم فقط إن كان خلال آخر 48 ساعة (شيفت ممتد وليس أرشيف قديم)
+                if (oldest > Date.now() - (48 * 3600 * 1000) && oldest < startTs) startTs = oldest;
+            }
+        } catch (e) {}
+    }
+
     localStorage.setItem('sys_shift_start_ts', String(startTs));
+    localStorage.setItem('sys_shift_explicit', '1');
     return startTs;
 }
 
@@ -2958,8 +2999,8 @@ function getShiftOrders() {
     const all = getData('sys_completed_orders') || [];
     return all.filter(o => {
         const ts = cleanPrice(o.createdTimestamp);
-        // الفواتير القديمة التي لا تحمل ختماً زمنياً: نعتمد تاريخها حتى لا تُفقد
-        if (!ts) return o.dateDate === today;
+        // فواتير قديمة بلا ختم زمني: نقبلها إن كان تاريخها ضمن يوم الشيفت أو بعده
+        if (!ts) return o.dateDate >= new Date(startTs).toISOString().slice(0, 10);
         return ts >= startTs;
     });
 }
@@ -2971,7 +3012,7 @@ function getShiftExpenses() {
     const all = getData('sys_expenses') || [];
     return all.filter(e => {
         const ts = cleanPrice(e.createdTimestamp);
-        if (!ts) return e.dateDate === today;
+        if (!ts) return e.dateDate >= new Date(startTs).toISOString().slice(0, 10);
         return ts >= startTs;
     });
 }
@@ -2998,7 +3039,20 @@ function markDeliveryOrderSettled(orderId) {
     ord.isSettled = true;
     ord.settledTimestamp = Date.now();
     ord.settledBy = activeCashierUser ? activeCashierUser.name : 'الرئيسي';
+    ord.lastModified = Date.now();
     setData('sys_completed_orders', all);
+
+    // ☁️ [إصلاح] كانت التصفية تُحفظ محلياً فقط، فيُعيد السحب التالي من السحابة
+    // النسخة القديمة غير المصفّاة — فيبدو أن الطلب "رجع" بعد قليل.
+    if (db) {
+        db.collection("completed_orders").doc(String(ord.id))
+            .set({ isSettled: true, settledTimestamp: ord.settledTimestamp,
+                   settledBy: ord.settledBy, lastModified: ord.lastModified }, { merge: true })
+            .catch(err => {
+                console.error('تعذّر رفع التصفية:', err);
+                showCloudErrorBanner('تعذّر رفع تصفية الطلب #' + ord.orderNum + ' للسحابة.');
+            });
+    }
 
     renderPendingDeliveriesList();
     renderDrawerDriverSettlement();
@@ -3243,14 +3297,27 @@ function settleDriverAccount(driverName) {
         let completed = getData('sys_completed_orders') || [];
         const today = getTodayString();
 
+        const nowTs = Date.now();
+        const changed = [];
         completed.forEach(o => {
             if (o.dateDate === today && o.driverName === driverName && !o.isSettled) {
                 o.isSettled = true;
-                o.settledTimestamp = Date.now();
+                o.settledTimestamp = nowTs;
+                o.lastModified = nowTs;
+                changed.push(o);
             }
         });
 
         setData('sys_completed_orders', completed);
+
+        // ☁️ رفع كل التصفيات للسحابة حتى لا تعود الطلبات للظهور
+        if (db) {
+            changed.forEach(o => {
+                db.collection("completed_orders").doc(String(o.id))
+                    .set({ isSettled: true, settledTimestamp: nowTs, lastModified: nowTs }, { merge: true })
+                    .catch(err => console.error('تعذّر رفع التصفية:', err));
+            });
+        }
         openDriverSettlementModal();
         alert(`✅ تم استلام مبلغ الصندوق وتصفية حساب السائق (${driverName}) وتصفير الذمة فور عودته!`);
     }
@@ -3787,6 +3854,7 @@ function confirmCloseShiftAndLogout() {
         cashier: activeCashierUser ? activeCashierUser.name : 'الرئيسي',
         startedAt: getShiftStartLabel(),
         closedAt: new Date().toLocaleString('ar-IQ'),
+        closedTs: Date.now(),
         dateDate: getTodayString(),
         ordersCount: s.ordersCount,
         totalSales: s.totalSales,
