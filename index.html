@@ -654,7 +654,7 @@
             <!-- 🕐 أوقات العمل -->
             <div class="drawer-section-title"><i class="fa-solid fa-clock"></i> أوقات استلام الطلبات</div>
             <div style="background:#16161c; padding:12px; border-radius:12px; border:1px solid var(--card-border); margin-bottom:12px;">
-                <p style="font-size:0.83rem; color:#ccc; line-height:1.7; margin:0;">
+                <p id="drawerWorkingHours" style="font-size:0.83rem; color:#ccc; line-height:1.7; margin:0;">
                     🕙 نستقبل طلباتكم يومياً من الساعة <strong style="color:var(--gold-bright);">10:00 صباحاً</strong>
                     وحتى <strong style="color:var(--gold-bright);">03:00 بعد منتصف الليل</strong>
                 </p>
@@ -874,7 +874,7 @@
     </div>
 
     <!-- 🧠 السكربت الموحد للصفحة -->
-    <script src="app.js?v=1240"></script>
+    <script src="app.js?v=1250"></script>
     <script>
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
@@ -890,18 +890,61 @@
             if (!badge || !statusText) return;
 
             let isOpen = true;
+            let settings = { open: '10:00', close: '23:59', enabled: false };
             try {
+                const raw = localStorage.getItem('sys_working_hours');
+                if (raw) settings = JSON.parse(raw);
                 if (typeof isRestaurantCurrentlyOpen === 'function') {
                     isOpen = isRestaurantCurrentlyOpen();
                 }
             } catch (e) {}
 
+            // تحويل الوقت لصيغة 12 ساعة عربية مفهومة
+            function fmt(t) {
+                try {
+                    const p = String(t).split(':');
+                    let h = parseInt(p[0], 10);
+                    const m = p[1] || '00';
+                    const period = h >= 12 ? 'م' : 'ص';
+                    if (h === 0) h = 12; else if (h > 12) h -= 12;
+                    return h + ':' + m + ' ' + period;
+                } catch (e) { return t; }
+            }
+
             if (!isOpen) {
                 badge.className = 'status-badge closed';
-                statusText.innerText = '🔴 مغلق حالياً - خارج أوقات العمل';
+                statusText.innerText = '🔴 مغلق حالياً — نفتح ' + fmt(settings.open);
             } else {
                 badge.className = 'status-badge open';
-                statusText.innerText = 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+                statusText.innerText = settings.enabled
+                    ? 'مفتوح الآن — حتى ' + fmt(settings.close)
+                    : 'مفتوح الآن - نستقبل طلباتكم المباشرة';
+            }
+
+            // 🚫 منع إرسال الطلبات أثناء الإغلاق حتى لا تصل طلبات لا يمكن تحضيرها
+            const sendBtn = document.getElementById('sendOrderBtn');
+            if (sendBtn) {
+                if (!isOpen) {
+                    sendBtn.disabled = true;
+                    sendBtn.style.background = '#444';
+                    sendBtn.style.cursor = 'not-allowed';
+                    sendBtn.innerHTML = '🔴 المطعم مغلق حالياً — نفتح ' + fmt(settings.open);
+                } else {
+                    sendBtn.disabled = false;
+                    sendBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    sendBtn.style.cursor = 'pointer';
+                    sendBtn.innerHTML = 'تأكيد وإرسال الطلب عبر الواتساب 🚀';
+                }
+            }
+
+            // تحديث نص أوقات العمل داخل البردة الجانبية من الإعدادات الفعلية
+            const drawerHours = document.getElementById('drawerWorkingHours');
+            if (drawerHours) {
+                drawerHours.innerHTML = settings.enabled
+                    ? '🕙 نستقبل طلباتكم يومياً من <strong style="color:var(--gold-bright);">' + fmt(settings.open) +
+                      '</strong> وحتى <strong style="color:var(--gold-bright);">' + fmt(settings.close) + '</strong>'
+                    : '🕙 نستقبل طلباتكم يومياً من <strong style="color:var(--gold-bright);">10:00 صباحاً</strong>' +
+                      ' وحتى <strong style="color:var(--gold-bright);">03:00 بعد منتصف الليل</strong>';
             }
         };
 
