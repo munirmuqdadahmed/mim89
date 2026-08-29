@@ -520,6 +520,9 @@
                 <input type="password" id="newCashierPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
 
                 <button onclick="updateAllSystemPasswords()" class="gold-btn btn-block" style="margin-top:15px;">تحديث الكلمات 🔒</button>
+
+                <!-- 🔑 مفتاح الطوارئ -->
+                <div id="recoveryKeyBox" style="background:#1a1408; border:1px solid #f59e0b; border-radius:8px; padding:12px; margin-top:16px;"></div>
             </div>
 
             <div class="card" style="max-width:500px; margin:15px auto 0 auto; border-color:var(--danger);">
@@ -693,7 +696,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1330"></script>
+    <script src="app.js?v=1340"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -726,12 +729,39 @@
             if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+            if (tabId === 'tabSecurityControl' && typeof renderRecoveryStatus === 'function') renderRecoveryStatus();
             if (tabId === 'tabAuditControl' && typeof renderAuditLog === 'function') renderAuditLog();
             if (tabId === 'tabFixerControl' && typeof renderCategoryFixerTable === 'function') renderCategoryFixerTable();
             if (tabId === 'tabBackupControl') { renderBackupStats(); if (typeof renderStorageDiagnostics === 'function') renderStorageDiagnostics(); }
             if (tabId === 'tabPrintersControl' && typeof getPrintBridgeUrl === 'function') {
                 const el = document.getElementById('printBridgeUrlInput');
                 if (el) el.value = getPrintBridgeUrl();
+            }
+        }
+
+        function renderRecoveryStatus() {
+            const box = document.getElementById('recoveryKeyBox');
+            if (!box || typeof getRecoveryKeyStatus !== 'function') return;
+
+            const active = getRecoveryKeyStatus();
+            if (active) {
+                box.innerHTML =
+                    '<div style="color:#f59e0b; font-weight:900; font-size:0.86rem; margin-bottom:8px;">🔑 مفتاح الطوارئ: مُفعّل</div>' +
+                    '<p style="font-size:0.78rem; color:#ccc; line-height:1.7; margin-bottom:10px;">' +
+                    'الكلمات الافتراضية (admin123 / inv123 / 1278900 / 123) ما زالت تعمل كخط رجعة ' +
+                    'يمنع قفلك خارج النظام.<br><br>' +
+                    '<strong style="color:#f59e0b;">بعد أن تغيّر كل الكلمات وتحفظها بمكان آمن، عطّل هذا المفتاح</strong> ' +
+                    'ليصبح الدخول بكلماتك وحدها.</p>' +
+                    '<button onclick="disableRecoveryKey()" class="gold-btn btn-block" style="background:#f59e0b; color:#000; font-weight:900;">' +
+                    '🔒 تعطيل مفتاح الطوارئ</button>';
+            } else {
+                box.style.background = '#0f1a14';
+                box.style.borderColor = '#10b981';
+                box.innerHTML =
+                    '<div style="color:#10b981; font-weight:900; font-size:0.86rem; margin-bottom:6px;">🔒 مفتاح الطوارئ: مُعطّل</div>' +
+                    '<p style="font-size:0.78rem; color:#ccc; line-height:1.7;">' +
+                    'الدخول بكلماتك الخاصة فقط — الكلمات الافتراضية لا تعمل.<br>' +
+                    '<span style="color:#f59e0b;">لو نسيت كلمة: امسح بيانات الموقع من إعدادات المتصفح لإعادة تفعيل خط الرجعة.</span></p>';
             }
         }
 
