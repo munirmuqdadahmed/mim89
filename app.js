@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1300';
+const MIM89_APP_VERSION = '1320';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -387,7 +387,10 @@ async function pullLatestFromCloud() {
     // 4) الإعدادات المشتركة — أهمها أوقات العمل حتى يعرف الزبون أن المطعم مغلق
     //    🛠️ [إصلاح] كانت هذه الإعدادات تُرفع للسحابة لكن لا تُسحب أبداً، فتغيير
     //    أوقات الإغلاق من الكاشير لم يكن يصل للمينيو الإلكتروني إطلاقاً.
-    const SHARED_KEYS = ['sys_working_hours', 'sys_areas', 'sys_out_of_stock', 'sys_coupons'];
+    // 🛠️ [إصلاح] أُضيفت sys_passwords و sys_cashiers — كانت تُرفع للسحابة ولا تُسحب،
+    // فتغيير كلمة المرور من جهاز لا يصل لبقية الأجهزة إطلاقاً.
+    const SHARED_KEYS = ['sys_working_hours', 'sys_areas', 'sys_out_of_stock', 'sys_coupons',
+                         'sys_passwords', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes'];
     for (const key of SHARED_KEYS) {
         try {
             const d = await db.collection("system_store").doc(key).get({ source: 'server' });
@@ -1885,7 +1888,8 @@ function loginCashier() {
     let cashiers = getData('sys_cashiers');
     let user = cashiers.find(c => String(c.password).trim() === inputPass);
 
-    if (!user && (inputPass === validPass || inputPass === '123')) {
+    // 🛠️ [إصلاح] كان الرمز "123" مقبولاً دائماً مهما غيّرت رمز الكاشير
+    if (!user && inputPass === validPass) {
         user = { id: "c1", name: "الكاشير الرئيسي", password: validPass };
     }
 
@@ -4355,23 +4359,63 @@ function cancelIncomingOrder(docId, orderId) {
 
 function deductInventoryFromRecipe(items) {
     if (!Array.isArray(items) || items.length === 0) return;
-    let inventory = getData('sys_inventory');
-    const allMenuItems = getData('sys_items');
+
+    let inventory = getData('sys_inventory') || [];
+    const allMenuItems = getData('sys_items') || [];
+    if (inventory.length === 0) return;
+
+    let anyDeducted = false;
+    const lowStockAlerts = [];
 
     items.forEach(cartItem => {
-        const menuItem = allMenuItems.find(m => String(m.id) === String(cartItem.id) || cleanPrice(m.id) === cleanPrice(cartItem.id));
-        if (menuItem && menuItem.recipe) {
-            menuItem.recipe.forEach(ingredient => {
-                const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ingredient.invId));
-                if (stockItem) {
-                    const totalDeduct = (cleanPrice(ingredient.qty) || 0) * (cleanPrice(cartItem.qty) || 1);
-                    stockItem.quantity = Math.max(0, cleanPrice(stockItem.quantity) - totalDeduct);
-                }
-            });
-        }
+        // 🛠️ [إصلاح] البحث بالمعرّف ثم بالاسم — الطلبات القادمة من المينيو
+        // الإلكتروني قد تحمل معرّفاً مختلفاً، فكان الخصم يفشل بصمت.
+        let menuItem = allMenuItems.find(m => String(m.id) === String(cartItem.id));
+        if (!menuItem) menuItem = allMenuItems.find(m => cleanPrice(m.id) === cleanPrice(cartItem.id));
+        if (!menuItem) menuItem = allMenuItems.find(m => String(m.name).trim() === String(cartItem.name).trim());
+
+        if (!menuItem || !Array.isArray(menuItem.recipe) || menuItem.recipe.length === 0) return;
+
+        const soldQty = parseFloat(cartItem.qty) || 1;
+
+        menuItem.recipe.forEach(ing => {
+            const stockItem = inventory.find(inv => cleanPrice(inv.id) === cleanPrice(ing.invId));
+            if (!stockItem) return;
+
+            // 🛠️ [إصلاح جوهري] كان يُستخدم cleanPrice للكميات، وهي تحذف الفاصلة
+            // العشرية تماماً — فكمية 0.12 كغم تتحول إلى 0 ولا يُخصم شيء إطلاقاً!
+            // الآن نستخدم parseFloat الذي يحترم الكسور.
+            const perUnit = parseFloat(ing.qty) || 0;
+            if (perUnit <= 0) return;
+
+            const deduct = perUnit * soldQty;
+            const before = parseFloat(stockItem.quantity) || 0;
+            const after = Math.max(0, before - deduct);
+
+            stockItem.quantity = Math.round(after * 1000) / 1000;   // 3 خانات عشرية
+            const uc = cleanPrice(stockItem.costPerUnit) ||
+                       (before > 0 ? cleanPrice(stockItem.totalPrice) / before : 0);
+            stockItem.totalPrice = uc * stockItem.quantity;
+            anyDeducted = true;
+
+            const minLimit = parseFloat(stockItem.minLimit) || 0;
+            if (minLimit > 0 && before > minLimit && stockItem.quantity <= minLimit) {
+                lowStockAlerts.push(stockItem.name + ' (' + stockItem.quantity + ' ' + (stockItem.unit || '') + ')');
+            }
+        });
     });
 
-    setData('sys_inventory', inventory);
+    if (anyDeducted) {
+        setData('sys_inventory', inventory);
+    }
+
+    // 🔔 تنبيه فوري عند وصول مادة لحد النفاد
+    if (lowStockAlerts.length > 0) {
+        setTimeout(() => {
+            alert('📦 تنبيه المخزن — مواد وصلت الحد الأدنى:\n\n• ' +
+                  lowStockAlerts.join('\n• ') + '\n\nيرجى إعادة التجهيز.');
+        }, 900);
+    }
 }
 
 function initInventoryPage() { initData(); }
@@ -4931,21 +4975,85 @@ function deleteCashier(id) {
     }
 }
 
-function updateAllSystemPasswords() {
+// 👁️ عرض كلمات المرور الفعّالة حالياً (بعد تأكيد الهوية)
+function revealCurrentPasswords() {
+    const p = getData('sys_passwords') || {};
+    const d = (typeof DEFAULT_DATA !== 'undefined') ? DEFAULT_DATA.passwords : {};
+    const box = document.getElementById('currentPasswordsBox');
+    if (!box) return;
+
+    const row = (label, key, def) => {
+        const val = p[key] || def || '—';
+        const isDefault = !p[key];
+        return '<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #22222c;">' +
+            '<span style="color:#bbb; font-size:0.84rem;">' + label + '</span>' +
+            '<span><strong style="color:' + (isDefault ? '#f59e0b' : 'var(--success)') + '; font-family:monospace; font-size:0.95rem;">' + val + '</strong>' +
+            (isDefault ? '<span style="font-size:0.68rem; color:#f59e0b; margin-right:6px;">(افتراضية)</span>' : '') + '</span></div>';
+    };
+
+    box.innerHTML =
+        row('🔑 الأدمن', 'admin', d.admin) +
+        row('💰 الخزينة', 'costing', d.costing) +
+        row('📦 المخزن', 'inventory', d.inventory) +
+        row('🧾 الكاشير', 'cashier', d.cashier) +
+        '<p style="font-size:0.73rem; color:#f59e0b; margin-top:10px; line-height:1.6;">' +
+        '⚠️ الكلمات المعلّمة بـ (افتراضية) لم تُغيَّر بعد — غيّرها فوراً فهي معروفة.</p>';
+}
+
+async function updateAllSystemPasswords() {
     const adminPass = document.getElementById('newAdminPass')?.value.trim();
     const costingPass = document.getElementById('newCostingPass')?.value.trim();
     const invPass = document.getElementById('newInvPass')?.value.trim();
     const cashierPass = document.getElementById('newCashierPass')?.value.trim();
 
+    if (!adminPass && !costingPass && !invPass && !cashierPass) {
+        return alert("⚠️ لم تُدخل أي كلمة مرور جديدة.");
+    }
+
+    // 🛡️ منع الكلمات الضعيفة والافتراضية القديمة
+    const weak = ['123', '1234', '12345', '0000', 'admin123', 'inv123'];
+    const entered = [adminPass, costingPass, invPass, cashierPass].filter(Boolean);
+    for (const p of entered) {
+        if (weak.includes(p.toLowerCase())) {
+            return alert('⚠️ كلمة المرور "' + p + '" ضعيفة أو افتراضية.\nاختر كلمة أقوى (4 خانات فأكثر وغير متسلسلة).');
+        }
+    }
+
     let passes = getData('sys_passwords') || {};
+    const changed = [];
+    if (adminPass)   { passes.admin = adminPass;      changed.push('الأدمن'); }
+    if (costingPass) { passes.costing = costingPass;  changed.push('الخزينة'); }
+    if (invPass)     { passes.inventory = invPass;    changed.push('المخزن'); }
+    if (cashierPass) { passes.cashier = cashierPass;  changed.push('الكاشير'); }
 
-    if (adminPass) passes.admin = adminPass;
-    if (costingPass) passes.costing = costingPass;
-    if (invPass) passes.inventory = invPass;
-    if (cashierPass) passes.cashier = cashierPass;
+    localStorage.setItem('sys_passwords', JSON.stringify(passes));
 
-    setData('sys_passwords', passes);
-    alert("🔒 تم تحديث وتأمين كلمات المرور لكل أقسام النظام بنجاح!");
+    // ☁️ ننتظر تأكيد الخادم فعلياً — لا رسالة نجاح كاذبة
+    let cloudOk = false;
+    if (db) {
+        try {
+            await db.collection("system_store").doc('sys_passwords')
+                .set({ content: JSON.stringify(passes), updatedAt: Date.now() });
+            cloudOk = true;
+        } catch (e) {
+            console.error('تعذّر رفع كلمات المرور:', e);
+        }
+    }
+
+    if (typeof logAudit === 'function') {
+        logAudit('تغيير كلمات المرور', { note: 'تم تغيير: ' + changed.join('، ') });
+    }
+
+    ['newAdminPass','newCostingPass','newInvPass','newCashierPass'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    alert(cloudOk
+        ? '🔒 تم تحديث كلمة مرور: ' + changed.join('، ') +
+          '\n\n✅ حُفظت على السحابة وستعمل على كل الأجهزة خلال دقيقة.\n\n⚠️ احفظ الكلمة الجديدة بمكان آمن — لا توجد طريقة لاستعادتها إن نُسيت.'
+        : '⚠️ حُفظت كلمة المرور على هذا الجهاز فقط ولم تصل للسحابة!\n\n' +
+          'الأجهزة الأخرى ستبقى على الكلمة القديمة. تحقق من الإنترنت وأعد المحاولة.');
 }
 
 /* ==========================================
