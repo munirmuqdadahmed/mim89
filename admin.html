@@ -240,6 +240,7 @@
             <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl', this)"><i class="fa-solid fa-print"></i> إعدادات الطابعات</button>
             <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl', this)"><i class="fa-solid fa-users"></i> الكاشيرية</button>
             <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl', this)"><i class="fa-solid fa-shield-halved"></i> الحماية</button>
+            <button class="tab-btn" onclick="switchAdminTab('tabAuditControl', this)" style="background:#1e3a5f; color:#fff; border-color:#38bdf8;"><i class="fa-solid fa-shield-halved"></i> 🔍 سجل التدقيق</button>
             <button class="tab-btn" onclick="switchAdminTab('tabFixerControl', this)" style="background:#7f1d1d; color:#fff; border-color:var(--danger);"><i class="fa-solid fa-wand-magic-sparkles"></i> 🧰 تصحيح أقسام الأصناف</button>
             <button class="tab-btn" onclick="switchAdminTab('tabBackupControl', this)"><i class="fa-solid fa-cloud-arrow-down"></i> 💾 النسخ الاحتياطي</button>
         </div>
@@ -527,6 +528,41 @@
             </div>
         </div>
 
+        <!-- 🔍 تبويب سجل التدقيق -->
+        <div id="tabAuditControl" class="tab-content" style="margin-top:15px; display:none;">
+            <div class="card" style="border-color:#38bdf8;">
+                <h4 style="color:#38bdf8; margin-bottom:8px;"><i class="fa-solid fa-shield-halved"></i> سجل التدقيق — رقابة العمليات الحساسة</h4>
+                <p style="font-size:0.8rem; color:#ccc; line-height:1.7; margin-bottom:12px;">
+                    يسجّل كل عملية قد تُستغل للتلاعب: <strong style="color:var(--danger);">الخصومات المجانية</strong>،
+                    تعديل الأسعار، الصرفيات، حذف الأصناف، تصفية الدليفري، وتقفيل الشيفت — باسم الكاشير والوقت والجهاز.
+                    <br>
+                    <strong style="color:var(--gold-bright);">السجل محفوظ بالسحابة ولا يمكن حذفه أو تعديله من الكاشير إطلاقاً.</strong>
+                </p>
+
+                <div id="auditSummary" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:12px;"></div>
+
+                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+                    <select id="auditType" class="gold-input-inline" style="width:auto; min-width:150px;" onchange="renderAuditLog()">
+                        <option value="all">كل العمليات</option>
+                        <option value="خصم مجاني">🔴 الخصومات المجانية</option>
+                        <option value="خصم نسبة">خصم بنسبة</option>
+                        <option value="خصم مبلغ">خصم بمبلغ</option>
+                        <option value="تعديل سعر">تعديل الأسعار</option>
+                        <option value="صرفية">الصرفيات</option>
+                        <option value="حذف صنف">حذف الأصناف</option>
+                        <option value="تصفية طلب دليفري">تصفية الدليفري</option>
+                        <option value="تقفيل شيفت">تقفيل الشيفت</option>
+                    </select>
+                    <input type="date" id="auditFrom" class="gold-input-inline" style="width:auto;" onchange="renderAuditLog()">
+                    <span style="color:#666;">→</span>
+                    <input type="date" id="auditTo" class="gold-input-inline" style="width:auto;" onchange="renderAuditLog()">
+                    <button onclick="renderAuditLog()" class="gold-btn btn-sm" style="background:#38bdf8; color:#000; border:none;">🔄 تحديث</button>
+                </div>
+
+                <div id="auditLogBox" style="max-height:65vh; overflow-y:auto;"></div>
+            </div>
+        </div>
+
         <!-- 🧰 تبويب تصحيح أقسام الأصناف -->
         <div id="tabFixerControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card">
@@ -642,7 +678,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1260"></script>
+    <script src="app.js?v=1300"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
@@ -675,6 +711,7 @@
             if (tabId === 'tabDriversControl' && typeof renderAdminDrivers === 'function') renderAdminDrivers();
             if (tabId === 'tabAreasControl' && typeof renderAdminAreas === 'function') renderAdminAreas();
             if (tabId === 'tabCashiersControl' && typeof renderAdminCashiers === 'function') renderAdminCashiers();
+            if (tabId === 'tabAuditControl' && typeof renderAuditLog === 'function') renderAuditLog();
             if (tabId === 'tabFixerControl' && typeof renderCategoryFixerTable === 'function') renderCategoryFixerTable();
             if (tabId === 'tabBackupControl') { renderBackupStats(); if (typeof renderStorageDiagnostics === 'function') renderStorageDiagnostics(); }
             if (tabId === 'tabPrintersControl' && typeof getPrintBridgeUrl === 'function') {
