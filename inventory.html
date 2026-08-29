@@ -88,7 +88,8 @@
         </header>
 
         <div class="inv-tabs">
-            <button class="inv-tab active" onclick="switchInvTab('tabStock', this)"><i class="fa-solid fa-warehouse"></i> المواد والمخزون</button>
+            <button class="inv-tab active" onclick="switchInvTab('tabMenuBoard', this)" style="border-color:var(--gold-primary);"><i class="fa-solid fa-table-list"></i> 📊 لوحة المينيو</button>
+            <button class="inv-tab" onclick="switchInvTab('tabStock', this)"><i class="fa-solid fa-warehouse"></i> المواد والمخزون</button>
             <button class="inv-tab" onclick="switchInvTab('tabRecipes', this)" style="border-color:#a855f7; color:#d8b4fe;"><i class="fa-solid fa-flask"></i> 🧪 تفكيك الأصناف</button>
             <button class="inv-tab" onclick="switchInvTab('tabPurchase', this)"><i class="fa-solid fa-truck"></i> المشتريات</button>
             <button class="inv-tab" onclick="switchInvTab('tabCount', this)"><i class="fa-solid fa-clipboard-check"></i> 🔍 الجرد الفعلي</button>
@@ -99,7 +100,7 @@
         </div>
 
         <!-- ============ 1. المواد والمخزون ============ -->
-        <div id="tabStock" class="inv-page">
+        <div id="tabStock" class="inv-page" style="display:none;">
             <div class="kpi-grid">
                 <div class="kpi"><span class="t">قيمة المخزون الحالية</span><div class="v num" id="kpiInvValue" style="color:var(--gold-bright);">0</div></div>
                 <div class="kpi"><span class="t">عدد المواد</span><div class="v num" id="kpiInvCount" style="color:#fff;">0</div></div>
@@ -107,16 +108,63 @@
                 <div class="kpi"><span class="t">مواد نفدت</span><div class="v num" id="kpiOut" style="color:var(--danger-red);">0</div></div>
             </div>
 
-            <div class="card">
-                <div class="sec-title"><i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية جديدة</div>
-                <div class="form-grid">
-                    <div><label class="hint">اسم المادة</label><input type="text" id="newInvName" class="gold-input-inline" placeholder="صدور دجاج"></div>
-                    <div><label class="hint">الكمية</label><input type="number" id="newInvQty" class="gold-input-inline" placeholder="100" step="0.01"></div>
-                    <div><label class="hint">الوحدة</label><input type="text" id="newInvUnit" class="gold-input-inline" placeholder="كغم"></div>
-                    <div><label class="hint">إجمالي الشراء</label><input type="number" id="newInvPrice" class="gold-input-inline" placeholder="500000"></div>
-                    <div><label class="hint">حد التنبيه</label><input type="number" id="newInvMinLimit" class="gold-input-inline" value="10" step="0.01"></div>
-                    <button onclick="addNewInventoryItem()" class="gold-btn" style="min-height:42px;">حفظ المادة</button>
+            <div class="card" style="border-color:#10b981;">
+                <div class="sec-title" style="color:#10b981;"><i class="fa-solid fa-plus-circle"></i> إضافة مادة أولية</div>
+
+                <div class="form-grid" style="margin-bottom:12px;">
+                    <div style="grid-column:span 2;">
+                        <label class="hint">اسم المادة</label>
+                        <input type="text" id="newInvName" class="gold-input-inline" placeholder="مثال: صمون بركر">
+                    </div>
+                    <div>
+                        <label class="hint">وحدة القياس</label>
+                        <select id="newInvUnit" class="gold-input-inline">
+                            <option value="قطعة">قطعة (صمون، علب، بيض...)</option>
+                            <option value="كغم">كغم (لحوم، خضار، أجبان)</option>
+                            <option value="غرام">غرام (بهارات، مواد دقيقة)</option>
+                            <option value="لتر">لتر (زيت، سوائل)</option>
+                            <option value="علبة">علبة</option>
+                            <option value="كيس">كيس</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="hint">الكمية الموجودة الآن</label>
+                        <input type="number" id="newInvQty" class="gold-input-inline" placeholder="100" step="0.01">
+                    </div>
                 </div>
+
+                <!-- 💡 اختيار طريقة إدخال السعر — هنا كان اللبس -->
+                <div style="background:#0f1a14; border:1px solid rgba(16,185,129,0.35); border-radius:8px; padding:12px; margin-bottom:12px;">
+                    <div style="color:#10b981; font-weight:900; font-size:0.84rem; margin-bottom:8px;">💰 كيف تعرف السعر؟</div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                        <label style="flex:1; min-width:150px; display:flex; align-items:center; gap:7px; background:#121215; padding:9px 11px; border-radius:7px; cursor:pointer; border:1px solid #2a2a35;">
+                            <input type="radio" name="priceMode" value="unit" checked onchange="togglePriceMode()" style="width:16px; height:16px;">
+                            <span style="font-size:0.82rem;">سعر <strong style="color:#10b981;">الوحدة الواحدة</strong></span>
+                        </label>
+                        <label style="flex:1; min-width:150px; display:flex; align-items:center; gap:7px; background:#121215; padding:9px 11px; border-radius:7px; cursor:pointer; border:1px solid #2a2a35;">
+                            <input type="radio" name="priceMode" value="total" onchange="togglePriceMode()" style="width:16px; height:16px;">
+                            <span style="font-size:0.82rem;">المبلغ <strong style="color:#f59e0b;">الكلي المدفوع</strong></span>
+                        </label>
+                    </div>
+
+                    <div class="form-grid">
+                        <div style="grid-column:span 2;">
+                            <label class="hint" id="priceLabel">سعر الوحدة الواحدة (د.ع)</label>
+                            <input type="number" id="newInvPrice" class="gold-input-inline" placeholder="250" oninput="previewNewItemCost()">
+                        </div>
+                        <div>
+                            <label class="hint">حد التنبيه</label>
+                            <input type="number" id="newInvMinLimit" class="gold-input-inline" value="10" step="0.01">
+                        </div>
+                    </div>
+
+                    <div id="newItemPreview" style="margin-top:10px; font-size:0.8rem;"></div>
+                </div>
+
+                <button onclick="addNewInventoryItem()" class="gold-btn btn-block" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; padding:12px; font-weight:900;">
+                    ➕ حفظ المادة بالمخزن
+                </button>
             </div>
 
             <div class="card">
@@ -131,6 +179,48 @@
                             <th>كلفة الوحدة</th><th>قيمة المخزون</th><th>الحالة</th><th></th>
                         </tr></thead>
                         <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ 📊 لوحة المينيو الشاملة ============ -->
+        <div id="tabMenuBoard" class="inv-page">
+
+            <div class="kpi-grid">
+                <div class="kpi"><span class="t">إجمالي الأصناف</span><div class="v num" id="mbTotal" style="color:#fff;">0</div></div>
+                <div class="kpi"><span class="t">مفكّكة (تكلفتها معروفة)</span><div class="v num" id="mbLinked" style="color:var(--success-green);">0</div></div>
+                <div class="kpi"><span class="t">متوسط هامش الربح</span><div class="v num" id="mbMargin" style="color:var(--gold-bright);">—</div></div>
+                <div class="kpi"><span class="t">أصناف بهامش خطر</span><div class="v num" id="mbRisky" style="color:var(--danger-red);">0</div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                    <div class="sec-title" style="margin:0;"><i class="fa-solid fa-table-list"></i> كل المينيو: السعر • الكلفة • الربح</div>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <input type="text" id="mbSearch" class="gold-input-inline" placeholder="🔍 بحث..." style="width:170px;" oninput="renderMenuBoard()">
+                        <select id="mbCategory" class="gold-input-inline" style="width:auto;" onchange="renderMenuBoard()"></select>
+                        <select id="mbSort" class="gold-input-inline" style="width:auto;" onchange="renderMenuBoard()">
+                            <option value="margin_asc">الأقل ربحاً أولاً ⚠️</option>
+                            <option value="margin_desc">الأعلى ربحاً أولاً</option>
+                            <option value="price_desc">الأغلى سعراً</option>
+                            <option value="name">حسب الاسم</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="hint" style="margin-bottom:12px;">
+                    نظرة شاملة على ربحية مينيوك. اضغط <strong style="color:#a855f7;">🧪 تفكيك</strong> أمام أي صنف لربط مواده مباشرة.
+                    <br>الهامش الصحي بالوجبات السريعة <strong style="color:var(--success-green);">55-70%</strong>.
+                </p>
+
+                <div style="overflow-x:auto; max-height:65vh; overflow-y:auto;">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>الصنف</th><th>القسم</th><th>سعر البيع</th>
+                            <th>الكلفة</th><th>الربح</th><th>الهامش</th><th>المواد</th><th></th>
+                        </tr></thead>
+                        <tbody id="menuBoardBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -354,7 +444,7 @@
 
     </div>
 
-    <script src="app.js?v=1300"></script>
+    <script src="app.js?v=1320"></script>
     <script>
         /* ==========================================================
            الدخول والتنقل
@@ -363,7 +453,8 @@
             const pass = document.getElementById('invPassInput').value.trim();
             const vInv = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
             const vAdm = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
-            if (pass === vInv || pass === vAdm || pass === "inv123" || pass === "123") {
+            // 🛠️ [إصلاح] حُذفت كلمات المرور القديمة الثابتة التي كانت تُقبل دائماً
+            if (pass === vInv || pass === vAdm) {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('invMainApp').style.display = 'block';
                 initInventoryApp();
@@ -378,6 +469,7 @@
             document.getElementById(id).style.display = 'block';
             if (btn) btn.classList.add('active');
 
+            if (id === 'tabMenuBoard') renderMenuBoard();
             if (id === 'tabRecipes')  renderRecipeWorkbench();
             if (id === 'tabPurchase') { loadPurchaseDropdown(); renderPurchases(); }
             if (id === 'tabCount')    { renderCountTable(); renderCountsHistory(); }
@@ -394,7 +486,7 @@
             const mStr = monthAgo.toISOString().slice(0, 10);
             ['purchFrom', 'usageFrom'].forEach(x => { const el = document.getElementById(x); if (el) el.value = mStr; });
             ['purchTo', 'usageTo'].forEach(x => { const el = document.getElementById(x); if (el) el.value = today; });
-            renderInventoryTable();
+            renderMenuBoard();
         }
 
         function money(n) { return cleanPrice(Math.round(n)).toLocaleString('ar-IQ'); }
@@ -451,25 +543,87 @@
             }).join('');
         }
 
+        function getPriceMode() {
+            const r = document.querySelector('input[name="priceMode"]:checked');
+            return r ? r.value : 'unit';
+        }
+
+        function togglePriceMode() {
+            const mode = getPriceMode();
+            const lbl = document.getElementById('priceLabel');
+            const inp = document.getElementById('newInvPrice');
+            if (mode === 'unit') {
+                lbl.innerText = 'سعر الوحدة الواحدة (د.ع)';
+                inp.placeholder = '250';
+            } else {
+                lbl.innerText = 'المبلغ الكلي المدفوع (د.ع)';
+                inp.placeholder = '25000';
+            }
+            previewNewItemCost();
+        }
+
+        // 👁️ معاينة فورية تمنع اللبس بين سعر الوحدة والمبلغ الكلي
+        function previewNewItemCost() {
+            const box = document.getElementById('newItemPreview');
+            if (!box) return;
+
+            const qty = parseFloat(document.getElementById('newInvQty').value);
+            const price = cleanPrice(document.getElementById('newInvPrice').value);
+            const unit = document.getElementById('newInvUnit').value || 'وحدة';
+            const mode = getPriceMode();
+
+            if (!qty || !price) { box.innerHTML = ''; return; }
+
+            let unitCost, total;
+            if (mode === 'unit') { unitCost = price; total = price * qty; }
+            else { unitCost = qty > 0 ? price / qty : 0; total = price; }
+
+            box.innerHTML = '<div style="background:#121215; border-radius:6px; padding:10px; line-height:1.8;">' +
+                '<div style="color:#10b981; font-weight:900; margin-bottom:4px;">✓ سيُحفظ كالتالي:</div>' +
+                '<div style="color:#ccc;">الكمية: <strong style="color:#fff;">' + qtyFmt(qty) + ' ' + unit + '</strong></div>' +
+                '<div style="color:#ccc;">كلفة الوحدة: <strong style="color:var(--gold-bright);">' + money(unitCost) + ' د.ع / ' + unit + '</strong></div>' +
+                '<div style="color:#ccc;">القيمة الإجمالية: <strong style="color:#38bdf8;">' + money(total) + ' د.ع</strong></div>' +
+                '</div>';
+        }
+
         function addNewInventoryItem() {
             const name = document.getElementById('newInvName').value.trim();
             const qty = parseFloat(document.getElementById('newInvQty').value);
-            const unit = document.getElementById('newInvUnit').value.trim() || 'كغم';
-            const totalPrice = cleanPrice(document.getElementById('newInvPrice').value);
+            const unit = document.getElementById('newInvUnit').value || 'كغم';
+            const price = cleanPrice(document.getElementById('newInvPrice').value);
             const minLimit = parseFloat(document.getElementById('newInvMinLimit').value) || 10;
+            const mode = getPriceMode();
 
-            if (!name || isNaN(qty)) return alert("أدخل اسم المادة والكمية");
+            if (!name) return alert("⚠️ أدخل اسم المادة");
+            if (isNaN(qty)) return alert("⚠️ أدخل الكمية الموجودة");
+            if (!price) return alert("⚠️ أدخل السعر");
 
             const inv = getData('sys_inventory') || [];
+            if (inv.some(i => String(i.name).trim() === name)) {
+                return alert('⚠️ توجد مادة بنفس الاسم بالفعل.\nاستخدم تبويب «المشتريات» لزيادة كميتها.');
+            }
+
+            // 🛠️ [إصلاح] الحقل السابق كان "إجمالي الشراء" فقط، فمن يكتب سعر القطعة
+            // (مثل 250 للصمونة) كان النظام يفهمها كمبلغ كلي للكمية كلها ويحسب
+            // كلفة وحدة خاطئة تماماً. الآن تختار الطريقة صراحةً.
+            let unitCost, totalPrice;
+            if (mode === 'unit') { unitCost = price; totalPrice = price * qty; }
+            else { unitCost = qty > 0 ? price / qty : 0; totalPrice = price; }
+
             inv.push({
-                id: Date.now(), name, quantity: qty, unit, totalPrice,
-                costPerUnit: qty > 0 ? totalPrice / qty : 0, minLimit
+                id: Date.now(), name, quantity: qty, unit,
+                totalPrice: totalPrice, costPerUnit: unitCost, minLimit
             });
             setData('sys_inventory', inv);
 
-            ['newInvName','newInvQty','newInvUnit','newInvPrice'].forEach(x => document.getElementById(x).value = '');
+            ['newInvName','newInvQty','newInvPrice'].forEach(x => document.getElementById(x).value = '');
+            document.getElementById('newItemPreview').innerHTML = '';
             renderInventoryTable();
-            alert("✅ تمت إضافة المادة");
+
+            alert('✅ أُضيفت: ' + name +
+                  '\n\nالكمية: ' + qtyFmt(qty) + ' ' + unit +
+                  '\nكلفة الوحدة: ' + money(unitCost) + ' د.ع' +
+                  '\nالقيمة الإجمالية: ' + money(totalPrice) + ' د.ع');
         }
 
         function updateInvField(id, field, value) {
@@ -996,6 +1150,126 @@
                 '</p></div>';
 
             box.innerHTML = html;
+        }
+
+        /* ==========================================================
+           📊 لوحة المينيو الشاملة
+           ========================================================== */
+        function renderMenuBoard() {
+            const tbody = document.getElementById('menuBoardBody');
+            if (!tbody) return;
+
+            const items = getData('sys_items') || [];
+            const cats = getData('sys_categories') || [];
+            const inv = getData('sys_inventory') || [];
+            const ovPct = getOverheadPctLocal();
+
+            // تعبئة قائمة الأقسام مرة واحدة
+            const catSel = document.getElementById('mbCategory');
+            if (catSel && catSel.options.length === 0) {
+                catSel.innerHTML = '<option value="all">كل الأقسام</option>' +
+                    cats.map(c => '<option value="' + c.id + '">' + c.name + '</option>').join('');
+            }
+
+            // حساب بيانات كل صنف
+            const rows = items.map(it => {
+                const hasRecipe = Array.isArray(it.recipe) && it.recipe.length > 0;
+                const base = getRecipeCostForItem(it);
+                const cost = base * (1 + ovPct / 100);
+                const price = cleanPrice(it.price);
+                const profit = price - cost;
+                const margin = (price > 0 && hasRecipe) ? ((profit / price) * 100) : null;
+                const catId = cleanPrice(it.categoryId || it.catId || it.category);
+                const cat = cats.find(c => cleanPrice(c.id) === catId);
+                return { it, hasRecipe, cost, price, profit, margin, catId, catName: cat ? cat.name : '—' };
+            });
+
+            // المؤشرات
+            const linked = rows.filter(r => r.hasRecipe);
+            const risky = linked.filter(r => r.margin !== null && r.margin < 40);
+            document.getElementById('mbTotal').innerText = items.length;
+            document.getElementById('mbLinked').innerText = linked.length + ' / ' + items.length;
+            document.getElementById('mbRisky').innerText = risky.length;
+            const avg = linked.length
+                ? (linked.reduce((s, r) => s + (r.margin || 0), 0) / linked.length).toFixed(0) + '%'
+                : '—';
+            document.getElementById('mbMargin').innerText = avg;
+
+            // التصفية
+            const q = (document.getElementById('mbSearch')?.value || '').toLowerCase();
+            const catFilter = document.getElementById('mbCategory')?.value || 'all';
+            const sort = document.getElementById('mbSort')?.value || 'margin_asc';
+
+            let list = rows;
+            if (q) list = list.filter(r => String(r.it.name).toLowerCase().includes(q));
+            if (catFilter !== 'all') list = list.filter(r => String(r.catId) === String(catFilter));
+
+            list.sort((a, b) => {
+                if (sort === 'margin_asc') {
+                    if (a.margin === null && b.margin === null) return 0;
+                    if (a.margin === null) return -1;   // غير المفكّكة أولاً (تحتاج انتباهك)
+                    if (b.margin === null) return 1;
+                    return a.margin - b.margin;
+                }
+                if (sort === 'margin_desc') return (b.margin ?? -1) - (a.margin ?? -1);
+                if (sort === 'price_desc') return b.price - a.price;
+                return String(a.it.name).localeCompare(String(b.it.name), 'ar');
+            });
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888; padding:20px;">لا توجد أصناف مطابقة</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(r => {
+                let mColor = '#666', mText = '—', rowStyle = '';
+                if (r.margin !== null) {
+                    if (r.margin < 30) { mColor = 'var(--danger-red)'; rowStyle = 'background:rgba(239,68,68,0.10);'; }
+                    else if (r.margin < 50) mColor = '#f59e0b';
+                    else mColor = 'var(--success-green)';
+                    mText = r.margin.toFixed(0) + '%';
+                } else {
+                    rowStyle = 'background:rgba(245,158,11,0.07);';
+                }
+
+                // أسماء المواد المرتبطة
+                let matsText = '<span style="color:var(--danger-red); font-size:0.72rem;">⚠️ غير مفكّك</span>';
+                if (r.hasRecipe) {
+                    const names = r.it.recipe.map(x => {
+                        const m = inv.find(i => cleanPrice(i.id) === cleanPrice(x.invId));
+                        return m ? m.name : '؟';
+                    });
+                    matsText = '<span style="font-size:0.72rem; color:#aaa;" title="' + names.join('، ') + '">' +
+                        names.slice(0, 2).join('، ') + (names.length > 2 ? ' +' + (names.length - 2) : '') + '</span>';
+                }
+
+                return '<tr style="' + rowStyle + '">' +
+                    '<td><strong style="font-size:0.84rem;">' + r.it.name + '</strong></td>' +
+                    '<td style="font-size:0.75rem; color:#888;">' + r.catName + '</td>' +
+                    '<td class="num" style="color:var(--gold-bright); font-weight:bold;">' + money(r.price) + '</td>' +
+                    '<td class="num" style="color:' + (r.hasRecipe ? 'var(--danger-red)' : '#666') + ';">' + (r.hasRecipe ? money(r.cost) : '—') + '</td>' +
+                    '<td class="num" style="color:' + (r.hasRecipe ? 'var(--success-green)' : '#666') + '; font-weight:bold;">' + (r.hasRecipe ? money(r.profit) : '—') + '</td>' +
+                    '<td class="num" style="color:' + mColor + '; font-weight:900;">' + mText + '</td>' +
+                    '<td>' + matsText + '</td>' +
+                    '<td><button onclick="jumpToRecipe(\'' + r.it.id + '\')" class="gold-btn btn-sm" style="background:#a855f7; color:#fff; border:none; padding:5px 10px; font-size:0.72rem; white-space:nowrap;">🧪 تفكيك</button></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        // الانتقال المباشر لتفكيك صنف معيّن
+        function jumpToRecipe(itemId) {
+            openRecipeId = itemId;
+            const tabs = document.querySelectorAll('.inv-tab');
+            let target = null;
+            tabs.forEach(t => { if (t.textContent.includes('تفكيك')) target = t; });
+            switchInvTab('tabRecipes', target);
+            const f = document.getElementById('recipeFilter');
+            if (f) f.value = 'all';
+            renderRecipeWorkbench();
+            setTimeout(() => {
+                const wb = document.getElementById('recipeWorkbench');
+                if (wb) wb.scrollTop = 0;
+            }, 100);
         }
 
         /* ==========================================================
