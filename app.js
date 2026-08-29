@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1260';
+const MIM89_APP_VERSION = '1300';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -1202,6 +1202,126 @@ function finishDiagnostics(lines, btnElement, originalText) {
 }
 
 /* ==========================================
+   2.95 📋 سجل التدقيق — يسجّل العمليات الحساسة بالسحابة
+   لا يمكن تعديله أو حذفه من الكاشير (تمنعه قواعد الأمان أيضاً).
+   الغرض: كل خصم مجاني أو تعديل سعر أو صرفية يُسجّل باسم الكاشير والوقت،
+   فيُصبح التلاعب مكشوفاً ومُوثّقاً.
+   ========================================== */
+
+function logAudit(action, details) {
+    const entry = {
+        action: action,
+        details: details || {},
+        cashier: (typeof activeCashierUser !== 'undefined' && activeCashierUser) ? activeCashierUser.name : 'غير محدد',
+        at: Date.now(),
+        atText: new Date().toLocaleString('ar-IQ'),
+        dateDate: getTodayString(),
+        device: navigator.userAgent.includes('Windows') ? 'كمبيوتر' :
+                (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) ? 'آيفون/آيباد' : 'جهاز آخر'
+    };
+
+    // نسخة محلية سريعة (للعرض الفوري)
+    try {
+        let local = getData('sys_audit_log');
+        if (!Array.isArray(local)) local = [];
+        local.unshift(entry);
+        safeLocalSet('sys_audit_log', JSON.stringify(local.slice(0, 300)));
+    } catch (e) {}
+
+    // النسخة الأهم: بالسحابة، غير قابلة للحذف
+    if (db) {
+        db.collection("audit_log").add(entry).catch(err => console.error('تعذّر تسجيل التدقيق:', err));
+    }
+}
+
+// 📊 عرض سجل التدقيق (لوحة الإدارة)
+async function renderAuditLog() {
+    const box = document.getElementById('auditLogBox');
+    if (!box) return;
+
+    box.innerHTML = '<p style="color:#888; text-align:center; padding:14px;">⏳ جاري التحميل...</p>';
+
+    const from = document.getElementById('auditFrom')?.value || '';
+    const to = document.getElementById('auditTo')?.value || '';
+    const typeFilter = document.getElementById('auditType')?.value || 'all';
+
+    let entries = [];
+    if (db) {
+        try {
+            const snap = await db.collection("audit_log").orderBy("at", "desc").limit(400).get();
+            snap.forEach(d => entries.push(d.data()));
+        } catch (e) {
+            entries = getData('sys_audit_log') || [];
+        }
+    } else {
+        entries = getData('sys_audit_log') || [];
+    }
+
+    if (from) entries = entries.filter(e => (e.dateDate || '') >= from);
+    if (to) entries = entries.filter(e => (e.dateDate || '') <= to);
+    if (typeFilter !== 'all') entries = entries.filter(e => e.action === typeFilter);
+
+    // ملخص المخاطر
+    const freeCount = entries.filter(e => e.action === 'خصم مجاني').length;
+    const priceCount = entries.filter(e => e.action === 'تعديل سعر').length;
+    const expCount = entries.filter(e => e.action === 'صرفية').length;
+    const freeValue = entries.filter(e => e.action === 'خصم مجاني')
+        .reduce((s, e) => s + cleanPrice(e.details && e.details.amount), 0);
+    const expValue = entries.filter(e => e.action === 'صرفية')
+        .reduce((s, e) => s + cleanPrice(e.details && e.details.amount), 0);
+
+    const sumEl = document.getElementById('auditSummary');
+    if (sumEl) {
+        sumEl.innerHTML =
+            '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; text-align:center;">' +
+            '<div><div style="font-size:0.72rem; color:#999;">خصومات مجانية</div>' +
+            '<strong style="color:' + (freeCount > 0 ? 'var(--danger)' : 'var(--success)') + '; font-size:1.15rem;">' + freeCount + '</strong>' +
+            '<div style="font-size:0.7rem; color:#888;">' + freeValue.toLocaleString('ar-IQ') + ' د.ع</div></div>' +
+            '<div><div style="font-size:0.72rem; color:#999;">تعديلات أسعار</div>' +
+            '<strong style="color:' + (priceCount > 0 ? '#f59e0b' : 'var(--success)') + '; font-size:1.15rem;">' + priceCount + '</strong></div>' +
+            '<div><div style="font-size:0.72rem; color:#999;">صرفيات</div>' +
+            '<strong style="color:#f59e0b; font-size:1.15rem;">' + expCount + '</strong>' +
+            '<div style="font-size:0.7rem; color:#888;">' + expValue.toLocaleString('ar-IQ') + ' د.ع</div></div>' +
+            '<div><div style="font-size:0.72rem; color:#999;">إجمالي العمليات</div>' +
+            '<strong style="color:#fff; font-size:1.15rem;">' + entries.length + '</strong></div>' +
+            '</div>';
+    }
+
+    if (entries.length === 0) {
+        box.innerHTML = '<p style="color:#777; text-align:center; padding:18px;">لا توجد عمليات مسجّلة بهذه الفترة</p>';
+        return;
+    }
+
+    const colorOf = a =>
+        a === 'خصم مجاني' ? 'var(--danger)' :
+        a === 'تعديل سعر' ? '#f59e0b' :
+        a === 'صرفية' ? '#f59e0b' :
+        a === 'حذف صنف' ? 'var(--danger)' :
+        a === 'تقفيل شيفت' ? '#38bdf8' : '#10b981';
+
+    box.innerHTML = entries.slice(0, 200).map(e => {
+        const d = e.details || {};
+        let detailText = '';
+        if (d.itemName) detailText += d.itemName;
+        if (d.amount) detailText += (detailText ? ' — ' : '') + cleanPrice(d.amount).toLocaleString('ar-IQ') + ' د.ع';
+        if (d.oldPrice !== undefined && d.newPrice !== undefined) {
+            detailText += ' (' + cleanPrice(d.oldPrice).toLocaleString('ar-IQ') + ' ← ' + cleanPrice(d.newPrice).toLocaleString('ar-IQ') + ')';
+        }
+        if (d.note) detailText += (detailText ? ' — ' : '') + d.note;
+        if (d.orderNum) detailText += ' [طلب #' + d.orderNum + ']';
+
+        return '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; background:#121215; padding:9px 11px; border-radius:7px; margin-bottom:5px; border-right:3px solid ' + colorOf(e.action) + ';">' +
+            '<div style="min-width:0;">' +
+            '<strong style="color:' + colorOf(e.action) + '; font-size:0.83rem;">' + e.action + '</strong>' +
+            (detailText ? '<div style="font-size:0.76rem; color:#ccc; margin-top:2px;">' + detailText + '</div>' : '') +
+            '<div style="font-size:0.7rem; color:#777; margin-top:2px;">👤 ' + (e.cashier || '-') + ' • ' + (e.device || '') + '</div>' +
+            '</div>' +
+            '<div style="font-size:0.7rem; color:#888; white-space:nowrap; text-align:left;">' + (e.atText || '') + '</div>' +
+            '</div>';
+    }).join('');
+}
+
+/* ==========================================
    3. إدارة وحفظ دليل الزبائن السريع (Customer CRM)
    ========================================== */
 
@@ -2038,6 +2158,7 @@ function toggleFreeDiscount() {
     } else {
         activeDiscountType = 'free';
         posDiscountAmount = subtotal;
+        logAudit('خصم مجاني', { amount: subtotal, itemsCount: posCart.length });
         updateDiscountUIState('free', '🎉 طلب مجاني (100%)');
         renderPosCart();
     }
@@ -2055,6 +2176,7 @@ function togglePercentDiscount() {
         currentPercentValue = pVal;
         activeDiscountType = 'percent';
         posDiscountAmount = (subtotal * pVal) / 100;
+        logAudit('خصم نسبة', { amount: posDiscountAmount, note: pVal + '% من ' + subtotal.toLocaleString('ar-IQ') });
         updateDiscountUIState('percent', `🏷️ خصم ${pVal}%`);
         renderPosCart();
     }
@@ -2071,6 +2193,7 @@ function promptAmountDiscount() {
         const amt = Math.max(0, cleanPrice(inputAmt) || 0);
         activeDiscountType = 'amount';
         posDiscountAmount = amt;
+        logAudit('خصم مبلغ', { amount: amt });
         updateDiscountUIState('amount', `💵 خصم ${amt.toLocaleString('ar-IQ')} د.ع`);
         renderPosCart();
     }
@@ -3042,6 +3165,8 @@ function markDeliveryOrderSettled(orderId) {
     ord.lastModified = Date.now();
     setData('sys_completed_orders', all);
 
+    logAudit('تصفية طلب دليفري', { orderNum: ord.orderNum, amount: cleanPrice(ord.totalAmount), note: 'السائق: ' + ord.driverName });
+
     // ☁️ [إصلاح] كانت التصفية تُحفظ محلياً فقط، فيُعيد السحب التالي من السحابة
     // النسخة القديمة غير المصفّاة — فيبدو أن الطلب "رجع" بعد قليل.
     if (db) {
@@ -3379,6 +3504,8 @@ function addNewExpenseRecord() {
     let expenses = getData('sys_expenses') || [];
     expenses.unshift(expenseData);
     setData('sys_expenses', expenses);
+
+    logAudit('صرفية', { amount: amount, note: expenseData.type + ' — ' + expenseData.note });
 
     document.getElementById('expenseAmountInput').value = '';
     document.getElementById('expenseNoteInput').value = '';
@@ -3870,6 +3997,13 @@ function confirmCloseShiftAndLogout() {
     if (archive.length > 200) archive = archive.slice(0, 200);
     setData('sys_shift_archive', archive);
 
+    logAudit('تقفيل شيفت', {
+        amount: s.totalSales,
+        note: 'فواتير: ' + s.ordersCount + ' | متوقع: ' + expected.toLocaleString('ar-IQ') +
+              ' | معدود: ' + (actualCash ? actualCash.toLocaleString('ar-IQ') : 'لم يُدخل') +
+              (actualCash ? ' | الفرق: ' + (actualCash - expected).toLocaleString('ar-IQ') : '')
+    });
+
     // 🔄 بدء شيفت جديد: التقارير تُصفَّر من هنا فقط (وليس عند منتصف الليل)
     startNewShift();
     sessionStorage.clear();
@@ -4149,11 +4283,54 @@ function generateOrderCardHTML(ord, docId) {
                 </div>
                 <div style="display:flex; gap:4px;">
                     <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="loadIncomingCallToPos('${safeDocId}', '${safeOrderId}', '${safePhone}', '${safeName}', '${safeArea}', '${safeAddress}', '${encodedItems}')">📥 نقل لكاشير المبيعات</button>
-                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء وحذف</button>
+                    <button class="gold-btn" style="padding:4px 6px; font-size:0.7rem; background:#ff4d4d; color:#fff; flex:1;" onclick="cancelIncomingOrder('${safeDocId}', '${safeOrderId}')">❌ إلغاء</button>
+                </div>
+
+                <!-- 📲 إبلاغ الزبون بحالة طلبه (يظهر فوراً بشاشة التتبع عنده) -->
+                <div style="border-top:1px dashed #333; margin-top:6px; padding-top:6px;">
+                    <div style="font-size:0.68rem; color:#888; margin-bottom:4px;">📲 أبلغ الزبون بالحالة:</div>
+                    <div style="display:flex; gap:4px;">
+                        <button class="gold-btn" style="padding:5px 4px; font-size:0.66rem; background:#f59e0b; color:#000; border:none; flex:1; font-weight:bold;" onclick="markOrderPreparing('${safeDocId}', '${safeOrderId}')">🍳 قيد التحضير</button>
+                        <button class="gold-btn" style="padding:5px 4px; font-size:0.66rem; background:#38bdf8; color:#000; border:none; flex:1; font-weight:bold;" onclick="updateOrderStatus('${safeDocId}', '${safeOrderId}', 'خرج للتوصيل')">🛵 خرج للتوصيل</button>
+                        <button class="gold-btn" style="padding:5px 4px; font-size:0.66rem; background:#10b981; color:#fff; border:none; flex:1; font-weight:bold;" onclick="updateOrderStatus('${safeDocId}', '${safeOrderId}', 'تم التسليم')">✅ سُلّم</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
+}
+
+// 🔄 تحديث حالة الطلب ليراها الزبون بشاشة التتبع لحظياً
+function updateOrderStatus(docId, orderId, newStatus, prepMinutes) {
+    if (!db) { alert("⚠️ لا يوجد اتصال بالسحابة."); return; }
+
+    const payload = {
+        status: newStatus,
+        statusUpdatedAt: Date.now(),
+        statusBy: activeCashierUser ? activeCashierUser.name : 'الكاشير'
+    };
+    if (prepMinutes) {
+        payload.prepMinutes = cleanPrice(prepMinutes);
+        payload.readyAt = Date.now() + (cleanPrice(prepMinutes) * 60000);
+    }
+
+    db.collection("orders").doc(String(docId)).set(payload, { merge: true })
+        .then(() => {
+            const msg = newStatus === 'قيد التحضير'
+                ? '✅ أُبلغ الزبون أن طلبه قيد التحضير' + (prepMinutes ? ' (خلال ' + prepMinutes + ' دقيقة)' : '')
+                : newStatus === 'خرج للتوصيل' ? '✅ أُبلغ الزبون أن طلبه خرج مع السائق'
+                : '✅ أُبلغ الزبون أن طلبه سُلّم';
+            alert(msg);
+            listenForIncomingOrders();
+        })
+        .catch(err => alert('⚠️ تعذّر تحديث الحالة: ' + (err.message || err)));
+}
+
+// ⏱️ سؤال الكاشير عن مدة التجهيز ثم إبلاغ الزبون
+function markOrderPreparing(docId, orderId) {
+    const m = prompt("كم دقيقة يحتاج تجهيز هذا الطلب؟\n(يظهر للزبون بشاشة التتبع)", "20");
+    if (m === null) return;
+    updateOrderStatus(docId, orderId, 'قيد التحضير', cleanPrice(m) || 20);
 }
 
 function cancelIncomingOrder(docId, orderId) {
@@ -4435,7 +4612,12 @@ function updateItemInline(id, field, value) {
 
     if (item) {
         if (field === 'price') {
-            item.price = cleanPrice(value) || 0;
+            const oldPrice = cleanPrice(item.price);
+            const newPrice = cleanPrice(value) || 0;
+            if (oldPrice !== newPrice) {
+                logAudit('تعديل سعر', { itemName: item.name, oldPrice: oldPrice, newPrice: newPrice });
+            }
+            item.price = newPrice;
         } else if (field === 'categoryId') {
             item.categoryId = cleanPrice(value);
             item.catId = cleanPrice(value);
@@ -4670,6 +4852,9 @@ function resetItemForm() {
 
 function deleteItem(id) {
     if (confirm("هل أنت متأكد من حذف هذا الصنف نهائياً من المينيو والكاشير؟")) {
+        const gone = (getData('sys_items') || []).find(i => String(i.id) === String(id) || String(i.docId) === String(id));
+        if (gone) logAudit('حذف صنف', { itemName: gone.name, amount: cleanPrice(gone.price) });
+
         let items = getData('sys_items').filter(i => String(i.id) !== String(id) && String(i.docId) !== String(id));
         localStorage.setItem('sys_items', JSON.stringify(items));
         
