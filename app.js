@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1330';
+const MIM89_APP_VERSION = '1340';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -390,7 +390,21 @@ async function pullLatestFromCloud() {
     // 🛠️ [إصلاح] أُضيفت sys_passwords و sys_cashiers — كانت تُرفع للسحابة ولا تُسحب،
     // فتغيير كلمة المرور من جهاز لا يصل لبقية الأجهزة إطلاقاً.
     const SHARED_KEYS = ['sys_working_hours', 'sys_areas', 'sys_out_of_stock', 'sys_coupons',
-                         'sys_passwords', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes'];
+                         'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes'];
+
+    // 🔑 كلمات المرور تُسحب بحذر: لا نستبدل نسخة الجهاز إلا إن كانت السحابة أحدث،
+    // حتى لا تطغى كلمة قديمة منسية على ما ضبطته للتو.
+    try {
+        const pDoc = await db.collection("system_store").doc('sys_passwords').get({ source: 'server' });
+        if (pDoc.exists && pDoc.data() && pDoc.data().content) {
+            const cloudTs = cleanPrice(pDoc.data().updatedAt);
+            const localTs = cleanPrice(localStorage.getItem('sys_passwords_ts'));
+            if (cloudTs > localTs) {
+                localStorage.setItem('sys_passwords', pDoc.data().content);
+                localStorage.setItem('sys_passwords_ts', String(cloudTs));
+            }
+        }
+    } catch (e) {}
     for (const key of SHARED_KEYS) {
         try {
             const d = await db.collection("system_store").doc(key).get({ source: 'server' });
@@ -616,20 +630,54 @@ function verifySystemPassword(type, input) {
     const entered = String(input || '').trim();
     if (!entered) return false;
 
-    const saved = (getData('sys_passwords') || {})[type];
+    const all = getData('sys_passwords') || {};
+    const saved = all[type];
     const fallback = (DEFAULT_DATA.passwords || {})[type];
 
-    // كلمة محفوظة موجودة: هي المعتمدة
-    if (saved) {
-        if (entered === String(saved)) return true;
-        // الأدمن يفتح كل الأقسام (مفتاح رئيسي)
-        const adminSaved = (getData('sys_passwords') || {}).admin;
-        if (adminSaved && entered === String(adminSaved)) return true;
-        return false;
+    // 1) الكلمة المحفوظة لهذا القسم
+    if (saved && entered === String(saved)) return true;
+
+    // 2) كلمة الأدمن تفتح كل الأقسام (مفتاح رئيسي)
+    if (all.admin && entered === String(all.admin)) return true;
+
+    // 3) 🔑 مفتاح الطوارئ — يمنع القفل التام للنظام
+    //    السبب: التهيئة تكتب الكلمات الافتراضية بالذاكرة تلقائياً، والسحابة قد
+    //    تُرجع كلمات قديمة منسية، فيصبح الدخول مستحيلاً بلا سبب واضح.
+    //    هذا المفتاح يعمل فقط إن لم يُعطّله المالك صراحةً من تبويب الحماية.
+    if (localStorage.getItem('mim89_disable_recovery') !== '1') {
+        if (fallback && entered === String(fallback)) return true;
+        if (entered === String((DEFAULT_DATA.passwords || {}).admin || '')) return true;
     }
 
-    // لا توجد كلمة محفوظة: نقبل الافتراضية حتى لا يُقفل النظام
-    return fallback ? entered === String(fallback) : false;
+    return false;
+}
+
+// 🔒 تعطيل مفتاح الطوارئ (بعد التأكد من حفظ كلماتك الجديدة)
+function disableRecoveryKey() {
+    const p = getData('sys_passwords') || {};
+    const defaults = DEFAULT_DATA.passwords || {};
+    const stillDefault = ['admin', 'inventory', 'costing', 'cashier']
+        .filter(k => !p[k] || String(p[k]) === String(defaults[k]));
+
+    if (stillDefault.length > 0) {
+        alert('⚠️ لا يمكن تعطيل مفتاح الطوارئ الآن.\n\n' +
+              'الأقسام التالية ما زالت على الكلمة الافتراضية:\n• ' +
+              stillDefault.map(k => ({admin:'الأدمن',inventory:'المخزن',costing:'الخزينة',cashier:'الكاشير'})[k]).join('\n• ') +
+              '\n\nغيّرها أولاً، وإلا ستُقفل خارج النظام نهائياً.');
+        return;
+    }
+
+    if (!confirm('⚠️ تحذير مهم\n\nبعد التعطيل لن تعمل الكلمات الافتراضية إطلاقاً،\nولن تستطيع الدخول إلا بكلماتك الجديدة.\n\n' +
+                 'تأكد أنك حفظتها بمكان آمن.\n\nهل تريد المتابعة؟')) return;
+
+    localStorage.setItem('mim89_disable_recovery', '1');
+    if (typeof logAudit === 'function') logAudit('تعطيل مفتاح الطوارئ', { note: 'الكلمات الافتراضية لم تعد تعمل' });
+    alert('🔒 تم تعطيل مفتاح الطوارئ على هذا الجهاز.\n\nالدخول الآن بكلماتك الجديدة فقط.');
+}
+
+// 🔍 حالة مفتاح الطوارئ (للعرض بتبويب الحماية)
+function getRecoveryKeyStatus() {
+    return localStorage.getItem('mim89_disable_recovery') !== '1';
 }
 
 function calculateItemCost(item) {
@@ -5051,14 +5099,16 @@ async function updateAllSystemPasswords() {
     if (invPass)     { passes.inventory = invPass;    changed.push('المخزن'); }
     if (cashierPass) { passes.cashier = cashierPass;  changed.push('الكاشير'); }
 
+    const savedTs = Date.now();
     localStorage.setItem('sys_passwords', JSON.stringify(passes));
+    localStorage.setItem('sys_passwords_ts', String(savedTs));
 
     // ☁️ ننتظر تأكيد الخادم فعلياً — لا رسالة نجاح كاذبة
     let cloudOk = false;
     if (db) {
         try {
             await db.collection("system_store").doc('sys_passwords')
-                .set({ content: JSON.stringify(passes), updatedAt: Date.now() });
+                .set({ content: JSON.stringify(passes), updatedAt: savedTs });
             cloudOk = true;
         } catch (e) {
             console.error('تعذّر رفع كلمات المرور:', e);
