@@ -693,15 +693,13 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1320"></script>
+    <script src="app.js?v=1330"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
             const validPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
 
-            // 🛠️ [إصلاح] كان الشرط يقبل "admin123" و"123" دائماً مهما غيّرت كلمة المرور،
-            // فيبدو أن التغيير لا يعمل. الآن تُقبل كلمة المرور المحفوظة فقط.
-            if (pass === validPass) {
+            if (typeof verifySystemPassword === 'function' ? verifySystemPassword('admin', pass) : (pass === validPass)) {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('adminMainApp').style.display = 'block';
                 if (typeof initAdminPage === 'function') initAdminPage();
