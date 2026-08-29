@@ -93,6 +93,7 @@
             <button class="inv-tab" onclick="switchInvTab('tabCount', this)"><i class="fa-solid fa-clipboard-check"></i> 🔍 الجرد الفعلي</button>
             <button class="inv-tab" onclick="switchInvTab('tabUsage', this)"><i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات</button>
             <button class="inv-tab" onclick="switchInvTab('tabVariance', this)" style="border-color:var(--danger-red); color:#ff9b9b;"><i class="fa-solid fa-triangle-exclamation"></i> ⚠️ الهدر والفروقات</button>
+            <button class="inv-tab" onclick="switchInvTab('tabSetup', this)" style="border-color:#10b981; color:#7fe3c0;"><i class="fa-solid fa-wand-magic-sparkles"></i> 🚀 الإعداد السريع</button>
         </div>
 
         <!-- ============ 1. المواد والمخزون ============ -->
@@ -260,6 +261,62 @@
             </div>
         </div>
 
+        <!-- ============ 6. الإعداد السريع ============ -->
+        <div id="tabSetup" class="inv-page" style="display:none;">
+
+            <div class="card" style="border-color:#10b981;">
+                <div class="sec-title" style="color:#10b981;"><i class="fa-solid fa-boxes-packing"></i> إضافة المواد الأساسية دفعة واحدة</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    اختر المواد التي يستخدمها مطعمك، وستُضاف كلها بضغطة واحدة بكميات وأسعار صفرية —
+                    ثم <strong style="color:#fff;">تعدّلها من تبويب «المواد والمخزون» حسب واقعك</strong>.
+                    <br>هذا يوفّر عليك كتابة كل مادة يدوياً.
+                </p>
+
+                <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                    <button onclick="togglePresetAll(true)" class="gold-btn btn-sm" style="background:#1c1c24; border:1px solid #444; color:#ccc;">تحديد الكل</button>
+                    <button onclick="togglePresetAll(false)" class="gold-btn btn-sm" style="background:#1c1c24; border:1px solid #444; color:#ccc;">إلغاء التحديد</button>
+                    <span id="presetCount" style="color:var(--gold-bright); font-size:0.8rem; font-weight:800; margin-right:auto; align-self:center;"></span>
+                </div>
+
+                <div id="presetGroups" style="max-height:420px; overflow-y:auto; margin-bottom:12px;"></div>
+
+                <button onclick="addSelectedPresets()" class="gold-btn btn-block" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; padding:13px; font-weight:900;">
+                    ➕ إضافة المواد المحددة للمخزن
+                </button>
+            </div>
+
+            <div class="card" style="border-color:#f59e0b;">
+                <div class="sec-title" style="color:#f59e0b;"><i class="fa-solid fa-mortar-pestle"></i> البهارات والمواد المساعدة</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    <strong style="color:#fff;">الطريقة الاحترافية:</strong> لا تُوزن البهارات لكل وصفة — بل تُحتسب
+                    كنسبة مئوية تُضاف فوق تكلفة المواد الأساسية، وتغطي:
+                    البهارات • الملح • الزيت • الغاز • التغليف • المناديل • الأكياس.
+                    <br><br>
+                    <strong style="color:var(--gold-bright);">النسب المعتادة:</strong> مشاوي وشاورما 8-12% • بركر وسندويشات 5-8% • مشروبات 2-3%
+                </p>
+
+                <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap; margin-bottom:12px;">
+                    <div style="flex:1; min-width:180px;">
+                        <label class="hint">نسبة المواد المساعدة (%)</label>
+                        <input type="number" id="overheadPct" class="gold-input-inline" placeholder="8" step="0.5" min="0" max="50">
+                    </div>
+                    <button onclick="saveOverheadPct()" class="gold-btn" style="min-height:42px;">حفظ النسبة</button>
+                </div>
+
+                <div id="overheadPreview" style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px;"></div>
+            </div>
+
+            <div class="card">
+                <div class="sec-title"><i class="fa-solid fa-link"></i> ربط سريع للوصفات</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    الأصناف التي لم تُربط بمواد بعد. اربط المواد الأساسية لكل صنف (2-4 مواد تكفي عادة)
+                    — والبهارات تُغطّيها النسبة أعلاه تلقائياً.
+                </p>
+                <div id="unlinkedItemsList" style="max-height:400px; overflow-y:auto;"></div>
+            </div>
+
+        </div>
+
     </div>
 
     <script src="app.js?v=1300"></script>
@@ -290,6 +347,7 @@
             if (id === 'tabCount')    { renderCountTable(); renderCountsHistory(); }
             if (id === 'tabUsage')    renderUsageReport();
             if (id === 'tabVariance') { loadVarianceSelectors(); renderVarianceReport(); }
+            if (id === 'tabSetup')    { renderPresets(); loadOverheadPct(); renderUnlinkedItems(); }
         }
 
         function initInventoryApp() {
@@ -688,7 +746,10 @@
             const r = computeTheoreticalUsage(f, t);
 
             const arr = Object.keys(r.usage).map(k => r.usage[k]).sort((a, b) => b.cost - a.cost);
-            const totalCost = arr.reduce((s, x) => s + x.cost, 0);
+            const materialsCost = arr.reduce((s, x) => s + x.cost, 0);
+            const ovPct = (function () { const v = parseFloat(localStorage.getItem('sys_overhead_pct')); return isNaN(v) ? 8 : v; })();
+            const overheadCost = materialsCost * (ovPct / 100);
+            const totalCost = materialsCost + overheadCost;
 
             const unlinkedCount = Object.keys(r.unlinkedMeals).length;
             const sumBox = document.getElementById('usageSummary');
@@ -697,7 +758,9 @@
                     '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; text-align:center;">' +
                     '<div><div class="hint">الفواتير بالفترة</div><strong style="color:#fff; font-size:1.15rem;">' + r.ordersCount + '</strong></div>' +
                     '<div><div class="hint">مواد استُهلكت</div><strong style="color:#38bdf8; font-size:1.15rem;">' + arr.length + '</strong></div>' +
-                    '<div><div class="hint">إجمالي تكلفة المواد</div><strong style="color:var(--danger-red); font-size:1.15rem;">' + money(totalCost) + '</strong></div>' +
+                    '<div><div class="hint">تكلفة المواد الأساسية</div><strong style="color:var(--danger-red); font-size:1.15rem;">' + money(materialsCost) + '</strong></div>' +
+                    '<div><div class="hint">🧂 مواد مساعدة (' + ovPct + '%)</div><strong style="color:#f59e0b; font-size:1.15rem;">' + money(overheadCost) + '</strong></div>' +
+                    '<div><div class="hint">التكلفة الإجمالية</div><strong style="color:var(--gold-bright); font-size:1.15rem;">' + money(totalCost) + '</strong></div>' +
                     '</div>' +
                     (unlinkedCount > 0
                         ? '<p style="font-size:0.78rem; color:#f59e0b; margin-top:12px; line-height:1.6;">⚠️ يوجد <strong>' + unlinkedCount +
@@ -711,7 +774,7 @@
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:18px;">لا يوجد استهلاك بهذه الفترة (أو لم تُربط وصفات بالأصناف)</td></tr>';
                 } else {
                     tbody.innerHTML = arr.map(x => {
-                        const pct = totalCost > 0 ? ((x.cost / totalCost) * 100).toFixed(1) : 0;
+                        const pct = materialsCost > 0 ? ((x.cost / materialsCost) * 100).toFixed(1) : 0;
                         return '<tr><td><strong>' + x.name + '</strong></td>' +
                             '<td class="num" style="color:#38bdf8;">' + qtyFmt(x.qty) + ' ' + x.unit + '</td>' +
                             '<td class="num">' + money(x.unitCost) + '</td>' +
@@ -896,6 +959,236 @@
                 '</p></div>';
 
             box.innerHTML = html;
+        }
+
+        /* ==========================================================
+           الإعداد السريع: مواد جاهزة + نسبة المواد المساعدة
+           ========================================================== */
+
+        // قائمة مواد شائعة لمطاعم الوجبات السريعة — تُضاف بكميات صفرية للتعديل لاحقاً
+        const PRESET_MATERIALS = {
+            "🍗 اللحوم والدجاج": [
+                { name: "صدور دجاج طازجة", unit: "كغم" },
+                { name: "شرائح شاورما دجاج", unit: "كغم" },
+                { name: "شرائح زنجر سبايسي", unit: "كغم" },
+                { name: "شرائح سكالوب دجاج", unit: "كغم" },
+                { name: "قطع بروستد", unit: "كغم" },
+                { name: "لحم بركر (أقراص)", unit: "قطعة" },
+                { name: "شاورما لحم", unit: "كغم" },
+                { name: "ستربس دجاج", unit: "كغم" }
+            ],
+            "🥖 الخبز والعجين": [
+                { name: "خبز صاج", unit: "قطعة" },
+                { name: "خبز بركر", unit: "قطعة" },
+                { name: "خبز سندويش", unit: "قطعة" },
+                { name: "تورتيلا", unit: "قطعة" },
+                { name: "خبز عربي", unit: "قطعة" }
+            ],
+            "🧀 الأجبان والألبان": [
+                { name: "جبن شيدر شرائح", unit: "قطعة" },
+                { name: "جبن موزاريلا", unit: "كغم" },
+                { name: "جبن حلوم", unit: "كغم" },
+                { name: "لبن / زبادي", unit: "كغم" }
+            ],
+            "🥔 الخضار والبطاطس": [
+                { name: "بطاطس مجمدة", unit: "كغم" },
+                { name: "طماطم", unit: "كغم" },
+                { name: "خس", unit: "كغم" },
+                { name: "بصل", unit: "كغم" },
+                { name: "مخلل", unit: "كغم" },
+                { name: "فلفل هالبينو", unit: "كغم" },
+                { name: "ثوم", unit: "كغم" }
+            ],
+            "🥣 الصوصات والزيوت": [
+                { name: "صلصة ثومية", unit: "كغم" },
+                { name: "مايونيز", unit: "كغم" },
+                { name: "كاتشب", unit: "كغم" },
+                { name: "صوص باربيكيو", unit: "كغم" },
+                { name: "صوص رانش", unit: "كغم" },
+                { name: "صوص هاني ماستر", unit: "كغم" },
+                { name: "صوص خاص 89", unit: "كغم" },
+                { name: "زيت قلي", unit: "لتر" }
+            ],
+            "🍚 الريزو والأرز": [
+                { name: "أرز", unit: "كغم" },
+                { name: "خلطة ريزو", unit: "كغم" }
+            ],
+            "🥤 المشروبات": [
+                { name: "بيبسي 250", unit: "علبة" },
+                { name: "بيبسي 500", unit: "قنينة" },
+                { name: "سفن 250", unit: "علبة" },
+                { name: "سفن 500", unit: "قنينة" },
+                { name: "ميرندا 250", unit: "علبة" },
+                { name: "ماء", unit: "قنينة" }
+            ],
+            "📦 التغليف والمستلزمات": [
+                { name: "علب بركر", unit: "قطعة" },
+                { name: "أكياس ورقية", unit: "قطعة" },
+                { name: "علب فنكر", unit: "قطعة" },
+                { name: "ورق تغليف شاورما", unit: "قطعة" },
+                { name: "أكياس نايلون", unit: "قطعة" },
+                { name: "مناديل", unit: "علبة" }
+            ],
+            "🧂 البهارات والمواد المساعدة": [
+                { name: "خلطة بهارات شاورما", unit: "كغم" },
+                { name: "بهارات بروستد", unit: "كغم" },
+                { name: "ملح", unit: "كغم" },
+                { name: "فلفل أسود", unit: "كغم" },
+                { name: "دقيق تغطية", unit: "كغم" }
+            ]
+        };
+
+        function renderPresets() {
+            const box = document.getElementById('presetGroups');
+            if (!box) return;
+
+            const existing = (getData('sys_inventory') || []).map(i => String(i.name).trim());
+
+            box.innerHTML = Object.keys(PRESET_MATERIALS).map(group => {
+                const rows = PRESET_MATERIALS[group].map(m => {
+                    const already = existing.includes(m.name);
+                    return '<label style="display:flex; align-items:center; gap:8px; padding:7px 9px; background:' +
+                        (already ? '#0f1a14' : '#121215') + '; border-radius:6px; margin-bottom:4px; cursor:' +
+                        (already ? 'default' : 'pointer') + '; border:1px solid ' + (already ? 'rgba(16,185,129,0.3)' : '#22222c') + ';">' +
+                        '<input type="checkbox" class="preset-cb" data-name="' + m.name + '" data-unit="' + m.unit + '" ' +
+                        (already ? 'disabled' : 'checked') + ' onchange="updatePresetCount()" style="width:17px; height:17px;">' +
+                        '<span style="flex:1; font-size:0.82rem; color:' + (already ? '#10b981' : '#ddd') + ';">' + m.name + '</span>' +
+                        '<span style="font-size:0.72rem; color:#777;">' + m.unit + '</span>' +
+                        (already ? '<span style="font-size:0.68rem; color:#10b981;">✓ موجودة</span>' : '') +
+                        '</label>';
+                }).join('');
+
+                return '<div style="margin-bottom:14px;">' +
+                    '<div style="color:var(--gold-bright); font-weight:900; font-size:0.85rem; margin-bottom:6px;">' + group + '</div>' +
+                    rows + '</div>';
+            }).join('');
+
+            updatePresetCount();
+        }
+
+        function updatePresetCount() {
+            const sel = document.querySelectorAll('.preset-cb:checked:not(:disabled)').length;
+            const el = document.getElementById('presetCount');
+            if (el) el.innerText = 'محدد: ' + sel + ' مادة';
+        }
+
+        function togglePresetAll(state) {
+            document.querySelectorAll('.preset-cb:not(:disabled)').forEach(cb => cb.checked = state);
+            updatePresetCount();
+        }
+
+        function addSelectedPresets() {
+            const selected = Array.from(document.querySelectorAll('.preset-cb:checked:not(:disabled)'));
+            if (selected.length === 0) return alert("لم تحدد أي مادة.");
+
+            if (!confirm('سيتم إضافة ' + selected.length + ' مادة للمخزن بكميات وأسعار صفرية.\n\n' +
+                         'بعدها عدّل الكميات والأسعار من تبويب «المواد والمخزون» حسب واقع مطعمك.\n\nهل تريد المتابعة؟')) return;
+
+            const inv = getData('sys_inventory') || [];
+            let added = 0;
+            const base = Date.now();
+
+            selected.forEach((cb, idx) => {
+                const name = cb.dataset.name;
+                if (inv.some(i => String(i.name).trim() === name)) return;
+                inv.push({
+                    id: base + idx,
+                    name: name,
+                    quantity: 0,
+                    unit: cb.dataset.unit,
+                    totalPrice: 0,
+                    costPerUnit: 0,
+                    minLimit: 5
+                });
+                added++;
+            });
+
+            setData('sys_inventory', inv);
+            renderPresets();
+            renderInventoryTable();
+            alert('✅ أُضيفت ' + added + ' مادة.\n\nالخطوة التالية: افتح تبويب «المواد والمخزون» وعدّل الكمية والسعر لكل مادة.');
+        }
+
+        /* ---------- نسبة المواد المساعدة (البهارات وغيرها) ---------- */
+        function loadOverheadPct() {
+            const v = localStorage.getItem('sys_overhead_pct');
+            document.getElementById('overheadPct').value = v !== null ? v : '8';
+            renderOverheadPreview();
+        }
+
+        function saveOverheadPct() {
+            const v = parseFloat(document.getElementById('overheadPct').value);
+            if (isNaN(v) || v < 0 || v > 50) return alert("أدخل نسبة بين 0 و 50");
+            localStorage.setItem('sys_overhead_pct', String(v));
+            if (typeof setData === 'function') setData('sys_overhead_pct_shared', v);
+            renderOverheadPreview();
+            alert('✅ حُفظت النسبة: ' + v + '%\n\nستُضاف تلقائياً فوق تكلفة كل صنف في تقارير الخزينة والمخزن.');
+        }
+
+        function renderOverheadPreview() {
+            const box = document.getElementById('overheadPreview');
+            if (!box) return;
+            const pct = parseFloat(localStorage.getItem('sys_overhead_pct'));
+            const p = isNaN(pct) ? 8 : pct;
+
+            const items = getData('sys_items') || [];
+            const linked = items.filter(i => Array.isArray(i.recipe) && i.recipe.length > 0);
+
+            let html = '<div style="color:var(--gold-bright); font-weight:900; font-size:0.85rem; margin-bottom:8px;">مثال على التطبيق (' + p + '%)</div>';
+
+            if (linked.length === 0) {
+                html += '<p class="hint">اربط وصفة صنف واحد على الأقل لترى المثال.</p>';
+            } else {
+                linked.slice(0, 3).forEach(it => {
+                    const base = getRecipeCostForItem(it);
+                    const withOv = base * (1 + p / 100);
+                    const price = cleanPrice(it.price);
+                    html += '<div style="border-bottom:1px solid #22222c; padding:7px 0; font-size:0.79rem;">' +
+                        '<strong style="color:#fff;">' + it.name + '</strong>' +
+                        '<div style="display:flex; justify-content:space-between; color:#aaa; margin-top:3px;">' +
+                        '<span>مواد أساسية: ' + money(base) + '</span>' +
+                        '<span style="color:#f59e0b;">+ مساعدة: ' + money(withOv - base) + '</span>' +
+                        '<span style="color:var(--danger-red);">= ' + money(withOv) + '</span>' +
+                        '<span style="color:var(--success-green);">ربح: ' + money(price - withOv) + '</span>' +
+                        '</div></div>';
+                });
+            }
+            box.innerHTML = html;
+        }
+
+        function getRecipeCostForItem(item) {
+            if (!item || !Array.isArray(item.recipe)) return 0;
+            const inv = getData('sys_inventory') || [];
+            let c = 0;
+            item.recipe.forEach(r => {
+                const m = inv.find(i => cleanPrice(i.id) === cleanPrice(r.invId));
+                if (m) c += unitCostOf(m) * (parseFloat(r.qty) || 0);
+            });
+            return c;
+        }
+
+        /* ---------- الأصناف غير المربوطة ---------- */
+        function renderUnlinkedItems() {
+            const box = document.getElementById('unlinkedItemsList');
+            if (!box) return;
+
+            const items = getData('sys_items') || [];
+            const unlinked = items.filter(i => !Array.isArray(i.recipe) || i.recipe.length === 0);
+
+            if (unlinked.length === 0) {
+                box.innerHTML = '<p style="color:var(--success-green); text-align:center; padding:16px; font-weight:bold;">✅ كل الأصناف مربوطة بمواد — تقاريرك دقيقة</p>';
+                return;
+            }
+
+            box.innerHTML = '<p style="color:#f59e0b; font-size:0.82rem; margin-bottom:10px; font-weight:bold;">' +
+                '⚠️ ' + unlinked.length + ' صنف بلا مواد — تكلفتها تُحتسب صفراً حالياً</p>' +
+                unlinked.map(i =>
+                    '<div style="display:flex; justify-content:space-between; align-items:center; background:#121215; padding:9px 11px; border-radius:7px; margin-bottom:5px;">' +
+                    '<div><strong style="font-size:0.83rem;">' + i.name + '</strong>' +
+                    '<div style="font-size:0.72rem; color:#888;">' + cleanPrice(i.price).toLocaleString('ar-IQ') + ' د.ع</div></div>' +
+                    '<a href="costing.html" class="gold-btn btn-sm" style="text-decoration:none; padding:6px 12px; font-size:0.73rem; white-space:nowrap;">ربط المواد ←</a>' +
+                    '</div>'
+                ).join('');
         }
 
         document.addEventListener('DOMContentLoaded', () => { try { initData(); } catch (e) {} });
