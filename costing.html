@@ -228,7 +228,7 @@
 
     </div>
 
-    <script src="app.js?v=1320"></script>
+    <script src="app.js?v=1330"></script>
     <script>
         const OWNER_PIN = "1278900";
         let currentPeriod = 'today';
@@ -236,8 +236,7 @@
         function checkSecretPass() {
             const input = document.getElementById('secretPassInput').value.trim();
             const valid = typeof getSystemPassword === 'function' ? getSystemPassword('costing') : OWNER_PIN;
-            // 🛠️ [إصلاح] حُذف قبول الرمز القديم الثابت الذي كان يعمل دائماً
-            if (input === valid) {
+            if (typeof verifySystemPassword === 'function' ? verifySystemPassword('costing', input) : (input === valid)) {
                 document.getElementById('secretAuthModal').style.display = 'none';
                 document.getElementById('mainFinancialApp').style.display = 'block';
                 initCostingApp();
