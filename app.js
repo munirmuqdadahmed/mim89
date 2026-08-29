@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1320';
+const MIM89_APP_VERSION = '1330';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -604,6 +604,32 @@ async function getNextOrderNumberFromCloud() {
 function getSystemPassword(type) {
     const sysPasses = getData('sys_passwords') || {};
     return sysPasses[type] || DEFAULT_DATA.passwords[type] || '123456';
+}
+
+// 🔑 [إصلاح] التحقق من كلمة المرور بشكل آمن لا يقفل عليك النظام.
+// المشكلة السابقة: حُذفت الكلمات الافتراضية من شروط الدخول، فإذا كانت
+// الكلمات المحفوظة غير موجودة (بعد تنظيف الذاكرة أو على جهاز جديد)
+// أصبح الدخول مستحيلاً تماماً.
+// الحل: تُقبل الكلمة المحفوظة دائماً، وتُقبل الافتراضية فقط إن لم تكن
+// هناك كلمة محفوظة لهذا القسم — فلا تُقفل الأبواب أبداً.
+function verifySystemPassword(type, input) {
+    const entered = String(input || '').trim();
+    if (!entered) return false;
+
+    const saved = (getData('sys_passwords') || {})[type];
+    const fallback = (DEFAULT_DATA.passwords || {})[type];
+
+    // كلمة محفوظة موجودة: هي المعتمدة
+    if (saved) {
+        if (entered === String(saved)) return true;
+        // الأدمن يفتح كل الأقسام (مفتاح رئيسي)
+        const adminSaved = (getData('sys_passwords') || {}).admin;
+        if (adminSaved && entered === String(adminSaved)) return true;
+        return false;
+    }
+
+    // لا توجد كلمة محفوظة: نقبل الافتراضية حتى لا يُقفل النظام
+    return fallback ? entered === String(fallback) : false;
 }
 
 function calculateItemCost(item) {
@@ -1888,8 +1914,7 @@ function loginCashier() {
     let cashiers = getData('sys_cashiers');
     let user = cashiers.find(c => String(c.password).trim() === inputPass);
 
-    // 🛠️ [إصلاح] كان الرمز "123" مقبولاً دائماً مهما غيّرت رمز الكاشير
-    if (!user && inputPass === validPass) {
+    if (!user && verifySystemPassword('cashier', inputPass)) {
         user = { id: "c1", name: "الكاشير الرئيسي", password: validPass };
     }
 
