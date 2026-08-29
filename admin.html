@@ -491,6 +491,21 @@
         <div id="tabSecurityControl" class="tab-content" style="margin-top:15px; display:none;">
             <div class="card" style="max-width:500px; margin:0 auto;">
                 <h4 style="color:var(--gold-primary); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> كلمات المرور</h4>
+
+                <div style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="color:var(--gold-bright); font-weight:900; font-size:0.85rem;">الكلمات الفعّالة حالياً</span>
+                        <button onclick="revealCurrentPasswords()" class="gold-btn btn-sm" style="background:#1c1c24; border:1px solid #444; color:#ccc; padding:5px 12px;">👁️ إظهار</button>
+                    </div>
+                    <div id="currentPasswordsBox">
+                        <p style="color:#666; font-size:0.8rem; text-align:center; padding:8px;">اضغط «إظهار» لعرض الكلمات الفعّالة</p>
+                    </div>
+                </div>
+
+                <p style="font-size:0.78rem; color:#ccc; line-height:1.7; margin-bottom:12px; background:#0f1a14; border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px;">
+                    💡 <strong style="color:#10b981;">اترك الحقل فارغاً</strong> لأي قسم لا تريد تغيير كلمته.
+                    <br>التغيير يُحفظ بالسحابة ويصل لكل الأجهزة خلال دقيقة.
+                </p>
                 
                 <label style="font-size:0.8rem; color:#aaa;">كلمة مرور الأدمن (Admin):</label>
                 <input type="password" id="newAdminPass" class="gold-input-inline" placeholder="كلمة السر الجديدة" style="margin-bottom:8px;">
@@ -678,13 +693,15 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1300"></script>
+    <script src="app.js?v=1320"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
             const validPass = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
 
-            if (pass === validPass || pass === "admin123" || pass === "123") {
+            // 🛠️ [إصلاح] كان الشرط يقبل "admin123" و"123" دائماً مهما غيّرت كلمة المرور،
+            // فيبدو أن التغيير لا يعمل. الآن تُقبل كلمة المرور المحفوظة فقط.
+            if (pass === validPass) {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('adminMainApp').style.display = 'block';
                 if (typeof initAdminPage === 'function') initAdminPage();
