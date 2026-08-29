@@ -270,6 +270,10 @@
                     <div style="margin-top:10px;">
                         <img id="imgPreview" src="https://via.placeholder.com/150?text=معاينة+الصورة" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--gold-primary);">
                     </div>
+                    <div id="imgCompressInfo" style="font-size:0.74rem; margin-top:8px; min-height:18px;"></div>
+                    <p style="font-size:0.7rem; color:#777; margin-top:4px; line-height:1.5;">
+                        📸 تُضغط الصور تلقائياً لتصبح أخف وأسرع ظهوراً للزبون
+                    </p>
 
                     <input type="text" id="itemImage" class="gold-input-inline" placeholder="أو أدخل رابط صورة خارجي (اختياري)" style="font-size:0.75rem; margin-top:8px; text-align:center;" onchange="document.getElementById('imgPreview').src = this.value">
                 </div>
@@ -696,7 +700,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1340"></script>
+    <script src="app.js?v=1400"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
