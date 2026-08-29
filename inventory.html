@@ -89,10 +89,12 @@
 
         <div class="inv-tabs">
             <button class="inv-tab active" onclick="switchInvTab('tabStock', this)"><i class="fa-solid fa-warehouse"></i> المواد والمخزون</button>
+            <button class="inv-tab" onclick="switchInvTab('tabRecipes', this)" style="border-color:#a855f7; color:#d8b4fe;"><i class="fa-solid fa-flask"></i> 🧪 تفكيك الأصناف</button>
             <button class="inv-tab" onclick="switchInvTab('tabPurchase', this)"><i class="fa-solid fa-truck"></i> المشتريات</button>
             <button class="inv-tab" onclick="switchInvTab('tabCount', this)"><i class="fa-solid fa-clipboard-check"></i> 🔍 الجرد الفعلي</button>
             <button class="inv-tab" onclick="switchInvTab('tabUsage', this)"><i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات</button>
             <button class="inv-tab" onclick="switchInvTab('tabVariance', this)" style="border-color:var(--danger-red); color:#ff9b9b;"><i class="fa-solid fa-triangle-exclamation"></i> ⚠️ الهدر والفروقات</button>
+            <button class="inv-tab" onclick="switchInvTab('tabRecipes', this)" style="border-color:#a855f7; color:#d8b4fe;"><i class="fa-solid fa-flask"></i> 🧪 تفكيك الأصناف</button>
             <button class="inv-tab" onclick="switchInvTab('tabSetup', this)" style="border-color:#10b981; color:#7fe3c0;"><i class="fa-solid fa-wand-magic-sparkles"></i> 🚀 الإعداد السريع</button>
         </div>
 
@@ -131,6 +133,39 @@
                         <tbody id="inventoryTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- ============ 🧪 تفكيك الأصناف ============ -->
+        <div id="tabRecipes" class="inv-page" style="display:none;">
+
+            <div class="kpi-grid">
+                <div class="kpi"><span class="t">أصناف مفكّكة</span><div class="v num" id="kpiLinked" style="color:var(--success-green);">0</div></div>
+                <div class="kpi"><span class="t">أصناف غير مفكّكة</span><div class="v num" id="kpiUnlinked" style="color:var(--danger-red);">0</div></div>
+                <div class="kpi"><span class="t">نسبة الإنجاز</span><div class="v num" id="kpiProgress" style="color:var(--gold-bright);">0%</div></div>
+                <div class="kpi"><span class="t">متوسط هامش الربح</span><div class="v num" id="kpiAvgMargin" style="color:#38bdf8;">—</div></div>
+            </div>
+
+            <div class="card" style="border-color:#a855f7;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                    <div class="sec-title" style="color:#a855f7; margin:0;"><i class="fa-solid fa-flask"></i> تفكيك الأصناف إلى مواد أولية</div>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <input type="text" id="recipeSearch" class="gold-input-inline" placeholder="🔍 ابحث عن صنف..." style="width:180px;" oninput="renderRecipeWorkbench()">
+                        <select id="recipeFilter" class="gold-input-inline" style="width:auto;" onchange="renderRecipeWorkbench()">
+                            <option value="unlinked">⚠️ غير المفكّكة فقط</option>
+                            <option value="all">كل الأصناف</option>
+                            <option value="linked">✅ المفكّكة فقط</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="hint" style="margin-bottom:12px;">
+                    اضغط على أي صنف ليفتح، ثم أضف مواده الأولية بالكمية المستهلكة <strong style="color:#fff;">للوجبة الواحدة</strong>.
+                    <br>مثال: شاورما صاج = 0.12 كغم دجاج + 1 خبز صاج + 0.03 كغم ثومية.
+                    <br>💡 لا تُدخل البهارات — تُغطّيها نسبة المواد المساعدة تلقائياً.
+                </p>
+
+                <div id="recipeWorkbench" style="max-height:70vh; overflow-y:auto;"></div>
             </div>
         </div>
 
@@ -261,7 +296,7 @@
             </div>
         </div>
 
-        <!-- ============ 6. الإعداد السريع ============ -->
+        <!-- ============ 7. الإعداد السريع ============ -->
         <div id="tabSetup" class="inv-page" style="display:none;">
 
             <div class="card" style="border-color:#10b981;">
@@ -343,11 +378,13 @@
             document.getElementById(id).style.display = 'block';
             if (btn) btn.classList.add('active');
 
+            if (id === 'tabRecipes')  renderRecipeWorkbench();
             if (id === 'tabPurchase') { loadPurchaseDropdown(); renderPurchases(); }
             if (id === 'tabCount')    { renderCountTable(); renderCountsHistory(); }
             if (id === 'tabUsage')    renderUsageReport();
             if (id === 'tabVariance') { loadVarianceSelectors(); renderVarianceReport(); }
             if (id === 'tabSetup')    { renderPresets(); loadOverheadPct(); renderUnlinkedItems(); }
+
         }
 
         function initInventoryApp() {
@@ -959,6 +996,221 @@
                 '</p></div>';
 
             box.innerHTML = html;
+        }
+
+        /* ==========================================================
+           🧪 ورشة تفكيك الأصناف — كل شيء بشاشة واحدة
+           ========================================================== */
+        let openRecipeId = null;
+
+        function getOverheadPctLocal() {
+            const v = parseFloat(localStorage.getItem('sys_overhead_pct'));
+            return isNaN(v) ? 8 : v;
+        }
+
+        function renderRecipeWorkbench() {
+            const box = document.getElementById('recipeWorkbench');
+            if (!box) return;
+
+            const items = getData('sys_items') || [];
+            const inv = getData('sys_inventory') || [];
+            const ovPct = getOverheadPctLocal();
+
+            // مؤشرات الإنجاز
+            const linked = items.filter(i => Array.isArray(i.recipe) && i.recipe.length > 0);
+            const unlinked = items.filter(i => !Array.isArray(i.recipe) || i.recipe.length === 0);
+            document.getElementById('kpiLinked').innerText = linked.length;
+            document.getElementById('kpiUnlinked').innerText = unlinked.length;
+            document.getElementById('kpiProgress').innerText =
+                items.length ? Math.round((linked.length / items.length) * 100) + '%' : '0%';
+
+            let marginSum = 0, marginCount = 0;
+            linked.forEach(i => {
+                const c = getRecipeCostForItem(i) * (1 + ovPct / 100);
+                const p = cleanPrice(i.price);
+                if (p > 0) { marginSum += ((p - c) / p) * 100; marginCount++; }
+            });
+            document.getElementById('kpiAvgMargin').innerText =
+                marginCount ? (marginSum / marginCount).toFixed(0) + '%' : '—';
+
+            // التصفية
+            const q = (document.getElementById('recipeSearch')?.value || '').toLowerCase();
+            const filter = document.getElementById('recipeFilter')?.value || 'unlinked';
+
+            let list = items;
+            if (filter === 'linked') list = linked;
+            else if (filter === 'unlinked') list = unlinked;
+            if (q) list = list.filter(i => String(i.name).toLowerCase().includes(q));
+
+            if (list.length === 0) {
+                box.innerHTML = '<p style="color:var(--success-green); text-align:center; padding:24px; font-weight:bold;">' +
+                    (filter === 'unlinked' ? '✅ ممتاز — كل الأصناف مفكّكة!' : 'لا توجد أصناف مطابقة') + '</p>';
+                return;
+            }
+
+            const invOptions = inv.map(m => {
+                const uc = unitCostOf(m);
+                return '<option value="' + m.id + '">' + m.name + ' — ' + money(uc) + '/' + (m.unit || '') + '</option>';
+            }).join('');
+
+            box.innerHTML = list.map(item => {
+                const hasRecipe = Array.isArray(item.recipe) && item.recipe.length > 0;
+                const baseCost = getRecipeCostForItem(item);
+                const cost = baseCost * (1 + ovPct / 100);
+                const price = cleanPrice(item.price);
+                const profit = price - cost;
+                const margin = price > 0 ? ((profit / price) * 100) : 0;
+                const isOpen = String(openRecipeId) === String(item.id);
+
+                // تحذير الهامش المنخفض
+                let marginColor = 'var(--success-green)';
+                if (hasRecipe) {
+                    if (margin < 30) marginColor = 'var(--danger-red)';
+                    else if (margin < 50) marginColor = '#f59e0b';
+                }
+
+                let html = '<div style="background:#16161f; border:1px solid ' +
+                    (isOpen ? '#a855f7' : (hasRecipe ? 'var(--card-border)' : 'rgba(239,68,68,0.4)')) +
+                    '; border-radius:10px; margin-bottom:8px; overflow:hidden;">';
+
+                // رأس الصنف
+                html += '<div onclick="toggleRecipeCard(\'' + item.id + '\')" style="display:flex; justify-content:space-between; align-items:center; padding:12px; cursor:pointer; gap:10px;">' +
+                    '<div style="min-width:0; flex:1;">' +
+                    '<strong style="font-size:0.9rem; color:#fff;">' + item.name + '</strong>' +
+                    '<div style="font-size:0.74rem; color:#888; margin-top:3px;">' +
+                    (hasRecipe
+                        ? '🧪 ' + item.recipe.length + ' مادة • تكلفة ' + money(cost) + ' • ربح ' + money(profit)
+                        : '<span style="color:var(--danger-red);">⚠️ لم يُفكَّك بعد — تكلفته تُحتسب صفراً</span>') +
+                    '</div></div>' +
+                    '<div style="text-align:left; white-space:nowrap;">' +
+                    '<div class="num" style="color:var(--gold-bright); font-weight:900; font-size:0.88rem;">' + money(price) + '</div>' +
+                    (hasRecipe ? '<div class="num" style="color:' + marginColor + '; font-size:0.76rem; font-weight:800;">' + margin.toFixed(0) + '%</div>' : '') +
+                    '</div>' +
+                    '<span style="color:#666; font-size:1.1rem;">' + (isOpen ? '▲' : '▼') + '</span>' +
+                    '</div>';
+
+                // تفاصيل التفكيك
+                if (isOpen) {
+                    html += '<div style="background:#0f0f14; padding:12px; border-top:1px solid #22222c;">';
+
+                    if (hasRecipe) {
+                        html += '<table class="data-table" style="margin-bottom:10px;"><thead><tr>' +
+                            '<th>المادة</th><th>الكمية للوجبة</th><th>كلفة الوحدة</th><th>التكلفة</th><th></th>' +
+                            '</tr></thead><tbody>';
+
+                        item.recipe.forEach((r, idx) => {
+                            const m = inv.find(x => cleanPrice(x.id) === cleanPrice(r.invId));
+                            const uc = m ? unitCostOf(m) : 0;
+                            const lineCost = uc * (parseFloat(r.qty) || 0);
+                            html += '<tr>' +
+                                '<td><strong>' + (m ? m.name : '⚠️ مادة محذوفة') + '</strong></td>' +
+                                '<td><input type="number" step="0.001" value="' + r.qty + '" class="gold-input-inline num" style="width:90px;" onchange="updateRecipeQty(\'' + item.id + '\', ' + idx + ', this.value)"> ' +
+                                    '<span style="font-size:0.72rem; color:#777;">' + (m ? m.unit : '') + '</span></td>' +
+                                '<td class="num" style="color:#aaa;">' + money(uc) + '</td>' +
+                                '<td class="num" style="color:var(--danger-red); font-weight:bold;">' + money(lineCost) + '</td>' +
+                                '<td><button onclick="removeRecipeLine(\'' + item.id + '\', ' + idx + ')" class="gold-btn btn-danger btn-sm" style="padding:3px 8px;">✕</button></td>' +
+                                '</tr>';
+                        });
+                        html += '</tbody></table>';
+                    }
+
+                    // إضافة مادة
+                    html += '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:end; background:#121215; padding:10px; border-radius:8px; margin-bottom:10px;">' +
+                        '<div style="flex:2; min-width:160px;"><label class="hint">المادة</label>' +
+                        '<select id="addMat_' + item.id + '" class="gold-input-inline">' + invOptions + '</select></div>' +
+                        '<div style="flex:1; min-width:100px;"><label class="hint">الكمية للوجبة</label>' +
+                        '<input type="number" id="addQty_' + item.id + '" class="gold-input-inline" placeholder="0.12" step="0.001"></div>' +
+                        '<button onclick="addRecipeLine(\'' + item.id + '\')" class="gold-btn" style="min-height:40px; background:#a855f7; color:#fff; border:none;">➕ إضافة</button>' +
+                        '</div>';
+
+                    // ملخص التكلفة
+                    if (hasRecipe) {
+                        html += '<div style="background:#121215; border:1px solid var(--card-border); border-radius:8px; padding:12px;">' +
+                            '<div style="display:flex; justify-content:space-between; padding:4px 0; font-size:0.82rem;"><span style="color:#bbb;">مواد أساسية</span><strong class="num">' + money(baseCost) + '</strong></div>' +
+                            '<div style="display:flex; justify-content:space-between; padding:4px 0; font-size:0.82rem;"><span style="color:#f59e0b;">🧂 مواد مساعدة (' + ovPct + '%)</span><strong class="num" style="color:#f59e0b;">' + money(cost - baseCost) + '</strong></div>' +
+                            '<div style="display:flex; justify-content:space-between; padding:8px 0 4px 0; border-top:1px solid #2a2a35; margin-top:4px; font-size:0.9rem; font-weight:900;"><span>التكلفة الكلية</span><strong class="num" style="color:var(--danger-red);">' + money(cost) + '</strong></div>' +
+                            '<div style="display:flex; justify-content:space-between; padding:4px 0; font-size:0.9rem; font-weight:900;"><span>سعر البيع</span><strong class="num" style="color:var(--gold-bright);">' + money(price) + '</strong></div>' +
+                            '<div style="display:flex; justify-content:space-between; padding:8px 0 4px 0; border-top:2px solid var(--gold-primary); margin-top:4px; font-size:1rem; font-weight:900;"><span>صافي الربح</span><strong class="num" style="color:' + marginColor + ';">' + money(profit) + ' (' + margin.toFixed(0) + '%)</strong></div>';
+
+                        if (margin < 30 && price > 0) {
+                            html += '<p style="font-size:0.76rem; color:var(--danger-red); margin-top:10px; line-height:1.6; font-weight:bold;">' +
+                                '🚨 هامش ربح منخفض جداً. راجع السعر أو الكميات — الهامش الصحي بالوجبات السريعة 55-70%.</p>';
+                        } else if (margin < 50 && price > 0) {
+                            html += '<p style="font-size:0.76rem; color:#f59e0b; margin-top:10px; line-height:1.6;">' +
+                                '⚠️ الهامش أقل من المعتاد (55-70%). تحقق من الكميات أو السعر.</p>';
+                        }
+                        html += '</div>';
+                    }
+
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                return html;
+            }).join('');
+        }
+
+        function toggleRecipeCard(id) {
+            openRecipeId = (String(openRecipeId) === String(id)) ? null : id;
+            renderRecipeWorkbench();
+        }
+
+        function saveRecipeFor(itemId, recipe) {
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item) return null;
+            item.recipe = recipe;
+            localStorage.setItem('sys_items', JSON.stringify(items));
+            if (typeof db !== 'undefined' && db) {
+                db.collection("menu_items").doc(String(item.id))
+                    .set({ recipe: recipe }, { merge: true })
+                    .catch(e => console.error('تعذّر رفع الوصفة:', e));
+            }
+            return item;
+        }
+
+        function addRecipeLine(itemId) {
+            const matSel = document.getElementById('addMat_' + itemId);
+            const qtyInp = document.getElementById('addQty_' + itemId);
+            if (!matSel || !qtyInp) return;
+
+            const invId = cleanPrice(matSel.value);
+            const qty = parseFloat(qtyInp.value);
+            if (!qty || qty <= 0) return alert("أدخل الكمية المستهلكة للوجبة الواحدة");
+
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item) return;
+
+            const recipe = Array.isArray(item.recipe) ? item.recipe.slice() : [];
+            const ex = recipe.find(r => cleanPrice(r.invId) === invId);
+            if (ex) ex.qty = qty; else recipe.push({ invId: invId, qty: qty });
+
+            saveRecipeFor(itemId, recipe);
+            qtyInp.value = '';
+            renderRecipeWorkbench();
+        }
+
+        function updateRecipeQty(itemId, idx, value) {
+            const q = parseFloat(value);
+            if (!q || q <= 0) return alert("الكمية يجب أن تكون أكبر من صفر");
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item || !Array.isArray(item.recipe)) return;
+            const recipe = item.recipe.slice();
+            recipe[idx].qty = q;
+            saveRecipeFor(itemId, recipe);
+            renderRecipeWorkbench();
+        }
+
+        function removeRecipeLine(itemId, idx) {
+            const items = getData('sys_items') || [];
+            const item = items.find(i => String(i.id) === String(itemId));
+            if (!item || !Array.isArray(item.recipe)) return;
+            const recipe = item.recipe.slice();
+            recipe.splice(idx, 1);
+            saveRecipeFor(itemId, recipe);
+            renderRecipeWorkbench();
         }
 
         /* ==========================================================
