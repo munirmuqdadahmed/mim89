@@ -444,7 +444,7 @@
 
     </div>
 
-    <script src="app.js?v=1320"></script>
+    <script src="app.js?v=1330"></script>
     <script>
         /* ==========================================================
            الدخول والتنقل
@@ -453,8 +453,9 @@
             const pass = document.getElementById('invPassInput').value.trim();
             const vInv = typeof getSystemPassword === 'function' ? getSystemPassword('inventory') : 'inv123';
             const vAdm = typeof getSystemPassword === 'function' ? getSystemPassword('admin') : 'admin123';
-            // 🛠️ [إصلاح] حُذفت كلمات المرور القديمة الثابتة التي كانت تُقبل دائماً
-            if (pass === vInv || pass === vAdm) {
+            if (typeof verifySystemPassword === 'function'
+                ? (verifySystemPassword('inventory', pass) || verifySystemPassword('admin', pass))
+                : (pass === vInv || pass === vAdm)) {
                 document.getElementById('authOverlay').style.display = 'none';
                 document.getElementById('invMainApp').style.display = 'block';
                 initInventoryApp();
