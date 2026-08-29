@@ -320,11 +320,19 @@
             return cost;
         }
 
+        // 🧂 نسبة المواد المساعدة (بهارات، زيت، غاز، تغليف) تُضاف فوق تكلفة المواد.
+        // تُضبط من صفحة المخزن ← الإعداد السريع.
+        function getOverheadPct() {
+            const v = parseFloat(localStorage.getItem('sys_overhead_pct'));
+            return isNaN(v) ? 8 : v;
+        }
+
         function getCostOfSoldItem(soldItem) {
             const items = getData('sys_items') || [];
             let menuItem = items.find(i => String(i.id) === String(soldItem.id));
             if (!menuItem) menuItem = items.find(i => String(i.name).trim() === String(soldItem.name).trim());
-            return getRecipeCostForMenuItem(menuItem);
+            const base = getRecipeCostForMenuItem(menuItem);
+            return base * (1 + getOverheadPct() / 100);
         }
 
         /* ==========================================================
@@ -618,7 +626,9 @@
             const box = document.getElementById('itemRecipeDetails');
             if (!item || !box) return;
 
-            const cost = getRecipeCostForMenuItem(item);
+            const baseCost = getRecipeCostForMenuItem(item);
+            const ovPct = getOverheadPct();
+            const cost = baseCost * (1 + ovPct / 100);
             const price = cleanPrice(item.price);
             const profit = price - cost;
             const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
@@ -640,6 +650,8 @@
 
             box.innerHTML = '<div style="background:#121215; padding:12px; border-radius:8px; border:1px solid var(--card-border);">' +
                 rows +
+                '<div class="calc-row" style="font-size:0.79rem;"><span style="color:#f59e0b;">🧂 مواد مساعدة (' + ovPct + '%)</span>' +
+                '<strong class="num" style="color:#f59e0b;">' + money(cost - baseCost) + '</strong></div>' +
                 '<div class="calc-total" style="font-size:0.9rem;"><span>التكلفة: <strong class="num" style="color:var(--danger-red);">' + money(cost) + '</strong></span>' +
                 '<span>الربح: <strong class="num" style="color:var(--success-green);">' + money(profit) + '</strong> (' + margin + '%)</span></div>' +
                 '</div>';
@@ -688,8 +700,10 @@
             const tbody = document.getElementById('allCostingTableBody');
             if (!tbody) return;
 
+            const ovPct = getOverheadPct();
             tbody.innerHTML = items.map(item => {
-                const cost = getRecipeCostForMenuItem(item);
+                const baseCost = getRecipeCostForMenuItem(item);
+                const cost = baseCost * (1 + ovPct / 100);
                 const price = cleanPrice(item.price);
                 const profit = price - cost;
                 const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
