@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1340';
+const MIM89_APP_VERSION = '1400';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -277,23 +277,10 @@ async function initData() {
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
-    // 🚨 فحص تلقائي للذاكرة عند التشغيل — ينبّه قبل أن تتوقف الفواتير عن الحفظ
-    setTimeout(() => {
-        try {
-            const u = getStorageUsage();
-            const pct = Math.round((u.totalBytes / 5242880) * 100);
-            if (pct >= 90) {
-                const orders = (getData('sys_completed_orders') || []).length;
-                const st = getOrdersMigrationStatus();
-                const safe = st && st.failed === 0;
-                alert('🚨 ذاكرة هذا الجهاز ممتلئة (' + pct + '%)!\n\n' +
-                      'الفواتير الجديدة قد لا تُحفظ، وقد يظهر السجل والكشف فارغين.\n\n' +
-                      (safe ? '✅ فواتيرك مرفوعة للسحابة — افتح الإدارة ← النسخ الاحتياطي ← تنظيف الذاكرة.'
-                            : '⚠️ لديك ' + orders + ' فاتورة لم تُرفع للسحابة بعد.\n' +
-                              'افتح الإدارة ← النسخ الاحتياطي ← اضغط «رفع الفواتير للسحابة» أولاً.'));
-            }
-        } catch (e) {}
-    }, 3000);
+    // 🧹 صيانة تلقائية للذاكرة — بلا أي رسالة للزبون
+    // 🛠️ [إصلاح] كان هنا تنبيه تقني يظهر حتى لزبائن المينيو الإلكتروني، وهذا خطأ
+    // فادح: الزبون لا شأن له بذاكرة الجهاز. الآن الصيانة تتم تلقائياً وبصمت.
+    setTimeout(() => { runSilentStorageMaintenance(); }, 3000);
 
     startPeriodicCloudPull();
     updateSyncIndicator(false);
@@ -2691,13 +2678,36 @@ function tryFinalizeAndClearOrder(silentMode) {
         if (!confirm("⚠️ لم تقم بطباعة الفاتورتين! هل تريد إنهاء الطلب وتفريغ السلة؟")) return;
     }
 
-    let completed = getData('sys_completed_orders') || [];
-    completed.unshift(activePendingPrintOrder);
-    setData('sys_completed_orders', completed);
+    const orderToSave = activePendingPrintOrder;
 
-    // 📦 [إصلاح] خصم المواد الأولية من المخزن تلقائياً حسب وصفة كل صنف مباع
+    let completed = getData('sys_completed_orders') || [];
+    completed.unshift(orderToSave);
+    safeLocalSet('sys_completed_orders', JSON.stringify(completed));
+
+    // ☁️ [إصلاح مهم] كانت الفاتورة تُحفظ محلياً فقط ولا تُرفع للسحابة إطلاقاً،
+    // فتتراكم على الجهاز حتى تمتلئ الذاكرة. الآن تُرفع فوراً كمستند مستقل.
+    if (db) {
+        db.collection("completed_orders").doc(String(orderToSave.id))
+            .set(orderToSave, { merge: true })
+            .then(() => {
+                try {
+                    const ids = JSON.parse(localStorage.getItem('mim89_uploaded_ids') || '[]');
+                    ids.push(String(orderToSave.id));
+                    localStorage.setItem('mim89_uploaded_ids', JSON.stringify(ids.slice(-800)));
+                } catch (e) {}
+                // 🤖 صيانة صامتة كل 10 فواتير
+                try {
+                    const cnt = cleanPrice(localStorage.getItem('mim89_save_counter')) + 1;
+                    localStorage.setItem('mim89_save_counter', String(cnt));
+                    if (cnt % 10 === 0) setTimeout(() => runSilentStorageMaintenance(), 2000);
+                } catch (e) {}
+            })
+            .catch(err => console.error('تعذّر رفع الفاتورة للسحابة:', err));
+    }
+
+    // 📦 خصم المواد الأولية من المخزن حسب وصفة كل صنف مباع
     if (typeof deductInventoryFromRecipe === 'function') {
-        try { deductInventoryFromRecipe(activePendingPrintOrder.items); } catch (e) { console.error('خطأ بخصم المخزون:', e); }
+        try { deductInventoryFromRecipe(orderToSave.items); } catch (e) { console.error('خطأ بخصم المخزون:', e); }
     }
 
     posCart = [];
@@ -5631,33 +5641,76 @@ function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// 📸 ضغط ذكي للصور: يقلّص الحجم كثيراً مع الحفاظ على وضوح مقبول للزبون.
+// الهدف: صورة أخف من 60 كيلوبايت — أسرع بالرفع والعرض، وأخف على الذاكرة.
+function compressImageFile(file, onDone) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+            const MAX_W = 420, MAX_H = 420, TARGET_BYTES = 60 * 1024;
+
+            let w = img.width, h = img.height;
+            const ratio = Math.min(MAX_W / w, MAX_H / h, 1);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            // خلفية بيضاء تمنع سواد الشفافية عند التحويل لـ JPEG
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // نخفّض الجودة تدريجياً حتى نصل للحجم المطلوب
+            let quality = 0.75;
+            let out = canvas.toDataURL('image/jpeg', quality);
+            while (out.length > TARGET_BYTES * 1.37 && quality > 0.35) {
+                quality -= 0.1;
+                out = canvas.toDataURL('image/jpeg', quality);
+            }
+
+            const kb = Math.round((out.length * 0.75) / 1024);
+            const origKB = Math.round(file.size / 1024);
+            onDone(out, { kb, origKB, w, h, quality: Math.round(quality * 100) });
+        };
+        img.onerror = function () { alert('⚠️ تعذّرت قراءة الصورة. جرّب صورة أخرى.'); };
+        img.src = e.target.result;
+    };
+    reader.onerror = function () { alert('⚠️ تعذّرت قراءة الملف.'); };
+    reader.readAsDataURL(file);
+}
+
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 300;
-            const scaleFactor = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleFactor;
+    if (!String(file.type).startsWith('image/')) {
+        alert('⚠️ يرجى اختيار ملف صورة.');
+        return;
+    }
 
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const preview = document.getElementById('imgPreview');
+    const itemImgInput = document.getElementById('itemImage');
+    const infoEl = document.getElementById('imgCompressInfo');
 
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-            const preview = document.getElementById('imgPreview');
-            const itemImgInput = document.getElementById('itemImage');
-            
-            if (preview) preview.src = compressedBase64;
-            if (itemImgInput) itemImgInput.value = compressedBase64;
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    if (infoEl) infoEl.innerHTML = '<span style="color:#f59e0b;">⏳ جاري ضغط الصورة...</span>';
+
+    compressImageFile(file, function (dataUrl, info) {
+        if (preview) preview.src = dataUrl;
+        if (itemImgInput) itemImgInput.value = dataUrl;
+
+        if (infoEl) {
+            const saved = info.origKB > 0 ? Math.round((1 - info.kb / info.origKB) * 100) : 0;
+            infoEl.innerHTML = '<span style="color:#10b981;">✅ ضُغطت: ' + info.origKB + ' KB ← ' +
+                info.kb + ' KB (توفير ' + saved + '%) • ' + info.w + '×' + info.h + '</span>';
+        }
+    });
 }
 
 window.addEventListener('storage', (event) => {
