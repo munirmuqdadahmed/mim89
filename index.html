@@ -874,7 +874,7 @@
     </div>
 
     <!-- 🧠 السكربت الموحد للصفحة -->
-    <script src="app.js?v=1260"></script>
+    <script src="app.js?v=1300"></script>
     <script>
         let activeAppliedCoupon = null;
         let activeTrackingUnsubscribe = null;
@@ -1103,6 +1103,15 @@
                     if (!snapshot.empty) {
                         const docData = snapshot.docs[0].data();
                         updateTrackingUI(docData.status || 'جديد');
+
+                        // ⏱️ عرض الوقت المتوقع للجاهزية إن حدّده الكاشير
+                        const msg = document.getElementById('trackStatusMsgBox');
+                        if (msg && docData.readyAt && docData.status === 'قيد التحضير') {
+                            const left = Math.max(0, Math.round((docData.readyAt - Date.now()) / 60000));
+                            msg.innerHTML += '<div style="margin-top:10px; padding-top:10px; border-top:1px dashed #444;">' +
+                                '⏱️ الوقت المتوقع للجاهزية: <strong style="color:var(--gold-bright); font-size:1.1rem;">' +
+                                (left > 0 ? left + ' دقيقة' : 'جاهز الآن تقريباً') + '</strong></div>';
+                        }
                     }
                 });
             } else {
