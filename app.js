@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1510';
+const MIM89_APP_VERSION = '1520';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -186,12 +186,6 @@ function getItemCategory(item) {
     const raw = (item.categoryId !== undefined && item.categoryId !== null) ? item.categoryId
               : ((item.catId !== undefined && item.catId !== null) ? item.catId : item.category);
     return cleanPrice(raw);
-}
-
-// 🛠️ [مُعطّلة] كانت هذه الدالة تُعيد كتابة أقسام كل الأصناف تلقائياً عند كل
-// تحديث للواجهة، فتفسد تصنيفك اليدوي. أصبحت لا تفعل شيئاً.
-function autoFixItemCategories() {
-    // لا تغيير تلقائي — التصنيف يدوي بالكامل من لوحة الإدارة.
 }
 
 // 🔍 حصر الأصناف التي لا تنتمي لأي قسم موجود حالياً (تحتاج تصحيحاً يدوياً)
@@ -412,8 +406,7 @@ async function pullLatestFromCloud() {
     if (typeof renderStatusBadge === 'function') renderStatusBadge();
 
     if (changed) {
-        autoFixItemCategories();
-        refreshActiveUI();
+            refreshActiveUI();
         console.log("☁️ تم تحديث المينيو من السحابة.");
     }
 
@@ -978,7 +971,6 @@ function isCashierBusy() {
 let currentPosCategory = 'all';
 
 function refreshActiveUI() {
-    autoFixItemCategories();
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
@@ -995,106 +987,6 @@ function refreshActiveUI() {
         if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
-    }
-}
-
-// 🚑 استعادة طارئة: يسحب كل الأصناف والأقسام من الخادم مباشرة ويستبدل المحلية.
-// يُستخدم إذا لاحظت أن الجهاز يعرض بيانات قديمة أو تجريبية.
-async function forceRestoreFromCloud(btnElement) {
-    if (!db) { alert("⚠️ لا يوجد اتصال بالسحابة حالياً."); return; }
-    if (!confirm("سيتم سحب الأصناف والأقسام من السحابة واستبدال نسخة هذا الجهاز.\n\nهل تريد المتابعة؟")) return;
-
-    let original = '';
-    if (btnElement) {
-        original = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري السحب...';
-        btnElement.disabled = true;
-    }
-
-    try {
-        const snap = await db.collection("menu_items").get({ source: 'server' });
-        if (snap.empty) {
-            alert("⚠️ لا توجد أصناف على الخادم إطلاقاً!\nلم يتم تغيير أي شيء على هذا الجهاز حمايةً لبياناتك.");
-            return;
-        }
-
-        const items = [];
-        snap.forEach(doc => {
-            const d = doc.data();
-            items.push({ ...d, docId: doc.id, id: d.id || doc.id });
-        });
-        localStorage.setItem('sys_items', JSON.stringify(items));
-
-        let catsCount = 0;
-        const catDoc = await db.collection("system_store").doc("sys_categories").get({ source: 'server' });
-        if (catDoc.exists && catDoc.data() && catDoc.data().content) {
-            const cats = JSON.parse(catDoc.data().content);
-            if (Array.isArray(cats) && cats.length > 0) {
-                localStorage.setItem('sys_categories', JSON.stringify(cats));
-                catsCount = cats.length;
-            }
-        }
-
-        markSystemInitialized();
-        refreshActiveUI();
-        alert("✅ تمت الاستعادة من السحابة بنجاح!\n\nالأصناف: " + items.length + "\nالأقسام: " + catsCount);
-    } catch (e) {
-        alert("❌ تعذّرت الاستعادة: " + (e.message || e));
-    } finally {
-        if (btnElement) { btnElement.innerHTML = original; btnElement.disabled = false; }
-    }
-}
-
-async function globalSystemSync(btnElement) {
-    let originalText = "";
-    if (btnElement) {
-        originalText = btnElement.innerHTML;
-        btnElement.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> جاري التحديث...';
-        btnElement.disabled = true;
-    }
-
-    try {
-        if (typeof db !== 'undefined' && db) {
-            const itemSnap = await db.collection("menu_items").get();
-            if (!itemSnap.empty) {
-                let cloudItems = [];
-                itemSnap.forEach(doc => {
-                    const data = doc.data();
-                    cloudItems.push({ ...data, docId: doc.id, id: data.id || doc.id });
-                });
-                if (cloudItems.length > 0) localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-            }
-
-            const catDoc = await db.collection("system_store").doc("sys_categories").get();
-            if (catDoc.exists && catDoc.data() && catDoc.data().content) {
-                try {
-                    const cloudCats = JSON.parse(catDoc.data().content);
-                    if (Array.isArray(cloudCats) && cloudCats.length > 0) {
-                        localStorage.setItem('sys_categories', JSON.stringify(cloudCats));
-                    }
-                } catch (e) {}
-            }
-
-            const custSnap = await db.collection("customers").get();
-            if (!custSnap.empty) {
-                let cloudCustomers = [];
-                custSnap.forEach(doc => cloudCustomers.push({ ...doc.data(), id: doc.id }));
-                setData('sys_customers', cloudCustomers);
-            }
-        }
-        refreshActiveUI();
-        alert("✅ تم مزامنة وتحديث النظام بنجاح من السحابة!");
-    } catch (error) {
-        console.error("Global sync error:", error);
-        refreshActiveUI();
-        alert("⚠️ تم التحديث المحلي، تحقق من اتصال الإنترنت للبيانات السحابة.");
-    } finally {
-        if (btnElement) {
-            setTimeout(() => {
-                btnElement.innerHTML = originalText;
-                btnElement.disabled = false;
-            }, 500);
-        }
     }
 }
 
@@ -1492,6 +1384,9 @@ function autoSearchCustomerByPhone(phoneInput) {
 }
 
 function fillCustomerData(name, phone, area, address) {
+    const phoneInput = document.getElementById('posCustPhone');
+    if (phoneInput && phone && phone !== 'رقم غير معروف') phoneInput.value = phone;
+
     const nameInput = document.getElementById('posCustName');
     if (nameInput) {
         nameInput.value = `${name} | هاتف: ${phone} ${area ? '| ' + area : ''} ${address ? '- ' + address : ''}`;
@@ -2036,6 +1931,56 @@ function selectPaymentMethod(btnElement) {
 // كان الكود سابقاً يبحث عن كلمة "القاهرة" داخل خانة اسم الزبون! فإذا لم يكتبها
 // الكاشير، تُحتسب أجور توصيل على زبون داخل القاهرة رغم أن التوصيل مجاني له.
 // الآن يوجد اختيار منطقة صريح، والسعر يُقرأ من إعدادات الإدارة مباشرة.
+// 👤 البحث التلقائي عن الزبون برقم هاتفه وتعبئة اسمه ومنطقته
+let custLookupTimer = null;
+
+function lookupCustomerByPhone(phone) {
+    const hint = document.getElementById('custLookupHint');
+    const nameEl = document.getElementById('posCustName');
+    if (!hint) return;
+
+    phone = String(phone || '').trim();
+    if (custLookupTimer) clearTimeout(custLookupTimer);
+
+    if (phone.length < 7) { hint.innerHTML = ''; return; }
+
+    custLookupTimer = setTimeout(() => {
+        const customers = getData('sys_customers') || [];
+        const found = customers.find(c => String(c.phone || '').replace(/\D/g, '') === phone.replace(/\D/g, ''));
+
+        if (found) {
+            if (nameEl && !nameEl.value.trim()) nameEl.value = found.name || '';
+            const areaSel = document.getElementById('posAreaSelect');
+            if (areaSel && found.area) {
+                for (let i = 0; i < areaSel.options.length; i++) {
+                    if (areaSel.options[i].value === found.area) { areaSel.selectedIndex = i; break; }
+                }
+                if (typeof renderPosCart === 'function') renderPosCart();
+            }
+            hint.innerHTML = '<span style="color:#10b981;">✅ زبون معروف: ' + (found.name || '') +
+                (found.area ? ' — ' + found.area : '') + '</span>';
+        } else {
+            hint.innerHTML = '<span style="color:#888;">زبون جديد — سيُحفظ تلقائياً بعد الطلب</span>';
+        }
+    }, 350);
+}
+
+function onCustNameTyped(v) {
+    const hint = document.getElementById('custLookupHint');
+    if (hint && !document.getElementById('posCustPhone')?.value) hint.innerHTML = '';
+}
+
+// 🧾 تجميع بيانات الزبون من الحقلين المنفصلين
+function getPosCustomerInfo() {
+    const name = (document.getElementById('posCustName')?.value || '').trim();
+    const phone = (document.getElementById('posCustPhone')?.value || '').trim();
+    return {
+        name: name || 'زبون مباشر',
+        phone: phone || '-',
+        display: name ? (phone ? name + ' | هاتف: ' + phone : name) : (phone ? 'هاتف: ' + phone : 'زبون مباشر')
+    };
+}
+
 function getPosDeliveryFee() {
     if (selectedPosOrderType !== 'delivery') return 0;
 
@@ -2505,7 +2450,7 @@ async function proceedToPrintAfterCash() {
         id: "ORD_" + Date.now(),
         orderNum: orderNumSeq,
         customerName: custNameRaw,
-        phone: custNameRaw.includes('هاتف:') ? custNameRaw.split('هاتف:')[1].trim().split(' ')[0] : '-',
+        phone: getPosCustomerInfo().phone,
         orderType: selectedPosOrderType === 'delivery' ? 'توصيل' : (selectedPosOrderType === 'takeaway' ? 'سفري' : 'صالة'),
         area: selectedPosOrderType === 'delivery' ? (document.getElementById('posAreaSelect')?.value === '__other__' ? 'منطقة أخرى' : (document.getElementById('posAreaSelect')?.value || 'توصيل محلي')) : 'داخل المطعم',
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا / ماستر',
@@ -3181,9 +3126,18 @@ function computeTodaySalesSummary() {
 function updateLiveShiftSalesBadge() {
     const badge = document.getElementById('liveShiftSalesBadge');
     if (!badge) return;
+
     const s = computeTodaySalesSummary();
+    const total = (getData('sys_completed_orders') || []).length;
+
     badge.innerHTML = s.totalSales.toLocaleString('ar-IQ') + ' د.ع' +
         ' <span style="font-size:0.72rem; color:#aaa; font-weight:normal;">(' + s.ordersCount + ' فاتورة)</span>';
+
+    // إن كانت المبيعات صفراً رغم وجود فواتير محفوظة، ننبّه بسبب واضح
+    if (s.ordersCount === 0 && total > 0) {
+        badge.innerHTML += '<div style="font-size:0.68rem; color:#f59e0b; font-weight:normal; margin-top:2px;">' +
+            'يوجد ' + total + ' فاتورة خارج الشيفت الحالي</div>';
+    }
 }
 
 // ▶️ تشغيل تحديث دوري للشارة كل 20 ثانية بلوحة الإدارة
@@ -3204,45 +3158,86 @@ function startLiveSalesBadgeUpdater() {
 
 // 🕐 وقت بداية الشيفت المفتوح حالياً (مشترك بين كل الأجهزة عبر السحابة)
 function getShiftStartTs() {
-    // 🛠️ [إصلاح] كانت الدالة تُعيد الحساب من منتصف الليل في كل مرة ما لم يكن
-    // الشيفت "مثبّتاً صراحةً" — فعند تجاوز الساعة 12 ليلاً تختفي فواتير الليلة
-    // السابقة وتتصفّر التقارير رغم أن الشيفت لم يُقفل بعد.
-    // الآن: القيمة المخزّنة تُحترم دائماً، ولا تتغيّر إلا عند تقفيل الشيفت.
-    const stored = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
-    if (stored > 0) return stored;
+    // 🛠️ [إصلاح ذاتي] القيمة المخزّنة قد تكون خاطئة من نسخة سابقة (مثلاً وقت
+    // فتح الصفحة بدل بداية العمل) فتُستبعد كل الفواتير وتظهر المبيعات صفراً.
+    // الآن: نتحقق من منطقية القيمة، ونصححها تلقائياً إن كانت تُخفي فواتير قائمة.
+    let stored = cleanPrice(localStorage.getItem('sys_shift_start_ts'));
+    const lastClose = getLastShiftCloseTs();
 
-    // أول تشغيل فقط: نحدد بداية منطقية للشيفت المفتوح
-    let startTs;
+    if (stored > 0) {
+        // القيمة صالحة إن لم تكن بعد آخر تقفيل وتُخفي فواتير لم تُقفل بعد
+        const hidden = (getData('sys_completed_orders') || []).filter(o => {
+            const ts = cleanPrice(o.createdTimestamp);
+            return ts > 0 && ts < stored && ts > lastClose;
+        });
 
-    // إن وُجد أرشيف تقفيل سابق، نبدأ من لحظة آخر تقفيل
-    try {
-        const arch = getData('sys_shift_archive');
-        if (Array.isArray(arch) && arch.length > 0 && arch[0].closedTs) {
-            startTs = cleanPrice(arch[0].closedTs);
-        }
-    } catch (e) {}
+        if (hidden.length === 0) return stored;
 
-    // وإلا من أقدم فاتورة غير مؤرشفة، وإلا من منتصف ليلة اليوم
+        // يوجد فواتير مخفية بلا سبب — نصحح البداية لتشملها
+        const oldest = Math.min.apply(null, hidden.map(o => cleanPrice(o.createdTimestamp)));
+        console.warn('🔧 تصحيح تلقائي لبداية الشيفت: ' + hidden.length + ' فاتورة كانت مخفية.');
+        localStorage.setItem('sys_shift_start_ts', String(oldest));
+        return oldest;
+    }
+
+    // لا توجد قيمة: نبدأ من آخر تقفيل، أو من أقدم فاتورة غير مقفلة، أو من بداية يوم العمل
+    let startTs = lastClose;
+
     if (!startTs) {
-        const midnight = new Date();
-        midnight.setHours(0, 0, 0, 0);
-        startTs = midnight.getTime();
+        const times = (getData('sys_completed_orders') || [])
+            .map(o => cleanPrice(o.createdTimestamp))
+            .filter(t => t > 0 && t > Date.now() - (36 * 3600 * 1000));
+        if (times.length > 0) startTs = Math.min.apply(null, times);
+    }
 
-        try {
-            const all = (getData('sys_completed_orders') || [])
-                .map(o => cleanPrice(o.createdTimestamp))
-                .filter(t => t > 0);
-            if (all.length > 0) {
-                const oldest = Math.min.apply(null, all);
-                // نأخذ الأقدم فقط إن كان خلال آخر 48 ساعة (شيفت ممتد وليس أرشيف قديم)
-                if (oldest > Date.now() - (48 * 3600 * 1000) && oldest < startTs) startTs = oldest;
-            }
-        } catch (e) {}
+    if (!startTs) {
+        const d = new Date();
+        if (d.getHours() < BUSINESS_DAY_CUTOFF_HOUR) d.setDate(d.getDate() - 1);
+        d.setHours(BUSINESS_DAY_CUTOFF_HOUR, 0, 0, 0);
+        startTs = d.getTime();
     }
 
     localStorage.setItem('sys_shift_start_ts', String(startTs));
-    localStorage.setItem('sys_shift_explicit', '1');
     return startTs;
+}
+
+// آخر لحظة تقفيل شيفت مسجّلة (0 إن لم يُقفل شيفت بعد)
+// 🔧 إعادة ضبط الشيفت يدوياً — يشمل كل الفواتير منذ آخر تقفيل
+function repairShiftWindow() {
+    const orders = getData('sys_completed_orders') || [];
+    if (orders.length === 0) return alert('لا توجد فواتير محفوظة على هذا الجهاز.');
+
+    const lastClose = getLastShiftCloseTs();
+    const times = orders.map(o => cleanPrice(o.createdTimestamp)).filter(t => t > lastClose);
+
+    if (times.length === 0) {
+        return alert('كل الفواتير المحفوظة تعود لشيفتات مُقفلة سابقاً.\n\nلا يوجد ما يُضاف للشيفت الحالي.');
+    }
+
+    const oldest = Math.min.apply(null, times);
+    const dateTxt = new Date(oldest).toLocaleString('ar-IQ');
+
+    if (!confirm('سيبدأ الشيفت الحالي من:\n' + dateTxt +
+                 '\n\nوسيشمل ' + times.length + ' فاتورة.\n\nهل تريد المتابعة؟')) return;
+
+    localStorage.setItem('sys_shift_start_ts', String(oldest));
+    if (typeof logAudit === 'function') {
+        logAudit('إعادة ضبط الشيفت', { note: 'البداية: ' + dateTxt + ' | الفواتير: ' + times.length });
+    }
+
+    if (typeof updateLiveShiftSalesBadge === 'function') updateLiveShiftSalesBadge();
+    alert('✅ أُعيد ضبط الشيفت.\n\nالمبيعات الآن تشمل ' + times.length + ' فاتورة.');
+    location.reload();
+}
+
+function getLastShiftCloseTs() {
+    try {
+        const arch = getData('sys_shift_archive');
+        if (Array.isArray(arch) && arch.length > 0) {
+            return cleanPrice(arch[0].closedTs) || 0;
+        }
+    } catch (e) {}
+    return 0;
 }
 
 function getShiftStartLabel() {
@@ -4696,13 +4691,6 @@ function initAdminPage() {
     // (وكان الأثر يزداد وضوحاً بعد "إصلاح المزامنة" لأنه ينظّف الذاكرة المؤقتة.)
     // تم إلغاء الزرع التلقائي نهائياً — لا يُزرع أي صنف افتراضي إلا يدوياً
     // عبر زر "استعادة الأصناف الافتراضية" في تبويب الأصناف.
-}
-
-// 🛡️ حُذفت دالة "استعادة الأصناف الافتراضية" نهائياً.
-// لا يوجد في النظام أي أصناف افتراضية بعد الآن — الأصناف تُضاف من لوحة الإدارة،
-// وتُستعاد عند الحاجة من ملف النسخة الاحتياطية (تبويب النسخ الاحتياطي).
-function restoreDefaultMenuItems() {
-    alert("ℹ️ لم تعد هناك أصناف افتراضية بالنظام (حمايةً لبياناتك من الاستبدال).\n\nلاستعادة أصنافك، استخدم تبويب: 💾 النسخ الاحتياطي ← استعادة من ملف.");
 }
 
 function loginAdmin() {
