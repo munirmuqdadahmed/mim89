@@ -485,7 +485,9 @@
                             </div>
 
                             <div style="position:relative; margin: 2px 0; flex-shrink:0;">
-                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="اسم الزبون / رقم الهاتف..." oninput="autoSearchCustomerByPhone(this.value)">
+                                <input type="text" id="posCustName" class="gold-input-inline" style="font-size:0.8rem; text-align:right; padding:6px 30px 6px 6px;" placeholder="👤 اسم الزبون" oninput="autoSearchCustomerByPhone(this.value)">
+                                <input type="tel" id="posCustPhone" class="gold-input-inline" style="font-size:0.8rem; text-align:left; direction:ltr; padding:6px; margin-top:4px;" placeholder="📞 رقم الهاتف (اختياري)" oninput="lookupCustomerByPhone(this.value)">
+                                <div id="custLookupHint" style="font-size:0.71rem; min-height:14px; margin-top:3px;"></div>
                                 <button type="button" onclick="document.getElementById('posCustName').value=''; if(typeof autoSearchCustomerByPhone === 'function') autoSearchCustomerByPhone(''); document.getElementById('posCustName').focus();" 
                                         style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--danger); font-weight: bold; font-size: 15px; cursor: pointer; z-index: 5;">
                                     ✖
@@ -841,7 +843,7 @@
     </div>
 
     <!-- 🧠 المحرك البرمجي الموحد والخفيف للصفحة -->
-    <script src="app.js?v=1500"></script>
+    <script src="app.js?v=1520"></script>
     <script>
         /* 🔒 برمجة كيباد الـ PIN اللمسي (تحديد هوية الكاشير المناوب فقط) */
         var enteredPin = "";
