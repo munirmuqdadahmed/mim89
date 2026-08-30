@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1400';
+const MIM89_APP_VERSION = '1500';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -528,12 +528,32 @@ function setData(key, val) {
     }
 }
 
+// 🌙 [إصلاح جوهري] "يوم العمل" لا ينتهي عند منتصف الليل.
+// المطعم يعمل حتى 3-4 فجراً، فالفواتير بعد الساعة 12 كانت تُختم بتاريخ اليوم
+// التالي وتختفي من تقارير الشيفت المفتوح.
+// الحل: أي بيع قبل الساعة 6 صباحاً يُحسب على اليوم السابق (يوم العمل).
+const BUSINESS_DAY_CUTOFF_HOUR = 6;
+
+function getBusinessDayString(dateObj) {
+    const d = dateObj ? new Date(dateObj) : new Date();
+    if (d.getHours() < BUSINESS_DAY_CUTOFF_HOUR) {
+        d.setDate(d.getDate() - 1);   // ما زلنا ضمن يوم عمل أمس
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + dd;
+}
+
 function getTodayString() {
+    // تُرجع "يوم العمل" لا التاريخ الميلادي — فلا تنقسم ليلة العمل على يومين
+    return getBusinessDayString();
+}
+
+// التاريخ الميلادي الحقيقي (يُستخدم عند الحاجة للتاريخ الفعلي فقط)
+function getCalendarDateString() {
     const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 // 🔢 [نسخة احتياطية محلية] احتساب رقم الطلب من واقع طلبات اليوم المكتملة محلياً
@@ -1644,7 +1664,8 @@ function renderPublicMenuUI() {
         btn.onclick = () => filterCategory(cat.id, btn);
         navContainer.appendChild(btn);
 
-        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id));
+        // الأصناف الموقوفة لا تظهر للزبائن إطلاقاً
+        let catItems = items.filter(i => getItemCategory(i) === cleanPrice(cat.id) && !i.isPaused);
         catItems.sort((a, b) => (cleanPrice(a.price) || 0) - (cleanPrice(b.price) || 0));
 
         if (catItems.length > 0) {
@@ -2114,7 +2135,8 @@ function loadPosDirectMenu(catId = 'all', btnElement = null) {
     const grid = document.getElementById('posProductsGrid');
     if (!grid) return;
 
-    let filtered = (catId === 'all') ? items : items.filter(i => String(getItemCategory(i)) === String(catId));
+    const active = items.filter(i => !i.isPaused);   // نتجاهل الموقوفة
+    let filtered = (catId === 'all') ? active : active.filter(i => String(getItemCategory(i)) === String(catId));
     filtered.sort((a, b) => cleanPrice(a.price) - cleanPrice(b.price));
 
     if (filtered.length === 0) {
@@ -2769,71 +2791,110 @@ async function checkPrintBridge() {
 //    (الوجبة | العدد | المبلغ) مع رؤوس أعمدة واضحة.
 function buildCustomerReceiptLines(ord) {
     const L = [];
-    const COL_RATIOS = [0.52, 0.16, 0.32];
-    const COL_ALIGNS = ['right', 'center', 'left'];
+    const R = [0.46, 0.14, 0.18, 0.22];          // نسب أعمدة الجدول
+    const A = ['right', 'center', 'left', 'left'];
 
-    L.push({ text: 'MIM89 FAST FOOD', size: 'big', align: 'center', bold: true });
-    L.push({ text: 'بغداد - القاهرة | فاتورة مبيعات', size: 'normal', align: 'center' });
+    // ===== الترويسة =====
+    L.push({ text: 'MIM89', size: 'huge', align: 'center', bold: true });
+    L.push({ text: 'FAST FOOD', size: 'normal', align: 'center', bold: true });
+    L.push({ separator: 'space' });
+    L.push({ text: '📍 بغداد - حي القاهرة', size: 'normal', align: 'center' });
+    L.push({ text: '📞 0775 000 8630  •  0785 000 8630', size: 'normal', align: 'center' });
+    L.push({ separator: 'solid' });
+
+    // ===== بيانات الفاتورة (صفّان متقابلان) =====
+    L.push({
+        cols: ['رقم الفاتورة: ' + ord.orderNum, '', 'الوقت: ' + ord.timestamp],
+        ratios: [0.5, 0.06, 0.44], aligns: ['right', 'center', 'left'],
+        text: 'رقم الفاتورة: ' + ord.orderNum + '   |   الوقت: ' + ord.timestamp,
+        size: 'normal', bold: true, align: 'right'
+    });
+    L.push({
+        cols: ['الكاشير: ' + (ord.cashierName || 'الرئيسي'), '', 'التاريخ: ' + ord.dateDate],
+        ratios: [0.5, 0.06, 0.44], aligns: ['right', 'center', 'left'],
+        text: 'الكاشير: ' + (ord.cashierName || 'الرئيسي') + '   |   التاريخ: ' + ord.dateDate,
+        size: 'normal', align: 'right'
+    });
     L.push({ separator: 'dash' });
 
-    L.push({ text: 'رقم الطلب', size: 'normal', align: 'center' });
-    L.push({ text: '#' + ord.orderNum, size: 'huge', align: 'center', bold: true });
-    L.push({ separator: 'dash' });
-
-    L.push({ text: 'التاريخ: ' + ord.dateDate + ' - ' + ord.timestamp, size: 'normal', align: 'right' });
-    L.push({ text: 'الخدمة: ' + ord.orderType, size: 'normal', align: 'right', bold: true });
+    // ===== نوع الخدمة والزبون =====
+    L.push({ text: 'الخدمة: ' + ord.orderType, size: 'big', align: 'center', bold: true });
+    if (ord.customerName && ord.customerName !== 'زبون مباشر') {
+        L.push({ text: 'الزبون: ' + ord.customerName, size: 'normal', align: 'right' });
+    }
     if (ord.driverName && ord.driverName !== '-') {
         L.push({ text: 'السائق: ' + ord.driverName, size: 'normal', align: 'right' });
     }
-    L.push({ text: 'الزبون: ' + (ord.customerName || 'زبون مباشر'), size: 'normal', align: 'right' });
-    L.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
-    L.push({ separator: 'dash' });
-
-    // 🛡️ حماية توافق: نرسل مع كل سطر أعمدة نصاً مكافئاً في المفتاح text.
-    //    الجسر الحديث يقرأ cols ويتجاهل text (يفحص cols أولاً)،
-    //    أما الجسر القديم فيقرأ text فتُطبع الأصناف بدل أن تظهر أسطر فارغة.
-    L.push({
-        cols: ['الوجبة', 'العدد', 'المبلغ'],
-        text: 'الوجبة          العدد     المبلغ',
-        ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true, align: 'right'
-    });
+    if (ord.area && ord.area !== 'داخل المطعم') {
+        L.push({ text: 'المنطقة: ' + ord.area, size: 'normal', align: 'right' });
+    }
     L.push({ separator: 'solid' });
 
+    // ===== جدول الأصناف =====
+    L.push({
+        cols: ['المادة', 'الكمية', 'السعر', 'الكلي'],
+        ratios: R, aligns: A,
+        text: 'المادة        الكمية   السعر    الكلي',
+        size: 'normal', bold: true, align: 'right'
+    });
+    L.push({ separator: 'dash' });
+
+    let totalQty = 0;
     (ord.items || []).forEach(i => {
         const qty = cleanPrice(i.qty);
-        const lineTotal = cleanPrice(i.price) * qty;
+        const unit = cleanPrice(i.price);
+        const line = unit * qty;
+        totalQty += qty;
+
         L.push({
-            cols: [String(i.name), String(qty), lineTotal.toLocaleString('en-US')],
-            text: String(i.name) + '   × ' + qty + '   ' + lineTotal.toLocaleString('en-US'),
-            ratios: COL_RATIOS, aligns: COL_ALIGNS, size: 'normal', bold: true, align: 'right'
+            cols: [String(i.name), String(qty), unit.toLocaleString('en-US'), line.toLocaleString('en-US')],
+            ratios: R, aligns: A,
+            text: String(i.name) + '  ×' + qty + '  ' + unit.toLocaleString('en-US') + '  ' + line.toLocaleString('en-US'),
+            size: 'normal', bold: true, align: 'right'
         });
+
         if (i.itemNotes && i.itemNotes.length) {
-            L.push({ text: '   (' + i.itemNotes.join(' - ') + ')', size: 'normal', align: 'right' });
+            L.push({ text: '   ← ' + i.itemNotes.join(' • '), size: 'normal', align: 'right' });
         }
     });
 
     L.push({ separator: 'dash' });
+    L.push({
+        cols: ['عدد القطع', String(totalQty), '', cleanPrice(ord.subtotal).toLocaleString('en-US')],
+        ratios: R, aligns: A,
+        text: 'عدد القطع: ' + totalQty + '   المجموع: ' + cleanPrice(ord.subtotal).toLocaleString('en-US'),
+        size: 'normal', bold: true, align: 'right'
+    });
+    L.push({ separator: 'solid' });
 
-    L.push({ text: 'المجموع: ' + cleanPrice(ord.subtotal).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+    // ===== الحساب =====
+    const money = n => cleanPrice(n).toLocaleString('en-US') + ' د.ع';
+    L.push({ text: 'إجمالي القائمة:  ' + money(ord.subtotal), size: 'normal', align: 'right' });
     if (cleanPrice(ord.discount) > 0) {
-        L.push({ text: 'الخصم: -' + cleanPrice(ord.discount).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
+        L.push({ text: 'خصم القائمة:  -' + money(ord.discount), size: 'normal', align: 'right' });
     }
     if (cleanPrice(ord.deliveryFee) > 0) {
-        L.push({ text: 'التوصيل: +' + cleanPrice(ord.deliveryFee).toLocaleString('en-US') + ' د.ع', size: 'normal', align: 'right' });
-    }
-
-    L.push({ text: 'المطلوب: ' + cleanPrice(ord.totalAmount).toLocaleString('en-US') + ' د.ع', size: 'big', align: 'right', bold: true });
-
-    if (cleanPrice(ord.cashGiven) > 0) {
-        L.push({
-            text: 'المستلم: ' + cleanPrice(ord.cashGiven).toLocaleString('en-US') +
-                  '  |  الباقي: ' + cleanPrice(ord.cashChange).toLocaleString('en-US') + ' د.ع',
-            size: 'normal', align: 'right'
-        });
+        L.push({ text: 'أجور التوصيل:  +' + money(ord.deliveryFee), size: 'normal', align: 'right' });
     }
 
     L.push({ separator: 'dash' });
-    L.push({ text: 'شكراً لزيارتكم MIM89 - أهلاً وسهلاً بكم', size: 'normal', align: 'center', bold: true });
+    L.push({ text: 'صافي القائمة: ' + money(ord.totalAmount), size: 'big', align: 'center', bold: true });
+    L.push({ separator: 'dash' });
+
+    L.push({ text: 'طريقة الدفع: ' + (ord.paymentMethod || 'كاش'), size: 'normal', align: 'right' });
+    if (cleanPrice(ord.cashGiven) > 0) {
+        L.push({ text: 'المدفوع:  ' + money(ord.cashGiven), size: 'normal', align: 'right' });
+        L.push({ text: 'الباقي:  ' + money(ord.cashChange), size: 'normal', align: 'right', bold: true });
+    }
+
+    // ===== التذييل =====
+    L.push({ separator: 'solid' });
+    L.push({ text: 'نورتونا ... منتظرين رجعتكم', size: 'big', align: 'center', bold: true });
+    L.push({ separator: 'space' });
+    L.push({ text: 'تابعونا على انستغرام وفيسبوك', size: 'normal', align: 'center' });
+    L.push({ text: '@mim89fastfood', size: 'normal', align: 'center', bold: true });
+    L.push({ separator: 'dash' });
+    L.push({ text: 'MIM89 - نظام نقاط البيع', size: 'normal', align: 'center' });
 
     return L;
 }
@@ -4190,7 +4251,11 @@ function listenForIncomingOrders() {
         let lastIncomingCall = null;
 
         ordersList.forEach(ord => {
-            const isUnhandled = !ord.status || ord.status === 'جديد' || ord.status === 'new' || ord.status === 'pending' || ord.status === '';
+            // 🛠️ [إصلاح] كان الطلب يختفي فور تغيير حالته، فيستحيل متابعة تجهيزه
+            // أو إبلاغ الزبون بالخطوة التالية. الآن يبقى ظاهراً حتى «تم التسليم».
+            const st = ord.status || '';
+            const isUnhandled = !st || st === 'جديد' || st === 'new' || st === 'pending' ||
+                                st === 'مقبول وكاشير' || st === 'قيد التحضير' || st === 'خرج للتوصيل';
             
             if (isUnhandled) {
                 unhandledCount++;
@@ -4344,6 +4409,18 @@ function generateOrderCardHTML(ord, docId) {
     
     const encodedItems = encodeURIComponent(JSON.stringify(itemsList));
 
+    const curStatus = ord.status || 'جديد';
+    const statusMap = {
+        'جديد': { t: '🆕 جديد', c: '#f59e0b' },
+        'مقبول وكاشير': { t: '📥 بالكاشير', c: '#38bdf8' },
+        'قيد التحضير': { t: '🍳 قيد التحضير', c: '#f59e0b' },
+        'خرج للتوصيل': { t: '🛵 خرج للتوصيل', c: '#38bdf8' }
+    };
+    const stInfo = statusMap[curStatus] || { t: curStatus, c: '#888' };
+    const statusBadge = '<div style="background:' + stInfo.c + '22; border:1px solid ' + stInfo.c +
+        '; color:' + stInfo.c + '; font-size:0.7rem; font-weight:900; padding:3px 9px; border-radius:5px; display:inline-block; margin-bottom:5px;">' +
+        stInfo.t + '</div>';
+
     const isWebMenuOrder = itemsList.length > 0;
     const sourceBadge = isWebMenuOrder 
         ? `<span style="background:#10b981; color:#fff; font-size:0.7rem; font-weight:bold; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:4px;">🌐 طلب مباشر من المينيو الإلكتروني</span>`
@@ -4351,7 +4428,7 @@ function generateOrderCardHTML(ord, docId) {
 
     return `
         <div id="order_card_${safeDocId}" style="background:#222228; border:1px solid ${isWebMenuOrder ? '#10b981' : 'var(--gold-primary, #ffd700)'}; padding:10px; margin-bottom:8px; border-radius:8px; width:100%;">
-            ${sourceBadge}
+            ${sourceBadge} ${statusBadge}
             <div style="display:flex; justify-content:space-between; color:var(--gold-primary, #ffd700); font-size:0.85rem;">
                 <strong>👤 ${displayName} (${rawPhone})</strong>
                 <span>${ord.orderType === 'delivery' ? '🚗 توصيل' : (ord.orderType === 'سفري' ? '🛍️ سفري' : '🍽️ صالة')}</span>
@@ -4814,6 +4891,36 @@ function renderCategoryFixerTable() {
     }).join('');
 }
 
+// ⏸️ إيقاف نشر صنف مؤقتاً دون حذفه — يختفي من المينيو والكاشير ويبقى محفوظاً
+function toggleItemPublish(id) {
+    const items = getData('sys_items') || [];
+    const item = items.find(i => String(i.id) === String(id) || String(i.docId) === String(id));
+    if (!item) return;
+
+    const nowPaused = !item.isPaused;
+    const msg = nowPaused
+        ? 'إيقاف نشر «' + item.name + '»؟\n\nسيختفي من المينيو الإلكتروني والكاشير،\nلكنه يبقى محفوظاً بكل بياناته وصورته ووصفته.'
+        : 'إعادة نشر «' + item.name + '»؟\n\nسيظهر فوراً للزبائن وبالكاشير.';
+    if (!confirm(msg)) return;
+
+    item.isPaused = nowPaused;
+    item.updatedAt = Date.now();
+    localStorage.setItem('sys_items', JSON.stringify(items));
+
+    if (db) {
+        db.collection("menu_items").doc(String(item.id))
+            .set({ isPaused: nowPaused, updatedAt: item.updatedAt }, { merge: true })
+            .catch(err => showCloudErrorBanner(translateFirestoreError(err)));
+    }
+
+    if (typeof logAudit === 'function') {
+        logAudit(nowPaused ? 'إيقاف نشر صنف' : 'إعادة نشر صنف', { itemName: item.name });
+    }
+
+    refreshActiveUI();
+    if (typeof renderAdminItems === 'function') renderAdminItems();
+}
+
 function renderAdminItems() {
     const items = getData('sys_items');
     const categories = getData('sys_categories');
@@ -4824,8 +4931,9 @@ function renderAdminItems() {
     tbody.innerHTML = items.map(item => {
         const cat = categories.find(c => cleanPrice(c.id) === getItemCategory(item));
         return `
-            <tr>
-                <td style="text-align:center;">
+            <tr style="${item.isPaused ? 'opacity:0.5; background:rgba(245,158,11,0.08);' : ''}">
+                <td style="text-align:center; position:relative;">
+                    ${item.isPaused ? '<div style="position:absolute; top:0; right:0; background:#f59e0b; color:#000; font-size:0.6rem; font-weight:900; padding:1px 5px; border-radius:4px;">موقوف</div>' : ''}
                     <img src="${item.image || item.img}" width="45" height="45" style="object-fit:cover; border-radius:6px; cursor:pointer;" onclick="triggerInlineImageUpload('${item.id}')" title="اضغط لتغيير الصورة مباشرة">
                 </td>
                 <td>
@@ -4839,7 +4947,11 @@ function renderAdminItems() {
                     </div>
                 </td>
                 <td>
-                    <button onclick="editItem('${item.id}')" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل كامل</button>
+                    <button onclick="toggleItemPublish('${item.id}')" class="gold-btn btn-sm"
+                            style="padding:4px 8px; font-size:0.75rem; background:${item.isPaused ? '#10b981' : '#f59e0b'}; color:#000; border:none; font-weight:900;">
+                        ${item.isPaused ? '▶️ نشر' : '⏸️ إيقاف'}
+                    </button>
+                    <button onclick="editItem('${item.id}')" class="gold-btn btn-sm" style="padding:4px 8px; font-size:0.75rem;">تعديل</button>
                     <button onclick="deleteItem('${item.id}')" class="gold-btn btn-danger btn-sm" style="padding:4px 8px; font-size:0.75rem;">حذف</button>
                 </td>
             </tr>
