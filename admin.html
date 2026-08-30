@@ -201,9 +201,14 @@
                             <span style="font-size:0.75rem; color:#aaa; display:block;">💰 مبيعات الشيفت الحالية:</span>
                             <strong id="liveShiftSalesBadge" style="color:var(--gold-bright); font-size:1.05rem;">0 د.ع</strong>
                         </div>
-                        <button onclick="confirmCloseShiftAndLogout()" class="gold-btn btn-danger btn-sm" style="padding:6px 12px; font-size:0.78rem; font-weight:bold;">
-                            🔒 تقفيل الشيفت وتصفير العداد
-                        </button>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <button onclick="confirmCloseShiftAndLogout()" class="gold-btn btn-danger btn-sm" style="padding:6px 12px; font-size:0.78rem; font-weight:bold;">
+                                🔒 تقفيل الشيفت
+                            </button>
+                            <button onclick="repairShiftWindow()" class="gold-btn btn-sm" style="padding:4px 10px; font-size:0.68rem; background:#2a2a35; color:#aaa; border:1px solid #444;">
+                                🔧 المبيعات لا تظهر؟
+                            </button>
+                        </div>
                     </div>
 
                     <span id="cloudSyncIndicator" style="font-size:0.72rem; color:#888; padding:6px 10px; border-radius:6px; border:1px solid var(--card-border);" title="آخر تحديث من السحابة"></span>
@@ -759,7 +764,7 @@
     </div>
 
     <!-- المحرك البرمجي الرئيسي -->
-    <script src="app.js?v=1510"></script>
+    <script src="app.js?v=1520"></script>
     <script>
         function loginAdmin() {
             const pass = document.getElementById('adminPassInput').value.trim();
