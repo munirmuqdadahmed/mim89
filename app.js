@@ -26,7 +26,7 @@ const MIM89_VERSION = "1100";
    ========================================== */
 
 // 🏷️ رقم نسخة المحرك — يظهر بأسفل شاشة الكاشير للتأكد من تحميل آخر تحديث
-const MIM89_APP_VERSION = '1500';
+const MIM89_APP_VERSION = '1510';
 let db = null;
 let activeCashierUser = null;
 let posCart = [];
@@ -4976,7 +4976,14 @@ function saveItem() {
     const name = document.getElementById('itemName')?.value.trim();
     const price = cleanPrice(document.getElementById('itemPrice')?.value);
     const categoryId = cleanPrice(document.getElementById('itemCategory')?.value || 1);
-    const image = document.getElementById('itemImage')?.value || document.getElementById('imgPreview')?.src || 'https://via.placeholder.com/150';
+    // 🛠️ [إصلاح] الرابط الملصوق له الأولوية دائماً على المعاينة القديمة
+    const urlField = (document.getElementById('itemImage')?.value || '').trim();
+    const previewSrc = document.getElementById('imgPreview')?.src || '';
+    let image;
+    if (urlField && /^https?:\/\//i.test(urlField)) image = urlField;          // رابط مباشر
+    else if (previewSrc.startsWith('data:')) image = previewSrc;                  // صورة مرفوعة ومضغوطة
+    else if (previewSrc && !previewSrc.includes('placeholder')) image = previewSrc;
+    else image = '';
     const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
 
     if (!name || !price) {
@@ -5796,6 +5803,230 @@ function compressImageFile(file, onDone) {
     };
     reader.onerror = function () { alert('⚠️ تعذّرت قراءة الملف.'); };
     reader.readAsDataURL(file);
+}
+
+// 🖼️ إدارة صور الأصناف بالجملة — معاينة فورية قبل الحفظ
+function renderImageManager() {
+    const box = document.getElementById('imageManagerList');
+    if (!box) return;
+
+    const items = getData('sys_items') || [];
+    const q = (document.getElementById('imgMgrSearch')?.value || '').toLowerCase();
+    const filter = document.getElementById('imgMgrFilter')?.value || 'missing';
+
+    const isHeavy = i => typeof i.image === 'string' && i.image.startsWith('data:');
+    const isLinked = i => typeof i.image === 'string' && /^https?:\/\//i.test(i.image);
+    const isMissing = i => !i.image || (!isHeavy(i) && !isLinked(i)) || String(i.image).includes('placeholder');
+
+    const stats = document.getElementById('imgMgrStats');
+    if (stats) {
+        stats.innerHTML = '🔗 ' + items.filter(isLinked).length +
+            ' • 📦 ' + items.filter(isHeavy).length +
+            ' • ⚠️ ' + items.filter(isMissing).length + ' بلا صورة';
+    }
+
+    let list = items;
+    if (filter === 'missing') list = items.filter(isMissing);
+    else if (filter === 'heavy') list = items.filter(isHeavy);
+    else if (filter === 'linked') list = items.filter(isLinked);
+    if (q) list = list.filter(i => String(i.name).toLowerCase().includes(q));
+
+    if (list.length === 0) {
+        box.innerHTML = '<p style="color:var(--success); text-align:center; padding:22px; font-weight:bold;">' +
+            (filter === 'missing' ? '✅ كل الأصناف لها صور!' : 'لا توجد أصناف مطابقة') + '</p>';
+        return;
+    }
+
+    box.innerHTML = list.map(item => {
+        const cur = item.image || '';
+        const heavy = isHeavy(item);
+        const linked = isLinked(item);
+        const sizeKB = heavy ? Math.round(cur.length * 0.75 / 1024) : 0;
+
+        const badge = heavy
+            ? '<span style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid #f59e0b; padding:2px 7px; border-radius:4px; font-size:0.68rem; font-weight:800;">📦 مرفوعة ' + sizeKB + ' KB</span>'
+            : (linked
+                ? '<span style="background:rgba(16,185,129,0.2); color:#10b981; border:1px solid #10b981; padding:2px 7px; border-radius:4px; font-size:0.68rem; font-weight:800;">🔗 رابط</span>'
+                : '<span style="background:rgba(239,68,68,0.2); color:var(--danger); border:1px solid var(--danger); padding:2px 7px; border-radius:4px; font-size:0.68rem; font-weight:800;">⚠️ بلا صورة</span>');
+
+        return '<div style="background:#16161f; border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:8px;">' +
+            '<div style="display:flex; gap:12px; align-items:flex-start;">' +
+
+            '<img id="imgPrev_' + item.id + '" src="' + (cur || 'https://via.placeholder.com/80?text=?') + '" ' +
+            'style="width:72px; height:72px; object-fit:cover; border-radius:8px; border:2px solid var(--card-border); flex-shrink:0; background:#0d0d12;" ' +
+            'onerror="this.src=\'https://via.placeholder.com/80?text=✕\'">' +
+
+            '<div style="flex:1; min-width:0;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
+            '<strong style="font-size:0.87rem; color:#fff;">' + item.name + '</strong>' + badge +
+            '</div>' +
+
+            '<input type="text" id="imgUrl_' + item.id + '" class="gold-input-inline" ' +
+            'placeholder="الصق رابط الصورة هنا..." ' +
+            'value="' + (linked ? cur : '') + '" ' +
+            'style="font-size:0.76rem; direction:ltr; text-align:left; margin-bottom:6px;" ' +
+            'oninput="previewManagerImage(\'' + item.id + '\')" ' +
+            'onpaste="setTimeout(() => previewManagerImage(\'' + item.id + '\'), 60)">' +
+
+            '<div id="imgStat_' + item.id + '" style="font-size:0.72rem; min-height:16px; margin-bottom:6px;"></div>' +
+
+            '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+            '<button onclick="saveManagerImage(\'' + item.id + '\')" class="gold-btn btn-sm" ' +
+            'style="background:#10b981; color:#fff; border:none; padding:6px 14px; font-size:0.74rem; font-weight:900;">💾 حفظ</button>' +
+            (cur ? '<button onclick="clearManagerImage(\'' + item.id + '\')" class="gold-btn btn-sm" ' +
+            'style="background:#2a2a35; color:#aaa; border:1px solid #444; padding:6px 12px; font-size:0.74rem;">🗑️ إزالة الصورة</button>' : '') +
+            '</div>' +
+
+            '</div></div></div>';
+    }).join('');
+}
+
+const imgPreviewTimers = {};
+
+function previewManagerImage(itemId) {
+    const input = document.getElementById('imgUrl_' + itemId);
+    const stat = document.getElementById('imgStat_' + itemId);
+    const prev = document.getElementById('imgPrev_' + itemId);
+    if (!input || !stat) return;
+
+    const url = input.value.trim();
+    if (imgPreviewTimers[itemId]) clearTimeout(imgPreviewTimers[itemId]);
+
+    if (!url) { stat.innerHTML = ''; return; }
+    if (!/^https?:\/\//i.test(url)) {
+        stat.innerHTML = '<span style="color:var(--danger);">⚠️ يجب أن يبدأ بـ https://</span>';
+        return;
+    }
+
+    stat.innerHTML = '<span style="color:#f59e0b;">⏳ جاري الفحص...</span>';
+
+    imgPreviewTimers[itemId] = setTimeout(() => {
+        const t = new Image();
+        let done = false;
+        const to = setTimeout(() => {
+            if (done) return; done = true;
+            stat.innerHTML = '<span style="color:var(--danger);">❌ لا يستجيب — جرّب رابطاً آخر</span>';
+        }, 9000);
+
+        t.onload = () => {
+            if (done) return; done = true; clearTimeout(to);
+            if (prev) prev.src = url;
+            stat.innerHTML = '<span style="color:#10b981;">✅ تعمل (' + t.naturalWidth + '×' + t.naturalHeight + ') — تأكد أنها الصورة الصحيحة</span>';
+        };
+        t.onerror = () => {
+            if (done) return; done = true; clearTimeout(to);
+            stat.innerHTML = '<span style="color:var(--danger);">❌ الرابط لا يعرض صورة</span>';
+        };
+        t.src = url;
+    }, 400);
+}
+
+function saveManagerImage(itemId) {
+    const input = document.getElementById('imgUrl_' + itemId);
+    if (!input) return;
+    const url = input.value.trim();
+
+    if (!url) return alert('⚠️ الصق رابط الصورة أولاً');
+    if (!/^https?:\/\//i.test(url)) return alert('⚠️ الرابط يجب أن يبدأ بـ https://');
+
+    const items = getData('sys_items') || [];
+    const item = items.find(i => String(i.id) === String(itemId));
+    if (!item) return;
+
+    item.image = url;
+    item.updatedAt = Date.now();
+    localStorage.setItem('sys_items', JSON.stringify(items));
+
+    if (db) {
+        db.collection("menu_items").doc(String(item.id))
+            .set({ image: url, updatedAt: item.updatedAt }, { merge: true })
+            .then(() => {
+                const stat = document.getElementById('imgStat_' + itemId);
+                if (stat) stat.innerHTML = '<span style="color:#10b981; font-weight:900;">✅ حُفظ ورُفع للسحابة</span>';
+                setTimeout(renderImageManager, 900);
+            })
+            .catch(err => {
+                showCloudErrorBanner(translateFirestoreError(err));
+                const stat = document.getElementById('imgStat_' + itemId);
+                if (stat) stat.innerHTML = '<span style="color:var(--danger);">⚠️ حُفظ محلياً فقط</span>';
+            });
+    } else {
+        renderImageManager();
+    }
+
+    refreshActiveUI();
+}
+
+function clearManagerImage(itemId) {
+    if (!confirm('إزالة صورة هذا الصنف؟\n\nسيظهر بلا صورة حتى تضع رابطاً جديداً.')) return;
+
+    const items = getData('sys_items') || [];
+    const item = items.find(i => String(i.id) === String(itemId));
+    if (!item) return;
+
+    item.image = '';
+    item.updatedAt = Date.now();
+    localStorage.setItem('sys_items', JSON.stringify(items));
+
+    if (db) {
+        db.collection("menu_items").doc(String(item.id))
+            .set({ image: '', updatedAt: item.updatedAt }, { merge: true })
+            .catch(() => {});
+    }
+
+    renderImageManager();
+    refreshActiveUI();
+}
+
+// 🔗 التحقق الفوري من رابط الصورة وعرض معاينة حقيقية
+// 🛠️ [إصلاح] كانت الخانة تعمل بحدث onchange فقط، وهو لا يُشغَّل عند اللصق
+// في كثير من المتصفحات (خصوصاً الموبايل) — فيبدو الحقل فارغاً وقت الحفظ
+// فتُحفظ الصورة القديمة بدل الرابط الجديد.
+let imgUrlCheckTimer = null;
+
+function onImageUrlChanged(url) {
+    const status = document.getElementById('imgUrlStatus');
+    const preview = document.getElementById('imgPreview');
+    const infoEl = document.getElementById('imgCompressInfo');
+    if (infoEl) infoEl.innerHTML = '';
+
+    url = String(url || '').trim();
+    if (imgUrlCheckTimer) clearTimeout(imgUrlCheckTimer);
+
+    if (!url) { if (status) status.innerHTML = ''; return; }
+
+    if (!/^https?:\/\//i.test(url)) {
+        if (status) status.innerHTML = '<span style="color:var(--danger);">⚠️ الرابط يجب أن يبدأ بـ https://</span>';
+        return;
+    }
+
+    if (status) status.innerHTML = '<span style="color:#f59e0b;">⏳ جاري التحقق من الصورة...</span>';
+
+    imgUrlCheckTimer = setTimeout(() => {
+        const test = new Image();
+        let done = false;
+
+        const timeout = setTimeout(() => {
+            if (done) return;
+            done = true;
+            if (status) status.innerHTML = '<span style="color:var(--danger);">❌ الرابط بطيء أو لا يستجيب — جرّب رابطاً آخر</span>';
+        }, 9000);
+
+        test.onload = function () {
+            if (done) return;
+            done = true; clearTimeout(timeout);
+            if (preview) preview.src = url;
+            if (status) status.innerHTML = '<span style="color:#10b981;">✅ الصورة تعمل (' + test.naturalWidth + '×' + test.naturalHeight + ') — راجع المعاينة قبل الحفظ</span>';
+        };
+
+        test.onerror = function () {
+            if (done) return;
+            done = true; clearTimeout(timeout);
+            if (status) status.innerHTML = '<span style="color:var(--danger);">❌ الرابط لا يعرض صورة. تأكد أنه ينتهي بـ .jpg أو .png</span>';
+        };
+
+        test.src = url;
+    }, 400);
 }
 
 function handleImageUpload(event) {
