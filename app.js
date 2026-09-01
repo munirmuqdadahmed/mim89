@@ -2127,76 +2127,144 @@ async function printBothViaBridge(btnElement) {
 // طباعة الزبون يدوياً (احتياطي)
 function executeCustomerPrintOnly() {
     if (!activePendingPrintOrder) return alert("لا توجد فاتورة!");
-    const ord        = activePendingPrintOrder;
-    const printBox   = document.getElementById('mim89ThermalPrintBox');
-    const money      = n => cleanPrice(Math.round(n)).toLocaleString('ar-IQ');
+    const ord      = activePendingPrintOrder;
+    const printBox = document.getElementById('mim89ThermalPrintBox');
+    const money    = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
 
-    const itemsHtml = (ord.items||[]).map(i =>
-        '<tr style="border-bottom:1px solid #000;">' +
-        '<td style="padding:3px 0;font-weight:900;font-size:13px;text-align:right;">' +
-        i.name +
-        (i.itemNotes&&i.itemNotes.length
-            ? '<br><small style="font-size:10px;">('+i.itemNotes.join(', ')+')</small>' : '') +
-        '</td>' +
-        '<td style="padding:3px;text-align:center;font-weight:900;font-size:13px;">' + i.qty + '</td>' +
-        '<td style="padding:3px 0;text-align:left;font-weight:900;font-size:13px;">' +
-        money(cleanPrice(i.price)*cleanPrice(i.qty)) + '</td>' +
-        '</tr>'
-    ).join('');
+    // 🛠️ إصلاح: التأكد من وجود الأصناف
+    const items = Array.isArray(ord.items) ? ord.items : [];
+
+    const itemsHtml = items.length > 0
+        ? items.map(i =>
+            '<tr style="border-bottom:1px dashed #ccc;">' +
+            '<td style="padding:4px 2px;font-weight:900;font-size:14px;text-align:right;">' +
+            (i.name || '') +
+            (i.itemNotes && i.itemNotes.length
+                ? '<br><small style="font-size:10px;color:#444;">(' +
+                  i.itemNotes.join(', ') + ')</small>'
+                : '') +
+            '</td>' +
+            '<td style="padding:4px 2px;text-align:center;font-weight:900;font-size:14px;">' +
+            (i.qty || 1) + '</td>' +
+            '<td style="padding:4px 2px;text-align:left;font-weight:900;font-size:14px;">' +
+            money(cleanPrice(i.price) * cleanPrice(i.qty)) +
+            '</td></tr>'
+          ).join('')
+        : '<tr><td colspan="3" style="text-align:center;font-size:12px;padding:6px;">' +
+          'لا توجد أصناف</td></tr>';
 
     printBox.innerHTML =
         '<div style="width:76mm;font-family:Tajawal,sans-serif;direction:rtl;' +
         'text-align:right;color:#000;padding:1mm;">' +
+
+        // الترويسة
         '<div style="text-align:center;border-bottom:2px dashed #000;' +
-        'padding-bottom:4px;margin-bottom:5px;">' +
+        'padding-bottom:5px;margin-bottom:6px;">' +
         '<h2 style="margin:0;font-size:20px;font-weight:900;">MIM89 FAST FOOD</h2>' +
-        '<div style="font-size:11px;">بغداد - القاهرة</div></div>' +
-        '<div style="text-align:center;border:2px solid #000;padding:3px;' +
-        'margin-bottom:5px;">' +
-        '<div style="font-size:11px;">رقم الطلب</div>' +
-        '<div style="font-size:38px;font-weight:900;line-height:1;">#' + ord.orderNum + '</div>' +
+        '<div style="font-size:11px;font-weight:bold;">بغداد - القاهرة</div>' +
         '</div>' +
-        '<div style="font-size:11px;border-bottom:1px solid #000;' +
-        'padding-bottom:3px;margin-bottom:4px;line-height:1.5;">' +
-        '<div>' + ord.dateDate + ' - ' + ord.timestamp + '</div>' +
-        '<div>الخدمة: <strong>' + ord.orderType + '</strong></div>' +
-        (ord.customerName&&ord.customerName!=='زبون مباشر'
-            ? '<div>الزبون: ' + ord.customerName + '</div>' : '') +
-        (ord.orderType==='توصيل'&&ord.area
-            ? '<div>المنطقة: ' + ord.area + '</div>' : '') +
-        (ord.orderType==='توصيل'&&ord.driverName&&ord.driverName!=='-'
-            ? '<div>السائق: ' + ord.driverName + '</div>' : '') +
-        '<div>الدفع: ' + (ord.paymentMethod||'كاش') + '</div>' +
+
+        // رقم الطلب
+        '<div style="text-align:center;border:2px solid #000;padding:4px;' +
+        'margin-bottom:6px;">' +
+        '<div style="font-size:11px;font-weight:bold;">رقم الطلب</div>' +
+        '<div style="font-size:40px;font-weight:900;line-height:1;">#' +
+        ord.orderNum + '</div>' +
         '</div>' +
-        '<table style="width:100%;border-collapse:collapse;">' +
-        '<thead><tr style="border-bottom:2px solid #000;">' +
-        '<th style="text-align:right;font-size:11px;">الوجبة</th>' +
-        '<th style="text-align:center;font-size:11px;">ك</th>' +
-        '<th style="text-align:left;font-size:11px;">د.ع</th>' +
-        '</tr></thead><tbody>' + itemsHtml + '</tbody></table>' +
-        '<div style="border-top:2px dashed #000;padding-top:3px;' +
-        'margin-top:4px;font-size:12px;font-weight:900;line-height:1.6;">' +
-        (cleanPrice(ord.discount)>0
+
+        // بيانات الفاتورة
+        '<div style="font-size:11px;font-weight:bold;border-bottom:1px solid #000;' +
+        'padding-bottom:4px;margin-bottom:5px;line-height:1.7;">' +
+        '<div>' + ord.dateDate + ' - ' + (ord.timestamp || '') + '</div>' +
+        '<div>الخدمة: <strong>' + (ord.orderType || '') + '</strong></div>' +
+
+        // 🛠️ إصلاح: اسم الزبون
+        (ord.customerName && ord.customerName !== 'زبون مباشر'
+            ? '<div>الزبون: <strong>' + ord.customerName + '</strong></div>'
+            : '') +
+
+        // 🛠️ إصلاح: رقم الهاتف
+        (ord.phone && ord.phone !== '-'
+            ? '<div>الهاتف: <strong>' + ord.phone + '</strong></div>'
+            : '') +
+
+        // المنطقة للدليفري
+        (ord.orderType === 'توصيل' && ord.area && ord.area !== 'داخل المطعم'
+            ? '<div>المنطقة: <strong>' + ord.area + '</strong></div>'
+            : '') +
+
+        // السائق
+        (ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-'
+            ? '<div>السائق: <strong>' + ord.driverName + '</strong></div>'
+            : '') +
+
+        '<div>الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
+        '</div>' +
+
+        // جدول الأصناف
+        '<table style="width:100%;border-collapse:collapse;margin-bottom:5px;">' +
+        '<thead>' +
+        '<tr style="border-bottom:2px solid #000;">' +
+        '<th style="text-align:right;font-size:12px;padding:3px 2px;">الوجبة</th>' +
+        '<th style="text-align:center;font-size:12px;padding:3px 2px;">ك</th>' +
+        '<th style="text-align:left;font-size:12px;padding:3px 2px;">د.ع</th>' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>' + itemsHtml + '</tbody>' +
+        '</table>' +
+
+        // الملاحظات العامة
+        (ord.orderNotes
+            ? '<div style="font-size:11px;border-bottom:1px dashed #ccc;' +
+              'padding-bottom:3px;margin-bottom:4px;">' +
+              '📝 ' + ord.orderNotes + '</div>'
+            : '') +
+
+        // الحساب
+        '<div style="border-top:2px dashed #000;padding-top:4px;margin-top:4px;' +
+        'font-size:12px;font-weight:900;line-height:1.8;">' +
+
+        // الخصم
+        (cleanPrice(ord.discount) > 0
             ? '<div style="display:flex;justify-content:space-between;">' +
-              '<span>خصم:</span><span>-' + money(ord.discount) + '</span></div>' : '') +
-        (cleanPrice(ord.deliveryFee)>0
+              '<span>خصم:</span>' +
+              '<span>-' + money(ord.discount) + ' د.ع</span></div>'
+            : '') +
+
+        // التوصيل
+        (cleanPrice(ord.deliveryFee) > 0
             ? '<div style="display:flex;justify-content:space-between;">' +
-              '<span>التوصيل:</span><span>+' + money(ord.deliveryFee) + '</span></div>' : '') +
-        '<div style="display:flex;justify-content:space-between;font-size:16px;' +
-        'border-top:2px solid #000;padding-top:3px;">' +
-        '<span>المطلوب:</span><strong>' + money(ord.totalAmount) + ' د.ع</strong></div>' +
-        (cleanPrice(ord.cashGiven)>0
-            ? '<div style="font-size:10px;color:#333;">مدفوع: ' + money(ord.cashGiven) +
-              ' | باقي: ' + money(ord.cashChange) + ' د.ع</div>' : '') +
+              '<span>التوصيل:</span>' +
+              '<span>+' + money(ord.deliveryFee) + ' د.ع</span></div>'
+            : '') +
+
+        // المطلوب
+        '<div style="display:flex;justify-content:space-between;' +
+        'font-size:17px;border-top:2px solid #000;padding-top:4px;margin-top:3px;">' +
+        '<span>المطلوب:</span>' +
+        '<strong>' + money(ord.totalAmount) + ' د.ع</strong>' +
         '</div>' +
+
+        // المدفوع والباقي
+        (cleanPrice(ord.cashGiven) > 0
+            ? '<div style="font-size:11px;color:#333;margin-top:2px;">' +
+              'مدفوع: ' + money(ord.cashGiven) +
+              ' | باقي: ' + money(ord.cashChange) + ' د.ع' +
+              '</div>'
+            : '') +
+
+        '</div>' +
+
+        // التذييل
         '<div style="text-align:center;margin-top:8px;font-size:11px;' +
-        'border-top:1px solid #000;padding-top:3px;">' +
-        'شكراً لزيارتكم — MIM89</div>' +
+        'border-top:1px solid #000;padding-top:4px;">' +
+        'شكراً لزيارتكم 🍔 MIM89</div>' +
+
         '</div>';
 
     isCustomerPrinted = true;
     updatePrintStatusBadges();
-    setTimeout(() => window.print(), 120);
+    setTimeout(() => window.print(), 150);
 }
 
 // طباعة المطبخ يدوياً (احتياطي)
