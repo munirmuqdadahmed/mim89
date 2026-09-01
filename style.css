@@ -1,58 +1,73 @@
 /* ==========================================================================
-   MIM89 FAST FOOD - Complete Master Style Sheet (v26.0)
-   (Fixed Thermal Print Container & Stable iPad POS Layout)
+   MIM89 FAST FOOD - Master Style Sheet (v27.0)
+   تصميم محدّث: أوضح + أسرع + PIN موحد + طباعة محسّنة
    صاحب النظام: منير مقداد
    ========================================================================== */
 
-/* 1. المتغيرات والأساسيات */
+/* ==================== 1. المتغيرات ==================== */
 :root {
-    --gold-primary: #f59e0b;
-    --gold-bright: #fbbf24;
-    --gold-gradient: linear-gradient(135deg, #f59e0b, #d97706);
-    --gold-glow: rgba(245, 158, 11, 0.25);
-    --bg-dark: #0f0f12;
-    --card-bg: #1a1a1e;
-    --card-border: #2e2e36;
-    --text-light: #f3f4f6;
-    --text-muted: #9ca3af;
-    --danger-red: #ef4444;
-    --success-green: #10b981;
-    --blue-accent: #38bdf8;
-    --purple-accent: #c084fc;
+    --gold-primary:   #f59e0b;
+    --gold-bright:    #fbbf24;
+    --gold-gradient:  linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --gold-glow:      rgba(245,158,11,0.25);
+
+    --bg-main:        #08080b;
+    --bg-card:        #111116;
+    --bg-input:       #0d0d11;
+    --card-border:    rgba(255,255,255,0.07);
+    --card-border-gold: rgba(245,158,11,0.35);
+
+    --text-light:     #f0f0f4;
+    --text-muted:     #8a8a9a;
+
+    --danger-red:     #ef4444;
+    --success-green:  #10b981;
+    --blue-accent:    #38bdf8;
+    --purple-accent:  #c084fc;
+    --warning:        #f59e0b;
 }
 
-* {
+/* ==================== 2. الأساسيات ==================== */
+*, *::before, *::after {
     box-sizing: border-box !important;
     margin: 0;
     padding: 0;
-    font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* 📱 تثبيت الشاشة الرئيسية لمنع ارتداد وسحب متصفح أبل بالكامل */
 html {
     height: 100%;
-    height: 100dvh;
     overflow: hidden;
 }
 
 body {
-    background-color: var(--bg-dark);
+    background-color: var(--bg-main);
     color: var(--text-light);
     direction: rtl;
     text-align: right;
     height: 100%;
-    height: 100dvh;
     overflow: hidden;
     position: relative;
     user-select: none;
+    -webkit-user-select: none;
 }
 
+/* المينيو العام للزبائن */
 body.public-menu-body {
     height: auto !important;
     min-height: 100%;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 130px;
+}
+
+/* صفحات الإدارة */
+body.admin-body {
+    height: auto !important;
+    overflow-y: auto !important;
+    padding: 12px;
 }
 
 .container {
@@ -60,148 +75,207 @@ body.public-menu-body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 15px;
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
-/* 🔒 شاشة تسجيل الدخول اللمسية واللوحة الرقمية الثابتة */
-#authOverlay {
+/* ==================== 3. لوحة PIN اللمسية الموحدة ==================== */
+.pin-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: #050508;
+    inset: 0;
+    background: #040407;
     z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px;
+    padding: 20px;
 }
 
-.login-card {
-    background: #121218;
+.pin-card {
+    background: #0e0e14;
     border: 2px solid var(--gold-primary);
-    padding: 28px 22px;
-    border-radius: 20px;
+    border-radius: 24px;
+    padding: 30px 24px 24px;
     width: 100%;
-    max-width: 330px;
+    max-width: 340px;
     text-align: center;
-    box-shadow: 0 0 30px rgba(245, 158, 11, 0.18), 0 20px 40px rgba(0, 0, 0, 0.9);
+    box-shadow:
+        0 0 40px rgba(245,158,11,0.15),
+        0 25px 60px rgba(0,0,0,0.95);
 }
 
-.pin-display {
-    background: #08080c;
-    border: 1px solid #22222e;
-    color: var(--gold-bright);
-    font-size: 2rem;
-    letter-spacing: 12px;
-    padding: 6px;
-    border-radius: 10px;
-    margin: 14px 0 18px 0;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-}
-
-.keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+.pin-card .pin-logo {
+    font-size: 2.2rem;
     margin-bottom: 6px;
 }
 
-.key-btn {
-    background: #1d1d26;
-    border: 1px solid #2a2a38;
-    color: #fff;
-    padding: 14px 0;
-    font-size: 1.35rem;
-    font-weight: 800;
+.pin-card h2 {
+    color: var(--gold-primary);
+    font-size: 1.25rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.pin-card p {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+}
+
+/* شاشة عرض الأرقام */
+.pin-dots {
+    background: #060609;
+    border: 1px solid #1e1e28;
     border-radius: 12px;
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.12s ease;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 0 16px;
 }
 
-.key-btn:active {
+.pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #2a2a36;
+    border: 2px solid #3a3a48;
+    transition: all 0.15s ease;
+}
+
+.pin-dot.filled {
+    background: var(--gold-primary);
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 8px rgba(245,158,11,0.6);
+    transform: scale(1.15);
+}
+
+.pin-dot.error {
+    background: var(--danger-red);
+    border-color: var(--danger-red);
+    animation: shake 0.4s ease;
+}
+
+/* لوحة الأرقام */
+.pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.pin-key {
+    background: #18181f;
+    border: 1px solid #252530;
+    color: #fff;
+    height: 62px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    border-radius: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(245,158,11,0.3);
+    user-select: none;
+}
+
+.pin-key:active,
+.pin-key.pressed {
     background: var(--gold-primary);
     color: #000;
-    transform: scale(0.94);
+    transform: scale(0.92);
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 12px rgba(245,158,11,0.4);
 }
 
-/* 2. الهيدر والكروت الأساسية */
+.pin-key.pin-enter {
+    background: rgba(16,185,129,0.15);
+    border-color: rgba(16,185,129,0.4);
+    color: var(--success-green);
+    font-size: 1.6rem;
+}
+
+.pin-key.pin-enter:active {
+    background: var(--success-green);
+    color: #fff;
+}
+
+.pin-key.pin-clear {
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.3);
+    color: var(--danger-red);
+    font-size: 1.1rem;
+}
+
+.pin-key.pin-clear:active {
+    background: var(--danger-red);
+    color: #fff;
+}
+
+.pin-error-msg {
+    color: var(--danger-red);
+    font-size: 0.78rem;
+    font-weight: 700;
+    height: 20px;
+    margin-top: 6px;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-8px); }
+    40%       { transform: translateX(8px); }
+    60%       { transform: translateX(-6px); }
+    80%       { transform: translateX(6px); }
+}
+
+/* ==================== 4. الهيدر والكروت ==================== */
 .admin-header {
-    background: var(--card-bg);
+    background: var(--bg-card);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
 }
 
 .brand-badge {
     background: var(--gold-gradient);
     color: #000;
     font-weight: 900;
-    font-size: 1.2rem;
-    padding: 5px 15px;
+    font-size: 1.1rem;
+    padding: 5px 14px;
     border-radius: 8px;
     display: inline-block;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 }
 
 .card {
-    background: var(--card-bg);
+    background: var(--bg-card);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
 }
 
-.live-kpi-card {
-    background: #18181c;
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-
-/* 3. المدخلات والأزرار الموحدة */
-.gold-input {
-    width: 100%;
-    padding: 10px 12px;
-    background: #121215;
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    color: #fff;
-    font-size: 0.95rem;
-    margin-top: 5px;
-    outline: none;
-    transition: 0.2s;
-}
-
-.gold-input:focus {
-    border-color: var(--gold-primary);
-}
-
+/* ==================== 5. المدخلات والأزرار ==================== */
+.gold-input,
 .gold-input-inline {
-    background: #121215;
+    background: var(--bg-input);
     border: 1px solid var(--card-border);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
+    color: var(--text-light);
+    padding: 8px 11px;
+    border-radius: 8px;
     width: 100%;
     font-size: 0.85rem;
-    box-sizing: border-box;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
+.gold-input:focus,
 .gold-input-inline:focus {
     border-color: var(--gold-primary);
     background: #000;
@@ -211,186 +285,258 @@ body.public-menu-body {
     background: var(--gold-gradient);
     color: #000;
     border: none;
-    border-radius: 8px;
-    font-weight: bold;
+    border-radius: 9px;
+    font-weight: 800;
     cursor: pointer;
-    transition: 0.2s;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 16px;
-    font-size: 0.95rem;
+    padding: 9px 16px;
+    font-size: 0.88rem;
+    transition: filter 0.15s, transform 0.1s;
+    touch-action: manipulation;
 }
 
-.gold-btn:hover {
-    filter: brightness(1.1);
-}
+.gold-btn:hover  { filter: brightness(1.08); }
+.gold-btn:active { transform: scale(0.97); }
 
-.gold-btn:active {
-    transform: scale(0.98);
-}
-
-.gold-btn.btn-block {
-    width: 100%;
-}
+.gold-btn.btn-block { width: 100%; }
 
 .btn-danger {
     background: var(--danger-red) !important;
     color: #fff !important;
 }
 
+.btn-success {
+    background: var(--success-green) !important;
+    color: #fff !important;
+}
+
 .btn-sm {
-    padding: 4px 10px;
-    font-size: 0.8rem;
-    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    border-radius: 7px;
 }
 
-/* 4. قائمة النتائج التلقائية للبحث عن الزبائن عند الكاشير */
-#phoneSearchResults {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    left: 0;
-    background: #18181c;
-    border: 1px solid var(--gold-primary);
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-    z-index: 500;
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 5px;
-    margin-top: 3px;
-}
-
-/* 5. هيدر الكاشير والمينيو المنسدل المودرن */
+/* ==================== 6. هيدر الكاشير ==================== */
 .pos-header {
-    background: var(--card-bg);
+    background: #0c0c10;
     border-bottom: 1px solid var(--card-border);
-    padding: 8px 15px;
+    padding: 0 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    z-index: 100;
     height: 52px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.brand-dropdown-container {
-    position: relative;
-}
+.brand-dropdown-container { position: relative; }
 
 .brand-btn {
-    background: rgba(245, 158, 11, 0.1);
+    background: rgba(245,158,11,0.1);
     border: 1px solid var(--gold-primary);
-    color: var(--gold-primary);
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
+    color: var(--gold-bright);
+    padding: 7px 14px;
+    border-radius: 9px;
+    font-weight: 900;
+    font-size: 0.95rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
+    touch-action: manipulation;
 }
 
 .brand-dropdown {
     display: none;
     position: absolute;
-    top: 110%;
+    top: 115%;
     right: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-    width: 280px;
+    background: #0f0f14;
+    border: 1px solid var(--gold-primary);
+    border-radius: 14px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.9);
+    width: 300px;
     z-index: 200;
     overflow: hidden;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .brand-dropdown button {
     width: 100%;
-    padding: 10px 12px;
+    padding: 10px 16px;
     background: none;
     border: none;
-    color: #fff;
+    border-bottom: 1px solid #1a1a22;
+    color: var(--text-light);
     text-align: right;
     font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    touch-action: manipulation;
 }
 
-.brand-dropdown button:hover {
-    background: rgba(245, 158, 11, 0.2);
+.brand-dropdown button:hover,
+.brand-dropdown button:active {
+    background: rgba(245,158,11,0.12);
     color: var(--gold-bright);
 }
 
-/* 6. شريط التنبيهات للطلبات الجديدة والمكالمات الواردة */
-#pendingOrdersAlertBanner {
-    display: none;
-    background: var(--gold-primary);
-    color: #000;
-    padding: 8px 12px;
-    text-align: center;
+.menu-section-title {
+    background: #080810;
+    color: var(--gold-bright);
+    font-size: 0.72rem;
     font-weight: 900;
-    font-size: 0.88rem;
-    cursor: pointer;
-    flex-shrink: 0;
-    animation: pulse 1s infinite alternate;
+    padding: 8px 16px 5px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #1a1a22;
 }
 
-@keyframes pulse {
-    from { background-color: var(--gold-primary); }
-    to { background-color: var(--gold-bright); box-shadow: 0 0 12px var(--gold-bright); }
+/* ==================== 7. تخطيط الكاشير ==================== */
+#cashierMainApp {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-/* 🍔 7. التبويبات وشريط الأقسام المباشر */
-.admin-tabs, .categories-container, .categories-bar {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    padding: 4px 2px 10px 2px !important;
-    margin-bottom: 12px !important;
+.pos-container {
+    display: grid;
+    grid-template-columns: 370px 1fr;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.pos-sidebar {
+    background: #0a0a0e;
+    border-left: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.pos-cart-box {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px;
+}
+
+.cart-scrollable-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 0;
+}
+
+/* قائمة الأصناف داخل السلة */
+.cart-items-list,
+#posCartList {
+    flex: 1 1 auto;
+    min-height: 80px;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    border-top: 1px dashed #222228;
+    border-bottom: 1px dashed #222228;
+    padding: 4px 0;
+    margin: 4px 0;
+}
+
+.pos-main-content {
+    padding: 10px;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    padding-bottom: 80px;
+}
+
+@media (max-width: 860px) {
+    .pos-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: auto;
+    }
+}
+
+/* ==================== 8. شريط الأقسام ==================== */
+.categories-bar {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    gap: 6px !important;
+    padding: 8px 2px !important;
+    margin-bottom: 10px !important;
     width: 100% !important;
-    overflow: visible !important;
+    border-bottom: 1px solid var(--card-border);
 }
 
-.tab-btn, .category-tab {
-    background: #181820 !important;
-    border: 1px solid #2e2e3a !important;
-    color: #a0a0b0 !important;
-    padding: 8px 16px !important;
-    border-radius: 12px !important;
+.category-tab {
+    background: #14141a !important;
+    border: 1px solid #252530 !important;
+    color: #b0b0c0 !important;
+    padding: 11px 6px !important;
+    border-radius: 10px !important;
     cursor: pointer !important;
-    white-space: nowrap !important;
-    font-size: 0.88rem !important;
-    font-weight: 700 !important;
-    transition: all 0.2s ease;
-    display: inline-flex;
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+    display: flex !important;
     align-items: center;
-    gap: 6px;
-    flex-shrink: 0 !important;
+    justify-content: center;
+    text-align: center;
+    min-height: 46px;
+    word-break: break-word;
+    line-height: 1.3;
+    touch-action: manipulation;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: rgba(245,158,11,0.25);
 }
 
-.tab-btn.active, .category-tab.active, .category-tab:hover {
-    background: linear-gradient(135deg, var(--gold-primary), var(--gold-bright)) !important;
+.category-tab:active {
+    transform: scale(0.95);
+}
+
+.category-tab.active,
+.category-tab:hover {
+    background: var(--gold-gradient) !important;
     color: #000 !important;
     border-color: var(--gold-bright) !important;
     font-weight: 900 !important;
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    box-shadow: 0 4px 14px rgba(245,158,11,0.3);
 }
 
+/* شريط أقسام المينيو العام */
 .categories-sticky-bar {
     position: sticky;
     top: 0;
-    background: rgba(7, 7, 9, 0.95);
-    backdrop-filter: blur(12px);
+    background: rgba(8,8,11,0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     z-index: 100;
-    padding: 12px;
+    padding: 10px 14px;
     display: flex;
     gap: 10px;
     overflow-x: auto;
@@ -399,353 +545,438 @@ body.public-menu-body {
 }
 .categories-sticky-bar::-webkit-scrollbar { display: none; }
 
-.tab-content {
-    display: none;
+/* ==================== 9. شبكة المنتجات ==================== */
+.products-grid,
+.items-grid,
+.pos-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 10px;
+    padding-bottom: 80px;
 }
 
-.tab-content.active {
+.pos-product-card,
+.item-card {
+    background: var(--bg-card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.2s, transform 0.1s;
+    touch-action: manipulation;
+}
+
+.pos-product-card:active,
+.item-card:active {
+    transform: scale(0.97);
+    border-color: var(--gold-primary);
+}
+
+.pos-product-img,
+.item-img {
+    width: 100%;
+    height: 82px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #0d0d12;
     display: block;
 }
 
-.toggle-btn-group, .toggle-group {
+/* ==================== 10. التبويبات ==================== */
+.admin-tabs {
     display: flex;
-    gap: 5px;
-    background: #121215;
-    padding: 3px;
-    border-radius: 8px;
-    border: 1px solid var(--card-border);
-    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 14px;
+}
+
+.tab-btn {
+    background: #14141a;
+    border: 1px solid #252530;
+    color: var(--text-muted);
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.83rem;
+    font-weight: 700;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    touch-action: manipulation;
+    transition: all 0.15s;
+}
+
+.tab-btn:active { transform: scale(0.97); }
+
+.tab-btn.active,
+.tab-btn:hover {
+    background: var(--gold-gradient);
+    color: #000;
+    border-color: var(--gold-bright);
+    font-weight: 900;
+}
+
+.tab-content         { display: none; }
+.tab-content.active  { display: block; }
+.tab-content.flex    { display: flex; flex-direction: column; }
+
+/* الأزرار الصغيرة (نوع الخدمة / الدفع) */
+.toggle-group {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
 }
 
 .toggle-btn {
     flex: 1;
-    background: transparent;
-    color: #aaa;
-    border: none;
-    padding: 6px;
-    border-radius: 6px;
+    background: #0f0f14;
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: center;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    transition: all 0.12s;
 }
 
 .toggle-btn.active {
     background: var(--gold-gradient);
     color: #000;
+    border-color: var(--gold-bright);
     font-weight: 900;
 }
 
-/* 8. المينيو العام وكروت المنتجات */
-.header-banner {
-    background: linear-gradient(180deg, #1f1f24 0%, var(--bg-dark) 100%);
-    border-bottom: 1px solid var(--card-border);
-    padding: 15px 20px;
-    text-align: center;
-}
-
-.menu-sections-container {
-    padding: 10px 15px 80px 15px;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.section-title {
-    color: var(--gold-primary);
-    font-size: 1.1rem;
-    margin: 20px 0 10px 0;
-    border-bottom: 2px solid var(--card-border);
-    padding-bottom: 5px;
-}
-
-.items-grid, .pos-items-grid, .products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
-    padding-bottom: 100px !important;
-}
-
-.item-card, .pos-product-card {
-    background-color: #1a1a1e !important;
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 8px;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
-    z-index: 1;
-    isolation: isolate;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    transition: border-color 0.2s;
-}
-
-.item-card.sold-out { opacity: 0.65; filter: grayscale(0.4); }
-
-.sold-out-badge {
-    position: absolute;
-    top: 8px; right: 8px;
-    background: var(--danger-red);
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 14px;
-    font-size: 0.7rem;
-    font-weight: 900;
-    z-index: 10;
-}
-
-.item-card:hover, .pos-product-card:hover {
-    border-color: var(--gold-primary);
-}
-
-.item-img, .pos-product-img {
-    width: 100%;
-    height: 85px;
-    object-fit: cover;
-    border-radius: 6px;
-    background-color: #121215;
-}
-
-.floating-cart-btn {
+/* ==================== 11. النوافذ المنبثقة ==================== */
+.modal-overlay {
     position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: var(--gold-gradient);
-    color: #000;
-    padding: 12px 20px;
-    border-radius: 30px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-    cursor: pointer;
-    z-index: 99;
-    border: none;
-}
-
-.cart-badge {
-    background: #000;
-    color: var(--gold-bright);
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-}
-
-/* 9. شبكة الكاشير والتخطيط التجاوبي */
-#cashierMainApp {
-    height: 100%;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.pos-container, .pos-responsive-grid {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 0;
-    flex-grow: 1;
-    height: calc(100% - 52px);
-    overflow: hidden;
-}
-
-.pos-sidebar {
-    background: #18181c;
-    border-left: 1px solid var(--card-border);
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 8px;
-    height: 100% !important;
-    max-height: 100% !important;
-    overflow: hidden !important;
-    box-sizing: border-box;
-}
-
-.pos-sidebar > *:not(.cart-items-list):not(#posCartList) {
-    flex-shrink: 0 !important;
-}
-
-.cart-items-list, #posCartList {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    margin: 6px 0;
-    border-top: 1px dashed #333;
-    border-bottom: 1px dashed #333;
-    padding: 4px 0;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: contain;
-}
-
-.pos-main-content {
-    height: 100% !important;
-    padding: 12px !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-y !important;
-    overscroll-behavior-y: contain !important;
-    box-sizing: border-box;
-}
-
-@media (max-width: 850px) {
-    .pos-container, .pos-responsive-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* 10. الجداول والنماذج */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.form-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 0.85rem;
-    text-align: right;
-}
-
-.data-table th, .data-table td {
-    border: 1px solid var(--card-border);
-    padding: 8px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-.data-table th {
-    background: #111116;
-    color: var(--gold-primary);
-    font-weight: bold;
-}
-
-/* 11. النوافذ للشاشات المنبثقة */
-.modal, .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    inset: 0;
+    background: rgba(0,0,0,0.88);
     backdrop-filter: blur(8px);
-    z-index: 1000;
-    align-items: center;
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
     justify-content: center;
-    padding: 15px;
+    align-items: center;
+    z-index: 1000;
+    padding: 14px;
 }
 
-.modal-content, .modal-body {
-    background: var(--card-bg);
+.modal-body {
+    background: var(--bg-card);
     border: 1px solid var(--gold-primary);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 20px;
     width: 100%;
     max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     position: relative;
-    -webkit-overflow-scrolling: touch !important;
 }
 
-.error-msg {
+/* ==================== 12. الجداول ==================== */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.data-table th,
+.data-table td {
+    padding: 9px 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.data-table th {
+    background: #0c0c11;
+    color: var(--gold-primary);
+    font-weight: 800;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.data-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+}
+
+/* ==================== 13. التنبيهات ==================== */
+#pendingOrdersAlertBanner {
+    display: none;
+    background: var(--gold-primary);
+    color: #000;
+    padding: 8px 14px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 0.88rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    animation: pulseBar 1s infinite alternate;
+}
+
+@keyframes pulseBar {
+    from { background: var(--gold-primary); }
+    to   { background: var(--gold-bright); box-shadow: 0 0 14px var(--gold-bright); }
+}
+
+.offline-status-badge {
+    background: rgba(239,68,68,0.18);
+    border: 1px solid var(--danger-red);
     color: var(--danger-red);
-    font-size: 0.85rem;
-    margin-top: 10px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    display: none;
+    align-items: center;
+    gap: 4px;
 }
 
-/* 🖨️ 12. قواعد الطباعة الحرارية المباشرة والصارمة لطابعة الفواتير (80mm) */
+/* ==================== 14. نافذة الأمان (تأكيد PIN المالك) ==================== */
+.security-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.94);
+    backdrop-filter: blur(10px);
+    z-index: 5000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.security-confirm-card {
+    background: #0e0e14;
+    border: 2px solid var(--danger-red);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.security-confirm-card h3 {
+    color: var(--danger-red);
+    font-size: 1.1rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.security-confirm-card p {
+    color: #ccc;
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+/* ==================== 15. شارات الحالة ==================== */
+.badge-ok  { background:rgba(16,185,129,0.15); color:var(--success-green); border:1px solid var(--success-green); padding:2px 8px; border-radius:5px; font-size:0.72rem; font-weight:800; }
+.badge-low { background:rgba(245,158,11,0.15); color:#f59e0b;              border:1px solid #f59e0b;              padding:2px 8px; border-radius:5px; font-size:0.72rem; font-weight:800; }
+.badge-out { background:rgba(239,68,68,0.15);  color:var(--danger-red);    border:1px solid var(--danger-red);    padding:2px 8px; border-radius:5px; font-size:0.72rem; font-weight:800; }
+
+/* ==================== 16. الطباعة الحرارية ==================== */
+#mim89ThermalPrintBox { display: none; }
+
 @media print {
-    html, body {
-        background: #ffffff !important;
-        color: #000000 !important;
-        width: 100% !important;
-        height: auto !important;
+    @page {
+        size: 80mm auto;
         margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        font-family: 'Tajawal', Arial, sans-serif !important;
     }
 
-    /* إخفاء كل العناصر الظاهرة بالشاشة فقط أفقياً وعمودياً */
-    body * {
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+        width: 80mm !important;
+        height: auto !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body > *:not(#mim89ThermalPrintBox) {
+        display: none !important;
         visibility: hidden !important;
     }
 
-    /* استثناء صندوق الطباعة الحرارية وكافة محتوياته فوراً */
-    #mim89ThermalPrintBox, 
-    #mim89ThermalPrintBox * {
-        visibility: visible !important;
-        color: #000000 !important;
-        background: transparent !important;
-        font-weight: 900 !important;
-    }
-
     #mim89ThermalPrintBox {
+        display: block !important;
+        visibility: visible !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         width: 76mm !important;
-        display: block !important;
         padding: 1mm 2mm !important;
-        margin: 0 auto !important;
     }
 
-    /* تنسيقات إخراج خطوط الفاتورة ورقم الطلب للورق الحراري */
-    .thermal-receipt-header {
-        text-align: center;
-        border-bottom: 2px dashed #000;
-        padding-bottom: 6px;
-        margin-bottom: 6px;
-    }
-
-    .thermal-order-id {
-        font-size: 42px !important;
+    #mim89ThermalPrintBox * {
+        visibility: visible !important;
+        color: #000 !important;
         font-weight: 900 !important;
-        text-align: center;
-        margin: 4px 0;
-        letter-spacing: 1px;
-    }
-
-    .thermal-service-type {
-        font-size: 20px !important;
-        font-weight: 900 !important;
-        text-align: center;
-        border: 2px solid #000;
-        padding: 4px;
-        margin: 4px 0;
-    }
-
-    .thermal-item-row {
-        font-size: 16px !important;
-        font-weight: 800 !important;
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 4px;
-    }
-
-    .thermal-total-price {
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        text-align: left;
-        border-top: 2px solid #000;
-        padding-top: 4px;
-        margin-top: 6px;
-    }
-
-    .no-print {
-        display: none !important;
     }
 }
+
+/* ==================== 17. مؤشر المزامنة ==================== */
+#cloudSyncIndicator {
+    font-size: 0.7rem;
+    color: #666;
+    padding: 4px 9px;
+    border-radius: 6px;
+    border: 1px solid #1e1e28;
+    white-space: nowrap;
+}
+
+#mim89StatusBadge {
+    position: fixed;
+    bottom: 6px;
+    left: 6px;
+    z-index: 99998;
+    background: rgba(16,185,129,0.9);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 7px;
+    pointer-events: none;
+    letter-spacing: 0.4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+
+/* ==================== 18. بردة الأدمن الجانبية ==================== */
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 20px;
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--card-border-gold);
+    padding: 28px 24px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+}
+
+/* ==================== 19. الفاتورة الحرارية (ورقة نظيفة) ==================== */
+.thermal-receipt {
+    width: 76mm;
+    font-family: 'Tajawal', Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+    color: #000;
+    padding: 2mm;
+}
+
+.thermal-header {
+    text-align: center;
+    border-bottom: 2px dashed #000;
+    padding-bottom: 5px;
+    margin-bottom: 6px;
+}
+
+.thermal-order-num {
+    font-size: 42px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1;
+    margin: 4px 0;
+}
+
+.thermal-service {
+    font-size: 18px;
+    font-weight: 900;
+    text-align: center;
+    border: 2px solid #000;
+    padding: 3px 6px;
+    margin: 4px 0;
+}
+
+.thermal-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 3px 0;
+    border-bottom: 1px dashed #ccc;
+}
+
+.thermal-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 900;
+    border-top: 2px solid #000;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+
+.thermal-footer {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    border-top: 1px dashed #000;
+    padding-top: 5px;
+    margin-top: 6px;
+}
+
+/* ==================== 20. مساعدات عامة ==================== */
+.section-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 3px;
+    margin-top: 5px;
+}
+
+.hint {
+    font-size: 0.75rem;
+    color: #888;
+    line-height: 1.6;
+}
+
+.num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+.no-print { }
+
+.text-gold    { color: var(--gold-bright); }
+.text-success { color: var(--success-green); }
+.text-danger  { color: var(--danger-red); }
+.text-muted   { color: var(--text-muted); }
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gap-6 { gap: 6px; }
+.gap-8 { gap: 8px; }
+.mt-8  { margin-top: 8px; }
+.mb-8  { margin-bottom: 8px; }
+
+/* ==================== 21. تمرير عام ==================== */
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-primary); }
