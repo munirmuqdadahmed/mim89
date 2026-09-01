@@ -1897,8 +1897,10 @@ function updatePrintStatusBadges() {
 // فاتورة الزبون - نظيفة وقصيرة
 function buildCustomerReceiptLines(ord) {
     const L = [];
-    const money = n => cleanPrice(Math.round(n)).toLocaleString('ar-IQ');
-
+    const money = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+    
+    // 🛠️ إصلاح: التأكد من وجود الأصناف
+    const items = Array.isArray(ord.items) ? ord.items : [];
     // الترويسة
     L.push({ text: 'MIM89 FAST FOOD', size:'big', align:'center', bold:true });
     L.push({ text: 'بغداد - حي القاهرة', size:'normal', align:'center' });
@@ -1918,6 +1920,9 @@ function buildCustomerReceiptLines(ord) {
     L.push({ text: ord.orderType, size:'big', align:'center', bold:true });
     if (ord.customerName && ord.customerName !== 'زبون مباشر')
         L.push({ text: 'الزبون: ' + ord.customerName, size:'normal', align:'right' });
+    // 🛠️ إصلاح: إضافة رقم الهاتف
+if (ord.phone && ord.phone !== '-')
+    L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
     if (ord.orderType === 'توصيل') {
         if (ord.area) L.push({ text: 'المنطقة: ' + ord.area, size:'normal', align:'right' });
         if (ord.driverName && ord.driverName !== '-')
