@@ -233,6 +233,21 @@ const DEFAULT_DATA = {
         kitchen2Ip: "",
         port:       "9100"
     },
+    // 🧾 تصميم فاتورة الزبون - قابل للتحكم الكامل من الأدمن
+    invoiceDesign: {
+        restaurantName:   "MIM89 FAST FOOD",
+        addressLine:      "بغداد - حي القاهرة",
+        footerText:       "شكراً لزيارتكم 🍔",
+        logoDataUrl:      "",
+        paperWidth:       "80",   // "58" أو "80" (مم)
+        showLogo:         false,
+        showAddress:      true,
+        showPhone:        true,
+        showCustomerName: true,
+        showDriverArea:   true,
+        showOrderNotes:   true,
+        showItemNotes:    true
+    },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", pin: "1111" }
     ],
@@ -584,6 +599,48 @@ function setupCategoriesRealtimeSync() {
     );
 }
 
+// 🧾 مزامنة لحظية لتصميم الفاتورة (شعار / نصوص / إظهار-إخفاء)
+// أي تعديل من الأدمن ينعكس فوراً على كل أجهزة الكاشير المتصلة
+function setupInvoiceDesignRealtimeSync() {
+    if (!db) return;
+    db.collection("system_store").doc("sys_invoice_design").onSnapshot(
+        { includeMetadataChanges: true },
+        docSnap => {
+            if (!docSnap.exists) return;
+            if (docSnap.metadata && docSnap.metadata.fromCache) return;
+            try {
+                const design = JSON.parse(docSnap.data().content);
+                if (design && typeof design === 'object') {
+                    localStorage.setItem('sys_invoice_design', JSON.stringify(design));
+                    if (typeof loadInvoiceDesignForm === 'function' &&
+                        document.getElementById('tabInvoiceDesignControl'))
+                        loadInvoiceDesignForm();
+                }
+            } catch (_) {}
+        },
+        err => console.log("خطأ مزامنة تصميم الفاتورة:", err)
+    );
+}
+
+// قراءة إعدادات تصميم الفاتورة مع دمجها مع الافتراضي (احتياطاً لأي حقل ناقص)
+function getInvoiceDesign() {
+    const saved = getData('sys_invoice_design') || {};
+    return Object.assign({}, DEFAULT_DATA.invoiceDesign, saved);
+}
+
+// 🛠️ محاذاة سطر نصي بعمودين (يسار/يمين) بعرض ثابت — لطباعة حرارية أحادية الخط
+// هذا التنسيق (text عادي) هو الوحيد المضمون دعمه من جسر الطباعة
+function padReceiptLine(leftText, rightText, width) {
+    leftText  = String(leftText  === null || leftText  === undefined ? '' : leftText);
+    rightText = String(rightText === null || rightText === undefined ? '' : rightText);
+    width = width || 32;
+    let left = leftText;
+    const maxLeft = Math.max(1, width - rightText.length - 1);
+    if (left.length > maxLeft) left = left.slice(0, Math.max(0, maxLeft - 1)) + '…';
+    const gap = Math.max(1, width - left.length - rightText.length);
+    return left + ' '.repeat(gap) + rightText;
+}
+
 // 🛠️ إصلاح: pullLatestFromCloud لا تكتب فوق تعديل محلي أحدث
 async function pullLatestFromCloud() {
     if (!db) return { ok: false };
@@ -661,7 +718,8 @@ async function pullLatestFromCloud() {
     // الإعدادات المشتركة
     const SHARED_KEYS = [
         'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
-        'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes'
+        'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
+        'sys_invoice_design'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -709,6 +767,8 @@ async function initData() {
         localStorage.setItem('sys_passwords', JSON.stringify(DEFAULT_DATA.passwords));
     if (!localStorage.getItem('sys_printer_settings'))
         localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
+    if (!localStorage.getItem('sys_invoice_design'))
+        localStorage.setItem('sys_invoice_design', JSON.stringify(DEFAULT_DATA.invoiceDesign));
     if (!localStorage.getItem('sys_cashiers') ||
         JSON.parse(localStorage.getItem('sys_cashiers')).length === 0)
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
@@ -750,6 +810,7 @@ async function initData() {
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
+    setupInvoiceDesignRealtimeSync();
     setTimeout(() => runSilentStorageMaintenance(), 3000);
     startPeriodicCloudPull();
     updateSyncIndicator(false);
@@ -1895,15 +1956,25 @@ function updatePrintStatusBadges() {
    ========================================== */
 
 // فاتورة الزبون - نظيفة وقصيرة
+// 🛠️ إصلاح جوهري: كانت الأصناف تُرسل بصيغة أعمدة (cols/ratios/aligns) لجسر
+// الطباعة، وهذه الصيغة غير مدعومة فعلياً هناك (كل الأسطر الأخرى الناجحة في
+// الفاتورة وورقة المطبخ وصفحة الاختبار تستخدم "text" بسيطة فقط). لذلك كانت
+// الأصناف تختفي من الفاتورة المطبوعة فعلياً رغم ظهور العنوان والمجموع.
+// الحل: كل صنف الآن سطر "text" واحد، محاذى يدوياً بعرض ثابت (padReceiptLine)
+// بنفس الأسلوب المُثبت نجاحه في باقي الفاتورة.
 function buildCustomerReceiptLines(ord) {
     const L = [];
-    const money = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
-    
+    const money  = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+    const design = getInvoiceDesign();
+    const lineWidth = design.paperWidth === '58' ? 32 : 42;
+
     // 🛠️ إصلاح: التأكد من وجود الأصناف
     const items = Array.isArray(ord.items) ? ord.items : [];
-    // الترويسة
-    L.push({ text: 'MIM89 FAST FOOD', size:'big', align:'center', bold:true });
-    L.push({ text: 'بغداد - حي القاهرة', size:'normal', align:'center' });
+
+    // الترويسة (قابلة للتحكم من الأدمن)
+    L.push({ text: design.restaurantName || 'MIM89 FAST FOOD', size:'big', align:'center', bold:true });
+    if (design.showAddress && design.addressLine)
+        L.push({ text: design.addressLine, size:'normal', align:'center' });
     L.push({ separator: 'solid' });
 
     // رقم الطلب
@@ -1918,34 +1989,29 @@ function buildCustomerReceiptLines(ord) {
 
     // نوع الخدمة
     L.push({ text: ord.orderType, size:'big', align:'center', bold:true });
-    if (ord.customerName && ord.customerName !== 'زبون مباشر')
+    if (design.showCustomerName && ord.customerName && ord.customerName !== 'زبون مباشر')
         L.push({ text: 'الزبون: ' + ord.customerName, size:'normal', align:'right' });
-    // 🛠️ إصلاح: إضافة رقم الهاتف
-if (ord.phone && ord.phone !== '-')
-    L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
-    if (ord.orderType === 'توصيل') {
+    if (design.showPhone && ord.phone && ord.phone !== '-')
+        L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
+    if (design.showDriverArea && ord.orderType === 'توصيل') {
         if (ord.area) L.push({ text: 'المنطقة: ' + ord.area, size:'normal', align:'right' });
         if (ord.driverName && ord.driverName !== '-')
             L.push({ text: 'السائق: ' + ord.driverName, size:'normal', align:'right' });
     }
     L.push({ separator: 'solid' });
 
-    // الأصناف
-    const R = [0.55, 0.15, 0.30];
-    const A = ['right','center','left'];
-    L.push({ cols:['الوجبة','ك','المبلغ'], ratios:R, aligns:A, size:'normal', bold:true });
+    // ✅ الأصناف - أسطر نصية بسيطة (الصيغة المضمون دعمها فعلياً)
+    L.push({ text: padReceiptLine('الوجبة', 'المبلغ', lineWidth), size:'normal', align:'right', bold:true });
     L.push({ separator: 'dash' });
 
     let totalQty = 0;
-    (ord.items||[]).forEach(i => {
-        const qty  = cleanPrice(i.qty);
+    items.forEach(i => {
+        const qty  = cleanPrice(i.qty) || 1;
         const line = cleanPrice(i.price) * qty;
         totalQty  += qty;
-        L.push({
-            cols:   [i.name, String(qty), money(line)],
-            ratios: R, aligns: A, size:'normal', bold:true
-        });
-        if (i.itemNotes && i.itemNotes.length)
+        const nameQty = String(i.name || '') + '  ×' + qty;
+        L.push({ text: padReceiptLine(nameQty, money(line), lineWidth), size:'normal', align:'right', bold:true });
+        if (design.showItemNotes && i.itemNotes && i.itemNotes.length)
             L.push({ text: '← ' + i.itemNotes.join(' • '), size:'normal', align:'right' });
     });
 
@@ -1974,12 +2040,12 @@ if (ord.phone && ord.phone !== '-')
     L.push({ text: 'الدفع: ' + (ord.paymentMethod||'كاش'),
         size:'normal', align:'right' });
 
-    if (ord.orderNotes)
+    if (design.showOrderNotes && ord.orderNotes)
         L.push({ text: 'ملاحظة: ' + ord.orderNotes, size:'normal', align:'right' });
 
-    // التذييل
+    // التذييل (قابل للتحكم من الأدمن)
     L.push({ separator: 'solid' });
-    L.push({ text: 'شكراً لزيارتكم 🍔', size:'big', align:'center', bold:true });
+    L.push({ text: design.footerText || 'شكراً لزيارتكم 🍔', size:'big', align:'center', bold:true });
     L.push({ separator: 'space' });
 
     return L;
@@ -2141,6 +2207,8 @@ function executeCustomerPrintOnly() {
     const ord      = activePendingPrintOrder;
     const printBox = document.getElementById('mim89ThermalPrintBox');
     const money    = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+    const design   = getInvoiceDesign();
+    const widthMm  = design.paperWidth === '58' ? '48mm' : '76mm';
 
     const items = Array.isArray(ord.items) ? ord.items : [];
 
@@ -2150,7 +2218,7 @@ function executeCustomerPrintOnly() {
             const nm  = String(i.name || '');
             const qty = String(i.qty  || 1);
             const tot = money(cleanPrice(i.price) * cleanPrice(i.qty));
-            const notes = (i.itemNotes && i.itemNotes.length)
+            const notes = (design.showItemNotes && i.itemNotes && i.itemNotes.length)
                 ? '<br><small style="font-size:10px;color:#444;display:block;">(' +
                   i.itemNotes.join(', ') + ')</small>'
                 : '';
@@ -2174,15 +2242,24 @@ function executeCustomerPrintOnly() {
         : '<tr><td colspan="3" style="text-align:center;font-size:12px;' +
           'padding:8px;color:#666;">لا توجد أصناف</td></tr>';
 
+    const logoHtml = (design.showLogo && design.logoDataUrl)
+        ? '<img src="' + design.logoDataUrl + '" ' +
+          'style="max-width:80%;max-height:70px;display:block;margin:0 auto 5px auto;">'
+        : '';
+
     printBox.innerHTML =
-        '<div style="width:76mm;font-family:Tajawal,sans-serif;direction:rtl;' +
+        '<div style="width:' + widthMm + ';font-family:Tajawal,sans-serif;direction:rtl;' +
         'text-align:right;color:#000;padding:1mm;">' +
 
-        // الترويسة
+        // الترويسة (شعار + اسم + عنوان - قابلة للتحكم من الأدمن)
         '<div style="text-align:center;border-bottom:2px dashed #000;' +
         'padding-bottom:5px;margin-bottom:6px;">' +
-        '<h2 style="margin:0;font-size:20px;font-weight:900;">MIM89 FAST FOOD</h2>' +
-        '<div style="font-size:11px;font-weight:bold;">بغداد - القاهرة</div>' +
+        logoHtml +
+        '<h2 style="margin:0;font-size:20px;font-weight:900;">' +
+        (design.restaurantName || 'MIM89 FAST FOOD') + '</h2>' +
+        (design.showAddress && design.addressLine
+            ? '<div style="font-size:11px;font-weight:bold;">' + design.addressLine + '</div>'
+            : '') +
         '</div>' +
 
         // رقم الطلب
@@ -2198,13 +2275,13 @@ function executeCustomerPrintOnly() {
         'padding-bottom:4px;margin-bottom:5px;line-height:1.7;">' +
         '<div>' + ord.dateDate + ' - ' + (ord.timestamp || '') + '</div>' +
         '<div>الخدمة: <strong>' + (ord.orderType || '') + '</strong></div>' +
-        (ord.customerName && ord.customerName !== 'زبون مباشر'
+        (design.showCustomerName && ord.customerName && ord.customerName !== 'زبون مباشر'
             ? '<div>الزبون: <strong>' + ord.customerName + '</strong></div>' : '') +
-        (ord.phone && ord.phone !== '-'
+        (design.showPhone && ord.phone && ord.phone !== '-'
             ? '<div>الهاتف: <strong>' + ord.phone + '</strong></div>' : '') +
-        (ord.orderType === 'توصيل' && ord.area && ord.area !== 'داخل المطعم'
+        (design.showDriverArea && ord.orderType === 'توصيل' && ord.area && ord.area !== 'داخل المطعم'
             ? '<div>المنطقة: <strong>' + ord.area + '</strong></div>' : '') +
-        (ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-'
+        (design.showDriverArea && ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-'
             ? '<div>السائق: <strong>' + ord.driverName + '</strong></div>' : '') +
         '<div>الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
         '</div>' +
@@ -2231,7 +2308,7 @@ function executeCustomerPrintOnly() {
         '</table>' +
 
         // الملاحظات العامة
-        (ord.orderNotes
+        (design.showOrderNotes && ord.orderNotes
             ? '<div style="font-size:11px;border-bottom:1px dashed #ccc;' +
               'padding-bottom:3px;margin-bottom:4px;">📝 ' + ord.orderNotes + '</div>'
             : '') +
@@ -2264,10 +2341,10 @@ function executeCustomerPrintOnly() {
 
         '</div>' +
 
-        // التذييل
+        // التذييل (نص قابل للتحكم من الأدمن)
         '<div style="text-align:center;margin-top:8px;font-size:11px;' +
         'border-top:1px solid #000;padding-top:4px;">' +
-        'شكراً لزيارتكم 🍔 MIM89</div>' +
+        (design.footerText || 'شكراً لزيارتكم 🍔') + '</div>' +
 
         '</div>';
 
@@ -4704,6 +4781,7 @@ function loadAdminTabsData() {
     renderAdminAreas();
     renderAdminCustomers();
     loadPrinterSettings();
+    loadInvoiceDesignForm();
     if (typeof startLiveSalesBadgeUpdater === 'function')
         startLiveSalesBadgeUpdater();
 }
@@ -4736,6 +4814,194 @@ function savePrintBridgeSettings() {
     // حفظ بالسحابة لمزامنة الأجهزة
     setData('sys_print_bridge_url_shared', val || 'http://localhost:8899');
     alert("✅ تم حفظ عنوان جسر الطباعة!");
+}
+
+/* ==========================================
+   🧾 تصميم الفاتورة من الأدمن (شعار / نصوص / إظهار-إخفاء)
+   ========================================== */
+
+// تحميل القيم الحالية داخل نموذج الأدمن
+function loadInvoiceDesignForm() {
+    const d = getInvoiceDesign();
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+    setVal('invoiceRestaurantName', d.restaurantName || '');
+    setVal('invoiceAddressLine',    d.addressLine    || '');
+    setVal('invoiceFooterText',     d.footerText     || '');
+    setVal('invoicePaperWidth',     d.paperWidth     || '80');
+    setVal('invoiceLogoDataUrl',    d.logoDataUrl    || '');
+
+    setChk('invoiceShowLogo',         d.showLogo);
+    setChk('invoiceShowAddress',      d.showAddress);
+    setChk('invoiceShowPhone',        d.showPhone);
+    setChk('invoiceShowCustomerName', d.showCustomerName);
+    setChk('invoiceShowDriverArea',   d.showDriverArea);
+    setChk('invoiceShowOrderNotes',   d.showOrderNotes);
+    setChk('invoiceShowItemNotes',    d.showItemNotes);
+
+    const preview = document.getElementById('invoiceLogoPreview');
+    if (preview) {
+        if (d.logoDataUrl) { preview.src = d.logoDataUrl; preview.style.display = 'inline-block'; }
+        else               { preview.src = '';            preview.style.display = 'none'; }
+    }
+
+    renderInvoiceDesignPreview();
+}
+
+// رفع شعار (لوكو) وتصغيره تلقائياً قبل الحفظ
+function handleInvoiceLogoUpload(inputEl) {
+    const file = inputEl && inputEl.files ? inputEl.files[0] : null;
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+        const img = new Image();
+        img.onload = () => {
+            const MAX   = 320;
+            const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+            const w     = Math.max(1, Math.round(img.width  * ratio));
+            const h     = Math.max(1, Math.round(img.height * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            let out = canvas.toDataURL('image/png');
+            // إذا كانت الصورة كبيرة نحولها لـ jpeg مضغوط
+            if (out.length > 120 * 1024 * 1.37) {
+                out = canvas.toDataURL('image/jpeg', 0.82);
+            }
+
+            const hidden  = document.getElementById('invoiceLogoDataUrl');
+            const preview = document.getElementById('invoiceLogoPreview');
+            if (hidden)  hidden.value = out;
+            if (preview) { preview.src = out; preview.style.display = 'inline-block'; }
+            renderInvoiceDesignPreview();
+        };
+        img.onerror = () => alert('⚠️ تعذّر قراءة الصورة، جرّب صورة أخرى.');
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// إزالة الشعار الحالي
+function removeInvoiceLogo() {
+    const hidden  = document.getElementById('invoiceLogoDataUrl');
+    const preview = document.getElementById('invoiceLogoPreview');
+    const fileEl  = document.getElementById('invoiceLogoFileInput');
+    if (hidden)  hidden.value = '';
+    if (preview) { preview.src = ''; preview.style.display = 'none'; }
+    if (fileEl)  fileEl.value = '';
+    renderInvoiceDesignPreview();
+}
+
+// حفظ تصميم الفاتورة (محلياً + سحابياً، ينعكس فوراً على كل الأجهزة)
+function saveInvoiceDesign() {
+    const getVal = id => (document.getElementById(id)?.value || '').trim();
+    const getChk = id => !!document.getElementById(id)?.checked;
+
+    const design = {
+        restaurantName:   getVal('invoiceRestaurantName') || 'MIM89 FAST FOOD',
+        addressLine:      getVal('invoiceAddressLine'),
+        footerText:       getVal('invoiceFooterText') || 'شكراً لزيارتكم 🍔',
+        paperWidth:       getVal('invoicePaperWidth') || '80',
+        logoDataUrl:      getVal('invoiceLogoDataUrl'),
+        showLogo:         getChk('invoiceShowLogo'),
+        showAddress:      getChk('invoiceShowAddress'),
+        showPhone:        getChk('invoiceShowPhone'),
+        showCustomerName: getChk('invoiceShowCustomerName'),
+        showDriverArea:   getChk('invoiceShowDriverArea'),
+        showOrderNotes:   getChk('invoiceShowOrderNotes'),
+        showItemNotes:    getChk('invoiceShowItemNotes')
+    };
+
+    setData('sys_invoice_design', design);
+    if (typeof logAudit === 'function') logAudit('تعديل تصميم الفاتورة', {});
+    renderInvoiceDesignPreview();
+    alert('✅ تم حفظ تصميم الفاتورة!\nسينعكس تلقائياً على كل أجهزة الكاشير المتصلة بالإنترنت.');
+}
+
+// استعادة التصميم الافتراضي
+function resetInvoiceDesignToDefault() {
+    if (!confirm('استعادة تصميم الفاتورة الافتراضي؟ سيُلغى الشعار والنصوص المخصصة.')) return;
+    setData('sys_invoice_design', DEFAULT_DATA.invoiceDesign);
+    loadInvoiceDesignForm();
+    alert('✅ تمت الاستعادة للتصميم الافتراضي.');
+}
+
+// معاينة حيّة لشكل الفاتورة أثناء التعديل (قبل الحفظ)
+function renderInvoiceDesignPreview() {
+    const box = document.getElementById('invoiceDesignPreviewBox');
+    if (!box) return;
+
+    const getVal = id => (document.getElementById(id)?.value || '').trim();
+    const getChk = id => !!document.getElementById(id)?.checked;
+
+    const name    = getVal('invoiceRestaurantName') || 'MIM89 FAST FOOD';
+    const addr    = getVal('invoiceAddressLine');
+    const footer  = getVal('invoiceFooterText') || 'شكراً لزيارتكم 🍔';
+    const logo    = getVal('invoiceLogoDataUrl');
+
+    const showLogo         = getChk('invoiceShowLogo');
+    const showAddress      = getChk('invoiceShowAddress');
+    const showPhone        = getChk('invoiceShowPhone');
+    const showCustomerName = getChk('invoiceShowCustomerName');
+    const showDriverArea   = getChk('invoiceShowDriverArea');
+    const showOrderNotes   = getChk('invoiceShowOrderNotes');
+
+    box.innerHTML =
+        '<div style="width:240px;margin:0 auto;background:#fff;color:#000;' +
+        'font-family:Tajawal,sans-serif;direction:rtl;text-align:right;' +
+        'padding:10px;border-radius:6px;box-shadow:0 0 14px rgba(0,0,0,0.45);">' +
+
+        (showLogo && logo
+            ? '<img src="' + logo + '" style="max-width:80%;max-height:60px;' +
+              'display:block;margin:0 auto 6px auto;">'
+            : '') +
+
+        '<div style="text-align:center;border-bottom:2px dashed #000;' +
+        'padding-bottom:5px;margin-bottom:6px;">' +
+        '<div style="font-size:15px;font-weight:900;">' + name + '</div>' +
+        (showAddress && addr
+            ? '<div style="font-size:10px;font-weight:bold;">' + addr + '</div>' : '') +
+        '</div>' +
+
+        '<div style="text-align:center;border:2px solid #000;padding:4px;margin-bottom:6px;">' +
+        '<div style="font-size:10px;font-weight:bold;">رقم الطلب</div>' +
+        '<div style="font-size:24px;font-weight:900;">#1024</div>' +
+        '</div>' +
+
+        '<div style="font-size:10px;font-weight:bold;line-height:1.6;' +
+        'border-bottom:1px solid #000;padding-bottom:4px;margin-bottom:5px;">' +
+        (showCustomerName ? '<div>الزبون: أحمد</div>' : '') +
+        (showPhone        ? '<div>الهاتف: 07701234567</div>' : '') +
+        (showDriverArea   ? '<div>المنطقة: القاهرة</div>' : '') +
+        '</div>' +
+
+        '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:6px;">' +
+        '<tr style="border-bottom:1px dashed #ccc;">' +
+        '<td style="text-align:right;font-weight:900;padding:2px 0;">شاورما لحم ×2</td>' +
+        '<td style="text-align:left;font-weight:900;padding:2px 0;">6,000</td></tr>' +
+        '<tr style="border-bottom:1px dashed #ccc;">' +
+        '<td style="text-align:right;font-weight:900;padding:2px 0;">بيبسي ×1</td>' +
+        '<td style="text-align:left;font-weight:900;padding:2px 0;">1,000</td></tr>' +
+        '</table>' +
+
+        (showOrderNotes
+            ? '<div style="font-size:10px;border-bottom:1px dashed #ccc;' +
+              'padding-bottom:3px;margin-bottom:4px;">📝 بدون بصل</div>'
+            : '') +
+
+        '<div style="border-top:2px dashed #000;padding-top:4px;text-align:center;' +
+        'font-size:13px;font-weight:900;">المطلوب: 7,000 د.ع</div>' +
+
+        '<div style="text-align:center;margin-top:8px;font-size:10px;' +
+        'border-top:1px solid #000;padding-top:4px;">' + footer + '</div>' +
+
+        '</div>';
 }
 
 function renderAdminAreas() {
