@@ -238,6 +238,7 @@ const DEFAULT_DATA = {
         restaurantName:   "MIM89 FAST FOOD",
         addressLine:      "بغداد - حي القاهرة",
         footerText:       "شكراً لزيارتكم 🍔",
+        footerSize:       "normal", // "normal" أو "big" - يُفضّل normal للنصوص الطويلة
         logoDataUrl:      "",
         paperWidth:       "80",   // "58" أو "80" (مم)
         showLogo:         false,
@@ -1971,6 +1972,12 @@ function buildCustomerReceiptLines(ord) {
     // 🛠️ إصلاح: التأكد من وجود الأصناف
     const items = Array.isArray(ord.items) ? ord.items : [];
 
+    // الشعار (best-effort) — يُرسل فقط إذا كان جسر الطباعة يدعم نوع سطر "image"
+    // ملاحظة: هذا الدعم يعتمد على برنامج الجسر نفسه (ملف بايثون خارجي خارج نطاق
+    // ملفات المشروع الحالية). إن لم يدعمه الجسر سيتم تجاهل السطر بأمان دون أي خطأ.
+    if (design.showLogo && design.logoDataUrl)
+        L.push({ image: design.logoDataUrl, align: 'center' });
+
     // الترويسة (قابلة للتحكم من الأدمن)
     L.push({ text: design.restaurantName || 'MIM89 FAST FOOD', size:'big', align:'center', bold:true });
     if (design.showAddress && design.addressLine)
@@ -2045,7 +2052,8 @@ function buildCustomerReceiptLines(ord) {
 
     // التذييل (قابل للتحكم من الأدمن)
     L.push({ separator: 'solid' });
-    L.push({ text: design.footerText || 'شكراً لزيارتكم 🍔', size:'big', align:'center', bold:true });
+    L.push({ text: design.footerText || 'شكراً لزيارتكم 🍔',
+        size: (design.footerSize === 'big' ? 'big' : 'normal'), align:'center', bold:true });
     L.push({ separator: 'space' });
 
     return L;
@@ -2341,9 +2349,12 @@ function executeCustomerPrintOnly() {
 
         '</div>' +
 
-        // التذييل (نص قابل للتحكم من الأدمن)
-        '<div style="text-align:center;margin-top:8px;font-size:11px;' +
-        'border-top:1px solid #000;padding-top:4px;">' +
+        // التذييل (نص وحجم قابلين للتحكم من الأدمن)
+        '<div style="text-align:center;margin-top:8px;' +
+        (design.footerSize === 'big'
+            ? 'font-size:16px;font-weight:900;'
+            : 'font-size:11px;font-weight:bold;') +
+        'border-top:1px solid #000;padding-top:5px;line-height:1.5;">' +
         (design.footerText || 'شكراً لزيارتكم 🍔') + '</div>' +
 
         '</div>';
@@ -4829,6 +4840,7 @@ function loadInvoiceDesignForm() {
     setVal('invoiceRestaurantName', d.restaurantName || '');
     setVal('invoiceAddressLine',    d.addressLine    || '');
     setVal('invoiceFooterText',     d.footerText     || '');
+    setVal('invoiceFooterSize',     d.footerSize     || 'normal');
     setVal('invoicePaperWidth',     d.paperWidth     || '80');
     setVal('invoiceLogoDataUrl',    d.logoDataUrl    || '');
 
@@ -4907,6 +4919,7 @@ function saveInvoiceDesign() {
         restaurantName:   getVal('invoiceRestaurantName') || 'MIM89 FAST FOOD',
         addressLine:      getVal('invoiceAddressLine'),
         footerText:       getVal('invoiceFooterText') || 'شكراً لزيارتكم 🍔',
+        footerSize:       getVal('invoiceFooterSize') || 'normal',
         paperWidth:       getVal('invoicePaperWidth') || '80',
         logoDataUrl:      getVal('invoiceLogoDataUrl'),
         showLogo:         getChk('invoiceShowLogo'),
@@ -4943,7 +4956,9 @@ function renderInvoiceDesignPreview() {
     const name    = getVal('invoiceRestaurantName') || 'MIM89 FAST FOOD';
     const addr    = getVal('invoiceAddressLine');
     const footer  = getVal('invoiceFooterText') || 'شكراً لزيارتكم 🍔';
+    const footerSize = getVal('invoiceFooterSize') || 'normal';
     const logo    = getVal('invoiceLogoDataUrl');
+    const paperW  = getVal('invoicePaperWidth') || '80';
 
     const showLogo         = getChk('invoiceShowLogo');
     const showAddress      = getChk('invoiceShowAddress');
@@ -4952,10 +4967,21 @@ function renderInvoiceDesignPreview() {
     const showDriverArea   = getChk('invoiceShowDriverArea');
     const showOrderNotes   = getChk('invoiceShowOrderNotes');
 
+    // ✅ إصلاح: عرض المعاينة الآن يتغيّر فعلياً حسب اختيار عرض الورق
+    const boxWidth = paperW === '58' ? 190 : 260;
+    const footerHtml = footerSize === 'big'
+        ? '<div style="font-size:16px;font-weight:900;margin-top:8px;' +
+          'border-top:1px solid #000;padding-top:5px;">' + footer + '</div>'
+        : '<div style="font-size:10px;font-weight:bold;margin-top:8px;' +
+          'border-top:1px solid #000;padding-top:5px;">' + footer + '</div>';
+
     box.innerHTML =
-        '<div style="width:240px;margin:0 auto;background:#fff;color:#000;' +
+        '<div style="text-align:center;color:#888;font-size:0.7rem;margin-bottom:6px;">' +
+        '📄 عرض الورق: ' + (paperW === '58' ? '58 مم' : '80 مم') + '</div>' +
+        '<div style="width:' + boxWidth + 'px;margin:0 auto;background:#fff;color:#000;' +
         'font-family:Tajawal,sans-serif;direction:rtl;text-align:right;' +
-        'padding:10px;border-radius:6px;box-shadow:0 0 14px rgba(0,0,0,0.45);">' +
+        'padding:10px;border-radius:6px;box-shadow:0 0 14px rgba(0,0,0,0.45);' +
+        'transition:width 0.2s ease;">' +
 
         (showLogo && logo
             ? '<img src="' + logo + '" style="max-width:80%;max-height:60px;' +
@@ -4998,8 +5024,7 @@ function renderInvoiceDesignPreview() {
         '<div style="border-top:2px dashed #000;padding-top:4px;text-align:center;' +
         'font-size:13px;font-weight:900;">المطلوب: 7,000 د.ع</div>' +
 
-        '<div style="text-align:center;margin-top:8px;font-size:10px;' +
-        'border-top:1px solid #000;padding-top:4px;">' + footer + '</div>' +
+        footerHtml +
 
         '</div>';
 }
