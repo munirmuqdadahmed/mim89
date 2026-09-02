@@ -500,8 +500,18 @@
 
                 <label class="section-label">نص التذييل (أسفل الفاتورة):</label>
                 <input type="text" id="invoiceFooterText" class="gold-input-inline"
-                       placeholder="شكراً لزيارتكم 🍔" style="margin-bottom:12px;"
+                       placeholder="شكراً لزيارتكم 🍔" style="margin-bottom:6px;"
                        oninput="renderInvoiceDesignPreview()">
+                <label class="section-label">حجم خط التذييل:</label>
+                <select id="invoiceFooterSize" class="gold-input-inline"
+                        style="margin-bottom:6px;" onchange="renderInvoiceDesignPreview()">
+                    <option value="normal">عادي (يناسب النصوص الطويلة)</option>
+                    <option value="big">كبير (للنصوص القصيرة فقط)</option>
+                </select>
+                <p class="hint" style="margin-bottom:12px;">
+                    💡 إذا كان نص التذييل طويلاً (جملة كاملة)، اختر "عادي" حتى
+                    لا يطبع بشكل كبير ومشوّه على الورق.
+                </p>
 
                 <label class="section-label">عرض ورق الطابعة:</label>
                 <select id="invoicePaperWidth" class="gold-input-inline"
