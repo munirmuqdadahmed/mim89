@@ -2132,144 +2132,178 @@ async function printBothViaBridge(btnElement) {
 // طباعة الزبون يدوياً (احتياطي)
 function executeCustomerPrintOnly() {
     if (!activePendingPrintOrder) return alert("لا توجد فاتورة!");
+    
     const ord      = activePendingPrintOrder;
     const printBox = document.getElementById('mim89ThermalPrintBox');
-    const money    = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+    if (!printBox) return;
 
-    // 🛠️ إصلاح: التأكد من وجود الأصناف
-    const items = Array.isArray(ord.items) ? ord.items : [];
+    const money = function(n) {
+        var num = parseInt(n) || 0;
+        return num.toLocaleString('ar-IQ');
+    };
 
-    const itemsHtml = items.length > 0
-        ? items.map(i =>
-            '<tr style="border-bottom:1px dashed #ccc;">' +
-            '<td style="padding:4px 2px;font-weight:900;font-size:14px;text-align:right;">' +
-            (i.name || '') +
-            (i.itemNotes && i.itemNotes.length
-                ? '<br><small style="font-size:10px;color:#444;">(' +
-                  i.itemNotes.join(', ') + ')</small>'
-                : '') +
-            '</td>' +
-            '<td style="padding:4px 2px;text-align:center;font-weight:900;font-size:14px;">' +
-            (i.qty || 1) + '</td>' +
-            '<td style="padding:4px 2px;text-align:left;font-weight:900;font-size:14px;">' +
-            money(cleanPrice(i.price) * cleanPrice(i.qty)) +
-            '</td></tr>'
-          ).join('')
-        : '<tr><td colspan="3" style="text-align:center;font-size:12px;padding:6px;">' +
-          'لا توجد أصناف</td></tr>';
+    // فحص الأصناف
+    var items = [];
+    if (ord.items && ord.items.length > 0) {
+        items = ord.items;
+    } else if (posCart && posCart.length > 0) {
+        // احتياط: اقرأ من السلة مباشرة
+        items = posCart.map(function(i) {
+            return {
+                name:      i.name,
+                qty:       parseInt(i.qty) || 1,
+                price:     parseInt(cleanPrice(i.price)) || 0,
+                itemNotes: i.itemNotes || []
+            };
+        });
+    }
 
-    printBox.innerHTML =
-        '<div style="width:76mm;font-family:Tajawal,sans-serif;direction:rtl;' +
-        'text-align:right;color:#000;padding:1mm;">' +
+    var itemsHtml = '';
+    if (items.length > 0) {
+        for (var x = 0; x < items.length; x++) {
+            var item  = items[x];
+            var iName = item.name || '';
+            var iQty  = parseInt(item.qty)   || 1;
+            var iPrc  = parseInt(item.price) || 0;
+            var iTotal = iPrc * iQty;
+            var notes  = '';
+            if (item.itemNotes && item.itemNotes.length > 0) {
+                notes = '<br><small style="font-size:10px;">(' +
+                    item.itemNotes.join(', ') + ')</small>';
+            }
+            itemsHtml +=
+                '<tr style="border-bottom:1px dashed #ccc;">' +
+                '<td style="padding:4px 2px;font-weight:900;font-size:14px;text-align:right;">' +
+                iName + notes +
+                '</td>' +
+                '<td style="padding:4px 2px;text-align:center;font-weight:900;font-size:14px;">' +
+                iQty +
+                '</td>' +
+                '<td style="padding:4px 2px;text-align:left;font-weight:900;font-size:14px;">' +
+                iTotal.toLocaleString('ar-IQ') +
+                '</td>' +
+                '</tr>';
+        }
+    } else {
+        itemsHtml =
+            '<tr><td colspan="3" style="text-align:center;padding:8px;font-size:12px;">' +
+            'لا توجد أصناف' +
+            '</td></tr>';
+    }
 
-        // الترويسة
-        '<div style="text-align:center;border-bottom:2px dashed #000;' +
-        'padding-bottom:5px;margin-bottom:6px;">' +
-        '<h2 style="margin:0;font-size:20px;font-weight:900;">MIM89 FAST FOOD</h2>' +
-        '<div style="font-size:11px;font-weight:bold;">بغداد - القاهرة</div>' +
-        '</div>' +
+    var html = '';
+    html += '<div style="width:76mm;font-family:Tajawal,Arial,sans-serif;';
+    html += 'direction:rtl;text-align:right;color:#000;padding:1mm;">';
 
-        // رقم الطلب
-        '<div style="text-align:center;border:2px solid #000;padding:4px;' +
-        'margin-bottom:6px;">' +
-        '<div style="font-size:11px;font-weight:bold;">رقم الطلب</div>' +
-        '<div style="font-size:40px;font-weight:900;line-height:1;">#' +
-        ord.orderNum + '</div>' +
-        '</div>' +
+    // الترويسة
+    html += '<div style="text-align:center;border-bottom:2px dashed #000;';
+    html += 'padding-bottom:5px;margin-bottom:5px;">';
+    html += '<div style="font-size:22px;font-weight:900;">MIM89 FAST FOOD</div>';
+    html += '<div style="font-size:11px;font-weight:bold;">بغداد - القاهرة</div>';
+    html += '</div>';
 
-        // بيانات الفاتورة
-        '<div style="font-size:11px;font-weight:bold;border-bottom:1px solid #000;' +
-        'padding-bottom:4px;margin-bottom:5px;line-height:1.7;">' +
-        '<div>' + ord.dateDate + ' - ' + (ord.timestamp || '') + '</div>' +
-        '<div>الخدمة: <strong>' + (ord.orderType || '') + '</strong></div>' +
+    // رقم الطلب
+    html += '<div style="text-align:center;border:2px solid #000;padding:4px;margin-bottom:5px;">';
+    html += '<div style="font-size:11px;font-weight:bold;">رقم الطلب</div>';
+    html += '<div style="font-size:42px;font-weight:900;line-height:1;">#' + ord.orderNum + '</div>';
+    html += '</div>';
 
-        // 🛠️ إصلاح: اسم الزبون
-        (ord.customerName && ord.customerName !== 'زبون مباشر'
-            ? '<div>الزبون: <strong>' + ord.customerName + '</strong></div>'
-            : '') +
+    // التاريخ والوقت
+    html += '<div style="font-size:11px;font-weight:bold;border-bottom:1px solid #000;';
+    html += 'padding-bottom:4px;margin-bottom:4px;line-height:1.8;">';
+    html += '<div>' + (ord.dateDate || '') + '  ' + (ord.timestamp || '') + '</div>';
+    html += '<div>الخدمة: <strong>' + (ord.orderType || '') + '</strong></div>';
 
-        // 🛠️ إصلاح: رقم الهاتف
-        (ord.phone && ord.phone !== '-'
-            ? '<div>الهاتف: <strong>' + ord.phone + '</strong></div>'
-            : '') +
+    // اسم الزبون
+    if (ord.customerName && ord.customerName !== 'زبون مباشر') {
+        html += '<div>الزبون: <strong>' + ord.customerName + '</strong></div>';
+    }
 
-        // المنطقة للدليفري
-        (ord.orderType === 'توصيل' && ord.area && ord.area !== 'داخل المطعم'
-            ? '<div>المنطقة: <strong>' + ord.area + '</strong></div>'
-            : '') +
+    // رقم الهاتف
+    if (ord.phone && ord.phone !== '-' && ord.phone !== '') {
+        html += '<div>الهاتف: <strong>' + ord.phone + '</strong></div>';
+    }
 
-        // السائق
-        (ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-'
-            ? '<div>السائق: <strong>' + ord.driverName + '</strong></div>'
-            : '') +
+    // المنطقة
+    if (ord.orderType === 'توصيل') {
+        if (ord.area && ord.area !== 'داخل المطعم') {
+            html += '<div>المنطقة: <strong>' + ord.area + '</strong></div>';
+        }
+        if (ord.driverName && ord.driverName !== '-') {
+            html += '<div>السائق: <strong>' + ord.driverName + '</strong></div>';
+        }
+    }
 
-        '<div>الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
-        '</div>' +
+    html += '<div>الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>';
+    html += '</div>';
 
-        // جدول الأصناف
-        '<table style="width:100%;border-collapse:collapse;margin-bottom:5px;">' +
-        '<thead>' +
-        '<tr style="border-bottom:2px solid #000;">' +
-        '<th style="text-align:right;font-size:12px;padding:3px 2px;">الوجبة</th>' +
-        '<th style="text-align:center;font-size:12px;padding:3px 2px;">ك</th>' +
-        '<th style="text-align:left;font-size:12px;padding:3px 2px;">د.ع</th>' +
-        '</tr>' +
-        '</thead>' +
-        '<tbody>' + itemsHtml + '</tbody>' +
-        '</table>' +
+    // جدول الأصناف
+    html += '<table style="width:100%;border-collapse:collapse;margin-bottom:4px;">';
+    html += '<thead>';
+    html += '<tr style="border-bottom:2px solid #000;">';
+    html += '<th style="text-align:right;font-size:12px;padding:3px 2px;">الوجبة</th>';
+    html += '<th style="text-align:center;font-size:12px;padding:3px 2px;">ك</th>';
+    html += '<th style="text-align:left;font-size:12px;padding:3px 2px;">د.ع</th>';
+    html += '</tr>';
+    html += '</thead>';
+    html += '<tbody>' + itemsHtml + '</tbody>';
+    html += '</table>';
 
-        // الملاحظات العامة
-        (ord.orderNotes
-            ? '<div style="font-size:11px;border-bottom:1px dashed #ccc;' +
-              'padding-bottom:3px;margin-bottom:4px;">' +
-              '📝 ' + ord.orderNotes + '</div>'
-            : '') +
+    // ملاحظات
+    if (ord.orderNotes && ord.orderNotes !== '') {
+        html += '<div style="font-size:11px;border-top:1px dashed #000;padding:3px 0;">';
+        html += '📝 ' + ord.orderNotes;
+        html += '</div>';
+    }
 
-        // الحساب
-        '<div style="border-top:2px dashed #000;padding-top:4px;margin-top:4px;' +
-        'font-size:12px;font-weight:900;line-height:1.8;">' +
+    // الحساب
+    html += '<div style="border-top:2px dashed #000;padding-top:4px;margin-top:3px;';
+    html += 'font-size:12px;font-weight:900;line-height:1.8;">';
 
-        // الخصم
-        (cleanPrice(ord.discount) > 0
-            ? '<div style="display:flex;justify-content:space-between;">' +
-              '<span>خصم:</span>' +
-              '<span>-' + money(ord.discount) + ' د.ع</span></div>'
-            : '') +
+    if (parseInt(ord.discount) > 0) {
+        html += '<div style="display:flex;justify-content:space-between;">';
+        html += '<span>خصم:</span><span>-' + money(ord.discount) + ' د.ع</span>';
+        html += '</div>';
+    }
 
-        // التوصيل
-        (cleanPrice(ord.deliveryFee) > 0
-            ? '<div style="display:flex;justify-content:space-between;">' +
-              '<span>التوصيل:</span>' +
-              '<span>+' + money(ord.deliveryFee) + ' د.ع</span></div>'
-            : '') +
+    if (parseInt(ord.deliveryFee) > 0) {
+        html += '<div style="display:flex;justify-content:space-between;">';
+        html += '<span>التوصيل:</span><span>+' + money(ord.deliveryFee) + ' د.ع</span>';
+        html += '</div>';
+    }
 
-        // المطلوب
-        '<div style="display:flex;justify-content:space-between;' +
-        'font-size:17px;border-top:2px solid #000;padding-top:4px;margin-top:3px;">' +
-        '<span>المطلوب:</span>' +
-        '<strong>' + money(ord.totalAmount) + ' د.ع</strong>' +
-        '</div>' +
+    // المطلوب - أكبر خط
+    html += '<div style="display:flex;justify-content:space-between;';
+    html += 'font-size:18px;border-top:2px solid #000;padding-top:4px;margin-top:3px;">';
+    html += '<span>المطلوب:</span>';
+    html += '<strong>' + money(ord.totalAmount) + ' د.ع</strong>';
+    html += '</div>';
 
-        // المدفوع والباقي
-        (cleanPrice(ord.cashGiven) > 0
-            ? '<div style="font-size:11px;color:#333;margin-top:2px;">' +
-              'مدفوع: ' + money(ord.cashGiven) +
-              ' | باقي: ' + money(ord.cashChange) + ' د.ع' +
-              '</div>'
-            : '') +
+    if (parseInt(ord.cashGiven) > 0) {
+        html += '<div style="font-size:11px;color:#333;margin-top:2px;">';
+        html += 'مدفوع: ' + money(ord.cashGiven);
+        html += ' | باقي: ' + money(ord.cashChange) + ' د.ع';
+        html += '</div>';
+    }
 
-        '</div>' +
+    html += '</div>';
 
-        // التذييل
-        '<div style="text-align:center;margin-top:8px;font-size:11px;' +
-        'border-top:1px solid #000;padding-top:4px;">' +
-        'شكراً لزيارتكم 🍔 MIM89</div>' +
+    // التذييل
+    html += '<div style="text-align:center;margin-top:8px;font-size:11px;';
+    html += 'border-top:1px solid #000;padding-top:4px;">';
+    html += 'شكراً لزيارتكم 🍔';
+    html += '</div>';
 
-        '</div>';
+    html += '</div>';
+
+    printBox.innerHTML = html;
 
     isCustomerPrinted = true;
     updatePrintStatusBadges();
-    setTimeout(() => window.print(), 150);
+
+    setTimeout(function() {
+        window.print();
+    }, 200);
 }
 
 // طباعة المطبخ يدوياً (احتياطي)
