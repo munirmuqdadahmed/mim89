@@ -1841,13 +1841,13 @@ async function proceedToPrintAfterCash() {
         area:          area,
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
         driverName:    driverName,
-        items:         posCart.map(i => ({
-            id:        i.id,
-            name:      i.name,
-            qty:       cleanPrice(i.qty),
-            price:     cleanPrice(i.price),
-            itemNotes: i.itemNotes || []
-        })),
+        items: posCart.map(i => ({
+    id:        i.id,
+    name:      String(i.name || ''),
+    qty:       parseInt(i.qty) || 1,
+    price:     parseInt(cleanPrice(i.price)) || 0,
+    itemNotes: Array.isArray(i.itemNotes) ? i.itemNotes : []
+})),
         subtotal:      subtotal,
         discount:      posDiscountAmount,
         deliveryFee:   deliveryFee,
