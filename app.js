@@ -1957,12 +1957,10 @@ function updatePrintStatusBadges() {
    ========================================== */
 
 // فاتورة الزبون - نظيفة وقصيرة
-// 🛠️ إصلاح جوهري: كانت الأصناف تُرسل بصيغة أعمدة (cols/ratios/aligns) لجسر
-// الطباعة، وهذه الصيغة غير مدعومة فعلياً هناك (كل الأسطر الأخرى الناجحة في
-// الفاتورة وورقة المطبخ وصفحة الاختبار تستخدم "text" بسيطة فقط). لذلك كانت
-// الأصناف تختفي من الفاتورة المطبوعة فعلياً رغم ظهور العنوان والمجموع.
-// الحل: كل صنف الآن سطر "text" واحد، محاذى يدوياً بعرض ثابت (padReceiptLine)
-// بنفس الأسلوب المُثبت نجاحه في باقي الفاتورة.
+// ملاحظة: بعد مراجعة ملف جسر الطباعة (print_bridge.py) تبيّن أنه يدعم فعلياً
+// صيغة الأعمدة (cols/ratios/aligns) بشكل صحيح. الأصناف هنا مبنية كأسطر نصية
+// بسيطة (بمحاذاة يدوية عبر padReceiptLine) لأنها أبسط وتُنتج نفس النتيجة
+// بالضبط بأقل تعقيد، وتماماً كباقي عناصر الفاتورة الناجحة.
 function buildCustomerReceiptLines(ord) {
     const L = [];
     const money  = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
@@ -1972,9 +1970,8 @@ function buildCustomerReceiptLines(ord) {
     // 🛠️ إصلاح: التأكد من وجود الأصناف
     const items = Array.isArray(ord.items) ? ord.items : [];
 
-    // الشعار (best-effort) — يُرسل فقط إذا كان جسر الطباعة يدعم نوع سطر "image"
-    // ملاحظة: هذا الدعم يعتمد على برنامج الجسر نفسه (ملف بايثون خارجي خارج نطاق
-    // ملفات المشروع الحالية). إن لم يدعمه الجسر سيتم تجاهل السطر بأمان دون أي خطأ.
+    // 🆕 الشعار: يُرسل كسطر "image" بعد تحديث ملف جسر الطباعة (print_bridge.py)
+    // ليدعم رسم الشعار فعلياً على الفاتورة الحرارية (وليس فقط بمعاينة المتصفح)
     if (design.showLogo && design.logoDataUrl)
         L.push({ image: design.logoDataUrl, align: 'center' });
 
@@ -2123,6 +2120,7 @@ async function printBothViaBridge(btnElement) {
     let payload;
     try {
         payload = {
+            paperWidth: getInvoiceDesign().paperWidth, // 🛠️ يحدد للجسر عرض الورق الفعلي (58/80 مم)
             jobs: [
                 {
                     printer:    'cashier',
@@ -2510,7 +2508,9 @@ async function reprintKitchenOnly(orderId, btnElement) {
         const resp = await fetch(getPrintBridgeUrl(), {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ jobs:[{
+            body:    JSON.stringify({
+                paperWidth: getInvoiceDesign().paperWidth,
+                jobs:[{
                 printer:    'kitchen',
                 lines:      buildKitchenTicketLines(ord),
                 openDrawer: false
@@ -2540,7 +2540,9 @@ async function reprintCustomerOnly(orderId, btnElement) {
         const resp = await fetch(getPrintBridgeUrl(), {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ jobs:[{
+            body:    JSON.stringify({
+                paperWidth: getInvoiceDesign().paperWidth,
+                jobs:[{
                 printer:    'cashier',
                 lines:      buildCustomerReceiptLines(ord),
                 openDrawer: false
