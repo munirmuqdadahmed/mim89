@@ -141,6 +141,11 @@
         <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl',this)">
             <i class="fa-solid fa-print"></i> الطابعات
         </button>
+        <button class="tab-btn"
+                onclick="switchAdminTab('tabInvoiceDesignControl',this)"
+                style="border-color:#c084fc;color:#c084fc;">
+            <i class="fa-solid fa-receipt"></i> تصميم الفاتورة
+        </button>
         <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
             <i class="fa-solid fa-users"></i> الكاشيرية
         </button>
@@ -427,6 +432,147 @@
                            padding:12px;font-weight:900;">
                 🖨️ طباعة اختبار على الطابعتين
             </button>
+        </div>
+    </div>
+
+    <!-- 6.5 تبويب تصميم الفاتورة -->
+    <div id="tabInvoiceDesignControl" class="tab-content"
+         style="margin-top:15px;display:none;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;
+                    align-items:flex-start;">
+
+            <!-- نموذج التحكم -->
+            <div class="card" style="max-width:480px;flex:1;min-width:280px;
+                        border-color:#c084fc;">
+                <h4 style="color:#c084fc;margin-bottom:10px;">
+                    <i class="fa-solid fa-receipt"></i> تصميم فاتورة الزبون
+                </h4>
+                <p class="hint" style="margin-bottom:12px;line-height:1.7;">
+                    غيّر الشعار والنصوص وأظهر/أخفِ أي عنصر من الفاتورة —
+                    التعديل ينعكس فوراً على كل أجهزة الكاشير بعد الحفظ.
+                </p>
+
+                <!-- الشعار -->
+                <label class="section-label">شعار الفاتورة (لوكو):</label>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <img id="invoiceLogoPreview" src=""
+                         style="display:none;max-width:70px;max-height:70px;
+                                border-radius:6px;background:#fff;padding:3px;">
+                    <label for="invoiceLogoFileInput" class="gold-btn btn-sm"
+                           style="cursor:pointer;background:#1e1e28;color:#c084fc;
+                                  border:1px solid #c084fc;">
+                        📤 اختر صورة
+                    </label>
+                    <input type="file" id="invoiceLogoFileInput" accept="image/*"
+                           style="display:none;"
+                           onchange="handleInvoiceLogoUpload(this)">
+                    <button onclick="removeInvoiceLogo()" class="gold-btn btn-sm"
+                            style="background:#1e1e28;color:#888;border:1px solid #333;">
+                        🗑️ إزالة
+                    </button>
+                </div>
+                <input type="hidden" id="invoiceLogoDataUrl">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                              color:#ccc;cursor:pointer;margin-bottom:12px;">
+                    <input type="checkbox" id="invoiceShowLogo"
+                           onchange="renderInvoiceDesignPreview()"
+                           style="width:16px;height:16px;">
+                    إظهار الشعار في الفاتورة
+                </label>
+
+                <!-- النصوص -->
+                <label class="section-label">اسم المطعم (أعلى الفاتورة):</label>
+                <input type="text" id="invoiceRestaurantName" class="gold-input-inline"
+                       placeholder="MIM89 FAST FOOD" style="margin-bottom:8px;"
+                       oninput="renderInvoiceDesignPreview()">
+
+                <label class="section-label">العنوان / السطر الفرعي:</label>
+                <input type="text" id="invoiceAddressLine" class="gold-input-inline"
+                       placeholder="بغداد - حي القاهرة" style="margin-bottom:4px;"
+                       oninput="renderInvoiceDesignPreview()">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                              color:#ccc;cursor:pointer;margin-bottom:12px;">
+                    <input type="checkbox" id="invoiceShowAddress"
+                           onchange="renderInvoiceDesignPreview()"
+                           style="width:16px;height:16px;">
+                    إظهار العنوان
+                </label>
+
+                <label class="section-label">نص التذييل (أسفل الفاتورة):</label>
+                <input type="text" id="invoiceFooterText" class="gold-input-inline"
+                       placeholder="شكراً لزيارتكم 🍔" style="margin-bottom:12px;"
+                       oninput="renderInvoiceDesignPreview()">
+
+                <label class="section-label">عرض ورق الطابعة:</label>
+                <select id="invoicePaperWidth" class="gold-input-inline"
+                        style="margin-bottom:14px;" onchange="renderInvoiceDesignPreview()">
+                    <option value="80">80 مم (قياسي)</option>
+                    <option value="58">58 مم (صغير)</option>
+                </select>
+
+                <!-- إظهار / إخفاء عناصر -->
+                <div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;
+                            padding:10px;margin-bottom:14px;">
+                    <div style="color:#fbbf24;font-size:0.8rem;font-weight:800;
+                                margin-bottom:8px;">إظهار/إخفاء في الفاتورة:</div>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                                  color:#ccc;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="invoiceShowCustomerName"
+                               onchange="renderInvoiceDesignPreview()"
+                               style="width:16px;height:16px;">
+                        اسم الزبون
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                                  color:#ccc;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="invoiceShowPhone"
+                               onchange="renderInvoiceDesignPreview()"
+                               style="width:16px;height:16px;">
+                        رقم الهاتف
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                                  color:#ccc;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="invoiceShowDriverArea"
+                               onchange="renderInvoiceDesignPreview()"
+                               style="width:16px;height:16px;">
+                        المنطقة والسائق (طلبات التوصيل)
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                                  color:#ccc;cursor:pointer;margin-bottom:6px;">
+                        <input type="checkbox" id="invoiceShowOrderNotes"
+                               onchange="renderInvoiceDesignPreview()"
+                               style="width:16px;height:16px;">
+                        ملاحظات الطلب العامة
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                                  color:#ccc;cursor:pointer;">
+                        <input type="checkbox" id="invoiceShowItemNotes"
+                               onchange="renderInvoiceDesignPreview()"
+                               style="width:16px;height:16px;">
+                        ملاحظات كل صنف (بدون بصل...)
+                    </label>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <button onclick="saveInvoiceDesign()" class="gold-btn btn-block"
+                            style="background:#10b981;color:#fff;font-weight:900;">
+                        <i class="fa-solid fa-check"></i> حفظ التصميم
+                    </button>
+                    <button onclick="resetInvoiceDesignToDefault()" class="gold-btn"
+                            style="background:#1e1e28;color:#888;border:1px solid #333;
+                                   width:auto;padding:0 14px;">
+                        استعادة الافتراضي
+                    </button>
+                </div>
+            </div>
+
+            <!-- المعاينة الحية -->
+            <div class="card" style="min-width:270px;border-color:#333;
+                        background:#0a0a0d;">
+                <h4 style="color:#888;margin-bottom:10px;text-align:center;">
+                    👁️ معاينة حية
+                </h4>
+                <div id="invoiceDesignPreviewBox"></div>
+            </div>
         </div>
     </div>
 
@@ -851,6 +997,8 @@ function switchAdminTab(tabId, btn) {
         const el = document.getElementById('printBridgeUrlInput');
         if (el) el.value = getPrintBridgeUrl();
     }
+    if (tabId === 'tabInvoiceDesignControl' && typeof loadInvoiceDesignForm === 'function')
+        loadInvoiceDesignForm();
 }
 
 /* ==========================================
