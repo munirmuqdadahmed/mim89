@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1702';
+const MIM89_APP_VERSION = '1703';
 
 /* ==========================================
    المتغيرات العامة
@@ -4059,6 +4059,38 @@ function cancelIncomingOrder(docId, orderId) {
 /* ==========================================
    👥 دليل الزبائن CRM
    ========================================== */
+// 🆕 حفظ سريع لاسم المتصل مباشرة من واجهة الكاشير - يُستخدم لما حد يخابر
+// (سواء انطلب طلب أو لا) عشان يُحفظ اسمه بدليل الزبائن، وبالمرة الجاية لما
+// يخابر بنفس الرقم يطلع اسمه تلقائياً بحقل الزبون (عبر lookupCustomerByPhone).
+function quickSaveCallerAsCustomer() {
+    const phoneEl = document.getElementById('posCustPhone');
+    const nameEl  = document.getElementById('posCustName');
+    const phone   = phoneEl ? phoneEl.value.trim() : '';
+    let   name    = nameEl ? nameEl.value.trim() : '';
+
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 7) {
+        alert('⚠️ أدخل رقم هاتف صحيح أولاً.');
+        return;
+    }
+
+    if (!name) {
+        name = (prompt('👤 اسم الزبون:') || '').trim();
+        if (!name) return;
+        if (nameEl) nameEl.value = name;
+    }
+
+    const areaSel = document.getElementById('posAreaSelect');
+    const area    = areaSel ? areaSel.value : '';
+
+    saveCustomerRecord(name, cleanPhone, area, '');
+
+    const hint = document.getElementById('custLookupHint');
+    if (hint) {
+        hint.innerHTML = '<span style="color:#10b981;">✅ تم حفظ: ' + name + '</span>';
+    }
+}
+
 function saveCustomerRecord(name, phone, area, address) {
     if (!phone || phone === '-' || phone === 'بدون رقم') return;
     const cleanPhone = String(phone).replace(/[^0-9]/g, '');
@@ -4162,6 +4194,25 @@ function fillCustomerData(name, phone, area, address) {
     const resultsBox = document.getElementById('phoneSearchResults');
     if (resultsBox) resultsBox.style.display = 'none';
     renderPosCart();
+}
+
+// 🆕 إضافة زبون يدوياً من لوحة الأدمن (نفس فكرة الحفظ السريع بالكاشير)
+function addCustomerManually() {
+    const name  = (document.getElementById('manualCustName')?.value  || '').trim();
+    const phone = (document.getElementById('manualCustPhone')?.value || '').trim();
+    const area  = (document.getElementById('manualCustArea')?.value  || '').trim();
+
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (!name)                     return alert('⚠️ أدخل اسم الزبون.');
+    if (cleanPhone.length < 7)     return alert('⚠️ أدخل رقم هاتف صحيح.');
+
+    saveCustomerRecord(name, cleanPhone, area, '');
+
+    ['manualCustName','manualCustPhone','manualCustArea'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    renderAdminCustomers();
+    alert('✅ تم حفظ الزبون: ' + name);
 }
 
 function renderAdminCustomers() {
