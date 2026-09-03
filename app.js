@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1701';
+const MIM89_APP_VERSION = '1702';
 
 /* ==========================================
    المتغيرات العامة
@@ -2832,6 +2832,9 @@ function renderSalariesList() {
 /* ==========================================
    📊 ملخص مبيعات الشيفت
    ========================================== */
+// 🛠️ إصلاح: هذه الدالة تبقى خاصة بحساب "تقفيل الشيفت" فقط - يجب أن تبقى
+// محصورة بالشيفت الحالي (getShiftOrders) حتى تكون تسوية النقد بالصندوق صحيحة
+// عند إغلاق كل شيفت على حدة. لا تُستخدم لعرض "الوارد الفعلي" العام بالأدمن.
 function computeTodaySalesSummary() {
     const orders   = getShiftOrders();
     const expenses = getShiftExpenses();
@@ -2868,14 +2871,61 @@ function computeTodaySalesSummary() {
     };
 }
 
+// 🆕 إصلاح مهم: "الوارد الفعلي" بلوحة الأدمن يجب أن يشمل *كامل اليوم التجاري*
+// (الشيفت الأول + الثاني، مثلاً من 11 صباحاً إلى 3 فجراً) وليس الشيفت الحالي
+// فقط - لأن ذاك يتصفّر مع كل "تقفيل شيفت" ويعطي رقم ناقص لصاحب المحل.
+// هذه الدالة تعتمد على "اليوم التجاري" (dateDate) وليس وقت بدء الشيفت، فلا
+// تتأثر إطلاقاً بعمليات تقفيل الشيفت المتكررة خلال نفس اليوم.
+// ملاحظة محاسبية مهمة: المدوّر (float) غير مضاف هنا لإجمالي المبيعات - هو
+// فقط جزء من "الكاش المتوقع بالدرج" (netInDrawer)، وليس جزءاً من الدخل الفعلي.
+function computeTodayBusinessDaySummary() {
+    const today    = getTodayString();
+    const orders   = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
+    const expenses = (getData('sys_expenses')         || []).filter(e => e.dateDate === today);
+    const salaries = (getData('sys_salaries')         || []).filter(s => s.dateDate === today);
+
+    let totalSales = 0, totalCash = 0, totalVisa = 0,
+        totalDelivery = 0, totalExp = 0, totalSal = 0;
+
+    orders.forEach(o => {
+        const amt = cleanPrice(o.totalAmount);
+        totalSales    += amt;
+        totalDelivery += cleanPrice(o.deliveryFee);
+        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا'))
+            totalVisa += amt;
+        else
+            totalCash += amt;
+    });
+
+    expenses.forEach(e => totalExp += cleanPrice(e.amount));
+    salaries.forEach(s => totalSal += cleanPrice(s.amount));
+
+    const float = getDrawerOpeningFloat(today);
+
+    return {
+        ordersCount:   orders.length,
+        totalSales,               // ← إجمالي المبيعات الفعلي (بدون المدوّر إطلاقاً)
+        totalCash,
+        totalVisa,
+        totalDelivery,
+        totalExpenses: totalExp,
+        totalSalaries: totalSal,
+        openingFloat:  float,
+        // 🔒 هذا الرقم فقط هو اللي يشمل المدوّر - لأنه تسوية كاش بالدرج، مو دخل
+        netInDrawer:   Math.max(0, float + totalCash - totalExp - totalSal)
+    };
+}
+
+// 🛠️ إصلاح: هذه الشارة (بلوحة الأدمن فقط) تعرض الآن *مبيعات اليوم التجاري
+// كاملاً* (كل الشفتات معاً)، ولا تتصفّر بعد أي "تقفيل شيفت" خلال نفس اليوم.
 function updateLiveShiftSalesBadge() {
     const badge = document.getElementById('liveShiftSalesBadge');
     if (!badge) return;
-    const s = computeTodaySalesSummary();
+    const s = computeTodayBusinessDaySummary();
     badge.innerHTML =
         s.totalSales.toLocaleString('ar-IQ') + ' د.ع' +
         ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal;">(' +
-        s.ordersCount + ' فاتورة)</span>';
+        s.ordersCount + ' فاتورة اليوم)</span>';
 }
 
 let liveSalesBadgeTimer = null;
