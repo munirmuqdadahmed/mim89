@@ -233,8 +233,18 @@
                                           direction:ltr;padding:6px;"
                                    placeholder="📞 رقم الهاتف"
                                    oninput="lookupCustomerByPhone(this.value)">
-                            <div id="custLookupHint"
-                                 style="font-size:0.7rem;min-height:14px;margin-top:2px;">
+                            <div style="display:flex;align-items:center;gap:6px;
+                                        margin-top:2px;">
+                                <div id="custLookupHint"
+                                     style="font-size:0.7rem;flex:1;min-height:14px;">
+                                </div>
+                                <button onclick="quickSaveCallerAsCustomer()"
+                                        class="gold-btn btn-sm"
+                                        style="width:auto;padding:3px 8px;font-size:0.68rem;
+                                               background:#1e1e28;color:#10b981;
+                                               border:1px solid #10b981;white-space:nowrap;">
+                                    💾 حفظ الاسم
+                                </button>
                             </div>
                             <div id="phoneSearchResults" style="display:none;"></div>
                         </div>
@@ -630,7 +640,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1702"></script>
+<script src="app.js?v=1703"></script>
 <script>
 /* ==========================================
    PIN الكاشير
