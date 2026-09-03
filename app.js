@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1700';
+const MIM89_APP_VERSION = '1701';
 
 /* ==========================================
    المتغيرات العامة
@@ -2091,6 +2091,37 @@ function buildKitchenTicketLines(ord) {
 /* ==========================================
    🖨️🚀 الطباعة عبر جسر Python
    ========================================== */
+// 💰 فتح الدرج يدوياً (بدون طباعة أي فاتورة) - مثلاً لإعطاء فراطة لزبون.
+// يحتاج رمز الكاشير نفسه للتأكيد (وليس رمز المالك) حتى لا يُفتح الدرج
+// من أي شخص عابر يمر من جهاز الكاشير.
+async function openCashDrawerManually() {
+    const pin = prompt('🔒 أدخل رمز الكاشير لفتح الدرج:');
+    if (pin === null) return;
+    if (!verifySystemPassword('cashier', pin)) {
+        alert('⚠️ رمز غير صحيح.');
+        return;
+    }
+    try {
+        const res = await fetch(getPrintBridgeUrl(), {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                jobs: [{
+                    printer:    'cashier',
+                    drawerOnly: true
+                }]
+            })
+        });
+        if (res.ok) {
+            alert('✅ تم فتح الدرج.');
+        } else {
+            alert('⚠️ تعذّر الاتصال بجسر الطباعة.\nتأكد أن برنامج الجسر يعمل على هذا الجهاز.');
+        }
+    } catch (err) {
+        alert('⚠️ تعذّر الاتصال بجسر الطباعة.\nتأكد أن برنامج الجسر (print_bridge.py) يعمل على هذا الجهاز.');
+    }
+}
+
 function getPrintBridgeUrl() {
     const saved = localStorage.getItem('sys_print_bridge_url');
     if (saved && saved.trim()) return saved.trim().replace(/\/$/,'');
@@ -3405,10 +3436,6 @@ function renderCompletedOrdersLog() {
             '<div style="font-size:0.73rem;color:#bbb;margin-top:2px;">' +
             (o.timestamp||'') + ' • ' + (o.customerName||'زبون') +
             (o.driverName && o.driverName!=='-' ? ' • 🛵 '+o.driverName : '') +
-            '</div>' +
-            '<div style="font-size:0.78rem;color:#10b981;font-weight:bold;margin-top:2px;">' +
-            cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع' +
-            '<span style="color:#888;font-size:0.7rem;"> (' + (o.paymentMethod||'كاش') + ')</span>' +
             '</div></div>' +
             '<div style="display:flex;flex-direction:column;gap:4px;">' +
             '<button onclick="reprintCustomerOnly(\'' + o.id + '\',this)" ' +
