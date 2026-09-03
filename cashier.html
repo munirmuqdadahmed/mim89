@@ -69,13 +69,23 @@
                 <button onclick="promptDrawerFloat(); toggleBrandMenu();">
                     <i class="fa-solid fa-coins" style="color:#10b981;"></i> تسجيل المدوّر
                 </button>
+                <button onclick="openExpenseManagerModal(); toggleBrandMenu();">
+                    <i class="fa-solid fa-wallet" style="color:#ef4444;"></i> الصرفيات
+                </button>
+                <button onclick="openSalaryManagerModal(); toggleBrandMenu();">
+                    <i class="fa-solid fa-users" style="color:#10b981;"></i>
+                    الرواتب والسُلف
+                </button>
+                <button onclick="openCashDrawerManually(); toggleBrandMenu();">
+                    <i class="fa-solid fa-box-open" style="color:#fbbf24;"></i>
+                    فتح الدرج
+                </button>
                 <button onclick="openShiftReportModal(); toggleBrandMenu();">
                     <i class="fa-solid fa-lock" style="color:#fbbf24;"></i>
                     تقفيل الشيفت 🔒
                 </button>
-                <!-- 🔒 بطلب الإدارة: "الصرفيات" و"الرواتب والسُلف" و"ذمة السائقين"
-                     أُلغيت من واجهة الكاشير نهائياً، وأصبحت متاحة فقط من لوحة
-                     الأدمن (تبويب "العمليات اليومية") للضروريات فقط. -->
+                <!-- 🔒 بطلب الإدارة: "ذمة السائقين" أُلغيت من واجهة الكاشير نهائياً،
+                     وأصبحت متاحة فقط من لوحة الأدمن (تبويب "العمليات اليومية"). -->
 
                 <div class="menu-section-title">📊 التقارير</div>
                 <button onclick="openCompletedOrdersModal(); toggleBrandMenu();">
@@ -475,7 +485,88 @@
 <!-- الطلبات بذمة السائقين -->
 <!-- 🔒 نافذة "ذمة السائقين" انتقلت للأدمن (تبويب العمليات اليومية) -->
 
-<!-- 🔒 نافذتا "الصرفيات" و"الرواتب والسُلف" انتقلتا للأدمن (تبويب العمليات اليومية) -->
+<!-- الصرفيات -->
+<div id="expenseManagerModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:480px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#ef4444;">
+                <i class="fa-solid fa-wallet"></i> الصرفيات
+            </h4>
+            <button onclick="closeModal('expenseManagerModal')"
+                    class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <div style="background:#0d0d11;padding:8px;border-radius:7px;
+                    border:1px solid #1e1e28;margin-bottom:10px;">
+            <label class="section-label">النوع:</label>
+            <select id="expenseTypeSelect" class="gold-input-inline"
+                    onchange="toggleExpenseTypeFields()"
+                    style="font-size:0.8rem;margin-bottom:5px;"></select>
+            <select id="expenseEmployeeSelect" class="gold-input-inline"
+                    style="display:none;font-size:0.8rem;margin-bottom:5px;"></select>
+            <label class="section-label">المبلغ (د.ع):</label>
+            <input type="number" id="expenseAmountInput" class="gold-input-inline"
+                   placeholder="أدخل المبلغ..."
+                   style="font-size:0.85rem;margin-bottom:5px;">
+            <label class="section-label">التفاصيل:</label>
+            <input type="text" id="expenseNoteInput" class="gold-input-inline"
+                   placeholder="تفاصيل الصرفية..."
+                   style="font-size:0.8rem;margin-bottom:6px;">
+            <button onclick="addNewExpenseRecord()" class="gold-btn btn-block"
+                    style="background:#ef4444;color:#fff;">
+                تسجيل الصرفية
+            </button>
+        </div>
+        <h5 style="color:#fbbf24;margin-bottom:5px;">صرفيات اليوم:</h5>
+        <div id="expensesListTable"
+             style="max-height:160px;overflow-y:auto;font-size:0.8rem;">
+        </div>
+    </div>
+</div>
+
+<!-- الرواتب والسُلف -->
+<div id="salaryManagerModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:480px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#10b981;">
+                <i class="fa-solid fa-users"></i> الرواتب والسُلف
+            </h4>
+            <button onclick="closeModal('salaryManagerModal')"
+                    class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <div style="background:#0d1a14;padding:10px;border-radius:8px;
+                    border:1px solid rgba(16,185,129,0.3);margin-bottom:10px;">
+            <label class="section-label">الموظف:</label>
+            <select id="salaryEmployeeSelect" class="gold-input-inline"
+                    style="font-size:0.85rem;margin-bottom:6px;cursor:pointer;"></select>
+            <label class="section-label">النوع:</label>
+            <select id="salaryTypeSelect" class="gold-input-inline"
+                    style="font-size:0.85rem;margin-bottom:6px;cursor:pointer;">
+                <option value="راتب">راتب شهري</option>
+                <option value="سلفة">سلفة</option>
+                <option value="مكافأة">مكافأة</option>
+                <option value="أجر يومي">أجر يومي</option>
+            </select>
+            <label class="section-label">المبلغ (د.ع):</label>
+            <input type="number" id="salaryAmountInput" class="gold-input-inline"
+                   placeholder="المبلغ..."
+                   style="font-size:0.85rem;margin-bottom:6px;">
+            <label class="section-label">ملاحظة (اختياري):</label>
+            <input type="text" id="salaryNoteInput" class="gold-input-inline"
+                   placeholder="ملاحظة..."
+                   style="font-size:0.8rem;margin-bottom:8px;">
+            <button onclick="addSalaryRecord()" class="gold-btn btn-block"
+                    style="background:#10b981;color:#fff;font-weight:900;">
+                🔐 صرف (يحتاج موافقة المالك)
+            </button>
+        </div>
+        <h5 style="color:#10b981;margin-bottom:6px;">رواتب اليوم:</h5>
+        <div id="salariesListTable"
+             style="max-height:200px;overflow-y:auto;font-size:0.8rem;">
+        </div>
+    </div>
+</div>
 
 <!-- 🔒 نافذتا "الكشف اليومي" و"جرد الوجبات" انتقلتا بالكامل للأدمن -->
 
@@ -539,7 +630,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1700"></script>
+<script src="app.js?v=1701"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -607,8 +698,13 @@ function toggleBrandMenu() {
     if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
+// 🛠️ إصلاح: كان أي ضغط على زر "أدوات الفحص" (أو أي زر آخر داخل القائمة لا يستدعي
+// toggleBrandMenu بنفسه) يُغلق القائمة كاملة فوراً، لأن هذا المستمع كان يتحقق فقط
+// من ".brand-btn" ويتجاهل أن الضغط قد يكون داخل القائمة المنسدلة نفسها. الآن أي
+// ضغط داخل #brandDropdownMenu لا يُغلق القائمة تلقائياً (الأزرار التي يجب أن
+// تُغلق القائمة بعد تنفيذ أمرها تستدعي toggleBrandMenu() بنفسها أصلاً).
 window.onclick = function(e) {
-    if (!e.target.matches('.brand-btn') && !e.target.matches('.brand-btn *')) {
+    if (!e.target.closest('.brand-btn') && !e.target.closest('#brandDropdownMenu')) {
         const menu = document.getElementById('brandDropdownMenu');
         if (menu && menu.style.display === 'block') menu.style.display = 'none';
     }
