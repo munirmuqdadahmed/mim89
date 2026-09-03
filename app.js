@@ -2915,16 +2915,14 @@ function renderShiftClosingReport() {
     html += '<div style="color:#fbbf24;font-weight:900;margin-bottom:6px;text-align:center;">🕐 الشيفت</div>';
     html += row('الكاشير:', activeCashierUser ? activeCashierUser.name : 'الرئيسي');
     html += row('بدأ في:', getShiftStartLabel(), '#aaa');
-    html += row('الفواتير:', orders.length + ' فاتورة', '#fbbf24', true);
+    // 🔒 حُذف عرض "عدد الفواتير" هنا بطلب الإدارة
     html += '</div>';
 
     // المبيعات
     html += '<div style="background:#111116;padding:10px;border-radius:9px;margin-bottom:10px;">';
     html += '<div style="color:#fbbf24;font-weight:900;margin-bottom:6px;text-align:center;">💰 المبيعات</div>';
-    html += row('🍽️ صالة:', dineIn + ' طلب', '#ccc');
-    html += row('🛍️ سفري:', takeaway + ' طلب', '#ccc');
-    html += row('🛵 توصيل:', delivery + ' طلب', '#ccc');
-    html += row('إجمالي المبيعات:', money(totalSales), '#fbbf24', true);
+    // 🔒 حُذف من هنا: عدد الطلبات لكل نوع (صالة/سفري/توصيل) وإجمالي المبيعات
+    // الكلي (يشمل الفيزا) بطلب الإدارة - يبقى فقط ما يلزم لتسوية نقد الصندوق
     html += row('كاش:', money(cash), '#10b981');
     html += row('فيزا:', money(visa), '#38bdf8');
     if (discounts > 0)
@@ -3091,8 +3089,13 @@ function confirmCloseShiftAndLogout() {
 /* ==========================================
    🛵 الدليفري وحسابات السائقين
    ========================================== */
+// 🛠️ إصلاح مهم: ذمة السائقين يجب ألا ترتبط بحدود الشيفت الحالي - إذا انقفل
+// الشيفت وسائق لسا ما سلّم فلوس فاتورة توصيل، يجب أن تبقى هذي الفاتورة ظاهرة
+// بذمته حتى تُسوّى يدوياً (كل فاتورة تُتابع بشكل مستقل تماماً عن الأخرى)،
+// بغض النظر عن كم شيفت انقفل بينها. لذلك نفحص كامل سجل الفواتير وليس شيفت واحد.
 function getUnsettledDeliveryOrders() {
-    return getShiftOrders().filter(o =>
+    const all = getData('sys_completed_orders') || [];
+    return all.filter(o =>
         o.orderType === 'توصيل' &&
         o.driverName && o.driverName !== '-' &&
         !o.isSettled
@@ -3361,10 +3364,11 @@ function renderCompletedOrdersLog() {
     const container  = document.getElementById('completedOrdersList');
     if (!container) return;
 
-    const targetDate = document.getElementById('ordersLogDateInput')?.value || getTodayString();
+    // 🔒 بطلب الإدارة: السجل يعرض فواتير الشيفت الحالي فقط، ويُصفَّر تلقائياً
+    // بعد كل "تقفيل شيفت" (لأن getShiftOrders تعتمد على وقت بدء الشيفت الحالي)
+    // - الكاشير التالي لا يرى أي فاتورة من شيفت سابق.
     const searchRaw  = (document.getElementById('ordersLogSearchInput')?.value || '').toLowerCase();
-    const completed  = getData('sys_completed_orders') || [];
-    let   list       = completed.filter(o => o.dateDate === targetDate);
+    let   list       = getShiftOrders();
 
     if (searchRaw) {
         list = list.filter(o =>
@@ -3419,6 +3423,8 @@ function renderCompletedOrdersLog() {
     }).join('');
 }
 
+// 🔒 هذا التقرير أصبح متاحاً فقط من لوحة الأدمن (محمي أصلاً برمز دخول الأدمن
+// نفسه)، ولم يعد له أي زر بواجهة الكاشير.
 function openDailyReportModal() {
     const dateInput = document.getElementById('reportDateInput');
     if (dateInput) {
@@ -3474,6 +3480,7 @@ function renderDailyReport(targetDate) {
     openDriverSettlementModal();
 }
 
+// 🔒 نفس الأمر: هذا التقرير أصبح حصرياً بلوحة الأدمن
 function openItemsReportModal() {
     const dateInput = document.getElementById('itemsReportDateInput');
     if (dateInput) {
