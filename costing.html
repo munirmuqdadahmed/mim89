@@ -147,13 +147,20 @@
         </div>
     </div>
 
-    <!-- الوارد الفعلي -->
+    <!-- 🛠️ توضيح: هذا رقم "تسوية نقد بالدرج" لعدّ الكاش فقط - وليس دخلاً أو
+         ربحاً. المدوّر (float) يظهر هنا فقط لأنه جزء من الكاش الموجود فعلياً
+         بالدرج، لكنه لا يُحتسب إطلاقاً ضمن "إجمالي المبيعات" أو "الربح" بالأسفل. -->
     <div class="drawer-hero">
-        <span class="label">💵 الوارد الفعلي بالصندوق (نقداً)</span>
+        <span class="label">🧮 الكاش المتوقع بالدرج (تسوية نقدية - ليس دخلاً)</span>
         <div class="value num" id="heroDrawer">0 د.ع</div>
         <span class="sub" id="heroSub">
             المدوّر + مبيعات الكاش − الصرفيات − الرواتب − مع السائقين
         </span>
+        <p style="font-size:0.72rem;color:#888;margin-top:6px;line-height:1.6;">
+            ⚠️ المدوّر هنا فقط لعدّ الكاش الفعلي بالدرج، وهو غير محتسب ضمن
+            "إجمالي المبيعات" أو "الربح" بالأسفل — تلك الأرقام مبنية فقط على
+            قيمة الفواتير الفعلية.
+        </p>
     </div>
 
     <!-- المؤشرات -->
@@ -190,7 +197,7 @@
         <!-- تفصيل الصندوق -->
         <div class="card">
             <div class="sec-title">
-                <i class="fa-solid fa-calculator"></i> كيف حُسب الوارد بالصندوق
+                <i class="fa-solid fa-calculator"></i> كيف حُسب الكاش المتوقع بالدرج
             </div>
             <div id="drawerBreakdown"></div>
         </div>
@@ -332,7 +339,7 @@
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1600"></script>
+<script src="app.js?v=1702"></script>
 <script>
 /* ==========================================
    PIN الخزينة
@@ -627,7 +634,7 @@ function refreshAllFinancials() {
     d += row('👥 الرواتب',           '− ' + money(f.salTotal),     '#10b981');
     if (f.pendingCash > 0)
         d += row('🛵 مع السائقين',   '− ' + money(f.pendingCash), '#ef4444');
-    d += '<div class="calc-total"><span>💵 الوارد الفعلي</span>' +
+    d += '<div class="calc-total"><span>🧮 الكاش المتوقع بالدرج</span>' +
          '<strong class="num" style="color:#fbbf24;">' + money(f.actualDrawer) +
          '</strong></div>';
     if (f.pendingCash > 0)
