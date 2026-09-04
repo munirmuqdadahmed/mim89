@@ -397,32 +397,41 @@
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1704"></script>
+<script src="app.js?v=1706"></script>
 <script>
 /* ==========================================
    PIN الخزينة
    ========================================== */
 var costingPin = "";
 
+// 🛠️ نفس إصلاح شاشة الأدمن: تحقق صامت بعد كل رقم بدل الإرسال التلقائي
+// المبكر عند 4 أرقام دائماً (رمز الخزينة أو رمز الأدمن كتجاوز، بأي طول).
+function updateCostingPinDots() {
+    const box = document.getElementById('costingPinDots');
+    if (!box) return;
+    box.innerHTML = Array.from({ length: costingPin.length })
+        .map(() => '<span class="pin-dot filled"></span>').join('') +
+        (costingPin.length === 0 ? '<span class="pin-dot"></span>'.repeat(4) : '');
+}
+
 function costingPinPress(num) {
-    if (costingPin.length >= 6) return;
+    if (costingPin.length >= 10) return;
     costingPin += String(num);
     updateCostingPinDots();
-    if (costingPin.length >= 4) setTimeout(costingPinSubmit, 200);
+    if (costingPin.length < 4) return;
+
+    const matched = typeof verifySystemPassword === 'function'
+        ? verifySystemPassword('costing', costingPin)
+        : costingPin === '9999';
+
+    if (matched || costingPin.length >= 10) setTimeout(costingPinSubmit, 150);
 }
+updateCostingPinDots();
 
 function costingPinClear() {
     costingPin = costingPin.slice(0, -1);
     updateCostingPinDots();
     document.getElementById('secretErr').innerText = '';
-}
-
-function updateCostingPinDots() {
-    const dots = document.querySelectorAll('#costingPinDots .pin-dot');
-    dots.forEach((d, i) => {
-        d.classList.toggle('filled', i < costingPin.length);
-        d.classList.remove('error');
-    });
 }
 
 function costingPinSubmit() {
