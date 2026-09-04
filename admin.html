@@ -91,6 +91,10 @@
                         style="background:#ffd700;color:#000;border:none;font-weight:900;">
                     <i class="fa-solid fa-print"></i> مينيو ورقي
                 </button>
+                <button onclick="openDeliveryMenuEditor()" class="gold-btn btn-sm"
+                        style="background:#f59e0b;color:#000;border:none;font-weight:900;">
+                    <i class="fa-solid fa-motorcycle"></i> مينيو شركات التوصيل
+                </button>
                 <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
                         style="background:#3b82f6;color:#fff;border:none;">
                     <i class="fa-solid fa-stethoscope"></i> فحص السحابة
@@ -963,6 +967,56 @@
         </div>
     </div>
 
+    <!-- 🆕 نافذة مراجعة وتعديل مينيو شركات التوصيل -->
+    <div id="deliveryMenuEditModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:720px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 style="color:#f59e0b;">
+                    <i class="fa-solid fa-motorcycle"></i> مراجعة أسعار شركات التوصيل
+                </h4>
+                <button onclick="closeModal('deliveryMenuEditModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+
+            <p class="hint" style="margin-bottom:8px;">
+                💡 الأسعار محسوبة تلقائياً لتغطية العمولة الحالية
+                (<strong id="deliveryMenuCommissionLabel" style="color:#f59e0b;">0%</strong>)
+                بشكل صحيح رياضياً. راجعها وعدّل أي رقم تريده يدوياً قبل الطباعة.
+            </p>
+
+            <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;
+                        background:#0d0d11;padding:8px;border-radius:7px;">
+                <span style="font-size:0.78rem;color:#ccc;white-space:nowrap;">
+                    إعادة الحساب بنسبة جديدة:
+                </span>
+                <input type="number" id="deliveryMenuRecalcInput" class="gold-input-inline"
+                       placeholder="%" style="max-width:90px;">
+                <button onclick="recalcDeliveryMenuDraft()" class="gold-btn btn-sm"
+                        style="width:auto;padding:4px 10px;">تطبيق على الكل</button>
+            </div>
+
+            <div style="overflow-x:auto;max-height:380px;overflow-y:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الصنف</th>
+                            <th>المكونات</th>
+                            <th>سعرك الأصلي</th>
+                            <th>سعر التوصيل (قابل للتعديل)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deliveryMenuEditTableBody"></tbody>
+                </table>
+            </div>
+
+            <button onclick="printFinalDeliveryMenu()" class="gold-btn btn-block"
+                    style="background:#f59e0b;color:#000;font-weight:900;margin-top:12px;">
+                <i class="fa-solid fa-print"></i> طباعة القائمة النهائية
+            </button>
+        </div>
+    </div>
+
     <!-- 7. تبويب الكاشيرية -->
     <div id="tabCashiersControl" class="tab-content"
          style="margin-top:15px;display:none;">
@@ -1282,7 +1336,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1703"></script>
+<script src="app.js?v=1705"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -1787,6 +1841,191 @@ tr.item-row { border-bottom:1px dashed #ccc; }
 
     menuContent +=
         '<div class="footer-note">صحتين وهنا من مطعم MIM89 🍔</div>' +
+        '</body></html>';
+
+    let iframe = document.getElementById('printIframeHidden');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printIframeHidden';
+        iframe.style.cssText =
+            'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+        document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(menuContent); doc.close();
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
+}
+
+// 🆕 مينيو خاص بشركات التوصيل (طلبات وغيرها): يحتوي المكونات + السعر، لكن
+// بسعر مُعدَّل ليغطي عمولة المنصة بشكل صحيح رياضياً (وليس بإضافة النسبة مباشرة
+// على السعر، لأن هذا يجعلك تخسر جزءاً من هامش ربحك).
+//
+// 🧮 الطريقة الصحيحة: العمولة تُقتطع من السعر النهائي اللي يدفعه الزبون، مو
+// تُضاف على سعرك الأصلي. فلو أضفنا العمولة كنسبة مباشرة (سعر × 1.26 مثلاً)
+// وبعدين المنصة اقتطعت 26% من هذا الرقم الجديد، بيوصلك أقل من سعرك الأصلي.
+// الحل: سعر البيع = السعر الأصلي ÷ (1 − نسبة العمولة). بهذا الشكل، بعد ما
+// تقتطع المنصة عمولتها من السعر الجديد، يضل يوصلك بالضبط سعرك الأصلي.
+// مثال: سعر 10,000 وعمولة 26% → 10,000 ÷ 0.74 = 13,514 (مو 10,000×1.26=12,600).
+function computeDeliveryPrice(basePrice, commissionPct) {
+    if (commissionPct <= 0 || commissionPct >= 100) return Math.round(basePrice);
+    return Math.round(basePrice / (1 - commissionPct / 100));
+}
+
+let deliveryMenuDraftItems = [];
+
+function openDeliveryMenuEditor() {
+    let categories = [], items = [];
+    try {
+        categories = typeof getData === 'function' ? getData('sys_categories') : [];
+        items      = typeof getData === 'function' ? getData('sys_items')      : [];
+    } catch (_) {}
+
+    if (!items || items.length === 0)
+        return alert("⚠️ لا توجد أصناف في المينيو!");
+
+    const savedPct = localStorage.getItem('sys_delivery_menu_commission_pct') || '20';
+    const input = prompt(
+        '📈 نسبة عمولة شركة التوصيل (%):\n' +
+        '(مثال: لو طلبات ياخذون 26%، اكتب 26 — النظام يحسب السعر الصحيح ' +
+        'اللي يضمن وصول سعرك الأصلي كامل بعد اقتطاع العمولة)',
+        savedPct
+    );
+    if (input === null) return;
+    const pct = parseFloat(input);
+    if (isNaN(pct) || pct < 0 || pct >= 100) return alert('⚠️ أدخل نسبة صحيحة (بين 0 و99).');
+    localStorage.setItem('sys_delivery_menu_commission_pct', String(pct));
+
+    // بناء قائمة المسودة: صنف - مكونات - سعرك الأصلي - السعر المقترح (قابل للتعديل)
+    deliveryMenuDraftItems = [];
+    categories.forEach(cat => {
+        const catItems = items.filter(i => {
+            const catId = i.categoryId !== undefined ? i.categoryId
+                : (i.catId !== undefined ? i.catId : i.category);
+            return String(catId) === String(cat.id) && !i.isPaused;
+        });
+        catItems.forEach(item => {
+            const basePrice = typeof cleanPrice === 'function'
+                ? cleanPrice(item.price) : parseInt(item.price || 0);
+            deliveryMenuDraftItems.push({
+                catName:     cat.name,
+                name:        item.name,
+                ingredients: item.ingredients || item.desc || 'تحضر طازجة فوراً حسب الطلب',
+                basePrice:   basePrice,
+                deliveryPrice: computeDeliveryPrice(basePrice, pct)
+            });
+        });
+    });
+
+    if (deliveryMenuDraftItems.length === 0)
+        return alert('⚠️ لا توجد أصناف مفعّلة بالأقسام!');
+
+    document.getElementById('deliveryMenuCommissionLabel').innerText = pct + '%';
+    renderDeliveryMenuEditorTable();
+    openModal('deliveryMenuEditModal');
+}
+
+function renderDeliveryMenuEditorTable() {
+    const tbody = document.getElementById('deliveryMenuEditTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = deliveryMenuDraftItems.map((it, idx) =>
+        '<tr>' +
+        '<td style="font-weight:bold;">' + it.name +
+        '<div style="font-size:0.68rem;color:#888;font-weight:normal;">' + it.catName + '</div>' +
+        '</td>' +
+        '<td style="font-size:0.72rem;color:#aaa;max-width:180px;">' + it.ingredients + '</td>' +
+        '<td style="color:#888;white-space:nowrap;">' +
+        (typeof cleanPrice === 'function' ? cleanPrice(it.basePrice) : it.basePrice)
+            .toLocaleString('ar-IQ') + '</td>' +
+        '<td>' +
+        '<input type="number" class="gold-input-inline" style="width:100px;font-weight:900;color:#f59e0b;" ' +
+        'value="' + it.deliveryPrice + '" ' +
+        'onchange="updateDeliveryMenuDraftPrice(' + idx + ', this.value)">' +
+        '</td>' +
+        '</tr>'
+    ).join('');
+}
+
+function updateDeliveryMenuDraftPrice(idx, val) {
+    const n = parseInt(val, 10);
+    if (!isNaN(n) && n >= 0) deliveryMenuDraftItems[idx].deliveryPrice = n;
+}
+
+// إعادة حساب كل الأسعار دفعة وحدة بنسبة عمولة جديدة (بدون ما تفتح موجة جديدة)
+function recalcDeliveryMenuDraft() {
+    const pct = parseFloat(document.getElementById('deliveryMenuRecalcInput')?.value);
+    if (isNaN(pct) || pct < 0 || pct >= 100) return alert('⚠️ أدخل نسبة صحيحة.');
+    localStorage.setItem('sys_delivery_menu_commission_pct', String(pct));
+    deliveryMenuDraftItems.forEach(it => {
+        it.deliveryPrice = computeDeliveryPrice(it.basePrice, pct);
+    });
+    document.getElementById('deliveryMenuCommissionLabel').innerText = pct + '%';
+    renderDeliveryMenuEditorTable();
+}
+
+// الطباعة النهائية - تستخدم القيم اللي راجعتها وعدّلتها بالجدول (إن عدّلت شي)
+function printFinalDeliveryMenu() {
+    if (!deliveryMenuDraftItems || deliveryMenuDraftItems.length === 0)
+        return alert('⚠️ لا توجد بيانات.');
+
+    let menuContent = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>MIM89 - قائمة أسعار شركات التوصيل</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 10mm; }
+body { font-family:'Tajawal',sans-serif; direction:rtl; background:#fff; color:#000; margin:0; padding:10px; }
+.menu-header { text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:20px; }
+.menu-header h1 { margin:0; font-size:26px; font-weight:900; }
+.cat-box { margin-bottom:20px; page-break-inside:avoid; }
+.cat-title { background:#222 !important; color:#ffd700 !important; padding:6px 12px; font-size:15px; font-weight:900; border-radius:4px; margin-bottom:10px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { padding:8px 6px; text-align:right; }
+th { border-bottom:2px solid #000; }
+tr.item-row { border-bottom:1px dashed #ccc; }
+.item-name { font-weight:bold; }
+.item-desc { color:#444; font-size:11px; }
+.item-price { font-weight:bold; text-align:left; white-space:nowrap; }
+.footer-note { text-align:center; margin-top:25px; border-top:1px solid #000; padding-top:10px; font-size:12px; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="menu-header">
+<h1>MIM89 FAST FOOD</h1>
+<p style="margin:5px 0 0 0;font-size:13px;font-weight:bold;">قائمة الأسعار الرسمية لشركاء التوصيل</p>
+</div>`;
+
+    // تجميع حسب القسم مع الحفاظ على الترتيب
+    const grouped = {};
+    const order = [];
+    deliveryMenuDraftItems.forEach(it => {
+        if (!grouped[it.catName]) { grouped[it.catName] = []; order.push(it.catName); }
+        grouped[it.catName].push(it);
+    });
+
+    order.forEach(catName => {
+        menuContent += '<div class="cat-box"><div class="cat-title">' + catName + '</div>' +
+            '<table><thead><tr>' +
+            '<th style="width:35%;">اسم الوجبة</th>' +
+            '<th style="width:45%;">المكونات والوصف</th>' +
+            '<th style="width:20%;text-align:left;">السعر</th>' +
+            '</tr></thead><tbody>';
+
+        grouped[catName].forEach(it => {
+            menuContent +=
+                '<tr class="item-row">' +
+                '<td class="item-name">' + it.name + '</td>' +
+                '<td class="item-desc">' + it.ingredients + '</td>' +
+                '<td class="item-price">' +
+                Math.round(it.deliveryPrice).toLocaleString('ar-IQ') + ' د.ع</td></tr>';
+        });
+        menuContent += '</tbody></table></div>';
+    });
+
+    menuContent +=
+        '<div class="footer-note">MIM89 FAST FOOD - قائمة أسعار خاصة بشركاء التوصيل</div>' +
         '</body></html>';
 
     let iframe = document.getElementById('printIframeHidden');
