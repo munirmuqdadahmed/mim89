@@ -21,12 +21,7 @@
         <div class="pin-logo">🍔</div>
         <h2>MIM89 POS</h2>
         <p>أدخل رمز الكاشير</p>
-        <div class="pin-dots" id="pinDots">
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-        </div>
+        <div class="pin-dots" id="pinDots"></div>
         <div class="pin-keypad">
             <button class="pin-key" onclick="cashierPinPress('3')">3</button>
             <button class="pin-key" onclick="cashierPinPress('2')">2</button>
@@ -640,34 +635,41 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1703"></script>
+<script src="app.js?v=1706"></script>
 <script>
 /* ==========================================
    PIN الكاشير
    ========================================== */
 var cashierPin = "";
 
+// 🛠️ نفس إصلاح شاشة الأدمن: تحقق صامت بعد كل رقم بدل الإرسال التلقائي عند
+// 4 أرقام دائماً، لأن كل كاشير ممكن يكون له رمز بطول مختلف.
+function updateCashierPinDots() {
+    const box = document.getElementById('pinDots');
+    if (!box) return;
+    box.innerHTML = Array.from({ length: cashierPin.length })
+        .map(() => '<span class="pin-dot filled"></span>').join('') +
+        (cashierPin.length === 0 ? '<span class="pin-dot"></span>'.repeat(4) : '');
+}
+
 function cashierPinPress(num) {
-    if (cashierPin.length >= 6) return;
+    if (cashierPin.length >= 10) return;
     cashierPin += String(num);
     updateCashierPinDots();
-    if (cashierPin.length >= 4) {
-        setTimeout(cashierPinSubmit, 200);
-    }
+    if (cashierPin.length < 4) return;
+
+    const cashiers = typeof getData === 'function' ? (getData('sys_cashiers') || []) : [];
+    const matched  = cashiers.some(c => String(c.pin || c.password || '').trim() === cashierPin) ||
+        (typeof verifySystemPassword === 'function' && verifySystemPassword('cashier', cashierPin));
+
+    if (matched || cashierPin.length >= 10) setTimeout(cashierPinSubmit, 150);
 }
+updateCashierPinDots();
 
 function cashierPinClear() {
     cashierPin = cashierPin.slice(0, -1);
     updateCashierPinDots();
     document.getElementById('authError').innerText = '';
-}
-
-function updateCashierPinDots() {
-    const dots = document.querySelectorAll('#pinDots .pin-dot');
-    dots.forEach((d, i) => {
-        d.classList.toggle('filled', i < cashierPin.length);
-        d.classList.remove('error');
-    });
 }
 
 function cashierPinSubmit() {
