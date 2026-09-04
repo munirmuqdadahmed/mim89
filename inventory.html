@@ -62,12 +62,7 @@
         <div class="pin-logo">📦</div>
         <h2>مخزن MIM89</h2>
         <p>أدخل رمز المخزن أو الأدمن</p>
-        <div class="pin-dots" id="invPinDots">
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-            <span class="pin-dot"></span>
-        </div>
+        <div class="pin-dots" id="invPinDots"></div>
         <div class="pin-keypad">
             <button class="pin-key" onclick="invPinPress('3')">3</button>
             <button class="pin-key" onclick="invPinPress('2')">2</button>
@@ -606,32 +601,41 @@
 
 </div>
 
-<script src="app.js?v=1600"></script>
+<script src="app.js?v=1706"></script>
 <script>
 /* ==========================================
    PIN المخزن
    ========================================== */
 var invPin = "";
 
+// 🛠️ نفس إصلاح شاشة الأدمن: تحقق صامت بعد كل رقم (رمز المخزون أو رمز
+// الأدمن كتجاوز، بأي طول) بدل الإرسال المبكر عند 4 أرقام دائماً.
+function updateInvPinDots() {
+    const box = document.getElementById('invPinDots');
+    if (!box) return;
+    box.innerHTML = Array.from({ length: invPin.length })
+        .map(() => '<span class="pin-dot filled"></span>').join('') +
+        (invPin.length === 0 ? '<span class="pin-dot"></span>'.repeat(4) : '');
+}
+
 function invPinPress(num) {
-    if (invPin.length >= 6) return;
+    if (invPin.length >= 10) return;
     invPin += String(num);
     updateInvPinDots();
-    if (invPin.length >= 4) setTimeout(invPinSubmit, 200);
+    if (invPin.length < 4) return;
+
+    const matched = typeof verifySystemPassword === 'function'
+        ? (verifySystemPassword('inventory', invPin) || verifySystemPassword('admin', invPin))
+        : (invPin === '2345' || invPin === '1234');
+
+    if (matched || invPin.length >= 10) setTimeout(invPinSubmit, 150);
 }
+updateInvPinDots();
 
 function invPinClear() {
     invPin = invPin.slice(0, -1);
     updateInvPinDots();
     document.getElementById('authError').innerText = '';
-}
-
-function updateInvPinDots() {
-    const dots = document.querySelectorAll('#invPinDots .pin-dot');
-    dots.forEach((d, i) => {
-        d.classList.toggle('filled', i < invPin.length);
-        d.classList.remove('error');
-    });
 }
 
 function invPinSubmit() {
