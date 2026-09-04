@@ -7,6 +7,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MIM89 Fast Food">
     <meta name="theme-color" content="#060608">
+    <!-- 🆕 منع تخزين صفحة المينيو نفسها بالكاش - طبقة حماية إضافية (الحل
+         الحقيقي والمضمون هو سكربت التحديث التلقائي بالأسفل، هذا فقط مساعد) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>MIM89 FAST FOOD - المينيو الإلكتروني</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1098,6 +1103,53 @@
 
         try { if (typeof updateCartBadge === 'function') updateCartBadge(); } catch (_) {}
     });
+
+    /* ==========================================
+       🆕 التحديث التلقائي - يحل مشكلة "الزبون يشوف نسخة قديمة"
+       ==========================================
+       المشكلة: كنا نعتمد بس على رقم الإصدار بـ app.js?v=XXXX، لكن هذا ما
+       ينفع إذا المتصفح أصلاً يخزّن صفحة index.html نفسها بالكاش ولا يعيد
+       تحميلها من السيرفر من الأساس - فيضل الزبون شايف نسخة قديمة تماماً
+       حتى لو رفعت تحديث جديد، لأن المتصفح ما يدري أصلاً إن فيه تحديث.
+
+       الحل: كل جهاز مفتوح عليه المينيو يتحقق دورياً (كل 60 ثانية) وأيضاً
+       فور ما يرجع الزبون لفتح التبويب (متل فيسبوك/انستا)، بجلب نسخة تازة
+       100% من index.html مباشرة من السيرفر (bypass كامل للكاش)، ويقارن
+       رقم إصدار app.js المكتوب فيها مع اللي شغال حالياً بمتصفحه. إذا
+       اختلفوا، يعيد تحميل الصفحة تلقائياً بدون ما يحتاج الزبون يسوي أي شي. */
+    (function () {
+        const CURRENT_MENU_VERSION = '1706'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+
+        async function checkForFreshMenuVersion() {
+            try {
+                const res = await fetch(
+                    location.pathname + '?_nocache=' + Date.now(),
+                    { cache: 'no-store' }
+                );
+                if (!res.ok) return;
+                const html  = await res.text();
+                const match = html.match(/app\.js\?v=(\d+)/);
+                if (match && match[1] && match[1] !== CURRENT_MENU_VERSION) {
+                    console.log('🔄 نسخة جديدة متوفرة (' + match[1] +
+                        ') - جاري التحديث التلقائي...');
+                    location.reload();
+                }
+            } catch (_) {
+                // تجاهل أي خطأ شبكة مؤقت (بدون نت مثلاً) - يعيد المحاولة بالفحص الجاي
+            }
+        }
+
+        // فحص دوري كل دقيقة طول ما الصفحة مفتوحة
+        setInterval(checkForFreshMenuVersion, 60000);
+
+        // فحص فوري لحظة ما الزبون يرجع يفتح التبويب (نفس سلوك فيسبوك/انستا)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) checkForFreshMenuVersion();
+        });
+
+        // فحص أول مرة بعد ثوانٍ قليلة من فتح الصفحة أصلاً
+        setTimeout(checkForFreshMenuVersion, 15000);
+    })();
 </script>
 </body>
 </html>
