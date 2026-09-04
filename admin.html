@@ -970,26 +970,28 @@
 
     <!-- 🆕 نافذة مراجعة وتعديل مينيو شركات التوصيل -->
     <div id="deliveryMenuEditModal" class="modal-overlay">
-        <div class="modal-body" style="max-width:720px;">
+        <div class="modal-body" style="max-width:760px;">
             <div style="display:flex;justify-content:space-between;align-items:center;
                         margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
                 <h4 style="color:#f59e0b;">
-                    <i class="fa-solid fa-motorcycle"></i> مراجعة أسعار شركات التوصيل
+                    <i class="fa-solid fa-motorcycle"></i> مينيو شركات التوصيل - مراجعة قبل الإرسال
                 </h4>
                 <button onclick="closeModal('deliveryMenuEditModal')"
                         class="gold-btn btn-sm" style="width:auto;">✕</button>
             </div>
 
             <p class="hint" style="margin-bottom:8px;">
-                💡 الأسعار محسوبة تلقائياً لتغطية العمولة الحالية
+                💡 هذا نفس مينيوك (الاسم + المكونات + السعر)، بس بسعر مرفوع بنسبة
                 (<strong id="deliveryMenuCommissionLabel" style="color:#f59e0b;">0%</strong>)
-                بشكل صحيح رياضياً. راجعها وعدّل أي رقم تريده يدوياً قبل الطباعة.
+                تغطي عمولة المنصة. الزيادة **لا تظهر** بالورقة النهائية إطلاقاً — بس
+                رقم سعر واحد نهائي، زي أي مينيو عادي. عدّل أي اسم أو مكوّن أو سعر
+                تريده هنا مباشرة قبل الطباعة.
             </p>
 
             <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;
-                        background:#0d0d11;padding:8px;border-radius:7px;">
+                        background:#0d0d11;padding:8px;border-radius:7px;flex-wrap:wrap;">
                 <span style="font-size:0.78rem;color:#ccc;white-space:nowrap;">
-                    إعادة الحساب بنسبة جديدة:
+                    إعادة حساب كل الأسعار بنسبة جديدة:
                 </span>
                 <input type="number" id="deliveryMenuRecalcInput" class="gold-input-inline"
                        placeholder="%" style="max-width:90px;">
@@ -997,15 +999,21 @@
                         style="width:auto;padding:4px 10px;">تطبيق على الكل</button>
             </div>
 
+            <!-- استبعاد قسم كامل دفعة وحدة (مثلاً: العروض، قريباً...) -->
+            <div id="deliveryMenuCategoryToggles"
+                 style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;
+                        background:#0d0d11;padding:8px;border-radius:7px;">
+            </div>
+
             <div style="overflow-x:auto;max-height:380px;overflow-y:auto;">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>يُطبع؟</th>
-                            <th>الصنف</th>
+                            <th>اسم الصنف</th>
                             <th>المكونات</th>
                             <th>سعرك الأصلي</th>
-                            <th>سعر التوصيل (قابل للتعديل - مضاعفات 250)</th>
+                            <th>السعر النهائي بالقائمة (مضاعفات 250)</th>
                             <th>حذف</th>
                         </tr>
                     </thead>
@@ -2066,10 +2074,17 @@ function renderDeliveryMenuEditorTable() {
         ' style="width:18px;height:18px;cursor:pointer;" ' +
         'onchange="toggleDeliveryMenuItemIncluded(' + idx + ', this.checked)">' +
         '</td>' +
-        '<td style="font-weight:bold;">' + it.name +
-        '<div style="font-size:0.68rem;color:#888;font-weight:normal;">' + it.catName + '</div>' +
+        '<td>' +
+        '<input type="text" class="gold-input-inline" style="font-weight:bold;min-width:110px;" ' +
+        'value="' + it.name.replace(/"/g,'&quot;') + '" ' +
+        'onchange="updateDeliveryMenuDraftField(' + idx + ', \'name\', this.value)">' +
+        '<div style="font-size:0.65rem;color:#888;margin-top:2px;">' + it.catName + '</div>' +
         '</td>' +
-        '<td style="font-size:0.72rem;color:#aaa;max-width:180px;">' + it.ingredients + '</td>' +
+        '<td>' +
+        '<input type="text" class="gold-input-inline" style="font-size:0.78rem;min-width:150px;" ' +
+        'value="' + it.ingredients.replace(/"/g,'&quot;') + '" ' +
+        'onchange="updateDeliveryMenuDraftField(' + idx + ', \'ingredients\', this.value)">' +
+        '</td>' +
         '<td style="color:#888;white-space:nowrap;">' +
         (typeof cleanPrice === 'function' ? cleanPrice(it.basePrice) : it.basePrice)
             .toLocaleString('ar-IQ') + '</td>' +
@@ -2085,6 +2100,47 @@ function renderDeliveryMenuEditorTable() {
         '</td>' +
         '</tr>'
     ).join('');
+
+    renderDeliveryMenuCategoryToggles();
+}
+
+// تعديل اسم الصنف أو المكونات مباشرة بالجدول
+function updateDeliveryMenuDraftField(idx, field, val) {
+    deliveryMenuDraftItems[idx][field] = val;
+}
+
+// 🆕 شريط أزرار "استبعاد/إرجاع" قسم كامل دفعة وحدة (مثلاً: العروض، قريباً)
+// بدل ما يحدد كل صنف بالقسم واحد واحد
+function renderDeliveryMenuCategoryToggles() {
+    const box = document.getElementById('deliveryMenuCategoryToggles');
+    if (!box) return;
+
+    const cats = [...new Set(deliveryMenuDraftItems.map(it => it.catName))];
+    if (cats.length === 0) { box.innerHTML = ''; return; }
+
+    box.innerHTML = '<span style="font-size:0.75rem;color:#888;width:100%;">' +
+        'استبعاد/إرجاع قسم كامل دفعة وحدة:</span>' +
+        cats.map(cat => {
+            const items = deliveryMenuDraftItems.filter(it => it.catName === cat);
+            const allIncluded = items.every(it => it.included);
+            return '<button onclick="toggleDeliveryMenuCategory(\'' +
+                cat.replace(/'/g,"\\'") + '\')" class="gold-btn btn-sm" ' +
+                'style="width:auto;padding:4px 10px;font-size:0.75rem;' +
+                (allIncluded
+                    ? 'background:#1e1e28;color:#10b981;border:1px solid #10b981;'
+                    : 'background:#1e1e28;color:#666;border:1px solid #444;text-decoration:line-through;')
+                + '">' + cat + '</button>';
+        }).join('');
+}
+
+// الضغط على اسم القسم يقلب حالته: لو كله مفعّل يستبعد الكل، ولو فيه مستبعد يرجّع الكل
+function toggleDeliveryMenuCategory(catName) {
+    const items = deliveryMenuDraftItems.filter(it => it.catName === catName);
+    const allIncluded = items.every(it => it.included);
+    deliveryMenuDraftItems.forEach(it => {
+        if (it.catName === catName) it.included = !allIncluded;
+    });
+    renderDeliveryMenuEditorTable();
 }
 
 // إظهار/إخفاء صنف من القائمة النهائية (بدون حذفه من المسودة - ممكن ترجّعه بأي وقت)
