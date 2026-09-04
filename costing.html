@@ -254,6 +254,64 @@
 
     </div>
 
+    <!-- 🆕 شركات التوصيل الخارجية (طلبات، طلباتي، توترز...) -->
+    <div class="card" style="border-color:#f59e0b;">
+        <div class="sec-title" style="color:#f59e0b;">
+            <i class="fa-solid fa-motorcycle"></i>
+            شركات التوصيل الخارجية (عمولة + اشتراك)
+        </div>
+        <p class="hint" style="margin-bottom:10px;line-height:1.7;">
+            💡 اربط طلباتك مع "طلبات" أو أي منصة عبر خانة "سائق/تطبيق" بالكاشير
+            (اختر اسم التطبيق بدل اسم سائق). هذا القسم يحسب تلقائياً كم أخذت
+            المنصة منك عمولة واشتراك، وصافي ربحك الحقيقي من كل منصة، ضمن نفس
+            الفترة المختارة أعلاه بالصفحة.
+        </p>
+
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+            <input type="text" id="platName" class="gold-input-inline"
+                   placeholder="اسم المنصة (مثال: تطبيق طلباتي)"
+                   style="flex:2;min-width:170px;">
+            <input type="number" id="platCommission" class="gold-input-inline"
+                   placeholder="نسبة العمولة % (مثال: 20)"
+                   style="flex:1;min-width:130px;">
+            <input type="number" id="platSubscription" class="gold-input-inline"
+                   placeholder="الاشتراك الشهري (مثال: 60000)"
+                   style="flex:1;min-width:140px;">
+            <button onclick="addDeliveryPlatform()" class="gold-btn"
+                    style="white-space:nowrap;background:#f59e0b;color:#000;">
+                <i class="fa-solid fa-plus"></i> إضافة منصة
+            </button>
+        </div>
+
+        <div id="deliveryPlatformsBox"></div>
+
+        <!-- محاكي عروض ترويجية -->
+        <div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;
+                    padding:12px;margin-top:14px;">
+            <div style="color:#c084fc;font-weight:900;font-size:0.85rem;
+                        margin-bottom:8px;">
+                🎯 محاكي عرض ترويجي (كم يبقى لك لو سويت خصم؟)
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                <select id="promoSimPlatform" class="gold-input-inline"
+                        style="flex:2;min-width:160px;"
+                        onchange="renderPromoSimulator()"></select>
+                <select id="promoSimDiscount" class="gold-input-inline"
+                        style="flex:1;min-width:110px;" onchange="renderPromoSimulator()">
+                    <option value="0">بدون خصم</option>
+                    <option value="30">خصم 30%</option>
+                    <option value="50">خصم 50%</option>
+                </select>
+                <select id="promoSimBase" class="gold-input-inline"
+                        style="flex:1.4;min-width:170px;" onchange="renderPromoSimulator()">
+                    <option value="after">العمولة على السعر بعد الخصم</option>
+                    <option value="before">العمولة على السعر الأصلي</option>
+                </select>
+            </div>
+            <div id="promoSimResult"></div>
+        </div>
+    </div>
+
     <!-- المصاريف الثابتة -->
     <div class="card">
         <div class="sec-title">
@@ -339,7 +397,7 @@
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1702"></script>
+<script src="app.js?v=1704"></script>
 <script>
 /* ==========================================
    PIN الخزينة
@@ -726,11 +784,184 @@ function refreshAllFinancials() {
     renderFixedExpenses();
     renderCapital(f);
     renderAllItemsCostTable();
+    renderDeliveryPlatforms(f);
 }
 
 /* ==========================================
    المصاريف الثابتة
    ========================================== */
+/* ==========================================
+   📱 شركات التوصيل الخارجية (عمولة + اشتراك شهري)
+   ========================================== */
+function getDeliveryPlatforms() {
+    return (typeof getData === 'function' ? getData('sys_delivery_platforms') : null) || [];
+}
+
+function addDeliveryPlatform() {
+    const name  = (document.getElementById('platName')?.value || '').trim();
+    const comm  = parseFloat(document.getElementById('platCommission')?.value);
+    const sub   = parseFloat(document.getElementById('platSubscription')?.value) || 0;
+
+    if (!name)            return alert('⚠️ أدخل اسم المنصة كما هو مكتوب بخانة "سائق/تطبيق" بالكاشير بالضبط (مثال: تطبيق طلباتي).');
+    if (isNaN(comm))      return alert('⚠️ أدخل نسبة العمولة.');
+
+    let plats = getDeliveryPlatforms();
+    if (plats.some(p => p.name === name))
+        return alert('⚠️ هذي المنصة مسجلة أصلاً.');
+
+    plats.push({ id: 'PLAT_' + Date.now(), name, commissionPct: comm, monthlySubscription: sub });
+    if (typeof setData === 'function') setData('sys_delivery_platforms', plats);
+
+    ['platName','platCommission','platSubscription'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    refreshAllFinancials();
+}
+
+function deleteDeliveryPlatform(id) {
+    if (!confirm('حذف هذي المنصة من القائمة؟')) return;
+    let plats = getDeliveryPlatforms().filter(p => p.id !== id);
+    if (typeof setData === 'function') setData('sys_delivery_platforms', plats);
+    refreshAllFinancials();
+}
+
+// 🧮 يحسب أداء كل منصة توصيل خلال نفس الفترة المختارة بأعلى الصفحة (f = نتيجة computeFinancials)
+function computePlatformStats(platform, f) {
+    const orders = (f.orders || []).filter(o =>
+        o.orderType === 'توصيل' && String(o.driverName || '').trim() === platform.name
+    );
+
+    let revenue = 0, foodCost = 0;
+    orders.forEach(o => {
+        revenue += cleanPrice(o.totalAmount);
+        (o.items || []).forEach(it => {
+            const qty = cleanPrice(it.qty);
+            foodCost += getCostOfSoldItem(it) * qty;
+        });
+    });
+
+    const commission     = revenue * (platform.commissionPct / 100);
+    // الاشتراك الشهري موزّع على أيام الفترة المختارة (نفس منطق المصاريف الثابتة)
+    const subscriptionShare = (platform.monthlySubscription / 30) * (f.days || 30);
+    const netProfit      = revenue - commission - subscriptionShare - foodCost;
+    const totalTakenByPlatform = commission + subscriptionShare;
+    const takenPct        = revenue > 0 ? (totalTakenByPlatform / revenue) * 100 : 0;
+
+    return {
+        ordersCount: orders.length, revenue, foodCost,
+        commission, subscriptionShare, netProfit,
+        totalTakenByPlatform, takenPct
+    };
+}
+
+function renderDeliveryPlatforms(f) {
+    const box = document.getElementById('deliveryPlatformsBox');
+    if (!box) return;
+    const plats = getDeliveryPlatforms();
+
+    if (plats.length === 0) {
+        box.innerHTML = '<p style="color:#666;font-size:0.8rem;text-align:center;padding:10px;">' +
+            'ما فيه منصات مضافة بعد. ضيف "طلبات" أو أي تطبيق أعلاه.</p>';
+    } else {
+        box.innerHTML = plats.map(p => {
+            const s = computePlatformStats(p, f);
+            return '<div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;' +
+                'padding:10px;margin-bottom:8px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                'margin-bottom:6px;">' +
+                '<strong style="color:#f59e0b;">📱 ' + p.name + '</strong>' +
+                '<div>' +
+                '<span style="font-size:0.7rem;color:#888;margin-left:8px;">' +
+                'عمولة ' + p.commissionPct + '% + اشتراك ' + money(p.monthlySubscription) + '/شهرياً</span>' +
+                '<button onclick="deleteDeliveryPlatform(\'' + p.id + '\')" ' +
+                'class="gold-btn btn-danger btn-sm" style="width:auto;padding:2px 8px;">حذف</button>' +
+                '</div></div>' +
+                '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));' +
+                'gap:6px;font-size:0.78rem;">' +
+                '<div>عدد الطلبات: <strong>' + s.ordersCount + '</strong></div>' +
+                '<div>إجمالي المبيعات: <strong style="color:#fbbf24;">' + money(s.revenue) + '</strong></div>' +
+                '<div>العمولة المستقطعة: <strong style="color:#ef4444;">' + money(s.commission) + '</strong></div>' +
+                '<div>الاشتراك (لهذي الفترة): <strong style="color:#ef4444;">' + money(s.subscriptionShare) + '</strong></div>' +
+                '<div>تكلفة المواد: <strong style="color:#f59e0b;">' + money(s.foodCost) + '</strong></div>' +
+                '<div>صافي ربحك من المنصة: <strong style="color:' +
+                (s.netProfit >= 0 ? '#10b981' : '#ef4444') + ';">' + money(s.netProfit) + '</strong></div>' +
+                '</div>' +
+                '<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #1e1e28;' +
+                'font-size:0.76rem;color:#c084fc;">' +
+                '🔻 نسبة استقطاع المنصة الكلية من مبيعاتها: <strong>' +
+                s.takenPct.toFixed(1) + '%</strong> (' + money(s.totalTakenByPlatform) + ' د.ع)' +
+                '</div>' +
+                '</div>';
+        }).join('');
+    }
+
+    // تحديث قائمة المنصات بمحاكي العروض
+    const sel = document.getElementById('promoSimPlatform');
+    if (sel) {
+        const current = sel.value;
+        sel.innerHTML = plats.length === 0
+            ? '<option value="">-- أضف منصة أولاً --</option>'
+            : plats.map(p => '<option value="' + p.id + '">' + p.name + '</option>').join('');
+        if (plats.some(p => p.id === current)) sel.value = current;
+    }
+    renderPromoSimulator(f);
+}
+
+// 🎯 محاكي العروض الترويجية: يوضح صافي الربح المتوقع لو طُبّق خصم 30%/50%
+// على مبيعات هذي المنصة بنفس الفترة، مع خيار احتساب العمولة قبل أو بعد الخصم
+function renderPromoSimulator(fParam) {
+    const resultBox = document.getElementById('promoSimResult');
+    if (!resultBox) return;
+
+    const platId    = document.getElementById('promoSimPlatform')?.value;
+    const discount  = parseFloat(document.getElementById('promoSimDiscount')?.value) || 0;
+    const base      = document.getElementById('promoSimBase')?.value || 'after';
+    const plats     = getDeliveryPlatforms();
+    const platform  = plats.find(p => p.id === platId);
+
+    if (!platform) {
+        resultBox.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;">' +
+            'اختر منصة فوق لمحاكاة عرض عليها.</p>';
+        return;
+    }
+
+    const f = fParam || (typeof computeFinancials === 'function' ? computeFinancials() : null);
+    if (!f) return;
+    const s = computePlatformStats(platform, f);
+
+    // السعر الأصلي (revenue) هو أساس المحاكاة
+    const revenueAfterDiscount = s.revenue * (1 - discount / 100);
+    const commissionBase = base === 'before' ? s.revenue : revenueAfterDiscount;
+    const commission = commissionBase * (platform.commissionPct / 100);
+    const netProfit = revenueAfterDiscount - commission - s.subscriptionShare - s.foodCost;
+    const diffFromNormal = netProfit - s.netProfit;
+
+    resultBox.innerHTML =
+        '<div style="font-size:0.8rem;line-height:2;">' +
+        '<div style="display:flex;justify-content:space-between;">' +
+        '<span>المبيعات بعد الخصم:</span><strong style="color:#fbbf24;">' +
+        money(revenueAfterDiscount) + '</strong></div>' +
+        '<div style="display:flex;justify-content:space-between;">' +
+        '<span>عمولة المنصة:</span><strong style="color:#ef4444;">-' +
+        money(commission) + '</strong></div>' +
+        '<div style="display:flex;justify-content:space-between;">' +
+        '<span>الاشتراك الشهري (لهذي الفترة):</span><strong style="color:#ef4444;">-' +
+        money(s.subscriptionShare) + '</strong></div>' +
+        '<div style="display:flex;justify-content:space-between;">' +
+        '<span>تكلفة المواد:</span><strong style="color:#f59e0b;">-' +
+        money(s.foodCost) + '</strong></div>' +
+        '<div style="display:flex;justify-content:space-between;border-top:1px solid #1e1e28;' +
+        'padding-top:4px;margin-top:4px;font-size:0.9rem;">' +
+        '<span>صافي ربحك تحت هذا العرض:</span><strong style="color:' +
+        (netProfit >= 0 ? '#10b981' : '#ef4444') + ';">' + money(netProfit) + '</strong></div>' +
+        '<div style="font-size:0.72rem;color:#888;margin-top:4px;">' +
+        (diffFromNormal < 0
+            ? '⚠️ هذا العرض يقلّل ربحك بمقدار ' + money(Math.abs(diffFromNormal)) + ' مقارنة بدون خصم.'
+            : '✅ لا فرق أو تحسّن مقارنة بدون خصم.') +
+        '</div>' +
+        '</div>';
+}
+
 function renderFixedExpenses() {
     const list  = typeof getData === 'function' ? (getData('sys_fixed_expenses') || []) : [];
     const tbody = document.getElementById('fixedExpensesTableBody');
