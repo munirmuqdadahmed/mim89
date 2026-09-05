@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1703';
+const MIM89_APP_VERSION = '1707';
 
 /* ==========================================
    المتغيرات العامة
@@ -808,6 +808,17 @@ async function initData() {
 
     // سحب من السحابة يتفوق على المحلي
     await pullLatestFromCloud();
+
+    // 🛠️ إصلاح جذري: هذا هو سبب "المينيو يطلع فاضي عند بعض الزبائن" -
+    // كنا نرسم الواجهة مرة وحدة بس (بالسطر فوق)، قبل ما تكتمل عملية سحب
+    // بيانات السحابة. الزبون اللي يفتح الرابط لأول مرة بجهازه (ما عنده أي
+    // بيانات محلية سابقة بمتصفحه) كان يشوف مينيو فاضي تماماً، لأن أول رسم
+    // صار وقت لسا "sys_items" فاضية (قبل وصول البيانات الحقيقية)، وما كنا
+    // نعيد الرسم بعدها إطلاقاً حتى لو البيانات الحقيقية وصلت فعلاً - فيضل
+    // شايف الفراغ لين يحدّث الصفحة يدوياً بنفسه (وهذا سبب ليش عند صاحب
+    // المحل يطلع طبيعي دائماً: جهازه عنده بيانات محلية محفوظة من زيارات
+    // سابقة، فما يمر بهذي الحالة الفارغة أصلاً).
+    refreshActiveUI();
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
@@ -5710,6 +5721,18 @@ function renderPublicMenuUI() {
 
     navContainer.innerHTML    = '';
     sectionsContainer.innerHTML = '';
+
+    // 🆕 تحسين تجربة: لو ما وصلت أصناف بعد (أول ثواني تحميل الصفحة)، نعرض
+    // رسالة تحميل واضحة بدل فراغ صامت يخلي الزبون يظن المينيو معطّل
+    if (!items || items.length === 0) {
+        sectionsContainer.innerHTML =
+            '<div style="text-align:center;padding:60px 20px;color:#999;">' +
+            '<div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>' +
+            '<div style="font-weight:900;">جاري تحميل المينيو...</div>' +
+            '<div style="font-size:0.8rem;margin-top:6px;">تأكد من اتصالك بالإنترنت</div>' +
+            '</div>';
+        return;
+    }
 
     const allBtn = document.createElement('button');
     allBtn.className = 'category-tab active';
