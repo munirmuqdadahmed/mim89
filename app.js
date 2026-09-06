@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1714';
+const MIM89_APP_VERSION = '1715';
 
 /* ==========================================
    المتغيرات العامة
@@ -2250,14 +2250,32 @@ async function printBothViaBridge(btnElement) {
             }, 600);
 
         } else {
-            // طباعة جزئية - نفتح النافذة اليدوية
+            // طباعة جزئية
             (result.results||[]).forEach(r => {
                 if (r.ok && r.printer === 'cashier') isCustomerPrinted = true;
                 if (r.ok && r.printer === 'kitchen') isKitchenPrinted  = true;
             });
             updatePrintStatusBadges();
-            openModal('printOptionsModal');
 
+            // 🛠️ إصلاح جوهري: لو فاتورة الزبون طبعت بنجاح (وبس تذكرة
+            // المطبخ اللي فشلت - مثلاً ماكو طابعة مطبخ متصلة أصلاً)، نصفّر
+            // الطلب مباشرة بدل ما نفتح نافذة يدوية تخلي الكاشير يطبع فاتورة
+            // الزبون مرة ثانية بالغلط (طباعة مزدوجة لنفس الفاتورة).
+            if (isCustomerPrinted) {
+                if (btnElement) {
+                    btnElement.innerHTML = '✅ تمت الطباعة';
+                    btnElement.disabled  = false;
+                }
+                if (!isKitchenPrinted)
+                    alert('⚠️ تذكرة المطبخ ما انطبعت (تحقق من طابعة المطبخ).\n' +
+                        'فاتورة الزبون انطبعت والطلب اكتمل - تكدر تعيد طباعة ' +
+                        'تذكرة المطبخ لاحقاً من "سجل الفواتير".');
+                setTimeout(() => tryFinalizeAndClearOrder(true), 300);
+                return;
+            }
+
+            // فاتورة الزبون نفسها فشلت - هذا يحتاج تدخل يدوي فعلي
+            openModal('printOptionsModal');
             const details = (result.results||[])
                 .map(r => (r.ok?'✅ ':'❌ ') + r.message).join('\n');
             alert('⚠️ طباعة جزئية:\n' + details);
@@ -2438,15 +2456,14 @@ function executeCustomerPrintOnly() {
     updatePrintStatusBadges();
     setTimeout(() => window.print(), 150);
 
-    // 🛠️ إصلاح جوهري: لما جسر الطباعة يفشل ونستخدم الطباعة اليدوية (هذي
-    // الدالة)، كانت السلة ما تُصفَّر تلقائياً أبداً بعد الطباعة - لأن التصفير
-    // التلقائي كان موجود بس بمسار جسر الطباعة الناجح، مو هنا. الآن نتحقق:
-    // إذا الطرفين (فاتورة الزبون + تذكرة المطبخ) طبعوا الاثنين، نصفّر
-    // تلقائياً بنفس طريقة الجسر بالضبط - بدون ما يحتاج الكاشير يدوس زر
-    // "إنهاء الطلب" لحاله وينساه.
-    if (isCustomerPrinted && isKitchenPrinted) {
-        setTimeout(() => tryFinalizeAndClearOrder(true), 500);
-    }
+    // 🛠️ إصلاح جوهري نهائي: كان الشرط يتطلب طباعة الطرفين (فاتورة + مطبخ)
+    // سوا قبل ما يصفّر الطلب - وهذا غلط، لأن مو كل محل عنده طابعة مطبخ، وحتى
+    // لو عنده، الكاشير ممكن ينسى يطبع تذكرة المطبخ فيضل الطلب عالق للأبد
+    // (والحل الوحيد المتاح كان "إلغاء السلة" اللي يمسح الطلب بدون ما يحفظه
+    // كفاتورة مكتملة إطلاقاً!). فاتورة الزبون وحدها هي الدليل الحقيقي على
+    // إتمام البيع - نصفّر ونحفظ الطلب فور طباعتها، بغض النظر عن تذكرة
+    // المطبخ (تقدر تعيد طباعتها لاحقاً من "سجل الفواتير" لو احتجت).
+    setTimeout(() => tryFinalizeAndClearOrder(true), 500);
 }
 
 // طباعة المطبخ يدوياً (احتياطي)
@@ -2502,9 +2519,13 @@ function executeKitchenPrintOnly() {
     updatePrintStatusBadges();
     setTimeout(() => window.print(), 120);
 
-    // 🛠️ نفس الإصلاح: تصفير تلقائي بمجرد اكتمال الطرفين، بدون انتظار ضغطة
-    // يدوية على "إنهاء الطلب" قد تُنسى.
-    if (isCustomerPrinted && isKitchenPrinted) {
+    // 🛠️ تذكرة المطبخ وحدها ما تصفّر الطلب - لازم فاتورة الزبون تكون
+    // انطبعت هي الدليل الحقيقي على البيع. لو طبعت المطبخ قبل الزبون (نادر)،
+    // هذا الشرط ما ينفّذ، وينتظر فاتورة الزبون. لو انطبعت بعدها (الأغلب)،
+    // يكون تصفير الطلب صار أصلاً من executeCustomerPrintOnly، وهذا يتجاهله
+    // بأمان (activePendingPrintOrder صارت null فتتوقف tryFinalizeAndClearOrder
+    // بأول سطر فيها).
+    if (isCustomerPrinted) {
         setTimeout(() => tryFinalizeAndClearOrder(true), 500);
     }
 }
@@ -3493,6 +3514,11 @@ function renderPendingDeliveriesList() {
                 '<div>' +
                 '<strong style="color:#fbbf24;font-size:0.85rem;">#' + o.orderNum + '</strong>' +
                 '<span style="font-size:0.75rem;color:#ccc;"> — ' + (o.customerName||'') + '</span>' +
+                // 🆕 يبيّن إذا السائق أكّد استلامه من صفحته (driver.html) أو
+                // إذا لسا بالمحل ما طلع بعد - يجاوب "شنو طلع وشنو لسا هنا"
+                (o.driverPickedUp
+                    ? '<span style="font-size:0.68rem;color:#10b981;font-weight:bold;"> — 🛵 طلع مع السائق</span>'
+                    : '<span style="font-size:0.68rem;color:#f59e0b;font-weight:bold;"> — 🏪 لسا بالمحل</span>') +
                 '<div style="font-size:0.72rem;color:' + tColor + ';">⏱ ' + mins + ' دقيقة</div>' +
                 '<div style="font-size:0.8rem;color:#10b981;font-weight:bold;">' +
                 cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</div>' +
