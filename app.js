@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1716';
+const MIM89_APP_VERSION = '1717';
 
 /* ==========================================
    المتغيرات العامة
@@ -2544,7 +2544,13 @@ function tryFinalizeAndClearOrder(silentMode) {
         return;
     }
 
-    if (!isCustomerPrinted || !isKitchenPrinted) {
+    // 🛠️ الإصلاح الجذري الحقيقي لمشكلة "السلة ما تصفّر": كان الكود يطلع
+    // نافذة confirm() هنا بكل مرة، حتى لما نستدعي الدالة تلقائياً بعد
+    // الطباعة بـ silentMode=true - لأن هذا المعامل ما كان يُستخدم إطلاقاً!
+    // ونوافذ confirm() المُفعّلة من كود تلقائي (مو من ضغطة مستخدم مباشرة)
+    // كثير من متصفحات الموبايل تتجاهلها أو ترجعها "إلغاء" تلقائياً بصمت -
+    // فتوقف الدالة بالسطر "return" وتضل السلة معبّية، بكل مرة وبدون استثناء.
+    if (!silentMode && (!isCustomerPrinted || !isKitchenPrinted)) {
         if (!confirm("⚠️ لم تكتمل الطباعة! هل تريد إنهاء الطلب؟")) return;
     }
 
