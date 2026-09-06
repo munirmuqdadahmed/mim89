@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1715';
+const MIM89_APP_VERSION = '1716';
 
 /* ==========================================
    المتغيرات العامة
@@ -5449,25 +5449,48 @@ function renderAdminDrivers() {
     const tbody   = document.getElementById('adminDriversTable');
     if (!tbody) return;
     tbody.innerHTML = drivers.length === 0
-        ? '<tr><td colspan="4" style="text-align:center;color:#666;padding:14px;">لا يوجد سائقون</td></tr>'
+        ? '<tr><td colspan="5" style="text-align:center;color:#666;padding:14px;">لا يوجد سائقون</td></tr>'
         : drivers.map((d, idx) =>
             '<tr>' +
             '<td>' + (idx+1) + '</td>' +
             '<td><strong>🛵 ' + d.name + '</strong></td>' +
             '<td>' + (d.phone || '-') + '</td>' +
+            '<td>' + (d.pin
+                ? '<span style="color:#10b981;">🔒 مضبوط</span>'
+                : '<span style="color:#ef4444;">⚠️ غير مضبوط</span>') +
+            ' <button onclick="setDriverPin(\'' + d.id + '\')" ' +
+            'class="gold-btn btn-sm" style="width:auto;padding:2px 8px;">تعديل</button></td>' +
             '<td><button onclick="deleteDriver(\'' + d.id + '\')" ' +
             'class="gold-btn btn-danger btn-sm">حذف</button></td>' +
             '</tr>'
           ).join('');
 }
 
+// تعيين/تعديل رمز دخول سائق موجود مسبقاً
+function setDriverPin(driverId) {
+    const drivers = getData('sys_drivers') || [];
+    const driver  = drivers.find(d => String(d.id) === String(driverId));
+    if (!driver) return;
+    const newPin = prompt('🔒 رمز دخول جديد لـ "' + driver.name + '":', driver.pin || '');
+    if (newPin === null) return;
+    if (!newPin.trim()) return alert('⚠️ الرمز ما يصير فاضي.');
+    driver.pin = newPin.trim();
+    setData('sys_drivers', drivers);
+    renderAdminDrivers();
+    alert('✅ تم تحديث رمز ' + driver.name);
+}
+
 function saveDeliveryDriver() {
     const name  = document.getElementById('driverNameInput')?.value.trim();
     const phone = document.getElementById('driverPhoneInput')?.value.trim();
+    const pin   = document.getElementById('driverPinInput')?.value.trim();
     if (!name) return alert("⚠️ أدخل اسم السائق!");
+    if (!pin)  return alert("⚠️ أدخل رمز دخول لصفحته!");
     const drivers = getData('sys_drivers') || [];
-    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '' });
+    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '', pin });
     setData('sys_drivers', drivers);
+    if (document.getElementById('driverPinInput'))
+        document.getElementById('driverPinInput').value = '';
     if (document.getElementById('driverNameInput'))
         document.getElementById('driverNameInput').value = '';
     if (document.getElementById('driverPhoneInput'))
