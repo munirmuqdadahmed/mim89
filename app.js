@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1711';
+const MIM89_APP_VERSION = '1713';
 
 /* ==========================================
    المتغيرات العامة
@@ -1070,6 +1070,9 @@ function refreshActiveUI(force) {
         if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
+    } else if (document.getElementById('driverOrdersList')) {
+        if (typeof renderDriverOrders === 'function' && typeof activeDriverName !== 'undefined' && activeDriverName)
+            renderDriverOrders();
     }
 }
 
@@ -2434,6 +2437,16 @@ function executeCustomerPrintOnly() {
     isCustomerPrinted = true;
     updatePrintStatusBadges();
     setTimeout(() => window.print(), 150);
+
+    // 🛠️ إصلاح جوهري: لما جسر الطباعة يفشل ونستخدم الطباعة اليدوية (هذي
+    // الدالة)، كانت السلة ما تُصفَّر تلقائياً أبداً بعد الطباعة - لأن التصفير
+    // التلقائي كان موجود بس بمسار جسر الطباعة الناجح، مو هنا. الآن نتحقق:
+    // إذا الطرفين (فاتورة الزبون + تذكرة المطبخ) طبعوا الاثنين، نصفّر
+    // تلقائياً بنفس طريقة الجسر بالضبط - بدون ما يحتاج الكاشير يدوس زر
+    // "إنهاء الطلب" لحاله وينساه.
+    if (isCustomerPrinted && isKitchenPrinted) {
+        setTimeout(() => tryFinalizeAndClearOrder(true), 500);
+    }
 }
 
 // طباعة المطبخ يدوياً (احتياطي)
@@ -2488,6 +2501,12 @@ function executeKitchenPrintOnly() {
     isKitchenPrinted = true;
     updatePrintStatusBadges();
     setTimeout(() => window.print(), 120);
+
+    // 🛠️ نفس الإصلاح: تصفير تلقائي بمجرد اكتمال الطرفين، بدون انتظار ضغطة
+    // يدوية على "إنهاء الطلب" قد تُنسى.
+    if (isCustomerPrinted && isKitchenPrinted) {
+        setTimeout(() => tryFinalizeAndClearOrder(true), 500);
+    }
 }
 
 /* ==========================================
