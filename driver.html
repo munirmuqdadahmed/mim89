@@ -39,13 +39,13 @@
     <div class="pin-card" style="max-width:340px;">
         <div class="pin-logo">🛵</div>
         <h2>صفحة السائق</h2>
-        <p>اكتب اسمك ورقم هاتفك المسجّل عند الإدارة للدخول</p>
+        <p>اكتب اسمك ورمز الدخول الخاص فيك للدخول</p>
 
         <input type="text" id="driverNameLogin" class="gold-input-inline"
                placeholder="👤 اسمك"
                style="margin:14px 0 8px;font-size:0.95rem;">
-        <input type="tel" id="driverPhoneLogin" class="gold-input-inline"
-               placeholder="📞 رقم هاتفك المسجّل"
+        <input type="text" id="driverPinLogin" class="gold-input-inline"
+               placeholder="🔒 رمز الدخول الخاص فيك"
                style="margin-bottom:12px;direction:ltr;text-align:center;">
         <button onclick="driverLogin()" class="gold-btn btn-block"
                 style="background:#c084fc;color:#000;font-weight:900;padding:12px;">
@@ -63,11 +63,18 @@
             <span style="font-size:0.75rem;color:#888;">مرحباً بك</span>
             <h3 id="driverNameHeader" style="color:#c084fc;margin:0;">-</h3>
         </div>
-        <button onclick="driverLogout()" class="gold-btn btn-sm"
-                style="width:auto;padding:6px 12px;background:#1e1e28;
-                       color:#ef4444;border:1px solid #ef4444;">
-            <i class="fa-solid fa-right-from-bracket"></i> خروج
-        </button>
+        <div style="display:flex;gap:6px;">
+            <button onclick="fetchDriverOrdersFromCloud()" class="gold-btn btn-sm"
+                    style="width:auto;padding:6px 10px;background:#1e1e28;
+                           color:#c084fc;border:1px solid #c084fc;">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+            <button onclick="driverLogout()" class="gold-btn btn-sm"
+                    style="width:auto;padding:6px 12px;background:#1e1e28;
+                           color:#ef4444;border:1px solid #ef4444;">
+                <i class="fa-solid fa-right-from-bracket"></i> خروج
+            </button>
+        </div>
     </div>
 
     <div class="driver-summary-box">
@@ -87,31 +94,27 @@
 
 </div>
 
-<script src="app.js?v=1715"></script>
+<script src="app.js?v=1716"></script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
 
 function driverLogin() {
     const typedName = document.getElementById('driverNameLogin').value.trim();
-    const phone = document.getElementById('driverPhoneLogin').value.trim().replace(/[^0-9]/g,'');
+    const pin = document.getElementById('driverPinLogin').value.trim();
     const errEl = document.getElementById('driverLoginError');
     errEl.innerText = '';
 
     if (!typedName) { errEl.innerText = '⚠️ اكتب اسمك.'; return; }
-    if (!phone)     { errEl.innerText = '⚠️ اكتب رقم هاتفك.'; return; }
+    if (!pin)       { errEl.innerText = '⚠️ اكتب رمز الدخول.'; return; }
 
-    // 🛠️ إصلاح: التحقق يصير مباشرة برقم الهاتف (المفتاح الموثوق) بدل قائمة
-    // منسدلة كانت تعتمد على تزامن sys_drivers الصحيح وقت فتح الصفحة - لو
-    // تأخرت البيانات لحظة (أو كانت فاضية)، القائمة تطلع فاضية والسائق يعلق.
-    // الآن يكتب اسمه ورقمه مباشرة، ونقارنهم مع سجلات الإدارة وقت الدخول.
+    // 🛠️ إصلاح أمني: الدخول الحين برمز خاص لكل سائق (يحدده الأدمن) بدل
+    // رقم الهاتف - أصعب على أي شخص ثاني يخمّنه أو يوصله بالصدفة.
     const drivers = getData('sys_drivers') || [];
-    const driver  = drivers.find(d =>
-        String(d.phone || '').replace(/[^0-9]/g,'') === phone
-    );
+    const driver  = drivers.find(d => String(d.pin || '').trim() === pin);
 
     if (!driver) {
-        errEl.innerText = '⚠️ رقم الهاتف هذا غير مسجّل عند الإدارة. تواصل مع صاحب المحل.';
+        errEl.innerText = '⚠️ رمز الدخول غير صحيح. تواصل مع الإدارة للتأكد منه.';
         return;
     }
 
@@ -124,6 +127,11 @@ function driverLogin() {
     document.getElementById('driverLoginScreen').style.display = 'none';
     document.getElementById('driverMainScreen').style.display  = 'block';
     document.getElementById('driverNameHeader').innerText = driver.name;
+
+    // 🛠️ إصلاح: نسحب فوراً من السحابة أول ما يدخل (بدل ما نعرض بيانات
+    // محلية قديمة وننتظر أول دورة تحديث بعد 8 ثواني) - يضمن يشوف آخر حالة
+    // فعلية (مثلاً لو تسوّى حسابه للتو من الكاشير)
+    fetchDriverOrdersFromCloud();
     renderDriverOrders();
     startDriverAutoRefresh();
 }
@@ -134,7 +142,8 @@ function driverLogout() {
     try { localStorage.removeItem('sys_active_driver_id'); } catch (_) {}
     document.getElementById('driverMainScreen').style.display  = 'none';
     document.getElementById('driverLoginScreen').style.display = 'flex';
-    document.getElementById('driverPhoneLogin').value = '';
+    document.getElementById('driverPinLogin').value = '';
+    if (driverRefreshTimer) clearInterval(driverRefreshTimer);
 }
 
 // عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت
@@ -205,13 +214,12 @@ function markPickedUp(orderId) {
     renderDriverOrders();
 }
 
-// تحديث دوري بسيط - يسحب طلبات هذا السائق تحديداً من السحابة كل 15 ثانية
+// تحديث دوري بسيط - يسحب طلبات هذا السائق تحديداً من السحابة كل 8 ثواني
 // (استعلام بحقل واحد فقط driverName، ما يحتاج فهرس مركّب بفايرستور)
 let driverRefreshTimer = null;
 function startDriverAutoRefresh() {
     if (driverRefreshTimer) clearInterval(driverRefreshTimer);
-    driverRefreshTimer = setInterval(fetchDriverOrdersFromCloud, 15000);
-    fetchDriverOrdersFromCloud();
+    driverRefreshTimer = setInterval(fetchDriverOrdersFromCloud, 8000);
 }
 
 async function fetchDriverOrdersFromCloud() {
@@ -260,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1715';
+    const CURRENT_PAGE_VERSION = '1716';
 
     async function checkForFreshPageVersion() {
         try {
