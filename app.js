@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1708';
+const MIM89_APP_VERSION = '1709';
 
 /* ==========================================
    المتغيرات العامة
@@ -5714,7 +5714,9 @@ function loadPublicMenu() {
 
 function renderPublicMenuUI() {
     const categories     = getData('sys_categories');
-    const items          = getData('sys_items');
+    // 🆕 استبعاد أي صنف مُعلَّم "hiddenFromPublicMenu" (مثلاً بوكس عروض خاص
+    // بالكاشير فقط) - يبقى ظاهر بالكاشير عادي، بس ما يظهر للزبون بالمينيو
+    const items          = (getData('sys_items') || []).filter(i => !i.hiddenFromPublicMenu);
     const navContainer   = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
     if (!navContainer || !sectionsContainer) return;
