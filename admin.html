@@ -667,6 +667,13 @@
                 <div style="color:#f59e0b;font-weight:900;">ذمة السائقين</div>
             </button>
 
+            <button onclick="openPlatformSettlementModal()" class="card gold-btn"
+                    style="cursor:pointer;text-align:center;padding:20px 10px;
+                           border-color:#c084fc;">
+                <div style="font-size:1.8rem;margin-bottom:6px;">📱</div>
+                <div style="color:#c084fc;font-weight:900;">ذمة تطبيقات التوصيل</div>
+            </button>
+
             <button onclick="openOutofStockModal()" class="card gold-btn"
                     style="cursor:pointer;text-align:center;padding:20px 10px;
                            border-color:#ef4444;">
@@ -812,6 +819,27 @@
             </div>
             <div id="pendingDeliveriesList"
                  style="max-height:360px;overflow-y:auto;">
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 ذمة تطبيقات التوصيل -->
+    <div id="platformSettlementModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:480px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 style="color:#c084fc;">
+                    <i class="fa-solid fa-mobile-screen"></i> ذمة تطبيقات التوصيل
+                </h4>
+                <button onclick="closeModal('platformSettlementModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 هذي المبالغ من طلبات "طلبات"/"طلباتي" وغيرها - تُدفع بحوالة
+                بنكية شهرية، وما تُحتسب كاش بالصندوق إطلاقاً. اضغط "تسوية الشهر"
+                فقط لما توصلك الحوالة البنكية فعلياً بحسابك.
+            </p>
+            <div id="platformSettlementList" style="max-height:400px;overflow-y:auto;">
             </div>
         </div>
     </div>
@@ -1098,6 +1126,14 @@
             معلن قبل الخصم وسعر بعد الخصم - ونفس البوكس تقدر تخليه يبيع عندك
             بالكاشير أو حتى بالمينيو الإلكتروني.
         </p>
+
+        <div style="text-align:center;margin-bottom:14px;">
+            <button onclick="importPresetComboDeals()" class="gold-btn btn-sm"
+                    style="width:auto;padding:8px 16px;background:#ec4899;
+                           color:#fff;font-weight:900;">
+                <i class="fa-solid fa-download"></i> استيراد العروض العشرة الجاهزة دفعة وحدة
+            </button>
+        </div>
 
         <!-- نموذج إضافة/تعديل بوكس -->
         <div class="card" style="border-color:#ec4899;margin-bottom:16px;max-width:600px;
@@ -1489,7 +1525,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1709"></script>
+<script src="app.js?v=1710"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2482,12 +2518,65 @@ function printFinalDeliveryMenu() {
     setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
 }
 
+// 📱 فتح نافذة ذمة تطبيقات التوصيل
+function openPlatformSettlementModal() {
+    if (typeof renderPlatformSettlementList === 'function') renderPlatformSettlementList();
+    openModal('platformSettlementModal');
+}
+
 /* ==========================================
    🎁 عروض وبوكسات - نظام كامل ومستقل
    ========================================== */
 
 function getComboDeals() {
     return (typeof getData === 'function' ? getData('sys_combo_deals') : null) || [];
+}
+
+// 📥 استيراد العروض العشرة الجاهزة اللي أرسلتها دفعة وحدة (بدل إدخالها يدوياً)
+// نسبة الخصم كلها 50% بالمستند الأصلي، وسعر الكاشير = السعر بعد الخصم كافتراض
+function importPresetComboDeals() {
+    const presets = [
+        { name: 'بوكس السعادة', ingredients: 'ريزو كلاسيك + قدح فنكر كلاسيك + صوص الجبن', netTarget: 5180, cashierPrice: 7000 },
+        { name: 'بوكس الـ 89 الملكي', ingredients: 'بركر دجاج 89 + قدح فنكر دوريتوس + صوص خاص', netTarget: 5920, cashierPrice: 8000 },
+        { name: 'كومبو الزنجر الفاخر', ingredients: 'سندويش مايتي زنجر + قدح فنكر كلاسيك + علبة كولسلو', netTarget: 4810, cashierPrice: 6500 },
+        { name: 'بوكس القرمشة', ingredients: 'وجبة كنتاكي 3 قطع + أصابع موزاريلا (4 قطع) + ثومية', netTarget: 6660, cashierPrice: 9000 },
+        { name: 'عرض الشاورما السريع', ingredients: 'شاورما عربي دبل + قدح فنكر كلاسيك + صوص ثومية', netTarget: 5550, cashierPrice: 7500 },
+        { name: 'ميكس بركر اللحم المميز', ingredients: 'بركر كلاسيك لحم + حلقات بصل (4 قطع) + صوص باربيكيو', netTarget: 5920, cashierPrice: 8000 },
+        { name: 'بوكس التويستر الحار', ingredients: 'جكن تويستر باربيكيو + قدح فنكر هالابينو + صوص هالابينو', netTarget: 5180, cashierPrice: 7000 },
+        { name: 'عرض اللِمة والشلة', ingredients: 'شاورما عربي سوبر (4 شاورما) + قدح فنكر دوريتوس + 2 صوص إضافي', netTarget: 9620, cashierPrice: 13000 },
+        { name: 'بوكس الستريبس والموزاريلا', ingredients: '3 قطع ستريبس دجاج + أصابع موزاريلا (4 قطع) + قدح فنكر + صوص رانش', netTarget: 6290, cashierPrice: 8500 },
+        { name: 'العرض العائلي الكسّاح', ingredients: 'وجبة كنتاكي 8 قطع + 2 قدح فنكر كلاسيك + 2 سلطة كولسلو', netTarget: 11840, cashierPrice: 16000 }
+    ];
+
+    let combos = getComboDeals();
+    const existingNames = new Set(combos.map(c => c.name));
+    let addedCount = 0;
+
+    presets.forEach(p => {
+        if (existingNames.has(p.name)) return; // تفادي التكرار لو استوردتها من قبل
+        const combo = {
+            id: 'COMBO_' + Date.now() + '_' + Math.floor(Math.random()*10000),
+            name: p.name,
+            ingredients: p.ingredients,
+            netTarget: p.netTarget,
+            discountPct: 50,
+            cashierPrice: p.cashierPrice,
+            visibleCashier: true,
+            visibleMenu: false
+        };
+        combos.push(combo);
+        addedCount++;
+    });
+
+    if (addedCount === 0) {
+        alert('✅ كل العروض العشرة مستوردة أصلاً من قبل.');
+        return;
+    }
+
+    setData('sys_combo_deals', combos);
+    combos.filter(c => presets.some(p => p.name === c.name)).forEach(c => syncComboToMenuItems(c));
+    renderComboDealsList();
+    alert('✅ تم استيراد ' + addedCount + ' عرض بنجاح! راجعهم بالأسفل وعدّل أي شي تريده.');
 }
 
 // 🧮 حساب سعر بوكس معيّن لمنصة توصيل معيّنة، انطلاقاً من "الصافي المطلوب"
@@ -2804,7 +2893,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1709'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1710'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
