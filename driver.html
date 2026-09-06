@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MIM89 سائق">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>MIM89 - صفحة السائق</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        .driver-order-card {
+            background:#111116; border:1px solid #1e1e28; border-radius:12px;
+            padding:14px; margin-bottom:12px;
+        }
+        .driver-order-card.picked { border-color:#10b981; opacity:0.75; }
+        .driver-row {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:3px 0; font-size:0.88rem;
+        }
+        .driver-summary-box {
+            background:linear-gradient(135deg,#1a0d1a,#0d0d11);
+            border:2px solid #c084fc; border-radius:12px;
+            padding:14px; text-align:center; margin-bottom:16px;
+        }
+    </style>
+</head>
+<body class="cashier-body">
+
+<!-- 🔐 شاشة دخول السائق -->
+<div id="driverLoginScreen" class="pin-overlay" style="display:flex;">
+    <div class="pin-card" style="max-width:340px;">
+        <div class="pin-logo">🛵</div>
+        <h2>صفحة السائق</h2>
+        <p>اختر اسمك وأدخل رقم هاتفك للدخول</p>
+
+        <select id="driverSelectLogin" class="gold-input-inline"
+                style="margin:14px 0 8px;font-size:0.95rem;"></select>
+        <input type="tel" id="driverPhoneLogin" class="gold-input-inline"
+               placeholder="📞 رقم هاتفك المسجّل"
+               style="margin-bottom:12px;direction:ltr;text-align:center;">
+        <button onclick="driverLogin()" class="gold-btn btn-block"
+                style="background:#c084fc;color:#000;font-weight:900;padding:12px;">
+            <i class="fa-solid fa-right-to-bracket"></i> دخول
+        </button>
+        <div id="driverLoginError" style="color:#ef4444;font-size:0.82rem;margin-top:10px;"></div>
+    </div>
+</div>
+
+<!-- 📦 الشاشة الرئيسية -->
+<div id="driverMainScreen" style="display:none;padding:14px;max-width:600px;margin:0 auto;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+            <span style="font-size:0.75rem;color:#888;">مرحباً بك</span>
+            <h3 id="driverNameHeader" style="color:#c084fc;margin:0;">-</h3>
+        </div>
+        <button onclick="driverLogout()" class="gold-btn btn-sm"
+                style="width:auto;padding:6px 12px;background:#1e1e28;
+                       color:#ef4444;border:1px solid #ef4444;">
+            <i class="fa-solid fa-right-from-bracket"></i> خروج
+        </button>
+    </div>
+
+    <div class="driver-summary-box">
+        <div style="font-size:0.8rem;color:#ccc;">إجمالي المبالغ بذمتك حالياً</div>
+        <div id="driverTotalOwed" style="font-size:1.8rem;font-weight:900;color:#fbbf24;">0 د.ع</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:2px;">
+            <span id="driverOrdersCount">0</span> طلب لسا ما تسوّى
+        </div>
+        <p style="font-size:0.7rem;color:#666;margin-top:8px;">
+            💡 "استلام" الطلب هنا يعني إنك أخذته للتوصيل بس - تسليم الفلوس
+            وتصفير الذمة يصير من الكاشير أو الأدمن لما ترجع.
+        </p>
+    </div>
+
+    <h4 style="color:#fbbf24;margin-bottom:10px;">📦 طلباتك الحالية</h4>
+    <div id="driverOrdersList"></div>
+
+</div>
+
+<script src="app.js?v=1713"></script>
+<script>
+let activeDriverName = null;
+let activeDriverId   = null;
+
+function populateDriverSelect() {
+    const drivers = (typeof getData === 'function' ? getData('sys_drivers') : null) || [];
+    const sel = document.getElementById('driverSelectLogin');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- اختر اسمك --</option>' +
+        drivers.map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('');
+}
+
+function driverLogin() {
+    const sel   = document.getElementById('driverSelectLogin');
+    const phone = document.getElementById('driverPhoneLogin').value.trim().replace(/[^0-9]/g,'');
+    const errEl = document.getElementById('driverLoginError');
+    errEl.innerText = '';
+
+    if (!sel.value) { errEl.innerText = '⚠️ اختر اسمك من القائمة.'; return; }
+
+    const drivers = getData('sys_drivers') || [];
+    const driver  = drivers.find(d => String(d.id) === sel.value);
+    if (!driver) { errEl.innerText = '⚠️ تعذّر إيجاد هذا السائق.'; return; }
+
+    const savedPhone = String(driver.phone || '').replace(/[^0-9]/g,'');
+    if (!savedPhone || savedPhone !== phone) {
+        errEl.innerText = '⚠️ رقم الهاتف غير مطابق لسجلات المطعم.';
+        return;
+    }
+
+    activeDriverName = driver.name;
+    activeDriverId   = driver.id;
+    try { localStorage.setItem('sys_active_driver_id', driver.id); } catch (_) {}
+
+    document.getElementById('driverLoginScreen').style.display = 'none';
+    document.getElementById('driverMainScreen').style.display  = 'block';
+    document.getElementById('driverNameHeader').innerText = driver.name;
+    renderDriverOrders();
+    startDriverAutoRefresh();
+}
+
+function driverLogout() {
+    activeDriverName = null;
+    activeDriverId   = null;
+    try { localStorage.removeItem('sys_active_driver_id'); } catch (_) {}
+    document.getElementById('driverMainScreen').style.display  = 'none';
+    document.getElementById('driverLoginScreen').style.display = 'flex';
+    document.getElementById('driverPhoneLogin').value = '';
+}
+
+// عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت
+function renderDriverOrders() {
+    if (!activeDriverName) return;
+    const all = getData('sys_completed_orders') || [];
+    const myOrders = all.filter(o =>
+        o.orderType === 'توصيل' && o.driverName === activeDriverName && !o.isSettled
+    );
+
+    let total = 0;
+    myOrders.forEach(o => total += cleanPrice(o.totalAmount));
+    document.getElementById('driverTotalOwed').innerText   = total.toLocaleString('ar-IQ') + ' د.ع';
+    document.getElementById('driverOrdersCount').innerText = myOrders.length;
+
+    const list = document.getElementById('driverOrdersList');
+    if (myOrders.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:#10b981;padding:30px;font-weight:bold;">' +
+            '🎉 ما عندك طلبات حالياً</p>';
+        return;
+    }
+
+    // الأحدث أولاً
+    myOrders.sort((a,b) => (b.timestampRaw||0) - (a.timestampRaw||0));
+
+    list.innerHTML = myOrders.map(o => {
+        const itemsText = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
+        return '<div class="driver-order-card' + (o.driverPickedUp ? ' picked' : '') + '">' +
+            '<div class="driver-row" style="font-weight:900;">' +
+            '<span>#' + o.orderNum + ' — ' + (o.customerName || 'زبون') + '</span>' +
+            '<span style="color:#fbbf24;">' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</span>' +
+            '</div>' +
+            (o.phone ? '<div class="driver-row"><span>📞 الهاتف:</span>' +
+                '<a href="tel:' + o.phone + '" style="color:#38bdf8;">' + o.phone + '</a></div>' : '') +
+            (o.area ? '<div class="driver-row"><span>📍 المنطقة:</span><span>' + o.area + '</span></div>' : '') +
+            '<div class="driver-row"><span>💳 الدفع:</span><span>' + (o.paymentMethod || 'كاش') + '</span></div>' +
+            (itemsText ? '<div style="font-size:0.78rem;color:#aaa;margin-top:5px;' +
+                'border-top:1px dashed #333;padding-top:5px;">' + itemsText + '</div>' : '') +
+            (o.orderNotes ? '<div style="font-size:0.78rem;color:#fbbf24;margin-top:4px;">' +
+                '📝 ' + o.orderNotes + '</div>' : '') +
+            (o.driverPickedUp
+                ? '<div style="text-align:center;margin-top:8px;color:#10b981;font-weight:900;">' +
+                  '✅ مستلم - بانتظار التسليم/التسوية</div>'
+                : '<button onclick="markPickedUp(\'' + o.id + '\')" class="gold-btn btn-block" ' +
+                  'style="margin-top:8px;background:#10b981;color:#fff;font-weight:900;">' +
+                  '📦 استلمت الطلب</button>') +
+            '</div>';
+    }).join('');
+}
+
+// تأكيد إن السائق استلم الطلب فعلياً (خرج للتوصيل) - لا يصفّر الذمة،
+// التصفير الفعلي (استلام الفلوس) يصير من الكاشير/الأدمن لاحقاً
+function markPickedUp(orderId) {
+    let all = getData('sys_completed_orders') || [];
+    const order = all.find(o => String(o.id) === String(orderId));
+    if (!order) return;
+
+    order.driverPickedUp   = true;
+    order.driverPickedUpTs = Date.now();
+    localStorage.setItem('sys_completed_orders', JSON.stringify(all));
+
+    if (db) {
+        db.collection('completed_orders').doc(String(orderId))
+            .set({ driverPickedUp: true, driverPickedUpTs: Date.now() }, { merge: true })
+            .catch(err => console.warn('تعذّر تحديث حالة الاستلام:', err));
+    }
+
+    renderDriverOrders();
+}
+
+// تحديث دوري بسيط - يسحب طلبات هذا السائق تحديداً من السحابة كل 15 ثانية
+// (استعلام بحقل واحد فقط driverName، ما يحتاج فهرس مركّب بفايرستور)
+let driverRefreshTimer = null;
+function startDriverAutoRefresh() {
+    if (driverRefreshTimer) clearInterval(driverRefreshTimer);
+    driverRefreshTimer = setInterval(fetchDriverOrdersFromCloud, 15000);
+    fetchDriverOrdersFromCloud();
+}
+
+async function fetchDriverOrdersFromCloud() {
+    if (!db || !activeDriverName || document.hidden) return;
+    try {
+        const snap = await db.collection('completed_orders')
+            .where('driverName', '==', activeDriverName)
+            .get({ source: 'server' });
+
+        if (snap.empty) { renderDriverOrders(); return; }
+
+        let all = getData('sys_completed_orders') || [];
+        snap.forEach(doc => {
+            const data = doc.data();
+            const idx = all.findIndex(o => String(o.id) === String(data.id || doc.id));
+            if (idx > -1) all[idx] = { ...all[idx], ...data };
+            else all.unshift(data);
+        });
+        localStorage.setItem('sys_completed_orders', JSON.stringify(all));
+        renderDriverOrders();
+    } catch (err) {
+        console.warn('تعذّر تحديث طلبات السائق من السحابة:', err);
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && activeDriverName) fetchDriverOrdersFromCloud();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        populateDriverSelect();
+
+        // محاولة استرجاع آخر سائق سجّل دخول بهذا الجهاز (راحة فقط، ما زال
+        // يحتاج يدخل رقمه لو تغيّر أو مسح بيانات المتصفح)
+        try {
+            const savedId = localStorage.getItem('sys_active_driver_id');
+            if (savedId) {
+                const sel = document.getElementById('driverSelectLogin');
+                if (sel) sel.value = savedId;
+            }
+        } catch (_) {}
+    }, 800); // انتظار بسيط حتى تكتمل تهيئة البيانات المحلية من app.js
+});
+
+/* ==========================================
+   🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
+   ========================================== */
+(function () {
+    const CURRENT_PAGE_VERSION = '1713';
+
+    async function checkForFreshPageVersion() {
+        try {
+            const res = await fetch(
+                location.pathname + '?_nocache=' + Date.now(), { cache: 'no-store' }
+            );
+            if (!res.ok) return;
+            const html  = await res.text();
+            const match = html.match(/app\.js\?v=(\d+)/);
+            if (match && match[1] && match[1] !== CURRENT_PAGE_VERSION) showPageUpdateBanner();
+        } catch (_) {}
+    }
+
+    function showPageUpdateBanner() {
+        if (document.getElementById('pageUpdateBanner')) return;
+        const bar = document.createElement('div');
+        bar.id = 'pageUpdateBanner';
+        bar.style.cssText =
+            'position:fixed;bottom:0;right:0;left:0;z-index:99999;' +
+            'background:#f59e0b;color:#000;padding:10px 14px;text-align:center;' +
+            'font-family:Tajawal,sans-serif;font-weight:900;font-size:0.85rem;' +
+            'box-shadow:0 -2px 10px rgba(0,0,0,0.3);cursor:pointer;';
+        bar.innerHTML = '🔄 يتوفر تحديث جديد - اضغط هنا للتحديث';
+        bar.onclick = () => location.reload();
+        document.body.appendChild(bar);
+    }
+
+    setInterval(checkForFreshPageVersion, 120000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) checkForFreshPageVersion();
+    });
+})();
+</script>
+</body>
+</html>
