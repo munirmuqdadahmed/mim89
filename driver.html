@@ -39,10 +39,11 @@
     <div class="pin-card" style="max-width:340px;">
         <div class="pin-logo">🛵</div>
         <h2>صفحة السائق</h2>
-        <p>اختر اسمك وأدخل رقم هاتفك للدخول</p>
+        <p>اكتب اسمك ورقم هاتفك المسجّل عند الإدارة للدخول</p>
 
-        <select id="driverSelectLogin" class="gold-input-inline"
-                style="margin:14px 0 8px;font-size:0.95rem;"></select>
+        <input type="text" id="driverNameLogin" class="gold-input-inline"
+               placeholder="👤 اسمك"
+               style="margin:14px 0 8px;font-size:0.95rem;">
         <input type="tel" id="driverPhoneLogin" class="gold-input-inline"
                placeholder="📞 رقم هاتفك المسجّل"
                style="margin-bottom:12px;direction:ltr;text-align:center;">
@@ -86,37 +87,36 @@
 
 </div>
 
-<script src="app.js?v=1713"></script>
+<script src="app.js?v=1714"></script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
 
-function populateDriverSelect() {
-    const drivers = (typeof getData === 'function' ? getData('sys_drivers') : null) || [];
-    const sel = document.getElementById('driverSelectLogin');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">-- اختر اسمك --</option>' +
-        drivers.map(d => '<option value="' + d.id + '">' + d.name + '</option>').join('');
-}
-
 function driverLogin() {
-    const sel   = document.getElementById('driverSelectLogin');
+    const typedName = document.getElementById('driverNameLogin').value.trim();
     const phone = document.getElementById('driverPhoneLogin').value.trim().replace(/[^0-9]/g,'');
     const errEl = document.getElementById('driverLoginError');
     errEl.innerText = '';
 
-    if (!sel.value) { errEl.innerText = '⚠️ اختر اسمك من القائمة.'; return; }
+    if (!typedName) { errEl.innerText = '⚠️ اكتب اسمك.'; return; }
+    if (!phone)     { errEl.innerText = '⚠️ اكتب رقم هاتفك.'; return; }
 
+    // 🛠️ إصلاح: التحقق يصير مباشرة برقم الهاتف (المفتاح الموثوق) بدل قائمة
+    // منسدلة كانت تعتمد على تزامن sys_drivers الصحيح وقت فتح الصفحة - لو
+    // تأخرت البيانات لحظة (أو كانت فاضية)، القائمة تطلع فاضية والسائق يعلق.
+    // الآن يكتب اسمه ورقمه مباشرة، ونقارنهم مع سجلات الإدارة وقت الدخول.
     const drivers = getData('sys_drivers') || [];
-    const driver  = drivers.find(d => String(d.id) === sel.value);
-    if (!driver) { errEl.innerText = '⚠️ تعذّر إيجاد هذا السائق.'; return; }
+    const driver  = drivers.find(d =>
+        String(d.phone || '').replace(/[^0-9]/g,'') === phone
+    );
 
-    const savedPhone = String(driver.phone || '').replace(/[^0-9]/g,'');
-    if (!savedPhone || savedPhone !== phone) {
-        errEl.innerText = '⚠️ رقم الهاتف غير مطابق لسجلات المطعم.';
+    if (!driver) {
+        errEl.innerText = '⚠️ رقم الهاتف هذا غير مسجّل عند الإدارة. تواصل مع صاحب المحل.';
         return;
     }
 
+    // نستخدم الاسم المسجّل بالضبط (وليس اللي كتبه السائق) حتى يطابق تماماً
+    // اسم السائق المخزّن على الطلبات نفسها من طرف الكاشير
     activeDriverName = driver.name;
     activeDriverId   = driver.id;
     try { localStorage.setItem('sys_active_driver_id', driver.id); } catch (_) {}
@@ -243,15 +243,14 @@ document.addEventListener('visibilitychange', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        populateDriverSelect();
-
         // محاولة استرجاع آخر سائق سجّل دخول بهذا الجهاز (راحة فقط، ما زال
-        // يحتاج يدخل رقمه لو تغيّر أو مسح بيانات المتصفح)
+        // يحتاج يكتب رقمه لو تغيّر أو مسح بيانات المتصفح)
         try {
             const savedId = localStorage.getItem('sys_active_driver_id');
             if (savedId) {
-                const sel = document.getElementById('driverSelectLogin');
-                if (sel) sel.value = savedId;
+                const drivers = getData('sys_drivers') || [];
+                const saved = drivers.find(d => String(d.id) === savedId);
+                if (saved) document.getElementById('driverNameLogin').value = saved.name;
             }
         } catch (_) {}
     }, 800); // انتظار بسيط حتى تكتمل تهيئة البيانات المحلية من app.js
@@ -261,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1713';
+    const CURRENT_PAGE_VERSION = '1714';
 
     async function checkForFreshPageVersion() {
         try {
