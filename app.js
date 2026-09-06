@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1707';
+const MIM89_APP_VERSION = '1708';
 
 /* ==========================================
    المتغيرات العامة
