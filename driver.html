@@ -64,6 +64,11 @@
             <h3 id="driverNameHeader" style="color:#c084fc;margin:0;">-</h3>
         </div>
         <div style="display:flex;gap:6px;">
+            <button onclick="unlockIpadAudio()" class="gold-btn btn-sm"
+                    style="width:auto;padding:6px 10px;background:#1e1e28;
+                           color:#fbbf24;border:1px solid #fbbf24;">
+                <i class="fa-solid fa-bell"></i>
+            </button>
             <button onclick="fetchDriverOrdersFromCloud()" class="gold-btn btn-sm"
                     style="width:auto;padding:6px 10px;background:#1e1e28;
                            color:#c084fc;border:1px solid #c084fc;">
@@ -76,6 +81,19 @@
             </button>
         </div>
     </div>
+
+    <!-- 🔔 شريط تنبيه طلب جديد - يظهر بس وقت وجود طلب جديد فعلاً -->
+    <div id="driverNewOrderBanner" onclick="acknowledgeNewOrder()" style="display:none;background:#c084fc;
+                color:#000;padding:12px;border-radius:10px;margin-bottom:14px;
+                text-align:center;font-weight:900;cursor:pointer;
+                animation:pulse 1s infinite;">
+        🔔 وصلك طلب جديد! اضغط هنا لإيقاف التنبيه ومشاهدته
+    </div>
+    <style>
+        @keyframes pulse {
+            0%,100% { opacity:1; } 50% { opacity:0.6; }
+        }
+    </style>
 
     <div class="driver-summary-box">
         <div style="font-size:0.8rem;color:#ccc;">إجمالي المبالغ بذمتك حالياً</div>
@@ -98,6 +116,7 @@
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
+let driverKnownOrderIds = null; // null = أول تحميل (ما نطلق تنبيه على طلبات موجودة أصلاً)
 
 function driverLogin() {
     const typedName = document.getElementById('driverNameLogin').value.trim();
@@ -139,6 +158,8 @@ function driverLogin() {
 function driverLogout() {
     activeDriverName = null;
     activeDriverId   = null;
+    driverKnownOrderIds = null;
+    acknowledgeNewOrder();
     try { localStorage.removeItem('sys_active_driver_id'); } catch (_) {}
     document.getElementById('driverMainScreen').style.display  = 'none';
     document.getElementById('driverLoginScreen').style.display = 'flex';
@@ -153,6 +174,25 @@ function renderDriverOrders() {
     const myOrders = all.filter(o =>
         o.orderType === 'توصيل' && o.driverName === activeDriverName && !o.isSettled
     );
+
+    // 🆕 كشف الطلبات الجديدة (اللي لسا ما شافها السائق) وإطلاق تنبيه صوتي
+    // مستمر لها - أول مرة نحمّل فيها الصفحة نسجّل الموجود بصمت بدون تنبيه،
+    // وبعدها أي طلب جديد يوصل يفعّل الصافرة فوراً.
+    const currentIds = new Set(myOrders.map(o => String(o.id)));
+    if (driverKnownOrderIds === null) {
+        driverKnownOrderIds = currentIds;
+    } else {
+        let hasNew = false;
+        currentIds.forEach(id => { if (!driverKnownOrderIds.has(id)) hasNew = true; });
+        if (hasNew) {
+            driverKnownOrderIds = currentIds;
+            if (typeof startContinuousAlert === 'function') startContinuousAlert();
+            const banner = document.getElementById('driverNewOrderBanner');
+            if (banner) banner.style.display = 'block';
+        } else {
+            driverKnownOrderIds = currentIds;
+        }
+    }
 
     let total = 0;
     myOrders.forEach(o => total += cleanPrice(o.totalAmount));
@@ -192,6 +232,13 @@ function renderDriverOrders() {
                   '📦 استلمت الطلب</button>') +
             '</div>';
     }).join('');
+}
+
+// إيقاف صافرة الطلب الجديد لما السائق يضغط الشريط (يشوف الطلب فعلياً)
+function acknowledgeNewOrder() {
+    if (typeof stopContinuousAlert === 'function') stopContinuousAlert();
+    const banner = document.getElementById('driverNewOrderBanner');
+    if (banner) banner.style.display = 'none';
 }
 
 // تأكيد إن السائق استلم الطلب فعلياً (خرج للتوصيل) - لا يصفّر الذمة،
