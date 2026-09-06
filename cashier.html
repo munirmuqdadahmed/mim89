@@ -489,6 +489,63 @@
     </div>
 </div>
 
+<!-- 👁️ معاينة الفاتورة بدون طباعة -->
+<div id="invoicePreviewModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:360px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#38bdf8;">
+                <i class="fa-solid fa-eye"></i> معاينة الفاتورة
+            </h4>
+            <button onclick="closeModal('invoicePreviewModal')"
+                    class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <div id="invoicePreviewContent" style="max-height:500px;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- 🔄 تغيير نوع الخدمة لفاتورة مكتملة -->
+<div id="changeServiceTypeModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:400px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#c084fc;">
+                <i class="fa-solid fa-rotate"></i> تغيير نوع الخدمة
+            </h4>
+            <button onclick="closeModal('changeServiceTypeModal')"
+                    class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <p id="changeServiceOrderLabel" style="color:#fbbf24;font-weight:bold;
+                    text-align:center;margin-bottom:10px;"></p>
+
+        <label class="section-label">نوع الخدمة الصحيح:</label>
+        <select id="changeServiceTypeSelect" class="gold-input-inline"
+                style="margin-bottom:10px;" onchange="toggleChangeServiceFields()">
+            <option value="صالة">🍽️ صالة</option>
+            <option value="سفري">🛍️ سفري</option>
+            <option value="توصيل">🛵 توصيل</option>
+        </select>
+
+        <div id="changeServiceDeliveryFields" style="display:none;">
+            <label class="section-label">السائق:</label>
+            <select id="changeServiceDriverSelect" class="gold-input-inline"
+                    style="margin-bottom:10px;"></select>
+            <label class="section-label">المنطقة:</label>
+            <select id="changeServiceAreaSelect" class="gold-input-inline"
+                    style="margin-bottom:10px;"></select>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 بمجرد الحفظ، هذي الفاتورة تنحط تلقائياً بذمة هذا السائق
+                (تظهر بـ"ذمة السائقين") وما تُحتسب كاش بالصندوق لين يسلّم.
+            </p>
+        </div>
+
+        <button onclick="saveChangedServiceType()" class="gold-btn btn-block"
+                style="background:#c084fc;color:#000;font-weight:900;">
+            <i class="fa-solid fa-check"></i> حفظ التغيير
+        </button>
+    </div>
+</div>
+
 <!-- الطلبات بذمة السائقين -->
 <div id="pendingDeliveriesModal" class="modal-overlay">
     <div class="modal-body" style="max-width:460px;">
@@ -655,7 +712,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1717"></script>
+<script src="app.js?v=1718"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -783,7 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
    بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1717'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1718'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
