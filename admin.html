@@ -377,9 +377,9 @@
                 <i class="fa-solid fa-mobile-screen"></i> 🆕 صفحة السائق
             </h4>
             <p class="hint" style="margin-bottom:8px;line-height:1.7;">
-                أرسل هذا الرابط لكل سائق (يحفظه بموبايله). يدخل باختيار اسمه
-                وكتابة رقم هاتفه المسجّل بالأسفل، ويشوف طلباته الحالية بذمته
-                ويأكد استلامها.
+                أرسل هذا الرابط لكل سائق (يحفظه بموبايله). يدخل باسمه ورمز
+                الدخول الخاص فيه (تحدده أنت بالأسفل)، ويشوف طلباته الحالية
+                بذمته ويأكد استلامها.
             </p>
             <div style="background:#0d0d11;padding:8px;border-radius:6px;
                         font-family:monospace;font-size:0.82rem;color:#10b981;
@@ -393,18 +393,20 @@
                    placeholder="اسم السائق" style="margin-bottom:8px;">
             <input type="text" id="driverPhoneInput" class="gold-input-inline"
                    placeholder="رقم الهاتف" style="margin-bottom:8px;">
+            <input type="text" id="driverPinInput" class="gold-input-inline"
+                   placeholder="رمز دخول صفحته (4 أرقام مثلاً)" style="margin-bottom:8px;">
             <button onclick="saveDeliveryDriver()" class="gold-btn btn-block"
                     style="margin-top:8px;">حفظ السائق</button>
             <p class="hint" style="margin-top:6px;">
-                ⚠️ رقم الهاتف هنا هو نفسه اللي يدخل فيه السائق بصفحته - تأكد
-                إنه صحيح ومطابق تماماً.
+                🔒 رمز الدخول هذا هو اللي يستخدمه السائق (مع اسمه) بصفحته
+                الخاصة - أعطه لهذا السائق تحديداً بس، ولا تشاركه.
             </p>
         </div>
         <div class="card">
             <h4 style="color:var(--gold-primary);margin-bottom:10px;">السائقون</h4>
             <table class="data-table">
                 <thead>
-                    <tr><th>#</th><th>الاسم</th><th>الهاتف</th><th>حذف</th></tr>
+                    <tr><th>#</th><th>الاسم</th><th>الهاتف</th><th>رمز الدخول</th><th>حذف</th></tr>
                 </thead>
                 <tbody id="adminDriversTable"></tbody>
             </table>
@@ -1545,7 +1547,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1715"></script>
+<script src="app.js?v=1716"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2913,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1715'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1716'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
