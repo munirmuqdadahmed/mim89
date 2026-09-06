@@ -156,6 +156,11 @@
                 style="border-color:#10b981;color:#10b981;">
             <i class="fa-solid fa-list-check"></i> العمليات اليومية
         </button>
+        <button class="tab-btn"
+                onclick="switchAdminTab('tabComboDealsControl',this)"
+                style="border-color:#ec4899;color:#ec4899;">
+            <i class="fa-solid fa-gift"></i> عروض وبوكسات
+        </button>
         <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
             <i class="fa-solid fa-users"></i> الكاشيرية
         </button>
@@ -1084,6 +1089,87 @@
         </div>
     </div>
 
+    <!-- 🎁 تبويب عروض وبوكسات -->
+    <div id="tabComboDealsControl" class="tab-content"
+         style="margin-top:15px;display:none;">
+        <p class="hint" style="margin-bottom:14px;text-align:center;line-height:1.7;">
+            💡 اسوي "بوكس" (وجبة مجمعة من عدة أصناف) مرة وحدة، والنظام يحسبلك
+            تلقائياً السعر الصحيح لكل تطبيق توصيل عندك (كل وحد بعمولته)، مع سعر
+            معلن قبل الخصم وسعر بعد الخصم - ونفس البوكس تقدر تخليه يبيع عندك
+            بالكاشير أو حتى بالمينيو الإلكتروني.
+        </p>
+
+        <!-- نموذج إضافة/تعديل بوكس -->
+        <div class="card" style="border-color:#ec4899;margin-bottom:16px;max-width:600px;
+                    margin-left:auto;margin-right:auto;">
+            <h4 style="color:#ec4899;margin-bottom:10px;">
+                <i class="fa-solid fa-gift"></i> <span id="comboFormTitle">إضافة بوكس جديد</span>
+            </h4>
+            <input type="hidden" id="comboEditId">
+
+            <label class="section-label">اسم البوكس:</label>
+            <input type="text" id="comboName" class="gold-input-inline"
+                   placeholder="مثال: بوكس السعادة" style="margin-bottom:8px;">
+
+            <label class="section-label">المكونات (وصف حر):</label>
+            <textarea id="comboIngredients" class="gold-input-inline"
+                      placeholder="مثال: ريزو كلاسيك + قدح فنكر كلاسيك + صوص الجبن"
+                      style="margin-bottom:8px;min-height:55px;resize:vertical;"></textarea>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div>
+                    <label class="section-label">الصافي المطلوب فعلياً (د.ع):</label>
+                    <input type="number" id="comboNetTarget" class="gold-input-inline"
+                           placeholder="مثال: 5180">
+                </div>
+                <div>
+                    <label class="section-label">نسبة الخصم الإعلاني بالتطبيقات %:</label>
+                    <input type="number" id="comboDiscountPct" class="gold-input-inline"
+                           placeholder="مثال: 50" value="50">
+                </div>
+            </div>
+
+            <label class="section-label">سعر البيع المباشر بالكاشير/المينيو (د.ع):</label>
+            <input type="number" id="comboCashierPrice" class="gold-input-inline"
+                   placeholder="مثال: 7000" style="margin-bottom:10px;">
+            <p class="hint" style="margin-bottom:10px;">
+                💡 هذا السعر منفصل تماماً عن حسابات التطبيقات - يُستخدم فقط لو
+                بعت نفس البوكس مباشرة بالمحل أو عبر المينيو الإلكتروني (بدون
+                عمولة أي منصة).
+            </p>
+
+            <div style="display:flex;gap:14px;margin-bottom:12px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;
+                              color:#ccc;cursor:pointer;">
+                    <input type="checkbox" id="comboVisibleCashier" checked
+                           style="width:17px;height:17px;">
+                    إظهار بالكاشير (للبيع)
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;
+                              color:#ccc;cursor:pointer;">
+                    <input type="checkbox" id="comboVisibleMenu"
+                           style="width:17px;height:17px;">
+                    إظهار بالمينيو الإلكتروني أيضاً
+                </label>
+            </div>
+
+            <div style="display:flex;gap:8px;">
+                <button onclick="saveComboDeal()" class="gold-btn btn-block"
+                        style="background:#ec4899;color:#fff;font-weight:900;">
+                    <i class="fa-solid fa-check"></i> <span id="comboSaveBtnLabel">حفظ البوكس</span>
+                </button>
+                <button onclick="resetComboForm()" class="gold-btn"
+                        style="width:auto;padding:0 16px;background:#1e1e28;
+                               color:#888;border:1px solid #333;">
+                    إلغاء
+                </button>
+            </div>
+        </div>
+
+        <!-- قائمة البوكسات الحالية -->
+        <div id="comboDealsListBox" style="max-width:900px;margin:0 auto;"></div>
+    </div>
+
     <!-- 7. تبويب الكاشيرية -->
     <div id="tabCashiersControl" class="tab-content"
          style="margin-top:15px;display:none;">
@@ -1403,7 +1489,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1708"></script>
+<script src="app.js?v=1709"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -1519,6 +1605,8 @@ function switchAdminTab(tabId, btn) {
     }
     if (tabId === 'tabInvoiceDesignControl' && typeof loadInvoiceDesignForm === 'function')
         loadInvoiceDesignForm();
+    if (tabId === 'tabComboDealsControl' && typeof renderComboDealsList === 'function')
+        renderComboDealsList();
 }
 
 /* ==========================================
@@ -2394,6 +2482,289 @@ function printFinalDeliveryMenu() {
     setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
 }
 
+/* ==========================================
+   🎁 عروض وبوكسات - نظام كامل ومستقل
+   ========================================== */
+
+function getComboDeals() {
+    return (typeof getData === 'function' ? getData('sys_combo_deals') : null) || [];
+}
+
+// 🧮 حساب سعر بوكس معيّن لمنصة توصيل معيّنة، انطلاقاً من "الصافي المطلوب"
+// الخطوات (نفس منهجية الجدول اللي أرسلته): 
+// 1) الصافي المطلوب ÷ (1 - العمولة%) = السعر بعد الخصم (اللي يدفعه الزبون)
+// 2) السعر بعد الخصم ÷ (1 - نسبة الخصم الإعلاني%) = السعر المعلن قبل الخصم
+function computeComboForPlatform(combo, commissionPct) {
+    const net = cleanPrice(combo.netTarget);
+    const discountPct = cleanPrice(combo.discountPct) || 0;
+
+    let salePrice = commissionPct >= 100 ? net : net / (1 - commissionPct / 100);
+    salePrice = Math.round(salePrice / CASH_DENOMINATION) * CASH_DENOMINATION;
+
+    let declaredPrice = discountPct >= 100 ? salePrice : salePrice / (1 - discountPct / 100);
+    declaredPrice = Math.round(declaredPrice / CASH_DENOMINATION) * CASH_DENOMINATION;
+
+    return { salePrice, declaredPrice, net };
+}
+
+function resetComboForm() {
+    document.getElementById('comboEditId').value = '';
+    document.getElementById('comboName').value = '';
+    document.getElementById('comboIngredients').value = '';
+    document.getElementById('comboNetTarget').value = '';
+    document.getElementById('comboDiscountPct').value = '50';
+    document.getElementById('comboCashierPrice').value = '';
+    document.getElementById('comboVisibleCashier').checked = true;
+    document.getElementById('comboVisibleMenu').checked = false;
+    document.getElementById('comboFormTitle').innerText = 'إضافة بوكس جديد';
+    document.getElementById('comboSaveBtnLabel').innerText = 'حفظ البوكس';
+}
+
+function editComboDeal(id) {
+    const combo = getComboDeals().find(c => c.id === id);
+    if (!combo) return;
+    document.getElementById('comboEditId').value = combo.id;
+    document.getElementById('comboName').value = combo.name;
+    document.getElementById('comboIngredients').value = combo.ingredients || '';
+    document.getElementById('comboNetTarget').value = combo.netTarget;
+    document.getElementById('comboDiscountPct').value = combo.discountPct;
+    document.getElementById('comboCashierPrice').value = combo.cashierPrice;
+    document.getElementById('comboVisibleCashier').checked = !!combo.visibleCashier;
+    document.getElementById('comboVisibleMenu').checked = !!combo.visibleMenu;
+    document.getElementById('comboFormTitle').innerText = 'تعديل: ' + combo.name;
+    document.getElementById('comboSaveBtnLabel').innerText = 'حفظ التعديلات';
+    document.getElementById('tabComboDealsControl').scrollIntoView({ behavior: 'smooth' });
+}
+
+function saveComboDeal() {
+    const name        = document.getElementById('comboName').value.trim();
+    const ingredients = document.getElementById('comboIngredients').value.trim();
+    const netTarget   = parseFloat(document.getElementById('comboNetTarget').value);
+    const discountPct = parseFloat(document.getElementById('comboDiscountPct').value) || 0;
+    const cashierPrice = parseFloat(document.getElementById('comboCashierPrice').value);
+    const visibleCashier = document.getElementById('comboVisibleCashier').checked;
+    const visibleMenu    = document.getElementById('comboVisibleMenu').checked;
+    const editId = document.getElementById('comboEditId').value;
+
+    if (!name) return alert('⚠️ أدخل اسم البوكس.');
+    if (isNaN(netTarget) || netTarget <= 0) return alert('⚠️ أدخل الصافي المطلوب.');
+    if (isNaN(cashierPrice) || cashierPrice < 0) return alert('⚠️ أدخل سعر البيع بالكاشير.');
+
+    let combos = getComboDeals();
+    let combo;
+    if (editId) {
+        combo = combos.find(c => c.id === editId);
+        if (!combo) return alert('⚠️ تعذّر إيجاد البوكس للتعديل.');
+    } else {
+        combo = { id: 'COMBO_' + Date.now() };
+        combos.push(combo);
+    }
+
+    Object.assign(combo, {
+        name, ingredients, netTarget, discountPct, cashierPrice,
+        visibleCashier, visibleMenu
+    });
+
+    setData('sys_combo_deals', combos);
+    syncComboToMenuItems(combo);
+    resetComboForm();
+    renderComboDealsList();
+    alert('✅ تم حفظ البوكس! سينعكس على الكاشير' +
+        (visibleMenu ? ' والمينيو الإلكتروني' : '') + ' فوراً.');
+}
+
+function deleteComboDeal(id) {
+    if (!confirm('حذف هذا البوكس نهائياً؟ (سيُحذف من الكاشير والمينيو أيضاً لو كان ظاهراً)')) return;
+    let combos = getComboDeals();
+    combos = combos.filter(c => c.id !== id);
+    setData('sys_combo_deals', combos);
+
+    // حذف الصنف المرتبط من المينيو الفعلي محلياً وسحابياً
+    let items = getData('sys_items') || [];
+    const linkedItem = items.find(i => i.comboRefId === id);
+    items = items.filter(i => i.comboRefId !== id);
+    localStorage.setItem('sys_items', JSON.stringify(items));
+    if (linkedItem && db) {
+        db.collection("menu_items").doc(String(linkedItem.id)).delete().catch(() => {});
+    }
+    notifyMenuUpdated();
+
+    renderComboDealsList();
+}
+
+// 🔗 مزامنة البوكس مع المينيو الفعلي (sys_items) حسب خيارات الإظهار -
+// يضيفه/يحدّثه/يحذفه كصنف حقيقي قابل للبيع بالكاشير وبالمينيو الإلكتروني
+// 🛠️ مهم: sys_items بمفرده يُحفظ محلياً بس (ضمن NEVER_PUSH_WHOLE) - لازم
+// نكتب الصنف بنفسه مباشرة بمجموعة "menu_items" بالسحابة (نفس طريقة إضافة
+// صنف عادي)، وإلا البوكس يضل حبيس هذا الجهاز ولا يوصل الكاشير ولا الزبون
+// على أي جهاز ثاني إطلاقاً.
+function syncComboToMenuItems(combo) {
+    let items = getData('sys_items') || [];
+    let categories = getData('sys_categories') || [];
+
+    // إنشاء قسم "عروض وبوكسات" تلقائياً إذا مو موجود
+    let comboCategory = categories.find(c => c.name === '🎁 عروض وبوكسات');
+    if (!comboCategory) {
+        const maxId = categories.reduce((m, c) => Math.max(m, cleanPrice(c.id)), 0);
+        comboCategory = { id: maxId + 1, name: '🎁 عروض وبوكسات' };
+        categories.push(comboCategory);
+        setData('sys_categories', categories); // هذا مفتاح عادي يُرفع تلقائياً بالكامل
+    }
+
+    const existingIdx = items.findIndex(i => i.comboRefId === combo.id);
+
+    if (!combo.visibleCashier) {
+        // إذا ألغى الإظهار بالكاشير كلياً، نحذف الصنف من المينيو الفعلي محلياً وسحابياً
+        if (existingIdx > -1) {
+            const removedId = items[existingIdx].id;
+            items.splice(existingIdx, 1);
+            localStorage.setItem('sys_items', JSON.stringify(items));
+            if (db) db.collection("menu_items").doc(String(removedId)).delete().catch(() => {});
+        }
+        return;
+    }
+
+    const itemId = existingIdx > -1 ? items[existingIdx].id : ('ITEM_COMBO_' + combo.id);
+    const itemData = {
+        id:          itemId,
+        name:        combo.name,
+        ingredients: combo.ingredients,
+        price:       combo.cashierPrice,
+        categoryId:  comboCategory.id,
+        isCombo:     true,
+        comboRefId:  combo.id,
+        hiddenFromPublicMenu: !combo.visibleMenu,
+        isPaused:    false,
+        updatedAt:   Date.now()
+    };
+
+    if (existingIdx > -1) items[existingIdx] = { ...items[existingIdx], ...itemData };
+    else items.push(itemData);
+
+    localStorage.setItem('sys_items', JSON.stringify(items));
+
+    // ✅ الكتابة الفعلية بالسحابة - هذا اللي يخلي البوكس يوصل كل الأجهزة
+    if (db) {
+        db.collection("menu_items").doc(String(itemId))
+            .set(itemData, { merge: true })
+            .catch(err => showCloudErrorBanner(translateFirestoreError(err)));
+    }
+    notifyMenuUpdated();
+}
+
+function renderComboDealsList() {
+    const box = document.getElementById('comboDealsListBox');
+    if (!box) return;
+    const combos    = getComboDeals();
+    const platforms = getData('sys_delivery_platforms') || [];
+
+    if (combos.length === 0) {
+        box.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">' +
+            'ما فيه بوكسات مضافة بعد.</p>';
+        return;
+    }
+
+    box.innerHTML = combos.map(combo => {
+        const platformRows = platforms.length === 0
+            ? '<p style="color:#666;font-size:0.78rem;">أضف منصات توصيل من تبويب ' +
+              '"العمليات اليومية" (أو صفحة الخزينة) حتى تطلع هنا أسعارها تلقائياً.</p>'
+            : platforms.map(p => {
+                const calc = computeComboForPlatform(combo, p.commissionPct);
+                return '<tr>' +
+                    '<td style="font-weight:bold;color:#f59e0b;">' + p.name + '</td>' +
+                    '<td>' + p.commissionPct + '%</td>' +
+                    '<td style="text-decoration:line-through;color:#888;">' +
+                    calc.declaredPrice.toLocaleString('ar-IQ') + '</td>' +
+                    '<td style="color:#c0392b;font-weight:900;">' +
+                    calc.salePrice.toLocaleString('ar-IQ') + '</td>' +
+                    '<td style="color:#10b981;">' + calc.net.toLocaleString('ar-IQ') + '</td>' +
+                    '<td>' +
+                    '<button onclick="printComboForPlatform(\'' + combo.id + '\',\'' +
+                    p.name.replace(/'/g,"\\'") + '\')" class="gold-btn btn-sm" ' +
+                    'style="width:auto;padding:3px 8px;">🖨️</button>' +
+                    '</td>' +
+                    '</tr>';
+            }).join('');
+
+        return '<div class="card" style="border-color:#ec4899;margin-bottom:14px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+            'margin-bottom:8px;">' +
+            '<div>' +
+            '<strong style="color:#ec4899;font-size:1rem;">🎁 ' + combo.name + '</strong>' +
+            '<div style="font-size:0.75rem;color:#aaa;margin-top:2px;">' +
+            (combo.ingredients || '') + '</div>' +
+            '<div style="font-size:0.75rem;margin-top:4px;">' +
+            (combo.visibleCashier ? '<span style="color:#10b981;">✅ ظاهر بالكاشير</span>' :
+                '<span style="color:#666;">🚫 غير ظاهر بالكاشير</span>') +
+            ' &nbsp; ' +
+            (combo.visibleMenu ? '<span style="color:#10b981;">✅ ظاهر بالمينيو</span>' :
+                '<span style="color:#666;">🚫 غير ظاهر بالمينيو</span>') +
+            ' &nbsp; <span style="color:#fbbf24;">سعر الكاشير: ' +
+            cleanPrice(combo.cashierPrice).toLocaleString('ar-IQ') + ' د.ع</span>' +
+            '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:4px;">' +
+            '<button onclick="editComboDeal(\'' + combo.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:4px 10px;">✏️</button>' +
+            '<button onclick="deleteComboDeal(\'' + combo.id + '\')" ' +
+            'class="gold-btn btn-danger btn-sm" style="width:auto;padding:4px 10px;">🗑️</button>' +
+            '</div>' +
+            '</div>' +
+            '<div style="overflow-x:auto;">' +
+            '<table class="data-table" style="font-size:0.78rem;">' +
+            '<thead><tr>' +
+            '<th>المنصة</th><th>العمولة</th><th>قبل الخصم</th>' +
+            '<th>بعد الخصم (الزبون)</th><th>صافيك</th><th>طباعة</th>' +
+            '</tr></thead>' +
+            '<tbody>' + platformRows + '</tbody>' +
+            '</table>' +
+            '</div>' +
+            '</div>';
+    }).join('');
+}
+
+// 🖨️ طباعة/تصدير بوكس واحد لمنصة معيّنة (بدون كشف الصافي - نظيف للإرسال)
+function printComboForPlatform(comboId, platformName) {
+    const combo = getComboDeals().find(c => c.id === comboId);
+    const platform = (getData('sys_delivery_platforms') || []).find(p => p.name === platformName);
+    if (!combo || !platform) return alert('⚠️ تعذّر إيجاد البيانات.');
+
+    const calc = computeComboForPlatform(combo, platform.commissionPct);
+
+    const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>MIM89 - ${combo.name} - ${platformName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;padding:30px;}
+.hdr{text-align:center;border-bottom:3px double #000;padding-bottom:12px;margin-bottom:20px;}
+.box{border:2px solid #000;border-radius:10px;padding:20px;text-align:center;}
+.name{font-size:24px;font-weight:900;margin-bottom:8px;}
+.ing{font-size:14px;color:#444;margin-bottom:16px;}
+.old{text-decoration:line-through;color:#999;font-size:18px;}
+.new{color:#c0392b;font-size:32px;font-weight:900;}
+</style></head><body>
+<div class="hdr"><h2>MIM89 FAST FOOD</h2><p>عرض خاص - ${platformName}</p></div>
+<div class="box">
+<div class="name">🎁 ${combo.name}</div>
+<div class="ing">${combo.ingredients || ''}</div>
+<div class="old">${calc.declaredPrice.toLocaleString('ar-IQ')} د.ع</div>
+<div class="new">${calc.salePrice.toLocaleString('ar-IQ')} د.ع</div>
+</div>
+</body></html>`;
+
+    let iframe = document.getElementById('printIframeHidden');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printIframeHidden';
+        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+        document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
+}
+
 function repairShiftWindow() {
     const orders = typeof getData === 'function'
         ? (getData('sys_completed_orders') || []) : [];
@@ -2433,7 +2804,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1708'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1709'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
