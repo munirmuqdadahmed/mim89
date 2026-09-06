@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1710';
+const MIM89_APP_VERSION = '1711';
 
 /* ==========================================
    المتغيرات العامة
@@ -817,8 +817,9 @@ async function initData() {
     // نعيد الرسم بعدها إطلاقاً حتى لو البيانات الحقيقية وصلت فعلاً - فيضل
     // شايف الفراغ لين يحدّث الصفحة يدوياً بنفسه (وهذا سبب ليش عند صاحب
     // المحل يطلع طبيعي دائماً: جهازه عنده بيانات محلية محفوظة من زيارات
-    // سابقة، فما يمر بهذي الحالة الفارغة أصلاً).
-    refreshActiveUI();
+    // سابقة، فما يمر بهذي الحالة الفارغة أصلاً). ونمرر force=true حتى لا
+    // يمنعها فحص "انشغال الكاشير" لمجرد وجود مؤشر بخانة نصية فاضية.
+    refreshActiveUI(true);
 
     setupCloudRealtimeSync();
     setupCategoriesRealtimeSync();
@@ -847,14 +848,27 @@ function startPeriodicCloudPull() {
     if (cloudPullTimer) clearInterval(cloudPullTimer);
     cloudPullTimer = setInterval(() => {
         if (!isCashierBusy() && navigator.onLine) {
-            pullLatestFromCloud().then(r => updateSyncIndicator(!!(r && r.changed)));
+            pullLatestFromCloud().then(r => {
+                updateSyncIndicator(!!(r && r.changed));
+                // 🛠️ إصلاح: كنا نحدّث البيانات المحلية بصمت بس، بدون إعادة
+                // رسم شبكة الأصناف - فيضل الكاشير شايف سعر/صورة قديمة لحد ما
+                // يحدّث الصفحة يدوياً بنفسه، حتى لو البيانات الصحيحة وصلت
+                // فعلاً بالخلفية من ساعات. الآن نعيد الرسم فوراً لو تغيّر شي.
+                if (r && r.changed) refreshActiveUI(true);
+            });
         }
     }, 60000);
 
     window.addEventListener('online', () =>
-        pullLatestFromCloud().then(() => updateSyncIndicator(true)));
+        pullLatestFromCloud().then(r => {
+            updateSyncIndicator(true);
+            if (r && r.changed) refreshActiveUI(true);
+        }));
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) pullLatestFromCloud().then(() => updateSyncIndicator(false));
+        if (!document.hidden) pullLatestFromCloud().then(r => {
+            updateSyncIndicator(false);
+            if (r && r.changed) refreshActiveUI(true);
+        });
     });
 }
 
@@ -1032,11 +1046,20 @@ function isCashierBusy() {
 /* ==========================================
    🔄 تحديث الواجهة
    ========================================== */
-function refreshActiveUI() {
+function refreshActiveUI(force) {
     if (document.body.classList.contains('public-menu-body')) {
         if (typeof renderPublicMenuUI === 'function') renderPublicMenuUI();
     } else if (document.getElementById('posProductsGrid')) {
-        if (!isCashierBusy()) {
+        // 🛠️ إصلاح: كان فحص "الانشغال" يمنع تحديث شبكة الأصناف حتى لو
+        // السلة فاضية تماماً - يكفي إنه المؤشر واقف بخانة نصية فاضية (متل
+        // "اسم الزبون") عشان isCashierBusy() ترجع true وتمنع التحديث!
+        // هذا كان يخلي الكاشير عالق بأسعار/بيانات قديمة (مثلاً 0 د.ع بدون
+        // صورة) لحد ما يحدّث الصفحة يدوياً، رغم إن البيانات الصحيحة وصلت
+        // فعلاً من السحابة. الآن نسمح بتجاوز هذا الفحص (force=true) عند
+        // إعادة الرسم فور اكتمال سحب بيانات السحابة تحديداً - تحديث شبكة
+        // الأصناف نفسها لا يمسح السلة ولا الحقول المكتوبة إطلاقاً (عناصر
+        // DOM منفصلة تماماً)، فما فيه أي خطورة حقيقية بهذا التجاوز.
+        if (force || !isCashierBusy()) {
             if (typeof loadPosDirectMenu === 'function')
                 loadPosDirectMenu(currentPosCategory);
         }
