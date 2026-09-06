@@ -3744,8 +3744,122 @@ function renderCompletedOrdersLog() {
             'class="gold-btn btn-sm" ' +
             'style="background:#3d0000;color:#ff9b9b;border:none;' +
             'font-size:0.7rem;padding:5px 8px;white-space:nowrap;">🔥 مطبخ</button>' +
+            '<button onclick="previewCompletedOrder(\'' + o.id + '\')" ' +
+            'class="gold-btn btn-sm" ' +
+            'style="background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;' +
+            'font-size:0.7rem;padding:5px 8px;white-space:nowrap;">👁️ معاينة</button>' +
+            '<button onclick="openChangeServiceTypeModal(\'' + o.id + '\')" ' +
+            'class="gold-btn btn-sm" ' +
+            'style="background:#1a0d1a;color:#c084fc;border:1px solid #c084fc;' +
+            'font-size:0.7rem;padding:5px 8px;white-space:nowrap;">🔄 نوع الخدمة</button>' +
             '</div></div>';
     }).join('');
+}
+
+// 👁️ معاينة الفاتورة بدون طباعة - يبني نفس محتوى الفاتورة ويعرضه بنافذة
+function previewCompletedOrder(orderId) {
+    const ord = (getData('sys_completed_orders')||[])
+        .find(o => String(o.id) === String(orderId));
+    if (!ord) return alert("لم يُعثر على الفاتورة!");
+
+    const lines = buildCustomerReceiptLines(ord);
+    let html = '<div style="background:#fff;color:#000;padding:14px;' +
+        'border-radius:8px;font-family:Tajawal,sans-serif;direction:rtl;' +
+        'max-width:300px;margin:0 auto;">';
+
+    lines.forEach(ln => {
+        if (ln.separator) {
+            html += '<hr style="border:none;border-top:' +
+                (ln.separator === 'solid' ? '2px solid #000' : '1px dashed #999') +
+                ';margin:6px 0;">';
+        } else if (ln.text !== undefined) {
+            const size  = ln.size === 'huge' ? '22px' : (ln.size === 'big' ? '17px' : '13px');
+            const align = ln.align === 'center' ? 'center' : (ln.align === 'left' ? 'left' : 'right');
+            html += '<div style="font-size:' + size + ';font-weight:' +
+                (ln.bold ? '900' : 'normal') + ';text-align:' + align +
+                ';white-space:pre-wrap;">' + ln.text + '</div>';
+        }
+    });
+    html += '</div>';
+
+    document.getElementById('invoicePreviewContent').innerHTML = html;
+    openModal('invoicePreviewModal');
+}
+
+// 🔄 تغيير نوع الخدمة لفاتورة مكتملة فعلاً (تصحيح خطأ صالة/سفري بدل توصيل)
+let changeServiceTypeOrderId = null;
+
+function openChangeServiceTypeModal(orderId) {
+    const ord = (getData('sys_completed_orders')||[])
+        .find(o => String(o.id) === String(orderId));
+    if (!ord) return alert("لم يُعثر على الفاتورة!");
+    changeServiceTypeOrderId = orderId;
+
+    document.getElementById('changeServiceOrderLabel').innerText =
+        '#' + ord.orderNum + ' — ' + (ord.customerName || 'زبون');
+    document.getElementById('changeServiceTypeSelect').value = ord.orderType || 'صالة';
+
+    const drivers = getData('sys_drivers') || [];
+    const driverSel = document.getElementById('changeServiceDriverSelect');
+    driverSel.innerHTML = '<option value="">-- اختر سائق --</option>' +
+        drivers.map(d => '<option value="' + d.name + '"' +
+            (d.name === ord.driverName ? ' selected' : '') + '>' + d.name + '</option>').join('');
+
+    const areas = getData('sys_areas') || [];
+    const areaSel = document.getElementById('changeServiceAreaSelect');
+    areaSel.innerHTML = '<option value="">-- اختر منطقة --</option>' +
+        areas.map(a => '<option value="' + a.name + '"' +
+            (a.name === ord.area ? ' selected' : '') + '>' + a.name + '</option>').join('');
+
+    toggleChangeServiceFields();
+    openModal('changeServiceTypeModal');
+}
+
+function toggleChangeServiceFields() {
+    const type = document.getElementById('changeServiceTypeSelect').value;
+    const box  = document.getElementById('changeServiceDeliveryFields');
+    if (box) box.style.display = (type === 'توصيل') ? 'block' : 'none';
+}
+
+function saveChangedServiceType() {
+    const newType    = document.getElementById('changeServiceTypeSelect').value;
+    const driverName = document.getElementById('changeServiceDriverSelect').value;
+    const area       = document.getElementById('changeServiceAreaSelect').value;
+
+    if (newType === 'توصيل' && !driverName)
+        return alert('⚠️ اختر اسم السائق لطلبات التوصيل.');
+
+    let all = getData('sys_completed_orders') || [];
+    const order = all.find(o => String(o.id) === String(changeServiceTypeOrderId));
+    if (!order) return alert('⚠️ تعذّر إيجاد الفاتورة.');
+
+    order.orderType = newType;
+    if (newType === 'توصيل') {
+        order.driverName = driverName;
+        order.area       = area;
+        // 🆕 أهم نقطة: تحويلها لتوصيل يحطها فوراً بذمة السائق (غير مسواة)
+        // حتى تظهر بقائمة "ذمة السائقين" وتُحتسب بحسابه
+        order.isSettled  = false;
+    } else {
+        order.driverName = '-';
+        order.area       = '';
+    }
+    order.lastModified = Date.now();
+
+    localStorage.setItem('sys_completed_orders', JSON.stringify(all));
+    if (db) {
+        db.collection('completed_orders').doc(String(order.id)).set({
+            orderType: newType, driverName: order.driverName, area: order.area,
+            isSettled: order.isSettled, lastModified: order.lastModified
+        }, { merge: true }).catch(err => console.warn('تعذّر تحديث نوع الخدمة بالسحابة:', err));
+    }
+
+    closeModal('changeServiceTypeModal');
+    renderCompletedOrdersLog();
+    if (typeof renderDrawerDriverSettlement === 'function') renderDrawerDriverSettlement();
+
+    alert('✅ تم تحديث نوع الخدمة!' +
+        (newType === 'توصيل' ? '\nالفاتورة الآن بذمة السائق: ' + driverName : ''));
 }
 
 // 🔒 هذا التقرير أصبح متاحاً فقط من لوحة الأدمن (محمي أصلاً برمز دخول الأدمن
