@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1709';
+const MIM89_APP_VERSION = '1710';
 
 /* ==========================================
    المتغيرات العامة
@@ -1915,11 +1915,15 @@ async function proceedToPrintAfterCash() {
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
         driverName:    driverName,
         items: posCart.map(i => ({
-    id:        i.id,
-    name:      String(i.name || ''),
-    qty:       parseInt(i.qty) || 1,
-    price:     parseInt(cleanPrice(i.price)) || 0,
-    itemNotes: Array.isArray(i.itemNotes) ? i.itemNotes : []
+    id:          i.id,
+    name:        String(i.name || ''),
+    qty:         parseInt(i.qty) || 1,
+    price:       parseInt(cleanPrice(i.price)) || 0,
+    itemNotes:   Array.isArray(i.itemNotes) ? i.itemNotes : [],
+    // 🆕 نحافظ على هذي الحقول لو الصنف بوكس/عرض مجمّع - عشان تذكرة المطبخ
+    // تقدر تطبع تفكيك مكوناته (شنو بالضبط لازم يجهزون)، مو بس اسم البوكس
+    isCombo:     !!i.isCombo,
+    ingredients: i.isCombo ? String(i.ingredients || '') : undefined
 })),
         subtotal:      subtotal,
         discount:      posDiscountAmount,
@@ -2087,6 +2091,11 @@ function buildKitchenTicketLines(ord) {
             text: '● ' + i.name + '  ×' + i.qty,
             size:'big', align:'right', bold:true
         });
+        // 🆕 لو الصنف بوكس/عرض مجمّع، نطبع تفكيك مكوناته تحته مباشرة حتى
+        // يعرف المطبخ بالضبط شنو يجهزون بداخله (مو بس اسم البوكس المبهم)
+        if (i.isCombo && i.ingredients)
+            L.push({ text: '🎁 يحتوي: ' + i.ingredients,
+                size:'normal', align:'right', bold:true });
         if (i.itemNotes && i.itemNotes.length)
             L.push({ text: '⚠ ' + i.itemNotes.join(' — '),
                 size:'normal', align:'right', bold:true });
@@ -2416,6 +2425,9 @@ function executeKitchenPrintOnly() {
         '<div style="display:flex;justify-content:space-between;">' +
         '<span>● ' + i.name + '</span>' +
         '<span style="font-size:22px;">[×' + i.qty + ']</span></div>' +
+        (i.isCombo && i.ingredients
+            ? '<div style="font-size:13px;background:#fff3cd;padding:2px 4px;' +
+              'font-weight:900;">🎁 يحتوي: ' + i.ingredients + '</div>' : '') +
         (i.itemNotes&&i.itemNotes.length
             ? '<div style="font-size:13px;background:#eee;padding:2px 4px;">' +
               '⚠ ' + i.itemNotes.join(' — ') + '</div>' : '') +
@@ -2851,17 +2863,24 @@ function computeTodaySalesSummary() {
     const expenses = getShiftExpenses();
     const salaries = getShiftSalaries();
 
-    let totalSales = 0, totalCash = 0, totalVisa = 0,
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalPlatformPending = 0,
         totalDelivery = 0, totalExp = 0, totalSal = 0;
 
     orders.forEach(o => {
         const amt = cleanPrice(o.totalAmount);
         totalSales    += amt;
         totalDelivery += cleanPrice(o.deliveryFee);
-        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا'))
+        // 🛠️ إصلاح جوهري: طلبات منصات التوصيل (طلبات/طلباتي...) تُدفع
+        // بحوالة بنكية شهرية - ما نحتسبها كاش ولا فيزا إطلاقاً، حتى لو
+        // انسوّت "تسوية" لها، لأن التسوية هنا معناها فقط "استلمنا الحوالة
+        // بالبنك"، مو "توفر كاش بالدرج".
+        if (isPlatformDeliveryName(o.driverName)) {
+            totalPlatformPending += amt;
+        } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             totalVisa += amt;
-        else
+        } else {
             totalCash += amt;
+        }
     });
 
     expenses.forEach(e => totalExp += cleanPrice(e.amount));
@@ -2874,6 +2893,7 @@ function computeTodaySalesSummary() {
         totalSales,
         totalCash,
         totalVisa,
+        totalPlatformPending, // 🆕 مبالغ طلبات المنصات - ذمة، مو كاش
         totalDelivery,
         totalExpenses: totalExp,
         totalSalaries: totalSal,
@@ -2889,23 +2909,27 @@ function computeTodaySalesSummary() {
 // تتأثر إطلاقاً بعمليات تقفيل الشيفت المتكررة خلال نفس اليوم.
 // ملاحظة محاسبية مهمة: المدوّر (float) غير مضاف هنا لإجمالي المبيعات - هو
 // فقط جزء من "الكاش المتوقع بالدرج" (netInDrawer)، وليس جزءاً من الدخل الفعلي.
+// وأموال منصات التوصيل (طلبات/طلباتي) مستبعدة من الكاش أيضاً لنفس السبب.
 function computeTodayBusinessDaySummary() {
     const today    = getTodayString();
     const orders   = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
     const expenses = (getData('sys_expenses')         || []).filter(e => e.dateDate === today);
     const salaries = (getData('sys_salaries')         || []).filter(s => s.dateDate === today);
 
-    let totalSales = 0, totalCash = 0, totalVisa = 0,
+    let totalSales = 0, totalCash = 0, totalVisa = 0, totalPlatformPending = 0,
         totalDelivery = 0, totalExp = 0, totalSal = 0;
 
     orders.forEach(o => {
         const amt = cleanPrice(o.totalAmount);
         totalSales    += amt;
         totalDelivery += cleanPrice(o.deliveryFee);
-        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا'))
+        if (isPlatformDeliveryName(o.driverName)) {
+            totalPlatformPending += amt;
+        } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             totalVisa += amt;
-        else
+        } else {
             totalCash += amt;
+        }
     });
 
     expenses.forEach(e => totalExp += cleanPrice(e.amount));
@@ -2918,6 +2942,7 @@ function computeTodayBusinessDaySummary() {
         totalSales,               // ← إجمالي المبيعات الفعلي (بدون المدوّر إطلاقاً)
         totalCash,
         totalVisa,
+        totalPlatformPending, // 🆕 مبالغ طلبات المنصات - ذمة، مو كاش
         totalDelivery,
         totalExpenses: totalExp,
         totalSalaries: totalSal,
@@ -2926,6 +2951,7 @@ function computeTodayBusinessDaySummary() {
         netInDrawer:   Math.max(0, float + totalCash - totalExp - totalSal)
     };
 }
+
 
 // 🛠️ إصلاح: هذه الشارة (بلوحة الأدمن فقط) تعرض الآن *مبيعات اليوم التجاري
 // كاملاً* (كل الشفتات معاً)، ولا تتصفّر بعد أي "تقفيل شيفت" خلال نفس اليوم.
@@ -2964,7 +2990,8 @@ function renderShiftClosingReport() {
     const salaries = getShiftSalaries();
     const float    = getDrawerOpeningFloat(getTodayString());
 
-    let totalSales = 0, cash = 0, visa = 0, deliveryFees = 0, discounts = 0;
+    let totalSales = 0, cash = 0, visa = 0, platformPending = 0,
+        deliveryFees = 0, discounts = 0;
     let dineIn = 0, takeaway = 0, delivery = 0;
 
     orders.forEach(o => {
@@ -2972,10 +2999,17 @@ function renderShiftClosingReport() {
         totalSales    += amt;
         deliveryFees  += cleanPrice(o.deliveryFee);
         discounts     += cleanPrice(o.discount);
-        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا'))
+        // 🛠️ إصلاح جوهري: طلبات منصات التوصيل (طلبات/طلباتي...) تُدفع
+        // بحوالة بنكية شهرية - نستبعدها من الكاش والفيزا كلياً، ونحطها
+        // بذمة منفصلة، حتى لو "تسوّت" لاحقاً (التسوية = وصول حوالة بنكية
+        // مو كاش بالدرج).
+        if (isPlatformDeliveryName(o.driverName)) {
+            platformPending += amt;
+        } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             visa += amt;
-        else
+        } else {
             cash += amt;
+        }
         if (o.orderType === 'توصيل')  delivery++;
         else if (o.orderType === 'سفري') takeaway++;
         else dineIn++;
@@ -2984,8 +3018,12 @@ function renderShiftClosingReport() {
     const totalExp = expenses.reduce((s,e) => s + cleanPrice(e.amount), 0);
     const totalSal = salaries.reduce((s,x) => s + cleanPrice(x.amount), 0);
 
-    // الطلبات المعلقة مع السائقين
-    const pending = getUnsettledDeliveryOrders();
+    // 🛠️ إصلاح: "الطلبات المعلقة مع السائقين" هنا تخص السائقين الحقيقيين
+    // بس (توصيل كاش يدوي) - طلبات منصات التوصيل مستبعدة أصلاً من الكاش
+    // بالأعلى، فلا يصح نطرحها هنا مرة ثانية (يصير طرح مزدوج للمبلغ نفسه).
+    const pendingAll = getUnsettledDeliveryOrders();
+    const pending     = pendingAll.filter(o => !isPlatformDeliveryName(o.driverName));
+    const platformUnsettled = pendingAll.filter(o => isPlatformDeliveryName(o.driverName));
     const pendingCash = pending
         .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
         .reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
@@ -3017,6 +3055,8 @@ function renderShiftClosingReport() {
     // الكلي (يشمل الفيزا) بطلب الإدارة - يبقى فقط ما يلزم لتسوية نقد الصندوق
     html += row('كاش:', money(cash), '#10b981');
     html += row('فيزا:', money(visa), '#38bdf8');
+    if (platformPending > 0)
+        html += row('📱 طلبات تطبيقات (ذمة، مو كاش):', money(platformPending), '#c084fc');
     if (discounts > 0)
         html += row('⚠️ الخصومات:', '−' + money(discounts), '#ef4444');
     html += row('أجور التوصيل:', money(deliveryFees), '#aaa');
@@ -3054,7 +3094,7 @@ function renderShiftClosingReport() {
     html += row('إجمالي الرواتب:', '−' + money(totalSal), '#10b981', true);
     html += '</div>';
 
-    // الدليفري المعلق
+    // الدليفري المعلق (السائقين الحقيقيين فقط - كاش يدوي)
     if (pending.length > 0) {
         html += '<div style="background:#1a0d0d;padding:10px;border-radius:9px;' +
             'margin-bottom:10px;border:1px solid rgba(239,68,68,0.4);">';
@@ -3065,6 +3105,25 @@ function renderShiftClosingReport() {
                 money(o.totalAmount), '#fbbf24')
         );
         html += row('مبالغ لم تصل الصندوق:', '−' + money(pendingCash), '#ef4444', true);
+        html += '</div>';
+    }
+
+    // 🆕 طلبات منصات التوصيل غير المسواة (ذمة بنكية شهرية - منفصلة تماماً)
+    if (platformUnsettled.length > 0) {
+        html += '<div style="background:#1a0d1a;padding:10px;border-radius:9px;' +
+            'margin-bottom:10px;border:1px solid rgba(192,57,246,0.4);">';
+        html += '<div style="color:#c084fc;font-weight:900;margin-bottom:6px;text-align:center;">' +
+            '📱 طلبات منصات توصيل (ذمة بنكية شهرية)</div>';
+        const byPlat = {};
+        platformUnsettled.forEach(o => {
+            byPlat[o.driverName] = (byPlat[o.driverName] || 0) + cleanPrice(o.totalAmount);
+        });
+        Object.keys(byPlat).forEach(p =>
+            html += row('📱 ' + p, money(byPlat[p]), '#c084fc')
+        );
+        html += '<p style="font-size:0.7rem;color:#888;margin-top:4px;">' +
+            'هذي المبالغ لا تُحتسب كاش بالدرج - تُسوّى شهرياً من تبويب ' +
+            '"ذمة تطبيقات التوصيل" بالأدمن.</p>';
         html += '</div>';
     }
 
@@ -3095,6 +3154,7 @@ function renderShiftClosingReport() {
 
     container.innerHTML = html;
 }
+
 
 function calculateCashDifference(expected) {
     const el    = document.getElementById('cashDifferenceResult');
@@ -3181,6 +3241,16 @@ function confirmCloseShiftAndLogout() {
 /* ==========================================
    🛵 الدليفري وحسابات السائقين
    ========================================== */
+// 🆕 تمييز مهم: هل هذا الاسم بخانة "سائق/تطبيق" هو منصة توصيل خارجية
+// (تدفع بحوالة بنكية شهرية، مثل طلبات وطلباتي) أم سائق حقيقي يوصل بنفسه
+// ويسلّم كاش باليد؟ هذا يحدد هل نحتسب المبلغ ضمن "الكاش بالدرج" أو لا -
+// أموال المنصات لا تُحتسب كاش أبداً حتى بعد "التسوية" لأنها حوالة بنكية.
+function isPlatformDeliveryName(driverName) {
+    if (!driverName) return false;
+    const platforms = getData('sys_delivery_platforms') || [];
+    return platforms.some(p => p.name === driverName);
+}
+
 // 🛠️ إصلاح مهم: ذمة السائقين يجب ألا ترتبط بحدود الشيفت الحالي - إذا انقفل
 // الشيفت وسائق لسا ما سلّم فلوس فاتورة توصيل، يجب أن تبقى هذي الفاتورة ظاهرة
 // بذمته حتى تُسوّى يدوياً (كل فاتورة تُتابع بشكل مستقل تماماً عن الأخرى)،
@@ -3192,6 +3262,99 @@ function getUnsettledDeliveryOrders() {
         o.driverName && o.driverName !== '-' &&
         !o.isSettled
     );
+}
+
+/* ==========================================
+   📱 ذمة تطبيقات التوصيل (منفصلة عن ذمة السائقين)
+   ========================================== */
+// طلبات منصات التوصيل غير المسواة بس (تُدفع بحوالة بنكية شهرية)
+function getUnsettledPlatformOrders() {
+    return getUnsettledDeliveryOrders().filter(o => isPlatformDeliveryName(o.driverName));
+}
+
+// تجميع حسب المنصة ثم الشهر (مثلاً "2026-09") لعرض ذمة كل شهر لحاله
+function getPlatformSettlementGroups() {
+    const orders = getUnsettledPlatformOrders();
+    const groups = {}; // key: "اسم المنصة|2026-09"
+
+    orders.forEach(o => {
+        const yearMonth = String(o.dateDate || '').slice(0, 7); // "YYYY-MM"
+        const key = o.driverName + '|' + yearMonth;
+        if (!groups[key]) {
+            groups[key] = {
+                platform: o.driverName, yearMonth,
+                orders: [], total: 0
+            };
+        }
+        groups[key].orders.push(o);
+        groups[key].total += cleanPrice(o.totalAmount);
+    });
+
+    return Object.values(groups).sort((a,b) => a.yearMonth < b.yearMonth ? 1 : -1);
+}
+
+function renderPlatformSettlementList() {
+    const container = document.getElementById('platformSettlementList');
+    if (!container) return;
+
+    const groups = getPlatformSettlementGroups();
+    if (groups.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#10b981;padding:18px;' +
+            'font-weight:bold;">✅ لا توجد ذمم معلّقة مع أي منصة توصيل</p>';
+        return;
+    }
+
+    container.innerHTML = groups.map(g => {
+        return '<div style="background:#111116;border:1px solid #c084fc;' +
+            'border-radius:9px;padding:10px;margin-bottom:10px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div>' +
+            '<strong style="color:#c084fc;">📱 ' + g.platform + '</strong>' +
+            '<span style="font-size:0.75rem;color:#888;"> — شهر ' + g.yearMonth + '</span>' +
+            '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;margin-top:3px;">' +
+            g.orders.length + ' طلب — الإجمالي: ' +
+            g.total.toLocaleString('ar-IQ') + ' د.ع</div>' +
+            '</div>' +
+            '<button onclick="settlePlatformMonth(\'' + g.platform.replace(/'/g,"\\'") +
+            '\',\'' + g.yearMonth + '\')" class="gold-btn btn-sm" ' +
+            'style="background:#c084fc;color:#000;border:none;padding:8px 12px;' +
+            'font-weight:900;white-space:nowrap;">💰 تسوية الشهر</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+// تسوية شهر كامل لمنصة معيّنة دفعة وحدة - يُستخدم لما توصل الحوالة البنكية فعلياً
+function settlePlatformMonth(platformName, yearMonth) {
+    if (!confirm('تأكيد استلام حوالة بنكية من "' + platformName +
+        '" عن شهر ' + yearMonth + '؟\nهذا يصفّر الذمة لهذا الشهر فقط.')) return;
+
+    let completed = getData('sys_completed_orders') || [];
+    const nowTs = Date.now();
+    const changed = [];
+
+    completed.forEach(o => {
+        if (o.orderType === 'توصيل' && o.driverName === platformName && !o.isSettled &&
+            String(o.dateDate || '').slice(0,7) === yearMonth) {
+            o.isSettled = true;
+            o.settledTimestamp = nowTs;
+            o.lastModified = nowTs;
+            changed.push(o);
+        }
+    });
+
+    setData('sys_completed_orders', completed);
+    logAudit('تسوية منصة توصيل', { platform: platformName, month: yearMonth, orders: changed.length });
+
+    if (db) {
+        changed.forEach(o => {
+            db.collection("completed_orders").doc(String(o.id))
+                .set({ isSettled:true, settledTimestamp:nowTs, lastModified:nowTs },
+                    { merge:true }).catch(() => {});
+        });
+    }
+
+    renderPlatformSettlementList();
+    alert('✅ تمت تسوية شهر ' + yearMonth + ' لمنصة ' + platformName);
 }
 
 function markDeliveryOrderSettled(orderId) {
