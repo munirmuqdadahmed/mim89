@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1717';
+const MIM89_APP_VERSION = '1720';
 
 /* ==========================================
    المتغيرات العامة
@@ -2619,6 +2619,81 @@ function reprintCompletedOrder(orderId) {
     }
 }
 
+/* ==========================================
+   📋 جرد المخزون الكامل - قابل للطباعة من الكاشير والأدمن
+   ========================================== */
+function printStockReport() {
+    const inventory = getData('sys_inventory') || [];
+    if (inventory.length === 0) return alert('⚠️ لا توجد مواد مسجّلة بالمخزون!');
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ar-IQ') + ' - ' +
+        now.toLocaleTimeString('ar-IQ', { hour:'2-digit', minute:'2-digit' });
+
+    let lowCount = 0;
+    const rows = inventory.map(inv => {
+        const qty = cleanPrice(inv.quantity);
+        const minLimit = cleanPrice(inv.minLimit);
+        const isLow = minLimit > 0 && qty <= minLimit;
+        if (isLow) lowCount++;
+        return '<tr class="' + (isLow ? 'low-row' : '') + '">' +
+            '<td class="item-name">' + (inv.name || '') + (isLow ? ' ⚠️' : '') + '</td>' +
+            '<td class="qty-cell">' + qty + '</td>' +
+            '<td>' + (inv.unit || '-') + '</td>' +
+            '<td>' + cleanPrice(inv.costPerUnit).toLocaleString('ar-IQ') + ' د.ع</td>' +
+            '</tr>';
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>MIM89 - جرد المخزون</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 10mm; }
+body { font-family:'Tajawal',sans-serif; direction:rtl; background:#fff; color:#000; margin:0; padding:10px; }
+.hdr { text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:16px; }
+.hdr h1 { margin:0; font-size:24px; font-weight:900; }
+.summary { text-align:center; font-size:13px; font-weight:bold; margin-bottom:14px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { padding:8px 6px; text-align:right; }
+th { background:#222; color:#ffd700; }
+tr { border-bottom:1px dashed #ccc; }
+.low-row { background:#ffecec; }
+.low-row .item-name { color:#c0392b; font-weight:900; }
+.qty-cell { font-weight:900; }
+.footer-note { text-align:center; margin-top:20px; border-top:1px solid #000; padding-top:8px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="hdr">
+<h1>MIM89 FAST FOOD</h1>
+<p style="margin:4px 0 0 0;font-size:13px;font-weight:bold;">جرد المخزون الكامل</p>
+</div>
+<div class="summary">
+تاريخ الجرد: ${dateStr} &nbsp;|&nbsp; عدد المواد: ${inventory.length}
+${lowCount > 0 ? ' &nbsp;|&nbsp; <span style="color:#c0392b;">⚠️ ' + lowCount + ' مادة منخفضة</span>' : ''}
+</div>
+<table>
+<thead><tr><th>اسم المادة</th><th>الكمية المتبقية</th><th>الوحدة</th><th>تكلفة الوحدة</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<div class="footer-note">MIM89 FAST FOOD - جرد مخزون داخلي</div>
+</body></html>`;
+
+    let iframe = document.getElementById('printIframeHidden');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printIframeHidden';
+        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+        document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
+}
+
 async function reprintKitchenOnly(orderId, btnElement) {
     const ord = (getData('sys_completed_orders')||[])
         .find(o => String(o.id) === String(orderId));
@@ -4622,6 +4697,28 @@ function deleteCustomerRecord(id) {
 /* ==========================================
    🗂️ إدارة الأقسام
    ========================================== */
+// 🛠️ إصلاح جذري مهم جداً: هذا كان سبب "الأقسام ترجع لحالة قديمة" رغم
+// إنها تصير بكل الأجهزة دفعة وحدة! السبب: الأقسام تُخزَّن كمستند واحد
+// (مصفوفة كاملة) بالسحابة، والدوال تحت كانت تقرأ من الكاش المحلي
+// (localStorage) اللي ممكن يكون قديم شوي (لو انسوّى تعديل من جهاز ثاني
+// أو جلسة سابقة ما وصلت لحظياً)، تعدّل عليه شغلة وحدة بس، وتكتب **كامل
+// المصفوفة القديمة** فوق السحابة - فتلغي أي تعديلات ثانية صارت بالفعل!
+// الحل: نجيب أحدث نسخة من السحابة مباشرة (تجاوز الكاش) قبل أي تعديل.
+async function fetchFreshCategoriesFromCloud() {
+    if (!db) return getData('sys_categories') || [];
+    try {
+        const doc = await db.collection("system_store").doc("sys_categories")
+            .get({ source: 'server' });
+        if (doc.exists) {
+            const cats = JSON.parse(doc.data().content);
+            if (Array.isArray(cats)) return cats;
+        }
+    } catch (e) {
+        console.warn('تعذّر جلب أحدث نسخة من الأقسام، استخدام النسخة المحلية:', e);
+    }
+    return getData('sys_categories') || [];
+}
+
 async function saveCategoriesToCloud(categories) {
     localStorage.setItem('sys_categories', JSON.stringify(categories));
     if (typeof renderAdminCategories        === 'function') renderAdminCategories();
@@ -4646,7 +4743,7 @@ async function addNewMenuCategory() {
     const name  = input ? input.value.trim() : '';
     if (!name) return alert("⚠️ أدخل اسم القسم!");
 
-    let categories = getData('sys_categories') || [];
+    let categories = await fetchFreshCategoriesFromCloud();
     if (categories.some(c => String(c.name).trim() === name))
         return alert("⚠️ يوجد قسم بنفس الاسم!");
 
@@ -4667,7 +4764,7 @@ async function addNewMenuCategoryFromAdminTab() {
 }
 
 async function renameMenuCategory(catId) {
-    let categories = getData('sys_categories') || [];
+    let categories = await fetchFreshCategoriesFromCloud();
     const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(catId));
     if (!cat) return;
     const newName = prompt("الاسم الجديد:", cat.name);
@@ -4684,10 +4781,11 @@ function deleteMenuCategory(catId) {
         return alert("⚠️ لا يمكن حذف قسم مرتبط بأصناف!");
 
     if (confirm("حذف هذا القسم؟")) {
-        let categories = getData('sys_categories') || [];
-        categories = categories.filter(c => cleanPrice(c.id) !== cleanPrice(catId));
-        saveCategoriesToCloud(categories).then(res => {
-            alert(res.ok ? "✅ تم الحذف." : "⚠️ حُفظ محلياً فقط!");
+        fetchFreshCategoriesFromCloud().then(categories => {
+            categories = categories.filter(c => cleanPrice(c.id) !== cleanPrice(catId));
+            saveCategoriesToCloud(categories).then(res => {
+                alert(res.ok ? "✅ تم الحذف." : "⚠️ حُفظ محلياً فقط!");
+            });
         });
     }
 }
