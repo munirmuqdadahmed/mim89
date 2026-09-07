@@ -1547,7 +1547,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1717"></script>
+<script src="app.js?v=1720"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2709,9 +2709,13 @@ function deleteComboDeal(id) {
 // نكتب الصنف بنفسه مباشرة بمجموعة "menu_items" بالسحابة (نفس طريقة إضافة
 // صنف عادي)، وإلا البوكس يضل حبيس هذا الجهاز ولا يوصل الكاشير ولا الزبون
 // على أي جهاز ثاني إطلاقاً.
-function syncComboToMenuItems(combo) {
+async function syncComboToMenuItems(combo) {
     let items = getData('sys_items') || [];
-    let categories = getData('sys_categories') || [];
+    // 🛠️ نفس الإصلاح الجذري: نجيب أحدث نسخة من الأقسام من السحابة مباشرة
+    // قبل أي تعديل، حتى ما نكتب فوق تعديلات أقسام صارت بجهاز/جلسة ثانية
+    let categories = typeof fetchFreshCategoriesFromCloud === 'function'
+        ? await fetchFreshCategoriesFromCloud()
+        : (getData('sys_categories') || []);
 
     // إنشاء قسم "عروض وبوكسات" تلقائياً إذا مو موجود
     let comboCategory = categories.find(c => c.name === '🎁 عروض وبوكسات');
@@ -2719,7 +2723,8 @@ function syncComboToMenuItems(combo) {
         const maxId = categories.reduce((m, c) => Math.max(m, cleanPrice(c.id)), 0);
         comboCategory = { id: maxId + 1, name: '🎁 عروض وبوكسات' };
         categories.push(comboCategory);
-        setData('sys_categories', categories); // هذا مفتاح عادي يُرفع تلقائياً بالكامل
+        if (typeof saveCategoriesToCloud === 'function') await saveCategoriesToCloud(categories);
+        else setData('sys_categories', categories);
     }
 
     const existingIdx = items.findIndex(i => i.comboRefId === combo.id);
@@ -2915,7 +2920,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1717'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1720'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
