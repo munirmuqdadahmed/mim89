@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1721';
+const MIM89_APP_VERSION = '1722';
 
 /* ==========================================
    المتغيرات العامة
@@ -284,6 +284,8 @@ const DEFAULT_DATA = {
 };
 
 // 🔥 تهيئة Firebase
+let firebaseAuthReadyPromise = Promise.resolve();
+
 try {
     const firebaseConfig = {
         apiKey:            "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -298,6 +300,18 @@ try {
     if (typeof firebase !== 'undefined') {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
+
+        // 🔒 إصلاح أمني مهم جداً: تسجيل دخول "مجهول" (Anonymous Auth)
+        // تلقائي وشفاف تماماً - ما يحتاج الموظف يسوي أي شي إضافي، ونفس
+        // شاشات PIN القديمة تضل تشتغل بالضبط زي ما هي. لكن هذا يسمح لقواعد
+        // حماية Firestore تشترط "لازم تكون مسجّل دخول (ولو مجهول)" بدل ما
+        // تكون مفتوحة بالكامل لأي حد بالعالم بدون أي شرط إطلاقاً.
+        if (typeof firebase.auth === 'function') {
+            firebaseAuthReadyPromise = firebase.auth().signInAnonymously()
+                .catch(err => {
+                    console.warn('⚠️ تعذّر تسجيل الدخول المجهول بفايربيس:', err);
+                });
+        }
 
         if (localStorage.getItem('mim89_disable_persistence') !== '1') {
             db.enablePersistence({ synchronizeTabs: true }).catch(err => {
@@ -761,6 +775,10 @@ async function pullLatestFromCloud() {
    🔄 تهيئة البيانات
    ========================================== */
 async function initData() {
+    // 🔒 ننتظر اكتمال تسجيل الدخول المجهول أولاً - قواعد الحماية الجديدة
+    // تشترط وجود مستخدم مسجّل دخول (ولو مجهول) لأي قراءة/كتابة بالسحابة
+    try { await firebaseAuthReadyPromise; } catch (_) {}
+
     // 🛠️ إصلاح: لا نكتب الأقسام الافتراضية إذا كانت السحابة تحتوي بيانات
     // نضع علامة انتظار مؤقتة فقط
     if (!localStorage.getItem('sys_inventory'))
