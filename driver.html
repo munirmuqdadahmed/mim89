@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
         .driver-order-card {
             background:#111116; border:1px solid #1e1e28; border-radius:12px;
@@ -112,7 +113,7 @@
 
 </div>
 
-<script src="app.js?v=1717"></script>
+<script src="app.js?v=1722"></script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
@@ -315,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1717';
+    const CURRENT_PAGE_VERSION = '1722';
 
     async function checkForFreshPageVersion() {
         try {
