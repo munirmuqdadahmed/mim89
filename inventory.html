@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
         .inv-tabs {
             display:flex; gap:6px; overflow-x:auto; padding-bottom:8px;
@@ -601,7 +602,7 @@
 
 </div>
 
-<script src="app.js?v=1717"></script>
+<script src="app.js?v=1722"></script>
 <script>
 /* ==========================================
    PIN المخزن
@@ -2100,7 +2101,7 @@ document.addEventListener('DOMContentLoaded', () => {
    أو وصفة شغّال عليها، وإعادة تحميل قسرية تمسحها قبل الحفظ!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1717'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1722)
 
     async function checkForFreshPageVersion() {
         try {
