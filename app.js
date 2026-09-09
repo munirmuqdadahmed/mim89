@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1720';
+const MIM89_APP_VERSION = '1721';
 
 /* ==========================================
    المتغيرات العامة
@@ -247,7 +247,8 @@ const DEFAULT_DATA = {
         showCustomerName: true,
         showDriverArea:   true,
         showOrderNotes:   true,
-        showItemNotes:    true
+        showItemNotes:    true,
+        customExtraLine:  "" // 🆕 سطر إضافي حر (رقم هاتف المحل، رقم ضريبي...)
     },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", pin: "1111" }
@@ -2032,9 +2033,10 @@ function buildCustomerReceiptLines(ord) {
     L.push({ text: 'الكاشير: ' + (ord.cashierName||'الرئيسي'), size:'normal', align:'right' });
     L.push({ separator: 'dash' });
 
-    // نوع الخدمة
-    L.push({ text: ord.orderType, size:'big', align:'center', bold:true });
-    if (design.showCustomerName && ord.customerName && ord.customerName !== 'زبون مباشر')
+    // نوع الخدمة + طريقة الدفع (مدمجين بسطر وحد يوفّر مسافة، مطابق للفاتورة المرجعية)
+    L.push({ text: ord.orderType + ' | الدفع: ' + (ord.paymentMethod || 'كاش'),
+        size:'big', align:'center', bold:true });
+    if (design.showCustomerName && ord.customerName)
         L.push({ text: 'الزبون: ' + ord.customerName, size:'normal', align:'right' });
     if (design.showPhone && ord.phone && ord.phone !== '-')
         L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
@@ -2043,6 +2045,9 @@ function buildCustomerReceiptLines(ord) {
         if (ord.driverName && ord.driverName !== '-')
             L.push({ text: 'السائق: ' + ord.driverName, size:'normal', align:'right' });
     }
+    // 🆕 سطر إضافي مخصص (رقم هاتف المحل، عنوان، رقم ضريبي...) يضبطه الأدمن
+    if (design.customExtraLine)
+        L.push({ text: design.customExtraLine, size:'normal', align:'center' });
     L.push({ separator: 'solid' });
 
     // ✅ الأصناف - أسطر نصية بسيطة (الصيغة المضمون دعمها فعلياً)
@@ -2246,7 +2251,21 @@ async function printBothViaBridge(btnElement) {
                     btnElement.innerHTML = '✅ تمت الطباعة';
                     btnElement.disabled  = false;
                 }
-                tryFinalizeAndClearOrder(true);
+                try {
+                    tryFinalizeAndClearOrder(true);
+                } catch (err) {
+                    console.error('⚠️ خطأ أثناء تصفير الطلب - تفعيل شبكة الأمان:', err);
+                    posCart = [];
+                    activePendingPrintOrder = null;
+                    isCustomerPrinted = false;
+                    isKitchenPrinted  = false;
+                    ['posCustName','posCustPhone','posOrderNotesInput','cashGivenInput'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
+                    if (typeof renderPosCart === 'function') renderPosCart();
+                    if (typeof closeModal === 'function') closeModal('printOptionsModal');
+                }
             }, 600);
 
         } else {
@@ -2375,8 +2394,7 @@ function executeCustomerPrintOnly() {
         '<div style="font-size:11px;font-weight:bold;border-bottom:1px solid #000;' +
         'padding-bottom:4px;margin-bottom:5px;line-height:1.7;">' +
         '<div>' + ord.dateDate + ' - ' + (ord.timestamp || '') + '</div>' +
-        '<div>الخدمة: <strong>' + (ord.orderType || '') + '</strong></div>' +
-        (design.showCustomerName && ord.customerName && ord.customerName !== 'زبون مباشر'
+        (design.showCustomerName && ord.customerName
             ? '<div>الزبون: <strong>' + ord.customerName + '</strong></div>' : '') +
         (design.showPhone && ord.phone && ord.phone !== '-'
             ? '<div>الهاتف: <strong>' + ord.phone + '</strong></div>' : '') +
@@ -2384,7 +2402,14 @@ function executeCustomerPrintOnly() {
             ? '<div>المنطقة: <strong>' + ord.area + '</strong></div>' : '') +
         (design.showDriverArea && ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-'
             ? '<div>السائق: <strong>' + ord.driverName + '</strong></div>' : '') +
-        '<div>الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
+        // 🛠️ دمج نوع الخدمة وطريقة الدفع بسطر واحد (بدل سطرين منفصلين) -
+        // يوفّر مسافة ورق ويطابق شكل الفاتورة المرجعية النظيفة
+        '<div>نوع الخدمة: <strong>' + (ord.orderType || '') + '</strong>' +
+        ' | الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
+        // 🆕 سطر إضافي مخصص (رقم هاتف المحل، عنوان، رقم ضريبي...) - يضبطه
+        // الأدمن من "تصميم الفاتورة"، يظهر بس لو مكتوب فيه شي
+        (design.customExtraLine
+            ? '<div>' + design.customExtraLine + '</div>' : '') +
         '</div>' +
 
         // ✅ جدول الأصناف - مُصلح بـ table-layout:fixed + colgroup
@@ -2456,14 +2481,29 @@ function executeCustomerPrintOnly() {
     updatePrintStatusBadges();
     setTimeout(() => window.print(), 150);
 
-    // 🛠️ إصلاح جوهري نهائي: كان الشرط يتطلب طباعة الطرفين (فاتورة + مطبخ)
-    // سوا قبل ما يصفّر الطلب - وهذا غلط، لأن مو كل محل عنده طابعة مطبخ، وحتى
-    // لو عنده، الكاشير ممكن ينسى يطبع تذكرة المطبخ فيضل الطلب عالق للأبد
-    // (والحل الوحيد المتاح كان "إلغاء السلة" اللي يمسح الطلب بدون ما يحفظه
-    // كفاتورة مكتملة إطلاقاً!). فاتورة الزبون وحدها هي الدليل الحقيقي على
+    // 🛠️ إصلاح جوهري نهائي: فاتورة الزبون وحدها هي الدليل الحقيقي على
     // إتمام البيع - نصفّر ونحفظ الطلب فور طباعتها، بغض النظر عن تذكرة
     // المطبخ (تقدر تعيد طباعتها لاحقاً من "سجل الفواتير" لو احتجت).
-    setTimeout(() => tryFinalizeAndClearOrder(true), 500);
+    // 🆕 شبكة أمان إضافية: لو صار أي خطأ غير متوقع بالدالة الأساسية (مثلاً
+    // مشكلة اتصال بالسحابة وقت الحفظ)، نصفّر العناصر الأساسية بالواجهة
+    // مباشرة هنا بدل ما تضل السلة ورقم الهاتف عالقين للزبون الجاي.
+    setTimeout(() => {
+        try {
+            tryFinalizeAndClearOrder(true);
+        } catch (err) {
+            console.error('⚠️ خطأ أثناء تصفير الطلب - تفعيل شبكة الأمان:', err);
+            posCart = [];
+            activePendingPrintOrder = null;
+            isCustomerPrinted = false;
+            isKitchenPrinted  = false;
+            ['posCustName','posCustPhone','posOrderNotesInput','cashGivenInput'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            if (typeof renderPosCart === 'function') renderPosCart();
+            if (typeof closeModal === 'function') closeModal('printOptionsModal');
+        }
+    }, 500);
 }
 
 // طباعة المطبخ يدوياً (احتياطي)
@@ -5440,6 +5480,7 @@ function loadInvoiceDesignForm() {
     setVal('invoiceFooterSize',     d.footerSize     || 'normal');
     setVal('invoicePaperWidth',     d.paperWidth     || '80');
     setVal('invoiceLogoDataUrl',    d.logoDataUrl    || '');
+    setVal('invoiceCustomExtraLine', d.customExtraLine || '');
 
     setChk('invoiceShowLogo',         d.showLogo);
     setChk('invoiceShowAddress',      d.showAddress);
@@ -5519,6 +5560,7 @@ function saveInvoiceDesign() {
         footerSize:       getVal('invoiceFooterSize') || 'normal',
         paperWidth:       getVal('invoicePaperWidth') || '80',
         logoDataUrl:      getVal('invoiceLogoDataUrl'),
+        customExtraLine:  getVal('invoiceCustomExtraLine'),
         showLogo:         getChk('invoiceShowLogo'),
         showAddress:      getChk('invoiceShowAddress'),
         showPhone:        getChk('invoiceShowPhone'),
@@ -5556,6 +5598,7 @@ function renderInvoiceDesignPreview() {
     const footerSize = getVal('invoiceFooterSize') || 'normal';
     const logo    = getVal('invoiceLogoDataUrl');
     const paperW  = getVal('invoicePaperWidth') || '80';
+    const customLine = getVal('invoiceCustomExtraLine');
 
     const showLogo         = getChk('invoiceShowLogo');
     const showAddress      = getChk('invoiceShowAddress');
@@ -5602,6 +5645,7 @@ function renderInvoiceDesignPreview() {
         (showCustomerName ? '<div>الزبون: أحمد</div>' : '') +
         (showPhone        ? '<div>الهاتف: 07701234567</div>' : '') +
         (showDriverArea   ? '<div>المنطقة: القاهرة</div>' : '') +
+        (customLine       ? '<div style="text-align:center;">' + customLine + '</div>' : '') +
         '</div>' +
 
         '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:6px;">' +
