@@ -574,6 +574,16 @@
                     <option value="58">58 مم (صغير)</option>
                 </select>
 
+                <label class="section-label">سطر إضافي مخصص (اختياري):</label>
+                <input type="text" id="invoiceCustomExtraLine" class="gold-input-inline"
+                       placeholder="مثال: 📞 07701234567 أو رقم ضريبي..."
+                       style="margin-bottom:6px;" oninput="renderInvoiceDesignPreview()">
+                <p class="hint" style="margin-bottom:14px;">
+                    💡 يطبع كسطر إضافي وسط الفاتورة (رقم هاتف المحل، رقم
+                    ضريبي، أو أي معلومة تريد إضافتها). اتركه فاضي لو ما
+                    تحتاجه.
+                </p>
+
                 <!-- إظهار / إخفاء عناصر -->
                 <div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;
                             padding:10px;margin-bottom:14px;">
@@ -1547,7 +1557,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1720"></script>
+<script src="app.js?v=1721"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2920,7 +2930,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1720'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1721'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
