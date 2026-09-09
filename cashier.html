@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 </head>
 <body class="cashier-body">
 
@@ -78,6 +79,10 @@
                 <button onclick="openPendingDeliveriesModal(); toggleBrandMenu();">
                     <i class="fa-solid fa-motorcycle" style="color:#f59e0b;"></i>
                     ذمة السائقين
+                </button>
+                <button onclick="printStockReport(); toggleBrandMenu();">
+                    <i class="fa-solid fa-boxes-stacked" style="color:#10b981;"></i>
+                    جرد المخزون 📋
                 </button>
                 <button onclick="openShiftReportModal(); toggleBrandMenu();">
                     <i class="fa-solid fa-lock" style="color:#fbbf24;"></i>
@@ -712,7 +717,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1718"></script>
+<script src="app.js?v=1722"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -840,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
    بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1718'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1722)
 
     async function checkForFreshPageVersion() {
         try {
