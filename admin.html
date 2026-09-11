@@ -693,6 +693,52 @@
                 <div id="invoiceDesignPreviewBox"></div>
             </div>
         </div>
+
+        <!-- 🆕 بانر إعلاني بالمينيو الإلكتروني -->
+        <div class="card" style="max-width:600px;margin:20px auto 0;border-color:#ffd700;">
+            <h4 style="color:#ffd700;margin-bottom:10px;">
+                <i class="fa-solid fa-bullhorn"></i> 📢 إعلان بالمينيو الإلكتروني
+            </h4>
+            <p class="hint" style="margin-bottom:12px;">
+                💡 بانر يطلع أعلى المينيو الإلكتروني اللي يشوفه الزبون (مثلاً
+                إعلان عن تجهيز مناسبات، عرض موسمي...). فعّله وعدّله وقتها
+                تريد، وأطفيه لما ينتهي.
+            </p>
+
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;
+                          color:#ccc;cursor:pointer;margin-bottom:12px;">
+                <input type="checkbox" id="announcementEnabled"
+                       style="width:18px;height:18px;">
+                تفعيل الإعلان بالمينيو الإلكتروني
+            </label>
+
+            <label class="section-label">العنوان الرئيسي:</label>
+            <input type="text" id="announcementTitle" class="gold-input-inline"
+                   placeholder="مثال: لمناسبتكم... جاهزين! 🎉" style="margin-bottom:8px;">
+
+            <label class="section-label">الوصف (اختياري):</label>
+            <textarea id="announcementSubtitle" class="gold-input-inline" rows="2"
+                      placeholder="مثال: نوفر لكم أفضل الأكلات للأعراس والمناسبات والتجمعات"
+                      style="margin-bottom:8px;"></textarea>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                <div>
+                    <label class="section-label">رقم هاتف 1 (اختياري):</label>
+                    <input type="text" id="announcementPhone1" class="gold-input-inline"
+                           placeholder="07750008630">
+                </div>
+                <div>
+                    <label class="section-label">رقم هاتف 2 (اختياري):</label>
+                    <input type="text" id="announcementPhone2" class="gold-input-inline"
+                           placeholder="07850008630">
+                </div>
+            </div>
+
+            <button onclick="saveMenuAnnouncement()" class="gold-btn btn-block"
+                    style="background:#ffd700;color:#000;font-weight:900;">
+                <i class="fa-solid fa-check"></i> حفظ الإعلان
+            </button>
+        </div>
     </div>
 
     <!-- 6.6 تبويب العمليات اليومية (منقولة من الكاشير) -->
@@ -1602,7 +1648,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1723"></script>
+<script src="app.js?v=1724"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3096,7 +3142,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1723)
+    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1724)
 
     async function checkForFreshPageVersion() {
         try {
