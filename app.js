@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1726';
+const MIM89_APP_VERSION = '1727';
 
 /* ==========================================
    المتغيرات العامة
@@ -1878,8 +1878,7 @@ function loadDriversAndAppDropdowns() {
         (platforms.length > 0
             ? '<optgroup label="📱 منصات التوصيل المسجّلة">' +
               platforms.map(p =>
-                  '<option value="' + p.name + '">📱 ' + p.name +
-                  ' (عمولة ' + (p.commissionPct || 0) + '%)</option>'
+                  '<option value="' + p.name + '">📱 ' + p.name + '</option>'
               ).join('') +
               '</optgroup>'
             : '');
