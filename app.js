@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1724';
+const MIM89_APP_VERSION = '1726';
 
 /* ==========================================
    المتغيرات العامة
@@ -1855,9 +1855,18 @@ function filterPosProducts() {
 }
 
 function loadDriversAndAppDropdowns() {
-    const drivers = getData('sys_drivers');
-    const select  = document.getElementById('posDriverSelect');
+    const drivers   = getData('sys_drivers') || [];
+    // 🛠️ إصلاح جذري مهم جداً: كانت هذي القائمة تحتوي أسماء تطبيقات وهمية
+    // مكتوبة يدوياً بالكود ("تطبيق طلباتي"، "تطبيق توترز"، "تطبيق بلي")،
+    // منفصلة تماماً عن المنصات الحقيقية المسجّلة فعلياً بـ"شركات التوصيل
+    // الخارجية" (الخزينة). فلو سجّلت منصة باسم مختلف (مثلاً "طلبات" بدون
+    // "تطبيق")، الطلب يتحفظ باسم غير مطابق، وما يظهر أبداً بـ"ذمة تطبيقات
+    // التوصيل" لأن المطابقة تكون بالاسم بالضبط. الحين تُسحب القائمة مباشرة
+    // من المنصات المسجّلة فعلياً - أي منصة تضيفها تطلع هنا تلقائياً.
+    const platforms = getData('sys_delivery_platforms') || [];
+    const select    = document.getElementById('posDriverSelect');
     if (!select) return;
+
     select.innerHTML =
         '<option value="">-- اختر سائق / تطبيق --</option>' +
         '<optgroup label="🛵 سائقو المطعم">' +
@@ -1866,11 +1875,14 @@ function loadDriversAndAppDropdowns() {
             ' (' + (d.phone || 'مطعم') + ')</option>'
         ).join('') +
         '</optgroup>' +
-        '<optgroup label="📱 تطبيقات">' +
-        '<option value="تطبيق طلباتي">📱 طلباتي</option>' +
-        '<option value="تطبيق توترز">📱 توترز</option>' +
-        '<option value="تطبيق بلي">📱 بلي</option>' +
-        '</optgroup>';
+        (platforms.length > 0
+            ? '<optgroup label="📱 منصات التوصيل المسجّلة">' +
+              platforms.map(p =>
+                  '<option value="' + p.name + '">📱 ' + p.name +
+                  ' (عمولة ' + (p.commissionPct || 0) + '%)</option>'
+              ).join('') +
+              '</optgroup>'
+            : '');
 }
 
 /* ==========================================
@@ -3498,8 +3510,12 @@ function getPlatformSettlementGroups() {
                 orders: [], total: 0
             };
         }
+        // 🆕 لو الأدمن عدّل المبلغ ليطابق رقم التطبيق الفعلي
+        // (platformAdjustedAmount)، نحسبه هو بدل مبلغ الفاتورة الأصلي
+        const amt = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null
+            ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
         groups[key].orders.push(o);
-        groups[key].total += cleanPrice(o.totalAmount);
+        groups[key].total += amt;
     });
 
     return Object.values(groups).sort((a,b) => a.yearMonth < b.yearMonth ? 1 : -1);
@@ -3516,23 +3532,85 @@ function renderPlatformSettlementList() {
         return;
     }
 
-    container.innerHTML = groups.map(g => {
+    container.innerHTML = groups.map((g, gIdx) => {
+        const groupId = 'platGroup_' + gIdx;
+        const ordersRows = g.orders.map(o => {
+            const adjusted = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null;
+            const displayAmt = adjusted ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                'padding:6px 0;border-bottom:1px dashed #2a2a35;gap:6px;">' +
+                '<div style="font-size:0.78rem;">' +
+                '#' + o.orderNum + ' — ' + (o.customerName || 'زبون') +
+                (adjusted ? '<div style="font-size:0.68rem;color:#888;">' +
+                    'فاتورتنا: ' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع (معدَّل)' +
+                    '</div>' : '') +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:4px;">' +
+                '<input type="number" value="' + displayAmt + '" ' +
+                'onchange="adjustPlatformOrderAmount(\'' + o.id + '\', this.value)" ' +
+                'style="width:90px;padding:4px 6px;background:#0d0d11;border:1px solid ' +
+                (adjusted ? '#fbbf24' : '#333') + ';border-radius:5px;color:#fff;' +
+                'font-size:0.78rem;text-align:center;">' +
+                '<span style="font-size:0.7rem;color:#888;">د.ع</span>' +
+                '</div></div>';
+        }).join('');
+
         return '<div style="background:#111116;border:1px solid #c084fc;' +
             'border-radius:9px;padding:10px;margin-bottom:10px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;' +
+            'cursor:pointer;" onclick="toggleElementDisplay(\'' + groupId + '\')">' +
             '<div>' +
             '<strong style="color:#c084fc;">📱 ' + g.platform + '</strong>' +
             '<span style="font-size:0.75rem;color:#888;"> — شهر ' + g.yearMonth + '</span>' +
             '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;margin-top:3px;">' +
             g.orders.length + ' طلب — الإجمالي: ' +
-            g.total.toLocaleString('ar-IQ') + ' د.ع</div>' +
+            g.total.toLocaleString('ar-IQ') + ' د.ع ' +
+            '<span style="font-size:0.7rem;color:#888;">▾ كشف الحساب</span></div>' +
             '</div>' +
-            '<button onclick="settlePlatformMonth(\'' + g.platform.replace(/'/g,"\\'") +
-            '\',\'' + g.yearMonth + '\')" class="gold-btn btn-sm" ' +
+            '<button onclick="event.stopPropagation();settlePlatformMonth(\'' +
+            g.platform.replace(/'/g,"\\'") + '\',\'' + g.yearMonth + '\')" ' +
+            'class="gold-btn btn-sm" ' +
             'style="background:#c084fc;color:#000;border:none;padding:8px 12px;' +
             'font-weight:900;white-space:nowrap;">💰 تسوية الشهر</button>' +
+            '</div>' +
+            '<div id="' + groupId + '" style="display:none;margin-top:8px;' +
+            'border-top:1px solid #24392c;padding-top:8px;">' +
+            ordersRows +
+            '<p style="font-size:0.68rem;color:#888;margin-top:6px;">' +
+            '💡 عدّل مبلغ أي طلب ليطابق رقم التطبيق الفعلي (لو فيه فرق عن فاتورتك) - ' +
+            'هذا يأثر بس على حساب التسوية، مو على الفاتورة الأصلية.</p>' +
             '</div></div>';
     }).join('');
+}
+
+// إظهار/إخفاء كشف حساب منصة معيّنة
+function toggleElementDisplay(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// 🆕 تعديل المبلغ النهائي لطلب معيّن ليطابق رقم التطبيق الفعلي (مثلاً
+// فاتورتك 15,000 لكن التطبيق سجّلها 15,750) - يؤثر على حساب التسوية فقط،
+// ما يغيّر مبلغ الفاتورة الأصلي المسجّل بالكاشير
+function adjustPlatformOrderAmount(orderId, newValue) {
+    const newAmt = cleanPrice(newValue);
+    if (isNaN(newAmt) || newAmt < 0) return alert('⚠️ أدخل مبلغ صحيح.');
+
+    let all = getData('sys_completed_orders') || [];
+    const order = all.find(o => String(o.id) === String(orderId));
+    if (!order) return alert('⚠️ تعذّر إيجاد الطلب.');
+
+    order.platformAdjustedAmount = newAmt;
+    order.lastModified = Date.now();
+    localStorage.setItem('sys_completed_orders', JSON.stringify(all));
+
+    if (db) {
+        db.collection('completed_orders').doc(String(order.id))
+            .set({ platformAdjustedAmount: newAmt, lastModified: order.lastModified },
+                { merge: true }).catch(err => console.warn('تعذّر حفظ التعديل بالسحابة:', err));
+    }
+
+    renderPlatformSettlementList();
 }
 
 // تسوية شهر كامل لمنصة معيّنة دفعة وحدة - يُستخدم لما توصل الحوالة البنكية فعلياً
@@ -3942,11 +4020,20 @@ function openChangeServiceTypeModal(orderId) {
         '#' + ord.orderNum + ' — ' + (ord.customerName || 'زبون');
     document.getElementById('changeServiceTypeSelect').value = ord.orderType || 'صالة';
 
-    const drivers = getData('sys_drivers') || [];
+    const drivers   = getData('sys_drivers') || [];
+    const platforms = getData('sys_delivery_platforms') || [];
     const driverSel = document.getElementById('changeServiceDriverSelect');
-    driverSel.innerHTML = '<option value="">-- اختر سائق --</option>' +
+    driverSel.innerHTML = '<option value="">-- اختر سائق / تطبيق --</option>' +
+        '<optgroup label="🛵 سائقو المطعم">' +
         drivers.map(d => '<option value="' + d.name + '"' +
-            (d.name === ord.driverName ? ' selected' : '') + '>' + d.name + '</option>').join('');
+            (d.name === ord.driverName ? ' selected' : '') + '>' + d.name + '</option>').join('') +
+        '</optgroup>' +
+        (platforms.length > 0
+            ? '<optgroup label="📱 منصات التوصيل">' +
+              platforms.map(p => '<option value="' + p.name + '"' +
+                  (p.name === ord.driverName ? ' selected' : '') + '>📱 ' + p.name + '</option>').join('') +
+              '</optgroup>'
+            : '');
 
     const areas = getData('sys_areas') || [];
     const areaSel = document.getElementById('changeServiceAreaSelect');
