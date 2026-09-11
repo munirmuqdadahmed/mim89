@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1723';
+const MIM89_APP_VERSION = '1724';
 
 /* ==========================================
    المتغيرات العامة
@@ -249,6 +249,14 @@ const DEFAULT_DATA = {
         showOrderNotes:   true,
         showItemNotes:    true,
         customExtraLine:  "" // 🆕 سطر إضافي حر (رقم هاتف المحل، رقم ضريبي...)
+    },
+    // 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل
+    menuAnnouncement: {
+        enabled:  false,
+        title:    "لمناسبتكم... جاهزين! 🎉",
+        subtitle: "نوفر لكم أفضل الأكلات للأعراس والمناسبات والتجمعات",
+        phone1:   "",
+        phone2:   ""
     },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", pin: "1111" }
@@ -735,7 +743,7 @@ async function pullLatestFromCloud() {
     const SHARED_KEYS = [
         'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
         'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
-        'sys_invoice_design'
+        'sys_invoice_design', 'sys_menu_announcement'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -789,6 +797,8 @@ async function initData() {
         localStorage.setItem('sys_printer_settings', JSON.stringify(DEFAULT_DATA.printerSettings));
     if (!localStorage.getItem('sys_invoice_design'))
         localStorage.setItem('sys_invoice_design', JSON.stringify(DEFAULT_DATA.invoiceDesign));
+    if (!localStorage.getItem('sys_menu_announcement'))
+        localStorage.setItem('sys_menu_announcement', JSON.stringify(DEFAULT_DATA.menuAnnouncement));
     if (!localStorage.getItem('sys_cashiers') ||
         JSON.parse(localStorage.getItem('sys_cashiers')).length === 0)
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
@@ -5556,6 +5566,38 @@ function loadInvoiceDesignForm() {
     }
 
     renderInvoiceDesignPreview();
+    loadMenuAnnouncementForm();
+}
+
+// 🆕 تحميل/حفظ بانر إعلان المينيو الإلكتروني
+function loadMenuAnnouncementForm() {
+    const ann = getData('sys_menu_announcement') || DEFAULT_DATA.menuAnnouncement;
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+    setChk('announcementEnabled',  ann.enabled);
+    setVal('announcementTitle',    ann.title    || '');
+    setVal('announcementSubtitle', ann.subtitle || '');
+    setVal('announcementPhone1',   ann.phone1   || '');
+    setVal('announcementPhone2',   ann.phone2   || '');
+}
+
+function saveMenuAnnouncement() {
+    const ann = {
+        enabled:  document.getElementById('announcementEnabled')?.checked || false,
+        title:    document.getElementById('announcementTitle')?.value.trim() || '',
+        subtitle: document.getElementById('announcementSubtitle')?.value.trim() || '',
+        phone1:   document.getElementById('announcementPhone1')?.value.trim() || '',
+        phone2:   document.getElementById('announcementPhone2')?.value.trim() || ''
+    };
+
+    if (ann.enabled && !ann.title)
+        return alert('⚠️ أدخل عنوان الإعلان قبل التفعيل.');
+
+    setData('sys_menu_announcement', ann);
+    alert(ann.enabled
+        ? '✅ تم حفظ وتفعيل الإعلان! يطلع الآن بالمينيو الإلكتروني.'
+        : '✅ تم الحفظ (الإعلان غير مفعّل حالياً).');
 }
 
 // رفع شعار (لوكو) وتصغيره تلقائياً قبل الحفظ
@@ -6287,6 +6329,37 @@ function loadPublicMenu() {
     setupPublicMenuRealtimeListener();
 }
 
+// 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل (نص، عرض/إخفاء)
+function renderMenuAnnouncementBanner() {
+    const banner = document.getElementById('menuAnnouncementBanner');
+    if (!banner) return;
+
+    const ann = getData('sys_menu_announcement') || DEFAULT_DATA.menuAnnouncement;
+    if (!ann.enabled || !ann.title) {
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+        return;
+    }
+
+    banner.style.display = 'block';
+    banner.innerHTML =
+        '<div style="background:linear-gradient(135deg,#1a1a08,#0d0d11);' +
+        'border:2px solid #ffd700;border-radius:14px;margin:10px 12px;' +
+        'padding:16px 14px;text-align:center;">' +
+        '<div style="font-size:1.15rem;font-weight:900;color:#ffd700;' +
+        'margin-bottom:4px;">' + ann.title + '</div>' +
+        (ann.subtitle
+            ? '<div style="font-size:0.82rem;color:#ddd;margin-bottom:8px;' +
+              'line-height:1.6;">' + ann.subtitle + '</div>'
+            : '') +
+        ((ann.phone1 || ann.phone2)
+            ? '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;">' +
+              '📞 للحجز والاستفسار: ' +
+              [ann.phone1, ann.phone2].filter(Boolean).join(' — ') + '</div>'
+            : '') +
+        '</div>';
+}
+
 function renderPublicMenuUI() {
     const categories     = getData('sys_categories');
     // 🆕 استبعاد أي صنف مُعلَّم "hiddenFromPublicMenu" (مثلاً بوكس عروض خاص
@@ -6295,6 +6368,8 @@ function renderPublicMenuUI() {
     const navContainer   = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
     if (!navContainer || !sectionsContainer) return;
+
+    renderMenuAnnouncementBanner();
 
     navContainer.innerHTML    = '';
     sectionsContainer.innerHTML = '';
