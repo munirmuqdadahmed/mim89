@@ -732,10 +732,21 @@
     </div>
 </div>
 
-<script src="app.js?v=1724"></script>
+<script src="app.js?v=1725"></script>
 <script>
     var activeAppliedCoupon      = null;
     var activeTrackingUnsubscribe = null;
+
+    // 🛠️ إصلاح جوهري: زر الثلاث خطوط (☰) كان يستدعي toggleSideDrawer()،
+    // لكن هذي الدالة ما كانت معرّفة إطلاقاً بأي مكان بالكود - فالزر ما
+    // يسوي أي شي عند الضغط عليه (خطأ صامت بالمتصفح). هذا هو الإصلاح.
+    function toggleSideDrawer() {
+        const drawer  = document.getElementById('sideDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (!drawer || !overlay) return;
+        drawer.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
 
     /* ==========================================
        حالة المطعم
@@ -1122,7 +1133,7 @@
        رقم إصدار app.js المكتوب فيها مع اللي شغال حالياً بمتصفحه. إذا
        اختلفوا، يعيد تحميل الصفحة تلقائياً بدون ما يحتاج الزبون يسوي أي شي. */
     (function () {
-        const CURRENT_MENU_VERSION = '1724'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
+        const CURRENT_MENU_VERSION = '1725'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
         async function checkForFreshMenuVersion() {
             try {
