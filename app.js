@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1727';
+const MIM89_APP_VERSION = '1729';
 
 /* ==========================================
    المتغيرات العامة
@@ -2649,6 +2649,8 @@ function tryFinalizeAndClearOrder(silentMode) {
                     localStorage.setItem('mim89_save_counter', String(cnt));
                     if (cnt % 10 === 0) setTimeout(runSilentStorageMaintenance, 2000);
                 } catch (_) {}
+                // 🌟 منح نقاط MIM89 VIP تلقائياً لو رقم هاتف الزبون مسجّل بالنادي
+                if (typeof awardLoyaltyPoints === 'function') awardLoyaltyPoints(orderToSave);
             })
             .catch(err => console.error('تعذّر رفع الفاتورة:', err));
     }
@@ -2685,6 +2687,148 @@ function tryFinalizeAndClearOrder(silentMode) {
 /* ==========================================
    🖨️ إعادة طباعة من السجل
    ========================================== */
+/* ==========================================
+   🌟 MIM89 VIP - نظام ولاء الزبائن
+   ==========================================
+   🛠️ إصلاح مهم: التسجيل الأول كان بإيميل + كلمة مرور (Firebase Auth
+   حقيقي) - لكن هذا غير عملي بالعراق لأن أغلب الزبائن ما يستخدمون إيميل.
+   الحل: التسجيل الحين برقم الهاتف + رمز شخصي (PIN) يختاره الزبون بنفسه،
+   بنفس منطق أرقام الكاشير/السائقين بالنظام - بدون أي تحقق SMS أو واتساب
+   (هذا يحتاج خدمة مدفوعة). نعتمد على تسجيل الدخول المجهول (Anonymous)
+   الموجود أصلاً بكل صفحات الموقع للوصول الآمن لقاعدة البيانات، ونحفظ كل
+   عضو بمستند مفتاحه رقم هاتفه نفسه (بدل uid حساب حقيقي).
+*/
+function getLoyaltySettings() {
+    return getData('sys_loyalty_settings') || {
+        pointsPerThousand: 1,     // نقطة وحدة لكل 1000 د.ع بالفاتورة
+        redeemThreshold:   50,    // النقاط المطلوبة لوجبة مجانية
+        redeemRewardText:  'وجبة مجانية (حتى 10,000 د.ع)'
+    };
+}
+
+function saveLoyaltySettings(settings) {
+    setData('sys_loyalty_settings', settings);
+}
+
+function getCurrentVipPhone() {
+    return localStorage.getItem('mim89_vip_phone') || null;
+}
+function setCurrentVipPhone(phone) {
+    localStorage.setItem('mim89_vip_phone', phone);
+}
+function clearCurrentVipPhone() {
+    localStorage.removeItem('mim89_vip_phone');
+}
+
+// 📝 تسجيل عضو جديد بـ MIM89 VIP - برقم الهاتف ورمز شخصي بس
+async function signUpLoyaltyMember(name, phone, birthdate, gender, pin) {
+    const cleanPhone = String(phone).replace(/[^0-9]/g,'');
+    if (!cleanPhone) throw { code: 'vip/invalid-phone', message: 'رقم الهاتف غير صحيح' };
+    if (!pin || pin.length < 4) throw { code: 'vip/weak-pin', message: 'الرمز 4 أرقام على الأقل' };
+
+    await ensureAnonymousSignedIn();
+
+    const existing = await db.collection('loyalty_members').doc(cleanPhone).get();
+    if (existing.exists)
+        throw { code: 'vip/already-exists', message: 'هذا الرقم مسجّل عضوية أصلاً - سجّل دخولك' };
+
+    await db.collection('loyalty_members').doc(cleanPhone).set({
+        name, phone: cleanPhone, birthdate, gender, pin,
+        points: 0, joinedAt: Date.now(), lastOrderDate: null
+    });
+
+    setCurrentVipPhone(cleanPhone);
+    return { phone: cleanPhone };
+}
+
+async function logInLoyaltyMember(phone, pin) {
+    const cleanPhone = String(phone).replace(/[^0-9]/g,'');
+    await ensureAnonymousSignedIn();
+
+    const doc = await db.collection('loyalty_members').doc(cleanPhone).get();
+    if (!doc.exists)
+        throw { code: 'vip/not-found', message: 'ماكو عضوية بهذا الرقم' };
+    if (String(doc.data().pin) !== String(pin))
+        throw { code: 'vip/wrong-pin', message: 'الرمز غلط' };
+
+    setCurrentVipPhone(cleanPhone);
+    return { phone: cleanPhone };
+}
+
+function logOutLoyaltyMember() {
+    clearCurrentVipPhone();
+}
+
+// تسجيل دخول مجهول (يُعاد استخدامه لو ما كان مفعّل أصلاً بهذي اللحظة)
+function ensureAnonymousSignedIn() {
+    return new Promise((resolve, reject) => {
+        if (auth.currentUser) { resolve(auth.currentUser); return; }
+        auth.signInAnonymously().then(cred => resolve(cred.user)).catch(reject);
+    });
+}
+
+async function getLoyaltyMemberInfo(phone) {
+    if (!phone) return null;
+    const doc = await db.collection('loyalty_members').doc(phone).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+}
+
+// 🔍 البحث عن عضو بواسطة رقم الهاتف (يُستخدم وقت منح النقاط تلقائياً)
+// 🛠️ بما إن معرّف المستند هو رقم الهاتف نفسه، هذا صار جلب مباشر بدل استعلام
+async function getLoyaltyMemberByPhone(phone) {
+    const cleanPhone = String(phone || '').replace(/[^0-9]/g,'');
+    if (!cleanPhone || !db) return null;
+    try {
+        const doc = await db.collection('loyalty_members').doc(cleanPhone).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    } catch (err) {
+        console.warn('تعذّر البحث عن عضو VIP:', err);
+        return null;
+    }
+}
+
+// 🌟 منح نقاط تلقائياً بعد اكتمال أي طلب - لو رقم هاتف الزبون مسجّل بالنادي
+async function awardLoyaltyPoints(order) {
+    if (!order.phone || order.phone === '-') return;
+    const member = await getLoyaltyMemberByPhone(order.phone);
+    if (!member) return; // مو عضو VIP - عادي، ما نسوي شي
+
+    const settings   = getLoyaltySettings();
+    const earned     = Math.floor(cleanPrice(order.totalAmount) / 1000) * settings.pointsPerThousand;
+    if (earned <= 0) return;
+
+    const newPoints = cleanPrice(member.points) + earned;
+    try {
+        await db.collection('loyalty_members').doc(member.id).set({
+            points: newPoints, lastOrderDate: Date.now()
+        }, { merge: true });
+    } catch (err) {
+        console.warn('تعذّر منح نقاط VIP:', err);
+    }
+}
+
+// 🎁 استبدال النقاط بمكافأة (يُستخدم من الكاشير/الأدمن وقت استلام الزبون لمكافأته)
+async function redeemLoyaltyPoints(memberId) {
+    const settings = getLoyaltySettings();
+    const doc = await db.collection('loyalty_members').doc(memberId).get();
+    if (!doc.exists) return { ok: false, error: 'العضو غير موجود' };
+
+    const member = doc.data();
+    if (cleanPrice(member.points) < settings.redeemThreshold)
+        return { ok: false, error: 'النقاط غير كافية' };
+
+    const newPoints = cleanPrice(member.points) - settings.redeemThreshold;
+    await db.collection('loyalty_members').doc(memberId).set({ points: newPoints }, { merge: true });
+    return { ok: true, remainingPoints: newPoints };
+}
+
+// 📋 كل الأعضاء (للوحة الأدمن)
+async function getAllLoyaltyMembers() {
+    if (!db) return [];
+    const snap = await db.collection('loyalty_members').get();
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 function reprintCompletedOrder(orderId) {
     const completed = getData('sys_completed_orders') || [];
     const ord = completed.find(o => o.id === orderId);
