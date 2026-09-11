@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطاقتي - MIM89 VIP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Tajawal', sans-serif; direction: rtl;
+            background: #060608; color: #fff; min-height: 100vh; padding: 16px 16px 40px;
+        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .top-bar a { color: #ffd700; text-decoration: none; font-size: 1.1rem; }
+        .logout-link { font-size: 0.78rem; color: #ef4444; }
+
+        .vip-card {
+            background: linear-gradient(135deg, #1a1608, #060608);
+            border: 2px solid #ffd700; border-radius: 18px;
+            padding: 22px; max-width: 420px; margin: 0 auto 16px;
+            box-shadow: 0 4px 20px rgba(255,215,0,0.15);
+        }
+        .vip-card .brand { color: #ffd700; font-weight: 900; font-size: 1rem; letter-spacing: 1px; }
+        .vip-card .member-name { font-size: 1.35rem; font-weight: 900; margin-top: 10px; }
+        .vip-card .member-since { font-size: 0.72rem; color: #999; margin-top: 3px; }
+
+        .points-box { text-align: center; margin: 18px 0; }
+        .points-box .num { font-size: 2.6rem; font-weight: 900; color: #ffd700; }
+        .points-box .lbl { font-size: 0.78rem; color: #ccc; }
+
+        .progress-bar-bg {
+            background: #2a2a35; border-radius: 10px; height: 10px; overflow: hidden; margin-top: 10px;
+        }
+        .progress-bar-fill { background: #ffd700; height: 100%; transition: width 0.4s; }
+        .progress-note { font-size: 0.72rem; color: #999; margin-top: 6px; text-align: center; }
+
+        .reward-ready {
+            background: #1a1608; border: 2px solid #10b981; border-radius: 12px;
+            padding: 14px; text-align: center; margin-top: 14px;
+        }
+        .reward-ready .big { font-size: 1.5rem; }
+        .reward-ready p { color: #10b981; font-weight: 900; margin-top: 6px; font-size: 0.9rem; }
+        .reward-ready .sub { color: #999; font-weight: normal; font-size: 0.75rem; margin-top: 4px; }
+
+        .section { max-width: 420px; margin: 18px auto 0; }
+        h3.section-title { color: #ffd700; font-size: 0.9rem; margin-bottom: 10px; }
+        .order-card {
+            background: #111116; border: 1px solid #2a2a35; border-radius: 10px;
+            padding: 10px 12px; margin-bottom: 8px; font-size: 0.8rem;
+        }
+        .order-card .top-row { display: flex; justify-content: space-between; color: #ccc; }
+        .order-card .earned { color: #ffd700; font-size: 0.72rem; margin-top: 3px; }
+        .empty-note { color: #666; font-size: 0.82rem; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a href="index.html"><i class="fa-solid fa-arrow-right"></i></a>
+        <a href="#" class="logout-link" onclick="handleLogout()">خروج</a>
+    </div>
+
+    <div id="content">
+        <p class="empty-note">⏳ جاري التحميل...</p>
+    </div>
+
+    <script src="app.js?v=1729"></script>
+    <script>
+        (async function initVipCard() {
+            const content = document.getElementById('content');
+            const phone = getCurrentVipPhone();
+
+            if (!phone) {
+                content.innerHTML = `
+                    <div style="text-align:center;padding:50px 20px;">
+                        <p style="color:#ccc;margin-bottom:14px;">سجّل دخولك لتشوف بطاقتك</p>
+                        <a href="vip-login.html" style="background:#ffd700;color:#000;
+                           padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:900;">
+                           تسجيل الدخول
+                        </a>
+                    </div>`;
+                return;
+            }
+
+            try {
+                await ensureAnonymousSignedIn();
+                const member = await getLoyaltyMemberInfo(phone);
+                if (!member) {
+                    content.innerHTML = '<p class="empty-note">⚠️ تعذّر إيجاد بطاقتك.</p>';
+                    return;
+                }
+
+                const settings = getLoyaltySettings();
+                const points   = cleanPrice(member.points);
+                const pct      = Math.min(100, Math.round((points / settings.redeemThreshold) * 100));
+                const isReady  = points >= settings.redeemThreshold;
+
+                const joinDate = member.joinedAt
+                    ? new Date(member.joinedAt).toLocaleDateString('ar-IQ') : '';
+
+                content.innerHTML = `
+                    <div class="vip-card">
+                        <div class="brand">🌟 MIM89 VIP</div>
+                        <div class="member-name">${member.name}</div>
+                        <div class="member-since">عضو منذ ${joinDate}</div>
+
+                        <div class="points-box">
+                            <div class="num">${points}</div>
+                            <div class="lbl">نقطة</div>
+                        </div>
+
+                        ${isReady ? `
+                            <div class="reward-ready">
+                                <div class="big">🎉</div>
+                                <p>مبروك! تستحق مكافأة الآن</p>
+                                <div class="sub">${settings.redeemRewardText} — وريّ هذي الشاشة للكاشير</div>
+                            </div>
+                        ` : `
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width:${pct}%;"></div>
+                            </div>
+                            <div class="progress-note">
+                                ${settings.redeemThreshold - points} نقطة متبقية لـ${settings.redeemRewardText}
+                            </div>
+                        `}
+                    </div>
+
+                    <div class="section">
+                        <h3 class="section-title">📋 آخر طلباتك</h3>
+                        <div id="ordersHistoryBox">
+                            <p class="empty-note">جاري التحميل...</p>
+                        </div>
+                    </div>
+                `;
+
+                loadOrderHistory(member.phone);
+            } catch (err) {
+                console.error(err);
+                content.innerHTML = '<p class="empty-note">⚠️ صار خطأ بجلب بياناتك.</p>';
+            }
+        })();
+
+        async function loadOrderHistory(phone) {
+            const box = document.getElementById('ordersHistoryBox');
+            try {
+                const cleanPhone = String(phone || '').replace(/[^0-9]/g,'');
+                // 🛠️ استعلام بحقل واحد بس (phone) لتفادي الحاجة لفهرس مركّب
+                // بفايرستور - الفرز والتحديد يصير بالجافاسكربت بعد الجلب
+                const snap = await db.collection('completed_orders')
+                    .where('phone', '==', cleanPhone)
+                    .limit(50)
+                    .get({ source: 'server' });
+
+                if (snap.empty) {
+                    box.innerHTML = '<p class="empty-note">ماكو طلبات بعد</p>';
+                    return;
+                }
+
+                let orders = snap.docs.map(d => d.data());
+                orders.sort((a,b) => (cleanPrice(b.createdTimestamp)) - (cleanPrice(a.createdTimestamp)));
+                orders = orders.slice(0, 15);
+
+                const settings = getLoyaltySettings();
+                box.innerHTML = orders.map(o => {
+                    const earned = Math.floor(cleanPrice(o.totalAmount) / 1000) * settings.pointsPerThousand;
+                    return `
+                        <div class="order-card">
+                            <div class="top-row">
+                                <span>#${o.orderNum} — ${o.timestamp || ''}</span>
+                                <span style="color:#ffd700;font-weight:900;">
+                                    ${cleanPrice(o.totalAmount).toLocaleString('ar-IQ')} د.ع
+                                </span>
+                            </div>
+                            ${earned > 0 ? '<div class="earned">🌟 +' + earned + ' نقطة</div>' : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.warn(err);
+                box.innerHTML = '<p class="empty-note">⚠️ تعذّر تحميل سجل الطلبات.</p>';
+            }
+        }
+
+        function handleLogout() {
+            logOutLoyaltyMember();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
