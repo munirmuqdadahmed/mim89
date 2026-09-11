@@ -16,12 +16,13 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1729';
+const MIM89_APP_VERSION = '1730';
 
 /* ==========================================
    المتغيرات العامة
    ========================================== */
 let db                      = null;
+let auth                    = null; // 🛠️ كان مفقوداً - سبب خطأ "Can't find variable: auth" بنظام VIP
 let activeCashierUser       = null;
 let posCart                 = [];
 let selectedPosOrderType    = 'dine_in';
@@ -315,6 +316,7 @@ try {
         // حماية Firestore تشترط "لازم تكون مسجّل دخول (ولو مجهول)" بدل ما
         // تكون مفتوحة بالكامل لأي حد بالعالم بدون أي شرط إطلاقاً.
         if (typeof firebase.auth === 'function') {
+            auth = firebase.auth(); // 🛠️ كان مفقوداً - يحتاجه نظام VIP
             firebaseAuthReadyPromise = firebase.auth().signInAnonymously()
                 .catch(err => {
                     console.warn('⚠️ تعذّر تسجيل الدخول المجهول بفايربيس:', err);
@@ -2760,11 +2762,12 @@ function logOutLoyaltyMember() {
 }
 
 // تسجيل دخول مجهول (يُعاد استخدامه لو ما كان مفعّل أصلاً بهذي اللحظة)
-function ensureAnonymousSignedIn() {
-    return new Promise((resolve, reject) => {
-        if (auth.currentUser) { resolve(auth.currentUser); return; }
-        auth.signInAnonymously().then(cred => resolve(cred.user)).catch(reject);
-    });
+async function ensureAnonymousSignedIn() {
+    // ننتظر أول محاولة تسجيل دخول مجهول صارت أصلاً عند تحميل الصفحة
+    try { await firebaseAuthReadyPromise; } catch (_) {}
+    if (auth.currentUser) return auth.currentUser;
+    const cred = await auth.signInAnonymously();
+    return cred.user;
 }
 
 async function getLoyaltyMemberInfo(phone) {
