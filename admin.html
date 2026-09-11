@@ -97,6 +97,14 @@
                         style="background:#f59e0b;color:#000;border:none;font-weight:900;">
                     <i class="fa-solid fa-motorcycle"></i> مينيو شركات التوصيل
                 </button>
+                <button onclick="printSmartMenu()" class="gold-btn btn-sm"
+                        style="background:#8b5cf6;color:#fff;border:none;font-weight:900;">
+                    <i class="fa-solid fa-brain"></i> المينيو الذكي 🖨️
+                </button>
+                <button onclick="downloadSmartMenuPDF(this)" class="gold-btn btn-sm"
+                        style="background:#1e1e28;color:#8b5cf6;border:1px solid #8b5cf6;font-weight:900;">
+                    <i class="fa-solid fa-file-pdf"></i> تحميل PDF ذكي
+                </button>
                 <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
                         style="background:#3b82f6;color:#fff;border:none;">
                     <i class="fa-solid fa-stethoscope"></i> فحص السحابة
@@ -254,6 +262,42 @@
             <label class="section-label">الوصف / المكونات (اختياري):</label>
             <textarea id="itemIngredients" class="gold-input-inline" rows="2"
                       placeholder="وصف قصير..."></textarea>
+
+            <!-- 🆕 أحجام ذكية (اختياري) - يخلي المينيو "يبيع نفسه" بالتسعير -->
+            <div style="margin-top:12px;background:#1a1608;border:1px solid #f59e0b;
+                        border-radius:8px;padding:10px;">
+                <label style="font-size:0.8rem;color:#fbbf24;font-weight:900;
+                              display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="checkbox" id="itemHasSizes" onchange="toggleSizesFields()"
+                           style="width:16px;height:16px;">
+                    🧠 هذا الصنف بأحجام متعددة (صغير/وسط/كبير)
+                </label>
+                <p class="hint" style="margin:6px 0 8px;">
+                    💡 حط فرق سعر بسيط بين الأحجام (مثلاً 8 - 10 - 11) بدل فرق
+                    كبير - هذا يخلي أغلب الزبائن يختارون الحجم الأكبر تلقائياً
+                    لأنه "يستاهل" الفرق البسيط. هذا نفسه يطبع بالمينيو الذكي.
+                </p>
+                <div id="sizesFieldsBox" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+                        <input type="text" id="sizeSmallLabel" class="gold-input-inline"
+                               placeholder="اسم الحجم الصغير" value="صغير">
+                        <input type="number" id="sizeSmallPrice" class="gold-input-inline"
+                               placeholder="سعره">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+                        <input type="text" id="sizeMediumLabel" class="gold-input-inline"
+                               placeholder="اسم الحجم الوسط" value="وسط">
+                        <input type="number" id="sizeMediumPrice" class="gold-input-inline"
+                               placeholder="سعره">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <input type="text" id="sizeLargeLabel" class="gold-input-inline"
+                               placeholder="اسم الحجم الكبير" value="كبير">
+                        <input type="number" id="sizeLargePrice" class="gold-input-inline"
+                               placeholder="سعره">
+                    </div>
+                </div>
+            </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;">
                 <button onclick="saveItem()" class="gold-btn" style="flex:2;">
@@ -1558,7 +1602,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1722"></script>
+<script src="app.js?v=1723"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2144,6 +2188,127 @@ async function exportHtmlToPDF(htmlContent, filename, buttonEl) {
         document.body.removeChild(iframe);
         if (buttonEl) { buttonEl.innerHTML = originalText; buttonEl.disabled = false; }
     }
+}
+
+/* ==========================================
+   🧠 المينيو الذكي - صور حقيقية + تسعير نفسي بالأحجام (يبيع نفسه)
+   ========================================== */
+function buildSmartMenuHTML() {
+    let categories = [], items = [];
+    try {
+        categories = getData('sys_categories') || [];
+        items      = getData('sys_items')      || [];
+    } catch (_) {}
+
+    if (!items || items.length === 0) return null;
+
+    let html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>MIM89 - المينيو الذكي</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 8mm; }
+* { box-sizing:border-box; }
+body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;margin:0;padding:6px;}
+.menu-hdr{text-align:center;border-bottom:4px double #000;padding-bottom:8px;margin-bottom:14px;}
+.menu-hdr h1{margin:0;font-size:26px;font-weight:900;letter-spacing:1px;}
+.menu-hdr p{margin:4px 0 0;font-size:12px;font-weight:bold;color:#555;}
+.cat-title{background:#111 !important;color:#ffd700 !important;padding:6px 14px;
+  font-size:15px;font-weight:900;border-radius:5px;margin:14px 0 8px;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.items-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.item-card{border:1px solid #ccc;border-radius:10px;overflow:hidden;
+  page-break-inside:avoid;display:flex;flex-direction:column;}
+.item-photo{width:100%;height:95px;object-fit:cover;background:#eee;}
+.item-body{padding:6px 8px;}
+.item-name{font-weight:900;font-size:13px;margin-bottom:2px;}
+.item-desc{font-size:9.5px;color:#666;margin-bottom:4px;min-height:12px;}
+.single-price{font-size:15px;font-weight:900;color:#000;text-align:left;}
+.sizes-ladder{display:flex;gap:4px;margin-top:4px;}
+.size-chip{flex:1;text-align:center;border:1.5px solid #999;border-radius:6px;
+  padding:3px 2px;font-size:9.5px;}
+.size-chip .lbl{font-weight:bold;color:#555;}
+.size-chip .val{font-weight:900;font-size:11px;}
+.size-chip.best{border-color:#000;background:#fff8dc !important;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;position:relative;}
+.size-chip.best::before{content:"⭐ الأفضل";position:absolute;top:-9px;right:2px;
+  background:#000 !important;color:#ffd700 !important;font-size:7px;padding:1px 4px;
+  border-radius:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.footer-note{text-align:center;margin-top:16px;border-top:2px solid #000;
+  padding-top:8px;font-size:11px;font-weight:bold;}
+</style></head><body>
+<div class="menu-hdr">
+<h1>MIM89 FAST FOOD</h1>
+<p>المينيو الرسمي - بغداد / القاهرة</p>
+</div>`;
+
+    categories.forEach(cat => {
+        const catItems = items.filter(i => {
+            const catId = i.categoryId !== undefined ? i.categoryId
+                : (i.catId !== undefined ? i.catId : i.category);
+            return String(catId) === String(cat.id) && !i.isPaused;
+        });
+        if (catItems.length === 0) return;
+
+        html += '<div class="cat-title">' + cat.name + '</div><div class="items-grid">';
+
+        catItems.forEach(item => {
+            const img = item.image || item.img || '';
+            let priceBlock;
+
+            if (item.sizes && Array.isArray(item.sizes) && item.sizes.length >= 2) {
+                // 🧠 أكبر سعر = "الأفضل" (النقطة النفسية: يخلي الزبون يشوفه
+                // يستاهل الفرق البسيط ويختاره بدل الأصغر)
+                const maxPrice = Math.max(...item.sizes.map(s => cleanPrice(s.price)));
+                priceBlock = '<div class="sizes-ladder">' +
+                    item.sizes.map(s => {
+                        const isBest = cleanPrice(s.price) === maxPrice;
+                        return '<div class="size-chip' + (isBest ? ' best' : '') + '">' +
+                            '<div class="lbl">' + s.label + '</div>' +
+                            '<div class="val">' + cleanPrice(s.price).toLocaleString('ar-IQ') + '</div>' +
+                            '</div>';
+                    }).join('') + '</div>';
+            } else {
+                priceBlock = '<div class="single-price">' +
+                    cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع</div>';
+            }
+
+            html += '<div class="item-card">' +
+                (img ? '<img class="item-photo" src="' + img + '">' : '') +
+                '<div class="item-body">' +
+                '<div class="item-name">' + item.name + '</div>' +
+                '<div class="item-desc">' + (item.ingredients || '') + '</div>' +
+                priceBlock +
+                '</div></div>';
+        });
+
+        html += '</div>';
+    });
+
+    html += '<div class="footer-note">MIM89 FAST FOOD - صحتين وهنا 🍔</div></body></html>';
+    return html;
+}
+
+function printSmartMenu() {
+    const html = buildSmartMenuHTML();
+    if (!html) return alert('⚠️ لا توجد أصناف بالمينيو!');
+
+    let iframe = document.getElementById('printIframeHidden');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printIframeHidden';
+        iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+        document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
+}
+
+function downloadSmartMenuPDF(btn) {
+    const html = buildSmartMenuHTML();
+    if (!html) return alert('⚠️ لا توجد أصناف بالمينيو!');
+    exportHtmlToPDF(html, 'MIM89-المينيو-الذكي.pdf', btn);
 }
 
 function downloadPaperMenuPDF(btn) {
@@ -2931,7 +3096,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1722)
+    const CURRENT_PAGE_VERSION = '1722'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1723)
 
     async function checkForFreshPageVersion() {
         try {
