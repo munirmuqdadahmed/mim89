@@ -170,6 +170,11 @@
                 style="border-color:#ec4899;color:#ec4899;">
             <i class="fa-solid fa-gift"></i> عروض وبوكسات
         </button>
+        <button class="tab-btn"
+                onclick="switchAdminTab('tabVipControl',this)"
+                style="border-color:#ffd700;color:#ffd700;">
+            <i class="fa-solid fa-star"></i> أعضاء VIP
+        </button>
         <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
             <i class="fa-solid fa-users"></i> الكاشيرية
         </button>
@@ -1349,6 +1354,64 @@
         <div id="comboDealsListBox" style="max-width:900px;margin:0 auto;"></div>
     </div>
 
+    <!-- 🌟 تبويب أعضاء VIP -->
+    <div id="tabVipControl" class="tab-content"
+         style="margin-top:15px;display:none;">
+        <p class="hint" style="margin-bottom:14px;text-align:center;line-height:1.7;">
+            💡 الزبون يسجّل نفسه من المينيو الإلكتروني، ويكسب نقاط تلقائياً
+            بكل طلب تسويها له بالكاشير (لو استخدم نفس رقم هاتفه)، ويشوف
+            نقاطه ببطاقته الخاصة. من هنا تشوف كل الأعضاء وتضبط قواعد النقاط.
+        </p>
+
+        <!-- إعدادات النقاط -->
+        <div class="card" style="border-color:#ffd700;margin-bottom:16px;max-width:550px;
+                    margin-left:auto;margin-right:auto;">
+            <h4 style="color:#ffd700;margin-bottom:10px;">⚙️ إعدادات النقاط</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div>
+                    <label class="section-label">نقطة لكل كم دينار؟</label>
+                    <input type="number" id="vipPointsPerThousand" class="gold-input-inline"
+                           placeholder="1 نقطة لكل 1000 د.ع">
+                </div>
+                <div>
+                    <label class="section-label">النقاط المطلوبة للمكافأة:</label>
+                    <input type="number" id="vipRedeemThreshold" class="gold-input-inline"
+                           placeholder="مثال: 50">
+                </div>
+            </div>
+            <label class="section-label">وصف المكافأة:</label>
+            <input type="text" id="vipRewardText" class="gold-input-inline"
+                   placeholder="مثال: وجبة مجانية (حتى 10,000 د.ع)" style="margin-bottom:10px;">
+            <button onclick="saveVipSettingsFromAdmin()" class="gold-btn btn-block"
+                    style="background:#ffd700;color:#000;font-weight:900;">
+                <i class="fa-solid fa-check"></i> حفظ الإعدادات
+            </button>
+        </div>
+
+        <!-- البحث والفرز -->
+        <div class="card" style="max-width:900px;margin:0 auto 14px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input type="text" id="vipSearchInput" class="gold-input-inline"
+                       placeholder="🔍 دوّر باسم العضو أو رقم هاتفه..."
+                       style="flex:2;min-width:180px;" oninput="renderVipMembersList()">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;
+                              color:#ccc;cursor:pointer;white-space:nowrap;">
+                    <input type="checkbox" id="vipShowInactiveOnly" onchange="renderVipMembersList()"
+                           style="width:16px;height:16px;">
+                    بس اللي ما طلبوا من 7 أيام
+                </label>
+                <button onclick="loadVipMembersFromCloud()" class="gold-btn btn-sm"
+                        style="width:auto;padding:6px 12px;">🔄 تحديث</button>
+            </div>
+        </div>
+
+        <div id="vipMembersListBox" style="max-width:900px;margin:0 auto;">
+            <p class="empty-note" style="text-align:center;color:#666;padding:20px;">
+                جاري التحميل...
+            </p>
+        </div>
+    </div>
+
     <!-- 7. تبويب الكاشيرية -->
     <div id="tabCashiersControl" class="tab-content"
          style="margin-top:15px;display:none;">
@@ -1668,7 +1731,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1727"></script>
+<script src="app.js?v=1729"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -1786,6 +1849,10 @@ function switchAdminTab(tabId, btn) {
         loadInvoiceDesignForm();
     if (tabId === 'tabComboDealsControl' && typeof renderComboDealsList === 'function')
         renderComboDealsList();
+    if (tabId === 'tabVipControl' && typeof loadVipMembersFromCloud === 'function') {
+        loadVipSettingsForm();
+        loadVipMembersFromCloud();
+    }
 }
 
 /* ==========================================
@@ -2844,6 +2911,90 @@ function deletePlatformFromAdmin(id) {
    🎁 عروض وبوكسات - نظام كامل ومستقل
    ========================================== */
 
+/* ==========================================
+   🌟 إدارة أعضاء MIM89 VIP بالأدمن
+   ========================================== */
+function loadVipSettingsForm() {
+    const s = getLoyaltySettings();
+    document.getElementById('vipPointsPerThousand').value = s.pointsPerThousand;
+    document.getElementById('vipRedeemThreshold').value   = s.redeemThreshold;
+    document.getElementById('vipRewardText').value        = s.redeemRewardText;
+}
+
+function saveVipSettingsFromAdmin() {
+    const pointsPerThousand = parseFloat(document.getElementById('vipPointsPerThousand').value) || 1;
+    const redeemThreshold   = parseFloat(document.getElementById('vipRedeemThreshold').value) || 50;
+    const redeemRewardText  = document.getElementById('vipRewardText').value.trim() ||
+        'وجبة مجانية (حتى 10,000 د.ع)';
+
+    saveLoyaltySettings({ pointsPerThousand, redeemThreshold, redeemRewardText });
+    alert('✅ تم حفظ إعدادات النقاط!');
+}
+
+let allVipMembersCache = [];
+
+async function loadVipMembersFromCloud() {
+    const box = document.getElementById('vipMembersListBox');
+    box.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">⏳ جاري التحميل...</p>';
+    try {
+        allVipMembersCache = await getAllLoyaltyMembers();
+        renderVipMembersList();
+    } catch (err) {
+        console.error(err);
+        box.innerHTML = '<p style="text-align:center;color:#ef4444;padding:20px;">' +
+            '⚠️ تعذّر تحميل الأعضاء.</p>';
+    }
+}
+
+function renderVipMembersList() {
+    const box = document.getElementById('vipMembersListBox');
+    if (!box) return;
+
+    const search       = (document.getElementById('vipSearchInput')?.value || '').trim().toLowerCase();
+    const inactiveOnly = document.getElementById('vipShowInactiveOnly')?.checked;
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+    let members = allVipMembersCache.slice();
+    if (search) {
+        members = members.filter(m =>
+            (m.name||'').toLowerCase().includes(search) || (m.phone||'').includes(search)
+        );
+    }
+    if (inactiveOnly) {
+        members = members.filter(m => !m.lastOrderDate || m.lastOrderDate < sevenDaysAgo);
+    }
+    members.sort((a,b) => cleanPrice(b.points) - cleanPrice(a.points));
+
+    if (members.length === 0) {
+        box.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا يوجد أعضاء مطابقين</p>';
+        return;
+    }
+
+    box.innerHTML = '<table class="data-table"><thead><tr>' +
+        '<th>الاسم</th><th>الهاتف</th><th>النقاط</th><th>آخر طلب</th><th>واتساب</th>' +
+        '</tr></thead><tbody>' +
+        members.map(m => {
+            const lastOrderText = m.lastOrderDate
+                ? new Date(m.lastOrderDate).toLocaleDateString('ar-IQ')
+                : 'ما طلب بعد';
+            const isInactive = !m.lastOrderDate || m.lastOrderDate < sevenDaysAgo;
+            const waMsg = encodeURIComponent(
+                'مرحباً ' + m.name + '! 🌟 اشتقنالك بمطعم MIM89 — تعال زورنا وخذ عرضك المفاجئ! 🍔'
+            );
+            return '<tr>' +
+                '<td><strong>' + m.name + '</strong></td>' +
+                '<td style="direction:ltr;text-align:left;">' + m.phone + '</td>' +
+                '<td style="color:#ffd700;font-weight:900;">' + cleanPrice(m.points) + '</td>' +
+                '<td style="' + (isInactive ? 'color:#ef4444;' : 'color:#888;') + '">' +
+                lastOrderText + '</td>' +
+                '<td><a href="https://wa.me/964' + m.phone.replace(/^0/,'') + '?text=' + waMsg +
+                '" target="_blank" class="gold-btn btn-sm" ' +
+                'style="background:#10b981;color:#fff;text-decoration:none;' +
+                'display:inline-block;padding:4px 10px;">📱</a></td>' +
+                '</tr>';
+        }).join('') + '</tbody></table>';
+}
+
 function getComboDeals() {
     return (typeof getData === 'function' ? getData('sys_combo_deals') : null) || [];
 }
@@ -3214,7 +3365,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1727'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1727)
+    const CURRENT_PAGE_VERSION = '1729'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1729)
 
     async function checkForFreshPageVersion() {
         try {
