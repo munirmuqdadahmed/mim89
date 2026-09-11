@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1722';
+const MIM89_APP_VERSION = '1723';
 
 /* ==========================================
    المتغيرات العامة
@@ -5054,6 +5054,20 @@ async function saveItem() {
 
     const ingredients = document.getElementById('itemIngredients')?.value.trim() || '';
 
+    // 🆕 جمع بيانات الأحجام الذكية إذا مفعّلة
+    let sizes = null;
+    if (document.getElementById('itemHasSizes')?.checked) {
+        const rawSizes = [
+            { label: document.getElementById('sizeSmallLabel')?.value.trim(),
+              price: cleanPrice(document.getElementById('sizeSmallPrice')?.value) },
+            { label: document.getElementById('sizeMediumLabel')?.value.trim(),
+              price: cleanPrice(document.getElementById('sizeMediumPrice')?.value) },
+            { label: document.getElementById('sizeLargeLabel')?.value.trim(),
+              price: cleanPrice(document.getElementById('sizeLargePrice')?.value) }
+        ].filter(s => s.label && s.price > 0);
+        if (rawSizes.length >= 2) sizes = rawSizes; // لازم حجمين ع الأقل يستاهل العرض
+    }
+
     if (!name || !price)
         return alert("⚠️ أدخل اسم الصنف والسعر!");
 
@@ -5063,6 +5077,7 @@ async function saveItem() {
         category:    categoryId,
         image,
         ingredients,
+        sizes, // 🆕 null لو ما فيه أحجام، أو مصفوفة [{label,price}, ...]
         updatedAt:   Date.now(),
         _imageUploaded: !!image
     };
@@ -5138,14 +5153,40 @@ function editItem(id) {
         'https://via.placeholder.com/150';
     document.getElementById('itemIngredients').value = item.ingredients || '';
     document.getElementById('itemFormTitle').innerText = "تعديل: " + item.name;
+
+    // 🆕 تحميل بيانات الأحجام الذكية إذا موجودة
+    const hasSizesChk = document.getElementById('itemHasSizes');
+    if (item.sizes && Array.isArray(item.sizes) && item.sizes.length >= 2) {
+        hasSizesChk.checked = true;
+        toggleSizesFields();
+        const [s1, s2, s3] = item.sizes;
+        if (s1) { document.getElementById('sizeSmallLabel').value  = s1.label; document.getElementById('sizeSmallPrice').value  = s1.price; }
+        if (s2) { document.getElementById('sizeMediumLabel').value = s2.label; document.getElementById('sizeMediumPrice').value = s2.price; }
+        if (s3) { document.getElementById('sizeLargeLabel').value  = s3.label; document.getElementById('sizeLargePrice').value  = s3.price; }
+    } else {
+        hasSizesChk.checked = false;
+        toggleSizesFields();
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// إظهار/إخفاء حقول الأحجام الذكية
+function toggleSizesFields() {
+    const box = document.getElementById('sizesFieldsBox');
+    if (box) box.style.display = document.getElementById('itemHasSizes')?.checked ? 'block' : 'none';
+}
+
 function resetItemForm() {
-    ['editItemId','itemName','itemPrice','itemImage','itemIngredients'].forEach(id => {
+    ['editItemId','itemName','itemPrice','itemImage','itemIngredients',
+     'sizeSmallLabel','sizeSmallPrice','sizeMediumLabel','sizeMediumPrice',
+     'sizeLargeLabel','sizeLargePrice'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    const hasSizesChk = document.getElementById('itemHasSizes');
+    if (hasSizesChk) hasSizesChk.checked = false;
+    toggleSizesFields();
     currentUploadedBase64 = '';
     const preview = document.getElementById('imgPreview');
     if (preview) preview.src = 'https://via.placeholder.com/150?text=معاينة';
