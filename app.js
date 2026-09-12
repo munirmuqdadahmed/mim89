@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1730';
+const MIM89_APP_VERSION = '1731';
 
 /* ==========================================
    المتغيرات العامة
@@ -2704,7 +2704,9 @@ function getLoyaltySettings() {
     return getData('sys_loyalty_settings') || {
         pointsPerThousand: 1,     // نقطة وحدة لكل 1000 د.ع بالفاتورة
         redeemThreshold:   50,    // النقاط المطلوبة لوجبة مجانية
-        redeemRewardText:  'وجبة مجانية (حتى 10,000 د.ع)'
+        redeemRewardText:  'وجبة مجانية (حتى 10,000 د.ع)',
+        referralBonusReferrer: 20, // 🆕 نقاط تُمنح لصاحب الدعوة
+        referralBonusNewbie:   10  // 🆕 نقاط ترحيبية للصديق الجديد
     };
 }
 
@@ -2723,7 +2725,9 @@ function clearCurrentVipPhone() {
 }
 
 // 📝 تسجيل عضو جديد بـ MIM89 VIP - برقم الهاتف ورمز شخصي بس
-async function signUpLoyaltyMember(name, phone, birthdate, gender, pin) {
+// 🆕 يدعم "رمز دعوة" اختياري (رقم هاتف صديق مسجّل أصلاً) - لو صحيح، يمنح
+// نقاط ترحيبية للعضو الجديد + نقاط مكافأة لصاحب الدعوة تلقائياً
+async function signUpLoyaltyMember(name, phone, birthdate, gender, pin, referredByPhone) {
     const cleanPhone = String(phone).replace(/[^0-9]/g,'');
     if (!cleanPhone) throw { code: 'vip/invalid-phone', message: 'رقم الهاتف غير صحيح' };
     if (!pin || pin.length < 4) throw { code: 'vip/weak-pin', message: 'الرمز 4 أرقام على الأقل' };
@@ -2734,13 +2738,36 @@ async function signUpLoyaltyMember(name, phone, birthdate, gender, pin) {
     if (existing.exists)
         throw { code: 'vip/already-exists', message: 'هذا الرقم مسجّل عضوية أصلاً - سجّل دخولك' };
 
+    const settings = getLoyaltySettings();
+    let startingPoints = 0;
+    let referrerPhone  = null;
+
+    // 🎁 التحقق من رمز الدعوة (رقم هاتف صديق مسجّل)
+    if (referredByPhone) {
+        const cleanReferrer = String(referredByPhone).replace(/[^0-9]/g,'');
+        if (cleanReferrer && cleanReferrer !== cleanPhone) {
+            const referrerDoc = await db.collection('loyalty_members').doc(cleanReferrer).get();
+            if (referrerDoc.exists) {
+                referrerPhone  = cleanReferrer;
+                startingPoints = cleanPrice(settings.referralBonusNewbie);
+                // منح صاحب الدعوة نقاطه فوراً
+                const referrerData = referrerDoc.data();
+                await db.collection('loyalty_members').doc(cleanReferrer).set({
+                    points: cleanPrice(referrerData.points) + cleanPrice(settings.referralBonusReferrer),
+                    referralsCount: cleanPrice(referrerData.referralsCount) + 1
+                }, { merge: true });
+            }
+        }
+    }
+
     await db.collection('loyalty_members').doc(cleanPhone).set({
         name, phone: cleanPhone, birthdate, gender, pin,
-        points: 0, joinedAt: Date.now(), lastOrderDate: null
+        points: startingPoints, joinedAt: Date.now(), lastOrderDate: null,
+        referredBy: referrerPhone, referralsCount: 0
     });
 
     setCurrentVipPhone(cleanPhone);
-    return { phone: cleanPhone };
+    return { phone: cleanPhone, welcomeBonus: startingPoints };
 }
 
 async function logInLoyaltyMember(phone, pin) {
@@ -2830,6 +2857,15 @@ async function getAllLoyaltyMembers() {
     if (!db) return [];
     const snap = await db.collection('loyalty_members').get();
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// 🎂 فحص إذا كان الشهر الحالي هو شهر ميلاد العضو - لعرض مكافأة خاصة ببطاقته
+function isLoyaltyMemberBirthdayMonth(birthdate) {
+    if (!birthdate) return false;
+    try {
+        const bMonth = new Date(birthdate).getMonth();
+        return bMonth === new Date().getMonth();
+    } catch (_) { return false; }
 }
 
 function reprintCompletedOrder(orderId) {
