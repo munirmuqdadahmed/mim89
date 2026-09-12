@@ -76,7 +76,14 @@
         <input type="password" id="vipPin" placeholder="مثال: 1234" inputmode="numeric"
                style="direction:ltr;text-align:center;letter-spacing:3px;">
         <p style="font-size:0.7rem;color:#888;margin-top:5px;">
-            💡 تحفظه وتستخدمه لدخولك بأي وقت.
+            💡 تحفظه وتستخدمه لدخولك بأي وقت - ما نحتاج إيميل ولا كلمة مرور معقّدة.
+        </p>
+
+        <label>رقم هاتف صديقك (إذا دعاك، اختياري) 🎁:</label>
+        <input type="tel" id="vipReferrer" placeholder="07xxxxxxxxx (اختياري)"
+               style="direction:ltr;text-align:left;">
+        <p style="font-size:0.7rem;color:#10b981;margin-top:5px;">
+            🎁 لو صديقك عضو أصلاً وحطيت رقمه، تاخذوا الاثنين نقاط ترحيبية إضافية!
         </p>
 
         <button id="submitBtn" onclick="handleSignup()">🌟 انضم لـ MIM89 VIP</button>
@@ -86,14 +93,22 @@
         <div class="link"><a href="index.html">🔙 رجوع للمينيو</a></div>
     </div>
 
-    <script src="app.js?v=1729"></script>
+    <script src="app.js?v=1731"></script>
     <script>
+        // 🎁 لو الزبون جا من رابط دعوة صديق (?ref=07xxxxxxxxx)، نعبّي الحقل تلقائياً
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(location.search);
+            const ref = params.get('ref');
+            if (ref) document.getElementById('vipReferrer').value = ref;
+        });
+
         async function handleSignup() {
-            const name      = document.getElementById('vipName').value.trim();
-            const phone     = document.getElementById('vipPhone').value.trim();
-            const birthdate = document.getElementById('vipBirthdate').value;
-            const gender    = document.getElementById('vipGender').value;
-            const pin       = document.getElementById('vipPin').value.trim();
+            const name       = document.getElementById('vipName').value.trim();
+            const phone      = document.getElementById('vipPhone').value.trim();
+            const birthdate  = document.getElementById('vipBirthdate').value;
+            const gender     = document.getElementById('vipGender').value;
+            const pin        = document.getElementById('vipPin').value.trim();
+            const referrer   = document.getElementById('vipReferrer').value.trim();
             const errEl = document.getElementById('errorMsg');
             const btn   = document.getElementById('submitBtn');
             errEl.innerText = '';
@@ -107,7 +122,10 @@
             btn.innerText = 'جاري التسجيل...';
 
             try {
-                await signUpLoyaltyMember(name, phone, birthdate, gender, pin);
+                const result = await signUpLoyaltyMember(name, phone, birthdate, gender, pin, referrer);
+                if (result.welcomeBonus > 0) {
+                    alert('🎉 مبروك! حصلت على ' + result.welcomeBonus + ' نقطة ترحيبية بفضل دعوة صديقك!');
+                }
                 window.location.href = 'vip-card.html';
             } catch (err) {
                 btn.disabled = false;
