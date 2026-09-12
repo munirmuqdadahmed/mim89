@@ -68,7 +68,7 @@
         <p class="empty-note">⏳ جاري التحميل...</p>
     </div>
 
-    <script src="app.js?v=1729"></script>
+    <script src="app.js?v=1731"></script>
     <script>
         (async function initVipCard() {
             const content = document.getElementById('content');
@@ -102,7 +102,33 @@
                 const joinDate = member.joinedAt
                     ? new Date(member.joinedAt).toLocaleDateString('ar-IQ') : '';
 
+                // 🎂 هل هذا شهر ميلاد العضو؟
+                const isBirthdayMonth = typeof isLoyaltyMemberBirthdayMonth === 'function'
+                    && isLoyaltyMemberBirthdayMonth(member.birthdate);
+
+                // 🎁 رابط دعوة صديق - يحمل رقم هاتف العضو كرمز دعوة
+                const referralLink = location.origin + location.pathname.replace('vip-card.html','vip-signup.html') +
+                    '?ref=' + member.phone;
+                const referralWaText = encodeURIComponent(
+                    '🍔 جرّب MIM89! أفضل وجبات بالمدينة، وإذا تسجّل من هذا الرابط ' +
+                    'نحصل الاثنين نقاط هدية 🎁: ' + referralLink
+                );
+
                 content.innerHTML = `
+                    ${isBirthdayMonth ? `
+                        <div style="max-width:420px;margin:0 auto 14px;background:#1a0d1a;
+                                    border:2px solid #ec4899;border-radius:12px;padding:12px;
+                                    text-align:center;">
+                            <div style="font-size:1.6rem;">🎂</div>
+                            <p style="color:#ec4899;font-weight:900;margin-top:4px;">
+                                عيد ميلادك السعيد هذا الشهر!
+                            </p>
+                            <div style="color:#999;font-size:0.75rem;margin-top:3px;">
+                                زورنا هذا الشهر وسولف مع الكاشير عن مفاجأتك 🎉
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div class="vip-card">
                         <div class="brand">🌟 MIM89 VIP</div>
                         <div class="member-name">${member.name}</div>
@@ -127,6 +153,30 @@
                                 ${settings.redeemThreshold - points} نقطة متبقية لـ${settings.redeemRewardText}
                             </div>
                         `}
+                    </div>
+
+                    <div class="section">
+                        <div style="background:linear-gradient(135deg,#0d1a14,#111116);
+                                    border:1px solid #10b981;border-radius:12px;padding:14px;
+                                    text-align:center;">
+                            <div style="font-size:1.3rem;">🎁</div>
+                            <p style="color:#10b981;font-weight:900;margin-top:4px;font-size:0.9rem;">
+                                ادعُ صديق واكسبوا نقاط سوا!
+                            </p>
+                            <p style="color:#999;font-size:0.72rem;margin-top:4px;">
+                                إنت تاخذ ${settings.referralBonusReferrer} نقطة، وصديقك ياخذ
+                                ${settings.referralBonusNewbie} نقطة ترحيبية
+                                ${cleanPrice(member.referralsCount) > 0
+                                    ? '<br>🌟 دعيت ' + cleanPrice(member.referralsCount) + ' صديق لين الحين!'
+                                    : ''}
+                            </p>
+                            <a href="https://wa.me/?text=${referralWaText}" target="_blank"
+                               style="display:inline-block;margin-top:10px;background:#10b981;
+                                      color:#fff;padding:9px 18px;border-radius:8px;
+                                      text-decoration:none;font-weight:900;font-size:0.85rem;">
+                                <i class="fa-brands fa-whatsapp"></i> شارك رابط دعوتك
+                            </a>
+                        </div>
                     </div>
 
                     <div class="section">
