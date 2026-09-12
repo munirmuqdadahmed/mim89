@@ -343,17 +343,41 @@
             </div>
         </button>
 
-        <!-- 🌟 MIM89 VIP -->
-        <a href="vip-card.html" class="drawer-link-btn"
-           style="border-color:#ffd700;background:rgba(255,215,0,0.1);
-                  color:#ffd700;margin-bottom:14px;text-decoration:none;
-                  display:flex;align-items:center;gap:10px;">
-            <i class="fa-solid fa-star" style="font-size:1.3rem;"></i>
-            <div>
-                <div>🌟 MIM89 VIP</div>
-                <small style="color:#bbb;">نقاطك وبطاقتك الذهبية</small>
+        <!-- 🌟 MIM89 VIP - بطاقة تكت مميزة، تظهر حالة العضوية مباشرة -->
+        <a href="vip-card.html" id="vipTicketBtn" class="vip-ticket-btn">
+            <div class="vip-ticket-notch vip-notch-top"></div>
+            <div class="vip-ticket-notch vip-notch-bottom"></div>
+            <div class="vip-ticket-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="vip-ticket-text">
+                <div id="vipTicketTitle" class="vip-ticket-title">🌟 MIM89 VIP</div>
+                <small id="vipTicketSub" class="vip-ticket-sub">اضغط للانضمام واكسب نقاط</small>
             </div>
+            <div id="vipTicketBadge" class="vip-ticket-badge" style="display:none;"></div>
         </a>
+        <style>
+            .vip-ticket-btn {
+                position: relative; display: flex; align-items: center; gap: 10px;
+                background: linear-gradient(135deg, #1a1608, #0d0d11);
+                border: 1.5px dashed #ffd700; border-radius: 12px;
+                padding: 12px 14px; margin-bottom: 14px; text-decoration: none;
+                color: #ffd700; overflow: hidden;
+            }
+            .vip-ticket-notch {
+                position: absolute; right: -8px; width: 16px; height: 16px;
+                background: #060608; border-radius: 50%;
+            }
+            .vip-notch-top { top: -8px; }
+            .vip-notch-bottom { bottom: -8px; }
+            .vip-ticket-icon { font-size: 1.3rem; }
+            .vip-ticket-text { flex: 1; min-width: 0; }
+            .vip-ticket-title { font-weight: 900; }
+            .vip-ticket-sub { color: #bbb; }
+            .vip-ticket-badge {
+                background: #ffd700; color: #000; font-weight: 900;
+                font-size: 0.72rem; padding: 4px 10px; border-radius: 20px;
+                white-space: nowrap;
+            }
+        </style>
 
         <!-- الاتصال -->
         <div class="drawer-section-title">
@@ -744,7 +768,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1729"></script>
+<script src="app.js?v=1731"></script>
 <script>
     var activeAppliedCoupon      = null;
     var activeTrackingUnsubscribe = null;
@@ -1129,7 +1153,32 @@
         }, 800);
 
         try { if (typeof updateCartBadge === 'function') updateCartBadge(); } catch (_) {}
+
+        // 🌟 تحديث بطاقة VIP بالبردة الجانبية - لو الزبون مسجّل دخول أصلاً
+        // (من زيارة سابقة)، تظهر اسمه ونقاطه مباشرة بدون ما يحتاج يفتح
+        // صفحة ثانية أو يسجّل دخول من جديد - نفس الجلسة تضل شغالة للأبد
+        // (localStorage) لين يسجّل خروج بنفسه.
+        setTimeout(updateVipTicketStatus, 900);
     });
+
+    async function updateVipTicketStatus() {
+        try {
+            const phone = typeof getCurrentVipPhone === 'function' ? getCurrentVipPhone() : null;
+            if (!phone) return; // مو مسجّل عضوية - يضل الزر بشكله العام
+
+            if (typeof ensureAnonymousSignedIn === 'function') await ensureAnonymousSignedIn();
+            const member = await getLoyaltyMemberInfo(phone);
+            if (!member) return;
+
+            document.getElementById('vipTicketTitle').innerText = '🌟 ' + member.name;
+            document.getElementById('vipTicketSub').innerText   = 'اضغط لبطاقتك وطلباتك';
+            const badge = document.getElementById('vipTicketBadge');
+            badge.innerText = cleanPrice(member.points) + ' نقطة';
+            badge.style.display = 'inline-block';
+        } catch (err) {
+            console.warn('تعذّر تحديث حالة VIP:', err);
+        }
+    }
 
     /* ==========================================
        🆕 التحديث التلقائي - يحل مشكلة "الزبون يشوف نسخة قديمة"
@@ -1145,7 +1194,7 @@
        رقم إصدار app.js المكتوب فيها مع اللي شغال حالياً بمتصفحه. إذا
        اختلفوا، يعيد تحميل الصفحة تلقائياً بدون ما يحتاج الزبون يسوي أي شي. */
     (function () {
-        const CURRENT_MENU_VERSION = '1729'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1729)
+        const CURRENT_MENU_VERSION = '1731'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1731)
 
         async function checkForFreshMenuVersion() {
             try {
