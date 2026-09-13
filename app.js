@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1736';
+const MIM89_APP_VERSION = '1737';
 
 /* ==========================================
    المتغيرات العامة
@@ -6637,7 +6637,8 @@ function cleanupStorage() {
 /* ==========================================
    🌐 المينيو الإلكتروني للزبائن
    ========================================== */
-function setupPublicMenuRealtimeListener() {
+function setupPublicMenuRealtimeListener(retryCount) {
+    retryCount = retryCount || 0;
     if (db) {
         db.collection("menu_items").onSnapshot(
             { includeMetadataChanges: true },
@@ -6653,14 +6654,30 @@ function setupPublicMenuRealtimeListener() {
                     renderPublicMenuUI();
                 }
             },
-            () => renderPublicMenuUI()
+            err => {
+                console.warn('⚠️ خطأ بمستمع المينيو العام:', err);
+                renderPublicMenuUI();
+                // 🆕 شبكة أمان: لو المستمع فشل (مثلاً رفض مؤقت من قواعد
+                // الحماية قبل ما يخلص تسجيل الدخول المجهول)، نعيد المحاولة
+                // تلقائياً بدل ما يضل الزبون عالق على "جاري التحميل" للأبد
+                if (retryCount < 4) {
+                    setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 1500 * (retryCount + 1));
+                }
+            }
         );
     } else {
         renderPublicMenuUI();
     }
 }
 
-function loadPublicMenu() {
+async function loadPublicMenu() {
+    // 🛠️ إصلاح جذري مهم جداً: كان هذا يفعّل مستمع المينيو فوراً بدون ما
+    // ينتظر اكتمال تسجيل الدخول المجهول. لو الشبكة بطيئة شوي (خصوصاً أول
+    // زيارة على جهاز ما سجّل دخول مجهول فيه قبل)، أول محاولة قراءة تنرفض
+    // بصمت من قواعد الحماية، والمستمع "يموت" ولا يعيد المحاولة تلقائياً -
+    // فيضل الزبون عالق على "جاري تحميل المينيو" للأبد. الحين ننتظر اكتمال
+    // تسجيل الدخول أولاً قبل ما نحاول نقرا أي شي من قاعدة البيانات.
+    try { await firebaseAuthReadyPromise; } catch (_) {}
     setupPublicMenuRealtimeListener();
 }
 
