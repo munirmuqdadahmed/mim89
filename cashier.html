@@ -204,6 +204,15 @@
                                     style="font-size:0.8rem;padding:6px;cursor:pointer;"
                                     onchange="onPosAreaChanged()">
                             </select>
+
+                            <!-- 🆕 موقع GPS - الصق رابط الخريطة من رسالة الواتساب (إذا الزبون
+                                 حدد موقعه بالمينيو الإلكتروني)، ينحفظ بالطلب ويوصل للسائق مباشرة -->
+                            <span class="section-label" style="color:#10b981;margin-top:6px;">
+                                <i class="fa-solid fa-map-location-dot"></i> رابط الموقع (اختياري):
+                            </span>
+                            <input type="text" id="posGpsLink" class="gold-input-inline"
+                                   style="font-size:0.75rem;padding:6px;direction:ltr;"
+                                   placeholder="الصق رابط خرائط جوجل من الواتساب هنا">
                         </div>
 
                         <!-- الدفع -->
@@ -510,6 +519,19 @@
 </div>
 
 <!-- 🔄 تغيير نوع الخدمة لفاتورة مكتملة -->
+<!-- 📏 نافذة اختيار الحجم السريعة -->
+<div id="cashierSizePickerModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:360px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:12px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 id="cashierSizePickerTitle" style="color:#fbbf24;font-size:0.95rem;"></h4>
+            <button onclick="closeModal('cashierSizePickerModal')"
+                    class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <div id="cashierSizePickerBody"></div>
+    </div>
+</div>
+
 <div id="changeServiceTypeModal" class="modal-overlay">
     <div class="modal-body" style="max-width:400px;">
         <div style="display:flex;justify-content:space-between;align-items:center;
@@ -717,7 +739,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1731"></script>
+<script src="app.js?v=1735"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -845,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
    بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1731'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1731)
+    const CURRENT_PAGE_VERSION = '1735'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1735)
 
     async function checkForFreshPageVersion() {
         try {
