@@ -576,6 +576,15 @@
                 <input type="text" id="custAddress" class="gold-input-inline"
                        placeholder="العنوان التفصيلي (اختياري)..."
                        style="margin-bottom:8px;">
+
+                <!-- 🆕 تحديد الموقع عبر GPS - أسرع وأدق من الكتابة اليدوية -->
+                <button type="button" id="gpsLocationBtn" onclick="captureCustomerGpsLocation()"
+                        style="width:100%;padding:9px;background:#1a2b22;color:var(--gold-bright);
+                               border:1px solid var(--gold-primary);border-radius:8px;
+                               font-size:0.82rem;font-weight:bold;cursor:pointer;margin-bottom:6px;">
+                    📍 حدد موقعي بالـ GPS (أسرع من الكتابة)
+                </button>
+                <p id="gpsLocationStatus" style="font-size:0.72rem;color:#888;margin:0 0 8px;"></p>
             </div>
 
             <input type="text" id="orderNotes" class="gold-input-inline"
@@ -606,6 +615,23 @@
                 <span>المجموع الكلي:</span>
                 <strong id="finalTotalPrice" style="color:var(--gold-bright);">0 د.ع</strong>
             </div>
+        </div>
+
+        <!-- 🌟 تنبيه VIP - يظهر بس لو الزبون مو مسجّل عضوية أصلاً -->
+        <div id="vipNudgeBanner" style="display:none;background:linear-gradient(135deg,#1a1608,#0d0d11);
+                    border:1.5px dashed #ffd700;border-radius:10px;padding:10px 12px;
+                    margin-bottom:12px;text-align:center;">
+            <div style="font-size:0.85rem;color:#ffd700;font-weight:900;">
+                🌟 سجّل بـ MIM89 VIP واكسب نقاط بهذا الطلب!
+            </div>
+            <div style="font-size:0.72rem;color:#bbb;margin-top:3px;">
+                تقدر تسجّل الآن بثواني (بياناتك محفوظة)، أو تسجّل بعدين من القائمة الجانبية
+            </div>
+            <a href="vip-signup.html" style="display:inline-block;margin-top:8px;background:#ffd700;
+               color:#000;padding:7px 16px;border-radius:6px;text-decoration:none;
+               font-weight:900;font-size:0.78rem;">
+                سجّل الآن وابدأ تكسب نقاط
+            </a>
         </div>
 
         <button type="button" id="sendOrderBtn" onclick="submitOrderToCashier()"
@@ -768,7 +794,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1731"></script>
+<script src="app.js?v=1736"></script>
 <script>
     var activeAppliedCoupon      = null;
     var activeTrackingUnsubscribe = null;
@@ -869,12 +895,59 @@
         select.innerHTML = html;
     }
 
+    // 🆕 تحديد موقع الزبون بالـ GPS - متغيّر عام حتى ما ينصفر كل ما يتغيّر
+    // نوع الخدمة، ويترسل مع رسالة الواتساب كرابط خريطة مباشر يقدر
+    // الكاشير/السائق يضغطه ويوصل بالضبط
+    var customerGpsLocation = null;
+    window.captureCustomerGpsLocation = function() {
+        const btn = document.getElementById('gpsLocationBtn');
+        const status = document.getElementById('gpsLocationStatus');
+        if (!navigator.geolocation) {
+            status.style.color = '#ef4444';
+            status.innerText = '⚠️ متصفحك ما يدعم تحديد الموقع.';
+            return;
+        }
+        btn.disabled = true;
+        btn.innerText = '⏳ جاري تحديد موقعك...';
+        status.style.color = '#fbbf24';
+        status.innerText = '📡 ينتظر إذن الوصول لموقعك من المتصفح...';
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                customerGpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                btn.disabled = false;
+                btn.innerText = '📍 حدد موقعي بالـ GPS (أسرع من الكتابة)';
+                status.style.color = '#10b981';
+                status.innerText = '✅ تم تحديد موقعك بدقة - راح ينرسل مع طلبك';
+            },
+            err => {
+                btn.disabled = false;
+                btn.innerText = '📍 حدد موقعي بالـ GPS (أسرع من الكتابة)';
+                status.style.color = '#ef4444';
+                status.innerText = '⚠️ تعذّر الوصول لموقعك - تأكد وافقت على إذن الموقع، أو اكتب عنوانك بالأسفل.';
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
+    window.getCapturedCustomerGpsLocation = function() { return customerGpsLocation; };
+
+    // 🌟 إظهار تنبيه VIP بس لو الزبون مو مسجّل عضوية أصلاً
+    function updateVipNudgeVisibility() {
+        const banner = document.getElementById('vipNudgeBanner');
+        if (!banner) return;
+        try {
+            const isVip = typeof getCurrentVipPhone === 'function' && getCurrentVipPhone();
+            banner.style.display = isVip ? 'none' : 'block';
+        } catch (_) {}
+    }
+
     function toggleDeliveryFields() {
         const type    = document.getElementById('orderTypeSelect')?.value;
         const group   = document.getElementById('deliveryFieldsGroup');
         const feeLine = document.getElementById('deliveryFeeLine');
         if (group)   group.style.display   = (type === 'delivery') ? 'block' : 'none';
         if (feeLine) feeLine.style.display  = (type === 'delivery') ? 'flex'  : 'none';
+        updateVipNudgeVisibility();
         calculateDeliveryCostPublic();
     }
 
@@ -1082,6 +1155,13 @@
         if (type === 'delivery') {
             waMsg += '📍 *المنطقة:* ' + area + '\n';
             if (address) waMsg += '🏠 *العنوان:* ' + address + '\n';
+            // 🆕 رابط GPS مباشر لو الزبون حدد موقعه - يفتح خرائط جوجل بضغطة
+            const gpsLoc = typeof getCapturedCustomerGpsLocation === 'function'
+                ? getCapturedCustomerGpsLocation() : null;
+            if (gpsLoc) {
+                waMsg += '🗺️ *الموقع بالضبط:* https://www.google.com/maps?q=' +
+                    gpsLoc.lat + ',' + gpsLoc.lng + '\n';
+            }
         }
         if (notes) waMsg += '📝 *ملاحظات:* ' + notes + '\n';
         waMsg += '——————————————\n';
@@ -1122,6 +1202,65 @@
         if (typeof saveOrderLocally === 'function') saveOrderLocally(orderData);
         if (typeof db !== 'undefined' && db) {
             db.collection("orders").add(orderData).catch(() => {});
+        }
+
+        // 🆕 حفظ مخفي تلقائي مباشر بنظام الطلبات الحقيقي (completed_orders) -
+        // نفس السجل اللي يستخدمه الكاشير والأدمن والسائق بالضبط. هذا يخلي
+        // الطلب يطلع بـ"حوض السواق المفتوح" فوراً بدون ما الكاشير يحتاج
+        // يعيد كتابته يدوياً. الزبون ما يشوف ولا يحس بأي شي إضافي - بس
+        // رسالة الواتساب العادية زي قبل بالضبط.
+        if (type === 'delivery' && typeof db !== 'undefined' && db) {
+            (async () => {
+                try {
+                    let orderNumSeq = 1;
+                    try {
+                        const todaySnap = await db.collection('completed_orders')
+                            .where('dateDate', '==', (typeof getTodayString === 'function' ? getTodayString() : ''))
+                            .get({ source: 'server' });
+                        let maxNum = 0;
+                        todaySnap.forEach(doc => {
+                            const n = cleanPrice(doc.data().orderNum);
+                            if (n > maxNum) maxNum = n;
+                        });
+                        orderNumSeq = maxNum + 1;
+                    } catch (_) {}
+
+                    const gpsLoc = typeof getCapturedCustomerGpsLocation === 'function'
+                        ? getCapturedCustomerGpsLocation() : null;
+
+                    const realOrderId = "ORD_ONLINE_" + Date.now();
+                    const realOrder = {
+                        id:            realOrderId,
+                        orderNum:      orderNumSeq,
+                        customerName:  name,
+                        phone:         phone,
+                        orderType:     'توصيل',
+                        area:          area,
+                        paymentMethod: 'كاش',
+                        driverName:    (typeof OPEN_DRIVER_POOL_MARKER !== 'undefined'
+                                        ? OPEN_DRIVER_POOL_MARKER : 'حوض_السواق_المفتوح'),
+                        gpsLocation:   gpsLoc,
+                        items: cart.map(i => ({
+                            id: i.id, name: String(i.name || ''),
+                            qty: cleanPrice(i.qty) || 1, price: cleanPrice(i.price) || 0,
+                            itemNotes: []
+                        })),
+                        subtotal: subtotal, discount: discount, deliveryFee: fee,
+                        totalAmount: total,
+                        dateDate: (typeof getTodayString === 'function' ? getTodayString() : ''),
+                        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour:'2-digit', minute:'2-digit' }),
+                        createdTimestamp: Date.now(),
+                        cashierName: '🌐 طلب أونلاين تلقائي', // 🆕 علامة واضحة تميّزه بسجل الفواتير
+                        isOnlineAutoOrder: true,
+                        isSettled: false,
+                        orderNotes: notes
+                    };
+
+                    await db.collection('completed_orders').doc(realOrderId).set(realOrder);
+                } catch (err) {
+                    console.warn('تعذّر إنشاء سجل الطلب التلقائي للسائق:', err);
+                }
+            })();
         }
 
         localStorage.setItem('sys_last_order_id', orderId);
@@ -1194,7 +1333,7 @@
        رقم إصدار app.js المكتوب فيها مع اللي شغال حالياً بمتصفحه. إذا
        اختلفوا، يعيد تحميل الصفحة تلقائياً بدون ما يحتاج الزبون يسوي أي شي. */
     (function () {
-        const CURRENT_MENU_VERSION = '1731'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1731)
+        const CURRENT_MENU_VERSION = '1736'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1736)
 
         async function checkForFreshMenuVersion() {
             try {
