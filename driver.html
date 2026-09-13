@@ -165,7 +165,7 @@ function driverLogout() {
     document.getElementById('driverMainScreen').style.display  = 'none';
     document.getElementById('driverLoginScreen').style.display = 'flex';
     document.getElementById('driverPinLogin').value = '';
-    if (driverRefreshTimer) clearInterval(driverRefreshTimer);
+    if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
 }
 
 // عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت
@@ -173,7 +173,13 @@ function renderDriverOrders() {
     if (!activeDriverName) return;
     const all = getData('sys_completed_orders') || [];
     const myOrders = all.filter(o =>
-        o.orderType === 'توصيل' && o.driverName === activeDriverName && !o.isSettled
+        o.orderType === 'توصيل' && o.driverName === activeDriverName && !o.isSettled &&
+        // 🛠️ إصلاح جذري: استبعاد أي سجل ناقص/تالف (بدون رقم طلب صحيح، أو
+        // بدون مبلغ فعلي) - هذا كان سبب ظهور "طلبات وهمية" بصفحة السائق
+        // ماكو إلها وجود حقيقي بذمة السائقين بالأدمن (بيانات تجريبية قديمة
+        // ضلت بقاعدة البيانات بالغلط، مو طلبات حقيقية اتباعت من الكاشير)
+        o.orderNum !== undefined && o.orderNum !== null &&
+        cleanPrice(o.totalAmount) > 0
     );
 
     // 🆕 كشف الطلبات الجديدة (اللي لسا ما شافها السائق) وإطلاق تنبيه صوتي
@@ -214,7 +220,8 @@ function renderDriverOrders() {
         const itemsText = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
         return '<div class="driver-order-card' + (o.driverPickedUp ? ' picked' : '') + '">' +
             '<div class="driver-row" style="font-weight:900;">' +
-            '<span>#' + o.orderNum + ' — ' + (o.customerName || 'زبون') + '</span>' +
+            '<span>#' + (o.orderNum !== undefined && o.orderNum !== null ? o.orderNum : '؟') +
+            ' — ' + (o.customerName || 'زبون') + '</span>' +
             '<span style="color:#fbbf24;">' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</span>' +
             '</div>' +
             (o.phone ? '<div class="driver-row"><span>📞 الهاتف:</span>' +
@@ -262,12 +269,29 @@ function markPickedUp(orderId) {
     renderDriverOrders();
 }
 
-// تحديث دوري بسيط - يسحب طلبات هذا السائق تحديداً من السحابة كل 8 ثواني
-// (استعلام بحقل واحد فقط driverName، ما يحتاج فهرس مركّب بفايرستور)
-let driverRefreshTimer = null;
+// 🛠️ إصلاح جذري: التحديث كان دوري بس (كل 8 ثواني) - صار الحين مستمع لحظي
+// حقيقي (onSnapshot) يوصل الطلب الجديد فوراً بمجرد ما ينحفظ بالسحابة، مو
+// بعد انتظار دورة السحب التالية. هذا يحل مشكلة "الصفحة ما تتحدث مباشرة".
+let driverUnsubscribe = null;
 function startDriverAutoRefresh() {
-    if (driverRefreshTimer) clearInterval(driverRefreshTimer);
-    driverRefreshTimer = setInterval(fetchDriverOrdersFromCloud, 8000);
+    if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
+    if (!db || !activeDriverName) return;
+
+    driverUnsubscribe = db.collection('completed_orders')
+        .where('driverName', '==', activeDriverName)
+        .onSnapshot(snap => {
+            let all = getData('sys_completed_orders') || [];
+            snap.docChanges().forEach(change => {
+                const data = change.doc.data();
+                const idx = all.findIndex(o => String(o.id) === String(data.id || change.doc.id));
+                if (idx > -1) all[idx] = { ...all[idx], ...data };
+                else all.unshift(data);
+            });
+            localStorage.setItem('sys_completed_orders', JSON.stringify(all));
+            renderDriverOrders();
+        }, err => {
+            console.warn('تعذّر تفعيل التحديث اللحظي لطلبات السائق:', err);
+        });
 }
 
 async function fetchDriverOrdersFromCloud() {
@@ -316,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1731';
+    const CURRENT_PAGE_VERSION = '1732';
 
     async function checkForFreshPageVersion() {
         try {
