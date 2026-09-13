@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1737';
+const MIM89_APP_VERSION = '1738';
 
 /* ==========================================
    المتغيرات العامة
@@ -6876,7 +6876,33 @@ function openCartModal() {
     renderCartModalItems();
     calculateDeliveryCostPublic();
     if (typeof updateVipNudgeVisibility === 'function') updateVipNudgeVisibility();
+    autofillCustomerInfoFromVip();
     openModal('cartModal');
+}
+
+// 🆕 تعبئة اسم ورقم الزبون تلقائياً من حساب VIP (لو مسجّل دخول) - بس
+// تبقى الحقول قابلة للتعديل الكامل، لأنه ممكن يطلب لشخص ثاني بالبيت
+// (يغيّر الاسم أو يحط رقم هاتف مختلف) - ما نقفلها أبداً
+function autofillCustomerInfoFromVip() {
+    const nameInput  = document.getElementById('custName');
+    const phoneInput = document.getElementById('custPhone');
+    const hint       = document.getElementById('vipAutofillHint');
+    if (!nameInput || !phoneInput) return;
+
+    // لا نعبّي فوق شي كتبه الزبون بنفسه أصلاً بهالجلسة
+    if (nameInput.value.trim() || phoneInput.value.trim()) return;
+
+    try {
+        const phone = typeof getCurrentVipPhone === 'function' ? getCurrentVipPhone() : null;
+        if (!phone) return;
+
+        getLoyaltyMemberInfo(phone).then(member => {
+            if (!member) return;
+            nameInput.value  = member.name  || '';
+            phoneInput.value = member.phone || '';
+            if (hint) hint.style.display = 'block';
+        }).catch(() => {});
+    } catch (_) {}
 }
 
 function renderCartModalItems() {
