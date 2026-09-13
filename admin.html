@@ -175,6 +175,11 @@
                 style="border-color:#ffd700;color:#ffd700;">
             <i class="fa-solid fa-star"></i> أعضاء VIP
         </button>
+        <button class="tab-btn"
+                onclick="switchAdminTab('tabEmployeesControl',this)"
+                style="border-color:#38bdf8;color:#38bdf8;">
+            <i class="fa-solid fa-users"></i> 👥 الموظفين
+        </button>
         <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
             <i class="fa-solid fa-users"></i> الكاشيرية
         </button>
@@ -1412,6 +1417,85 @@
         </div>
     </div>
 
+    <!-- 👥 تبويب الموظفين -->
+    <div id="tabEmployeesControl" class="tab-content"
+         style="margin-top:15px;display:none;">
+
+        <!-- إضافة/تعديل موظف -->
+        <div class="card" style="max-width:550px;margin:0 auto 16px;">
+            <h4 id="empFormTitle" style="color:#38bdf8;margin-bottom:10px;">➕ إضافة موظف جديد</h4>
+            <input type="hidden" id="editEmployeeId">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <input type="text" id="empName" class="gold-input-inline" placeholder="الاسم">
+                <input type="text" id="empRole" class="gold-input-inline" placeholder="الوظيفة (شيف، كاشير...)">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <input type="tel" id="empPhone" class="gold-input-inline" placeholder="رقم الهاتف">
+                <input type="number" id="empSalary" class="gold-input-inline" placeholder="الراتب الشهري (د.ع)">
+            </div>
+            <label class="section-label">تاريخ المباشرة:</label>
+            <input type="date" id="empStartDate" class="gold-input-inline" style="margin-bottom:10px;">
+            <div style="display:flex;gap:8px;">
+                <button onclick="saveEmployee()" class="gold-btn btn-block"
+                        style="background:#38bdf8;color:#000;font-weight:900;">
+                    <i class="fa-solid fa-check"></i> حفظ الموظف
+                </button>
+                <button onclick="resetEmployeeForm()" class="gold-btn btn-sm"
+                        style="width:auto;padding:10px 16px;">إلغاء</button>
+            </div>
+        </div>
+
+        <div id="employeesListBox" style="max-width:900px;margin:0 auto;"></div>
+    </div>
+
+    <!-- 👤 نافذة تفاصيل الموظف الكاملة -->
+    <div id="employeeDetailModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:550px;max-height:85vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:12px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 id="empDetailTitle" style="color:#38bdf8;"></h4>
+                <button onclick="closeModal('employeeDetailModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+
+            <!-- تسجيل حضور اليوم -->
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                <button id="empPresentBtn" onclick="markAttendance('present')" class="gold-btn btn-block"
+                        style="background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">
+                    ✅ حاضر اليوم
+                </button>
+                <button id="empAbsentBtn" onclick="markAttendance('absent')" class="gold-btn btn-block"
+                        style="background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;font-weight:900;">
+                    ❌ غائب اليوم
+                </button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                <div class="info-stat-box">
+                    <div style="font-size:0.7rem;color:#888;">سلف هذا الشهر</div>
+                    <div id="empMonthAdvances" style="font-size:1.1rem;font-weight:900;color:#f59e0b;"></div>
+                </div>
+                <div class="info-stat-box">
+                    <div style="font-size:0.7rem;color:#888;">رواتب مدفوعة هذا الشهر</div>
+                    <div id="empMonthSalaryPaid" style="font-size:1.1rem;font-weight:900;color:#10b981;"></div>
+                </div>
+            </div>
+
+            <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">📋 سجل الحضور (آخر 30 يوم)</h5>
+            <div id="empAttendanceHistory" style="max-height:150px;overflow-y:auto;margin-bottom:14px;"></div>
+
+            <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">💰 سجل السلف والرواتب</h5>
+            <div id="empFinanceHistory" style="max-height:200px;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <style>
+        .info-stat-box {
+            background:#0d0d11;border:1px solid #24392c;border-radius:8px;
+            padding:10px;text-align:center;
+        }
+    </style>
+
     <!-- 7. تبويب الكاشيرية -->
     <div id="tabCashiersControl" class="tab-content"
          style="margin-top:15px;display:none;">
@@ -1731,7 +1815,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1735"></script>
+<script src="app.js?v=1740"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -1853,6 +1937,8 @@ function switchAdminTab(tabId, btn) {
         loadVipSettingsForm();
         loadVipMembersFromCloud();
     }
+    if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function')
+        renderEmployeesTab();
 }
 
 /* ==========================================
@@ -2858,6 +2944,235 @@ function openPlatformSettlementModal() {
 
 // 🆕 إدارة منصات التوصيل مباشرة من الأدمن (بنفس مفتاح sys_delivery_platforms
 // المستخدم بالخزينة - نفس البيانات، مكانين للوصول لها بس)
+/* ==========================================
+   👥 إدارة الموظفين الكاملة - بيانات، سلف، رواتب، حضور وغياب
+   ========================================== */
+let activeEmployeeDetailId = null;
+
+function renderEmployeesTab() {
+    const box = document.getElementById('employeesListBox');
+    if (!box) return;
+    let employees = getData('sys_employees') || [];
+
+    // 🛠️ ترحيل تلقائي: الموظفين القدامى (مضافين قبل هذا النظام) ممكن ما
+    // يكون عندهم معرّف id - نولّد لهم واحد ونحفظه، حتى أزرار "التفاصيل/
+    // تعديل/حذف" تشتغل صح عليهم بدون ما نفقد بياناتهم القديمة
+    let needsSave = false;
+    employees.forEach(emp => {
+        if (!emp.id) { emp.id = 'EMP_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); needsSave = true; }
+    });
+    if (needsSave) setData('sys_employees', employees);
+
+    if (employees.length === 0) {
+        box.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا يوجد موظفين مسجّلين بعد</p>';
+        return;
+    }
+
+    const today = getTodayString();
+    const attendance = getData('sys_attendance') || [];
+
+    box.innerHTML = employees.map(emp => {
+        const todayRec = attendance.find(a => a.employeeId === emp.id && a.dateDate === today);
+        const statusBadge = todayRec
+            ? (todayRec.status === 'present'
+                ? '<span style="background:#0d3d1a;color:#10b981;font-size:0.68rem;padding:2px 8px;border-radius:8px;">✅ حاضر اليوم</span>'
+                : '<span style="background:#3d0d0d;color:#ef4444;font-size:0.68rem;padding:2px 8px;border-radius:8px;">❌ غائب اليوم</span>')
+            : '<span style="background:#1e1e28;color:#888;font-size:0.68rem;padding:2px 8px;border-radius:8px;">⏳ ما تسجّل اليوم</span>';
+
+        return '<div style="background:#111116;border:1px solid #24392c;border-radius:10px;' +
+            'padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">' +
+            '<div>' +
+            '<strong style="color:#38bdf8;">' + emp.name + '</strong>' +
+            (emp.role ? ' <span style="color:#888;font-size:0.8rem;">— ' + emp.role + '</span>' : '') +
+            '<div style="margin-top:4px;">' + statusBadge + '</div>' +
+            (emp.phone ? '<div style="font-size:0.75rem;color:#999;margin-top:3px;direction:ltr;text-align:right;">' + emp.phone + '</div>' : '') +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:4px;">' +
+            '<button onclick="openEmployeeDetailModal(\'' + emp.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:5px 10px;background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;">التفاصيل</button>' +
+            '<button onclick="editEmployee(\'' + emp.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:5px 10px;">تعديل</button>' +
+            '<button onclick="deleteEmployee(\'' + emp.id + '\')" class="gold-btn btn-danger btn-sm" ' +
+            'style="width:auto;padding:5px 10px;">حذف</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+function resetEmployeeForm() {
+    document.getElementById('editEmployeeId').value = '';
+    document.getElementById('empName').value = '';
+    document.getElementById('empRole').value = '';
+    document.getElementById('empPhone').value = '';
+    document.getElementById('empSalary').value = '';
+    document.getElementById('empStartDate').value = '';
+    document.getElementById('empFormTitle').innerText = '➕ إضافة موظف جديد';
+}
+
+function saveEmployee() {
+    const id       = document.getElementById('editEmployeeId').value;
+    const name     = document.getElementById('empName').value.trim();
+    const role     = document.getElementById('empRole').value.trim();
+    const phone    = document.getElementById('empPhone').value.trim();
+    const salary   = cleanPrice(document.getElementById('empSalary').value);
+    const startDate = document.getElementById('empStartDate').value;
+
+    if (!name) return alert('⚠️ أدخل اسم الموظف.');
+
+    let employees = getData('sys_employees') || [];
+
+    if (id) {
+        const emp = employees.find(e => e.id === id);
+        if (emp) {
+            emp.name = name; emp.role = role; emp.phone = phone;
+            emp.monthlySalary = salary; emp.startDate = startDate;
+        }
+    } else {
+        employees.push({
+            id: 'EMP_' + Date.now(), name, role, phone,
+            monthlySalary: salary, startDate, createdAt: Date.now()
+        });
+    }
+
+    setData('sys_employees', employees);
+    resetEmployeeForm();
+    renderEmployeesTab();
+    alert('✅ تم حفظ بيانات الموظف!');
+}
+
+function editEmployee(id) {
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === id);
+    if (!emp) return;
+
+    document.getElementById('editEmployeeId').value = emp.id;
+    document.getElementById('empName').value = emp.name || '';
+    document.getElementById('empRole').value = emp.role || '';
+    document.getElementById('empPhone').value = emp.phone || '';
+    document.getElementById('empSalary').value = emp.monthlySalary || '';
+    document.getElementById('empStartDate').value = emp.startDate || '';
+    document.getElementById('empFormTitle').innerText = '✏️ تعديل: ' + emp.name;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteEmployee(id) {
+    if (!confirm('حذف هذا الموظف؟ (سجل السلف والحضور القديم يضل محفوظ بالتقارير)')) return;
+    let employees = (getData('sys_employees') || []).filter(e => e.id !== id);
+    setData('sys_employees', employees);
+    renderEmployeesTab();
+}
+
+function openEmployeeDetailModal(id) {
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === id);
+    if (!emp) return;
+    activeEmployeeDetailId = id;
+
+    document.getElementById('empDetailTitle').innerText =
+        '👤 ' + emp.name + (emp.role ? ' — ' + emp.role : '');
+
+    renderEmployeeFinanceStats(emp);
+    renderEmployeeAttendanceHistory(emp);
+    renderEmployeeFinanceHistory(emp);
+
+    openModal('employeeDetailModal');
+}
+
+function renderEmployeeFinanceStats(emp) {
+    const thisMonth = getTodayString().slice(0, 7); // "YYYY-MM"
+    const expenses  = getData('sys_expenses') || [];
+    const salaries  = getData('sys_salaries') || [];
+
+    const monthAdvances = expenses
+        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,e) => s + cleanPrice(e.amount), 0);
+
+    const monthSalaryPaid = salaries
+        .filter(s => s.employee === emp.name && String(s.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,x) => s + cleanPrice(x.amount), 0);
+
+    document.getElementById('empMonthAdvances').innerText = monthAdvances.toLocaleString('ar-IQ') + ' د.ع';
+    document.getElementById('empMonthSalaryPaid').innerText = monthSalaryPaid.toLocaleString('ar-IQ') + ' د.ع';
+}
+
+function renderEmployeeAttendanceHistory(emp) {
+    const box = document.getElementById('empAttendanceHistory');
+    const attendance = (getData('sys_attendance') || [])
+        .filter(a => a.employeeId === emp.id)
+        .sort((a,b) => b.dateDate < a.dateDate ? -1 : 1)
+        .slice(0, 30);
+
+    const today = getTodayString();
+    const todayRec = attendance.find(a => a.dateDate === today);
+    document.getElementById('empPresentBtn').style.opacity = (todayRec && todayRec.status === 'present') ? '0.5' : '1';
+    document.getElementById('empAbsentBtn').style.opacity  = (todayRec && todayRec.status === 'absent')  ? '0.5' : '1';
+
+    if (attendance.length === 0) {
+        box.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;">ماكو سجل حضور بعد</p>';
+        return;
+    }
+
+    box.innerHTML = attendance.map(a =>
+        '<div style="display:flex;justify-content:space-between;padding:4px 0;' +
+        'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
+        '<span>' + a.dateDate + '</span>' +
+        '<span style="color:' + (a.status === 'present' ? '#10b981' : '#ef4444') + ';font-weight:bold;">' +
+        (a.status === 'present' ? '✅ حاضر' : '❌ غائب') + '</span>' +
+        '</div>'
+    ).join('');
+}
+
+function markAttendance(status) {
+    if (!activeEmployeeDetailId) return;
+    const today = getTodayString();
+    let attendance = getData('sys_attendance') || [];
+
+    const existingIdx = attendance.findIndex(a =>
+        a.employeeId === activeEmployeeDetailId && a.dateDate === today);
+
+    if (existingIdx > -1) {
+        attendance[existingIdx].status = status;
+    } else {
+        attendance.push({
+            employeeId: activeEmployeeDetailId, dateDate: today,
+            status, timestamp: Date.now()
+        });
+    }
+
+    setData('sys_attendance', attendance);
+
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (emp) renderEmployeeAttendanceHistory(emp);
+    renderEmployeesTab();
+}
+
+function renderEmployeeFinanceHistory(emp) {
+    const box = document.getElementById('empFinanceHistory');
+    const expenses = (getData('sys_expenses') || [])
+        .filter(e => e.type === 'سلفة' && e.employee === emp.name)
+        .map(e => ({ ...e, kind: 'سلفة', color: '#f59e0b' }));
+    const salaries = (getData('sys_salaries') || [])
+        .filter(s => s.employee === emp.name)
+        .map(s => ({ ...s, kind: 'راتب', color: '#10b981' }));
+
+    const combined = [...expenses, ...salaries]
+        .sort((a,b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp))
+        .slice(0, 50);
+
+    if (combined.length === 0) {
+        box.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;">ماكو سجل مالي بعد</p>';
+        return;
+    }
+
+    box.innerHTML = combined.map(r =>
+        '<div style="display:flex;justify-content:space-between;padding:6px 0;' +
+        'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
+        '<span>' + r.dateDate + ' — <span style="color:' + r.color + ';font-weight:bold;">' + r.kind + '</span></span>' +
+        '<span style="font-weight:900;color:#fbbf24;">' + cleanPrice(r.amount).toLocaleString('ar-IQ') + ' د.ع</span>' +
+        '</div>'
+    ).join('');
+}
+
 function renderAdminPlatformsList() {
     const box = document.getElementById('adminPlatformsList');
     if (!box) return;
@@ -3365,7 +3680,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1735'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1735)
+    const CURRENT_PAGE_VERSION = '1740'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1740)
 
     async function checkForFreshPageVersion() {
         try {
