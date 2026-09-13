@@ -16,13 +16,16 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1731';
+const MIM89_APP_VERSION = '1736';
 
 /* ==========================================
    المتغيرات العامة
    ========================================== */
 let db                      = null;
 let auth                    = null; // 🛠️ كان مفقوداً - سبب خطأ "Can't find variable: auth" بنظام VIP
+// 🆕 القيمة الخاصة اللي تعني "الطلب متاح لأي سائق يستلمه" بدل تخصيصه
+// لسائق معيّن - نظام حوض الطلبات المشترك
+const OPEN_DRIVER_POOL_MARKER = 'حوض_السواق_المفتوح';
 let activeCashierUser       = null;
 let posCart                 = [];
 let selectedPosOrderType    = 'dine_in';
@@ -350,6 +353,18 @@ function cleanPrice(val) {
     if (parts.length > 2) str = parts[0] + '.' + parts.slice(1).join('');
     const num = parseFloat(str);
     return isNaN(num) ? 0 : num;
+}
+
+// 🆕 استخراج {lat, lng} من رابط خرائط جوجل ملصق (يدعم أشكال الروابط
+// الشائعة: ?q=lat,lng أو destination=lat,lng أو حتى أرقام مباشرة)
+function parseGpsLinkToLatLng(text) {
+    if (!text || !text.trim()) return null;
+    const match = String(text).match(/(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+    if (!match) return null;
+    const lat = parseFloat(match[1]);
+    const lng = parseFloat(match[2]);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return { lat, lng };
 }
 
 // قراءة قسم الصنف
@@ -1469,26 +1484,63 @@ function lookupCustomerByPhone(phone) {
 }
 
 // إضافة صنف للسلة
-function addToPosCart(itemId) {
+function addToPosCart(itemId, forcedSizeIndex) {
     const items = getData('sys_items');
     const item  = items.find(i =>
         String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId)
     );
     if (!item) return;
 
+    // 🆕 لو الصنف عنده أحجام محددة (نفس نظام "الأحجام الذكية" اللي تضبطه
+    // بالأدمن للمينيو الذكي المطبوع)، نفتح نافذة اختيار سريعة بدل الإضافة
+    // المباشرة - يضمن نفس السعر المتفق عليه بالمينيو الإلكتروني ينحسب هنا
+    // بالضبط، بدل ما الكاشير يعدّل السعر يدوياً بتخمين.
+    if (forcedSizeIndex === undefined && item.sizes && Array.isArray(item.sizes) && item.sizes.length >= 2) {
+        openCashierSizePickerModal(item);
+        return;
+    }
+
+    let cartItem = { ...item, price: cleanPrice(item.price), qty: 1, itemNotes: [] };
+    if (forcedSizeIndex !== undefined && item.sizes && item.sizes[forcedSizeIndex]) {
+        const size = item.sizes[forcedSizeIndex];
+        cartItem.price = cleanPrice(size.price);
+        cartItem.name  = item.name + ' (' + size.label + ')';
+        cartItem.selectedSizeLabel = size.label;
+    }
+
     const exist = posCart.find(c =>
-        String(c.id) === String(itemId) || cleanPrice(c.id) === cleanPrice(itemId)
+        (String(c.id) === String(itemId) || cleanPrice(c.id) === cleanPrice(itemId)) &&
+        c.selectedSizeLabel === cartItem.selectedSizeLabel
     );
 
     if (exist) {
         exist.qty += 1;
     } else {
-        posCart.push({ ...item, price: cleanPrice(item.price), qty: 1, itemNotes: [] });
+        posCart.push(cartItem);
     }
 
     recalculateActiveDiscount();
     renderPosCart();
     prefetchOrderNumber();
+}
+
+// 🆕 نافذة اختيار الحجم السريعة بالكاشير - نفس أحجام المينيو الذكي بالضبط
+function openCashierSizePickerModal(item) {
+    const modal = document.getElementById('cashierSizePickerModal');
+    const body  = document.getElementById('cashierSizePickerBody');
+    if (!modal || !body) return;
+
+    document.getElementById('cashierSizePickerTitle').innerText = '📏 اختر حجم: ' + item.name;
+    body.innerHTML = item.sizes.map((s, idx) =>
+        '<button onclick="addToPosCart(\'' + item.id + '\', ' + idx + '); closeModal(\'cashierSizePickerModal\');" ' +
+        'class="gold-btn btn-block" style="margin-bottom:8px;background:#1e1e28;' +
+        'color:#fbbf24;border:1px solid #fbbf24;display:flex;justify-content:space-between;' +
+        'padding:12px 16px;font-weight:900;">' +
+        '<span>' + s.label + '</span><span>' + cleanPrice(s.price).toLocaleString('ar-IQ') + ' د.ع</span>' +
+        '</button>'
+    ).join('');
+
+    openModal('cashierSizePickerModal');
 }
 
 function changePosCartQty(id, change) {
@@ -1871,6 +1923,10 @@ function loadDriversAndAppDropdowns() {
 
     select.innerHTML =
         '<option value="">-- اختر سائق / تطبيق --</option>' +
+        // 🆕 حوض السواق المفتوح - الطلب يصير متاح لكل السواق المسجّلين
+        // بنفس اللحظة، وأول وحد يضغط "استلام" بصفحته ياخذه (نفس مبدأ
+        // تطبيقات التوصيل الكبيرة) - مفيد جداً لما يصير عندك أكثر من سائق
+        '<option value="' + OPEN_DRIVER_POOL_MARKER + '">🔓 حوض السواق المفتوح (لأي سائق متاح)</option>' +
         '<optgroup label="🛵 سائقو المطعم">' +
         drivers.map(d =>
             '<option value="' + d.name + '">' + d.name +
@@ -1982,6 +2038,9 @@ async function proceedToPrintAfterCash() {
         area:          area,
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
         driverName:    driverName,
+        // 🆕 موقع GPS - يُستخرج من رابط خرائط جوجل الملصق (لو موجود)، وينحفظ
+        // بالطلب حتى يوصل للسائق مباشرة بدون ما يحتاج يسأل الزبون العنوان
+        gpsLocation:   parseGpsLinkToLatLng(document.getElementById('posGpsLink')?.value),
         items: posCart.map(i => ({
     id:          i.id,
     name:        String(i.name || ''),
@@ -3666,6 +3725,7 @@ function getUnsettledDeliveryOrders() {
     return all.filter(o =>
         o.orderType === 'توصيل' &&
         o.driverName && o.driverName !== '-' &&
+        o.driverName !== OPEN_DRIVER_POOL_MARKER && // 🆕 لسا ما استلمها سائق حقيقي
         !o.isSettled
     );
 }
@@ -4134,9 +4194,15 @@ function renderCompletedOrdersLog() {
             '<div style="min-width:0;">' +
             '<strong style="color:#fbbf24;font-size:0.88rem;">#' + o.orderNum +
             ' ' + typeIcon + ' ' + o.orderType + '</strong>' +
+            (o.isOnlineAutoOrder
+                ? ' <span style="background:#0d1a2a;color:#38bdf8;font-size:0.62rem;' +
+                  'padding:2px 6px;border-radius:8px;font-weight:900;">🌐 أونلاين تلقائي</span>'
+                : '') +
             '<div style="font-size:0.73rem;color:#bbb;margin-top:2px;">' +
             (o.timestamp||'') + ' • ' + (o.customerName||'زبون') +
-            (o.driverName && o.driverName!=='-' ? ' • 🛵 '+o.driverName : '') +
+            (o.driverName && o.driverName!=='-'
+                ? ' • 🛵 ' + (o.driverName === OPEN_DRIVER_POOL_MARKER ? '🔓 بانتظار سائق' : o.driverName)
+                : '') +
             '</div></div>' +
             '<div style="display:flex;flex-direction:column;gap:4px;">' +
             '<button onclick="reprintCustomerOnly(\'' + o.id + '\',this)" ' +
@@ -6792,6 +6858,7 @@ function updateCartBadge() {
 function openCartModal() {
     renderCartModalItems();
     calculateDeliveryCostPublic();
+    if (typeof updateVipNudgeVisibility === 'function') updateVipNudgeVisibility();
     openModal('cartModal');
 }
 
