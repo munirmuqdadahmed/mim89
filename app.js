@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1738';
+const MIM89_APP_VERSION = '1739';
 
 /* ==========================================
    المتغيرات العامة
@@ -3641,7 +3641,9 @@ function calculateCashDifference(expected) {
 
 // 🔐 التقفيل يحتاج PIN المالك
 function confirmCloseShiftAndLogout() {
-    const pending = getUnsettledDeliveryOrders();
+    // 🛠️ إصلاح جذري: استبعاد طلبات منصات التوصيل من هذا التنبيه - الكاشير
+    // ما يحتاج يعرف عنها أبداً، وذمة السواق الحقيقيين بس اللي تهمّه هنا
+    const pending = getUnsettledDeliveryOrders().filter(o => !isPlatformDeliveryName(o.driverName));
     if (pending.length > 0) {
         if (!confirm('⚠️ يوجد ' + pending.length +
             ' طلب بذمة السائقين!\nهل تريد التقفيل رغم ذلك؟')) return;
@@ -3656,7 +3658,13 @@ function confirmCloseShiftAndLogout() {
         }
 
         const s          = computeTodaySalesSummary();
+        // 🛠️ إصلاح جذري مهم جداً بالحسابات المالية: هذا المبلغ يُطرح من
+        // "الكاش المتوقع بالصندوق" وقت التقفيل. لو ضل شامل مبالغ منصات
+        // التوصيل (اللي أصلاً ما ينوصلها كاش للكاشير أبداً، تتسدد بحوالة
+        // بنكية شهرية للأدمن)، الحساب يطلع غلط ويبيّن "عجز" وهمي بالصندوق
+        // مقابل فلوس مو مفروض تكون بيد الكاشير من الأساس.
         const pendingCash = getUnsettledDeliveryOrders()
+            .filter(o => !isPlatformDeliveryName(o.driverName))
             .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
             .reduce((sum,o) => sum + cleanPrice(o.totalAmount), 0);
 
@@ -3936,7 +3944,12 @@ function renderPendingDeliveriesList() {
     const summaryEl  = document.getElementById('pendingDeliveriesSummary');
     if (!container) return;
 
-    const pending = getUnsettledDeliveryOrders();
+    // 🛠️ إصلاح جذري مهم جداً: هذي النافذة يشوفها الكاشير - لازم تعرض بس
+    // ذمة السواق الحقيقيين (توصيل كاش يدوي، يتسوى يومياً). طلبات منصات
+    // التوصيل (طلبات/طلباتي...) تتسدد بحوالة بنكية شهرية، ومبالغها المالية
+    // خاصة بالأدمن فقط - ما يصح الكاشير يشوف مجموعها هنا أبداً، حتى لو
+    // قدرته يختار المنصة وقت إنشاء الطلب تبقى موجودة عادي.
+    const pending = getUnsettledDeliveryOrders().filter(o => !isPlatformDeliveryName(o.driverName));
 
     if (summaryEl) {
         const total = pending.reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
@@ -7088,7 +7101,10 @@ function refreshPendingDeliveryBadge() {
     const badge = document.getElementById('pendingDeliveryBadge');
     if (!badge) return;
     try {
-        const n = getUnsettledDeliveryOrders().length;
+        // 🛠️ إصلاح: استبعاد طلبات منصات التوصيل - هذي الشارة للكاشير بس،
+        // وتخص ذمة السواق الحقيقيين (توصيل كاش يدوي) لا غير
+        const n = getUnsettledDeliveryOrders()
+            .filter(o => !isPlatformDeliveryName(o.driverName)).length;
         badge.innerText      = n;
         badge.style.display  = n > 0 ? 'inline-block' : 'none';
     } catch (_) {}
