@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1739';
+const MIM89_APP_VERSION = '1740';
 
 /* ==========================================
    المتغيرات العامة
@@ -760,7 +760,7 @@ async function pullLatestFromCloud() {
     const SHARED_KEYS = [
         'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
         'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
-        'sys_invoice_design', 'sys_menu_announcement'
+        'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -821,6 +821,8 @@ async function initData() {
         localStorage.setItem('sys_cashiers', JSON.stringify(DEFAULT_DATA.cashiers));
     if (!localStorage.getItem('sys_employees'))
         localStorage.setItem('sys_employees', JSON.stringify(DEFAULT_DATA.employees));
+    if (!localStorage.getItem('sys_attendance'))
+        localStorage.setItem('sys_attendance', JSON.stringify([]));
     if (!localStorage.getItem('sys_drivers'))
         localStorage.setItem('sys_drivers', JSON.stringify(DEFAULT_DATA.drivers));
     if (!localStorage.getItem('sys_areas'))
