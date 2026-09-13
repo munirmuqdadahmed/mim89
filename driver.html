@@ -108,12 +108,20 @@
         </p>
     </div>
 
+    <!-- 🔓 حوض الطلبات المتاحة للاستلام -->
+    <div id="driverPoolSection" style="display:none;margin-bottom:20px;">
+        <h4 style="color:#38bdf8;margin-bottom:10px;">
+            🔓 طلبات متاحة للاستلام (لأي سائق)
+        </h4>
+        <div id="driverPoolList"></div>
+    </div>
+
     <h4 style="color:#fbbf24;margin-bottom:10px;">📦 طلباتك الحالية</h4>
     <div id="driverOrdersList"></div>
 
 </div>
 
-<script src="app.js?v=1731"></script>
+<script src="app.js?v=1735"></script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
@@ -168,24 +176,24 @@ function driverLogout() {
     if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
 }
 
-// عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت
+// عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت + حوض الطلبات المفتوح
 function renderDriverOrders() {
     if (!activeDriverName) return;
     const all = getData('sys_completed_orders') || [];
-    const myOrders = all.filter(o =>
-        o.orderType === 'توصيل' && o.driverName === activeDriverName && !o.isSettled &&
-        // 🛠️ إصلاح جذري: استبعاد أي سجل ناقص/تالف (بدون رقم طلب صحيح، أو
-        // بدون مبلغ فعلي) - هذا كان سبب ظهور "طلبات وهمية" بصفحة السائق
-        // ماكو إلها وجود حقيقي بذمة السائقين بالأدمن (بيانات تجريبية قديمة
-        // ضلت بقاعدة البيانات بالغلط، مو طلبات حقيقية اتباعت من الكاشير)
-        o.orderNum !== undefined && o.orderNum !== null &&
-        cleanPrice(o.totalAmount) > 0
-    );
 
-    // 🆕 كشف الطلبات الجديدة (اللي لسا ما شافها السائق) وإطلاق تنبيه صوتي
+    // فلتر أساسي مشترك: طلب توصيل حقيقي (مو ناقص/وهمي) وغير مسوّى
+    const validDeliveryOrder = o =>
+        o.orderType === 'توصيل' && !o.isSettled &&
+        o.orderNum !== undefined && o.orderNum !== null &&
+        cleanPrice(o.totalAmount) > 0;
+
+    const myOrders   = all.filter(o => validDeliveryOrder(o) && o.driverName === activeDriverName);
+    const poolOrders = all.filter(o => validDeliveryOrder(o) && o.driverName === OPEN_DRIVER_POOL_MARKER);
+
+    // 🆕 كشف الطلبات الجديدة (بالحوض المفتوح أو المستلمة) وإطلاق تنبيه صوتي
     // مستمر لها - أول مرة نحمّل فيها الصفحة نسجّل الموجود بصمت بدون تنبيه،
     // وبعدها أي طلب جديد يوصل يفعّل الصافرة فوراً.
-    const currentIds = new Set(myOrders.map(o => String(o.id)));
+    const currentIds = new Set([...myOrders, ...poolOrders].map(o => String(o.id)));
     if (driverKnownOrderIds === null) {
         driverKnownOrderIds = currentIds;
     } else {
@@ -206,40 +214,89 @@ function renderDriverOrders() {
     document.getElementById('driverTotalOwed').innerText   = total.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('driverOrdersCount').innerText = myOrders.length;
 
+    // ---------- حوض الطلبات المفتوح ----------
+    const poolSection = document.getElementById('driverPoolSection');
+    const poolList    = document.getElementById('driverPoolList');
+    if (poolOrders.length === 0) {
+        poolSection.style.display = 'none';
+    } else {
+        poolSection.style.display = 'block';
+        poolOrders.sort((a,b) => (b.timestampRaw||0) - (a.timestampRaw||0));
+        poolList.innerHTML = poolOrders.map(o => buildDriverOrderCard(o, true)).join('');
+    }
+
+    // ---------- طلباتي المستلمة ----------
     const list = document.getElementById('driverOrdersList');
     if (myOrders.length === 0) {
         list.innerHTML = '<p style="text-align:center;color:#10b981;padding:30px;font-weight:bold;">' +
-            '🎉 ما عندك طلبات حالياً</p>';
+            '🎉 ما عندك طلبات مستلمة حالياً</p>';
         return;
     }
-
-    // الأحدث أولاً
     myOrders.sort((a,b) => (b.timestampRaw||0) - (a.timestampRaw||0));
+    list.innerHTML = myOrders.map(o => buildDriverOrderCard(o, false)).join('');
+}
 
-    list.innerHTML = myOrders.map(o => {
-        const itemsText = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
-        return '<div class="driver-order-card' + (o.driverPickedUp ? ' picked' : '') + '">' +
-            '<div class="driver-row" style="font-weight:900;">' +
-            '<span>#' + (o.orderNum !== undefined && o.orderNum !== null ? o.orderNum : '؟') +
-            ' — ' + (o.customerName || 'زبون') + '</span>' +
-            '<span style="color:#fbbf24;">' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</span>' +
-            '</div>' +
-            (o.phone ? '<div class="driver-row"><span>📞 الهاتف:</span>' +
-                '<a href="tel:' + o.phone + '" style="color:#38bdf8;">' + o.phone + '</a></div>' : '') +
-            (o.area ? '<div class="driver-row"><span>📍 المنطقة:</span><span>' + o.area + '</span></div>' : '') +
-            '<div class="driver-row"><span>💳 الدفع:</span><span>' + (o.paymentMethod || 'كاش') + '</span></div>' +
-            (itemsText ? '<div style="font-size:0.78rem;color:#aaa;margin-top:5px;' +
-                'border-top:1px dashed #333;padding-top:5px;">' + itemsText + '</div>' : '') +
-            (o.orderNotes ? '<div style="font-size:0.78rem;color:#fbbf24;margin-top:4px;">' +
-                '📝 ' + o.orderNotes + '</div>' : '') +
-            (o.driverPickedUp
-                ? '<div style="text-align:center;margin-top:8px;color:#10b981;font-weight:900;">' +
-                  '✅ مستلم - بانتظار التسليم/التسوية</div>'
-                : '<button onclick="markPickedUp(\'' + o.id + '\')" class="gold-btn btn-block" ' +
-                  'style="margin-top:8px;background:#10b981;color:#fff;font-weight:900;">' +
-                  '📦 استلمت الطلب</button>') +
-            '</div>';
-    }).join('');
+// بناء بطاقة طلب واحدة - يظهر زر "استلام" لو من الحوض المفتوح، أو زر
+// "استلمت الطلب" العادي لو مستلم أصلاً
+function buildDriverOrderCard(o, isFromPool) {
+    const itemsText = (o.items || []).map(i => i.name + ' ×' + i.qty).join('، ');
+    const gpsLink = o.gpsLocation && o.gpsLocation.lat
+        ? '<a href="https://www.google.com/maps?q=' + o.gpsLocation.lat + ',' + o.gpsLocation.lng +
+          '" target="_blank" style="color:#10b981;font-weight:900;">🗺️ افتح الموقع بالخريطة</a>'
+        : '';
+
+    let actionBtn;
+    if (isFromPool) {
+        actionBtn = '<button onclick="claimDriverOrder(\'' + o.id + '\')" class="gold-btn btn-block" ' +
+            'style="margin-top:8px;background:#38bdf8;color:#000;font-weight:900;">' +
+            '🙋 استلام هذا الطلب</button>';
+    } else if (o.driverPickedUp) {
+        actionBtn = '<div style="text-align:center;margin-top:8px;color:#10b981;font-weight:900;">' +
+            '✅ مستلم - بانتظار التسليم/التسوية</div>';
+    } else {
+        actionBtn = '<button onclick="markPickedUp(\'' + o.id + '\')" class="gold-btn btn-block" ' +
+            'style="margin-top:8px;background:#10b981;color:#fff;font-weight:900;">' +
+            '📦 استلمت الطلب</button>';
+    }
+
+    return '<div class="driver-order-card' + (o.driverPickedUp ? ' picked' : '') +
+        (isFromPool ? '' : '') + '">' +
+        '<div class="driver-row" style="font-weight:900;">' +
+        '<span>#' + (o.orderNum !== undefined && o.orderNum !== null ? o.orderNum : '؟') +
+        ' — ' + (o.customerName || 'زبون') + '</span>' +
+        '<span style="color:#fbbf24;">' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</span>' +
+        '</div>' +
+        (o.phone ? '<div class="driver-row"><span>📞 الهاتف:</span>' +
+            '<a href="tel:' + o.phone + '" style="color:#38bdf8;">' + o.phone + '</a></div>' : '') +
+        (o.area ? '<div class="driver-row"><span>📍 المنطقة:</span><span>' + o.area + '</span></div>' : '') +
+        (gpsLink ? '<div class="driver-row"><span>📍 الموقع:</span>' + gpsLink + '</div>' : '') +
+        '<div class="driver-row"><span>💳 الدفع:</span><span>' + (o.paymentMethod || 'كاش') + '</span></div>' +
+        (itemsText ? '<div style="font-size:0.78rem;color:#aaa;margin-top:5px;' +
+            'border-top:1px dashed #333;padding-top:5px;">' + itemsText + '</div>' : '') +
+        (o.orderNotes ? '<div style="font-size:0.78rem;color:#fbbf24;margin-top:4px;">' +
+            '📝 ' + o.orderNotes + '</div>' : '') +
+        actionBtn +
+        '</div>';
+}
+
+// 🙋 استلام طلب من الحوض المفتوح - يحوّله رسمياً لهذا السائق تحديداً
+async function claimDriverOrder(orderId) {
+    if (!confirm('تأكيد استلام هذا الطلب؟ بيصير بذمتك أنت.')) return;
+    try {
+        await db.collection('completed_orders').doc(String(orderId)).update({
+            driverName: activeDriverName,
+            claimedAt: Date.now()
+        });
+        // تحديث محلي فوري (المستمع اللحظي بيحدّثه رسمياً كمان خلال لحظات)
+        let all = getData('sys_completed_orders') || [];
+        const ord = all.find(o => String(o.id) === String(orderId));
+        if (ord) { ord.driverName = activeDriverName; localStorage.setItem('sys_completed_orders', JSON.stringify(all)); }
+        renderDriverOrders();
+        alert('✅ صار الطلب بذمتك! تكدر تشوفه بـ"طلباتك الحالية".');
+    } catch (err) {
+        console.error(err);
+        alert('⚠️ تعذّر استلام الطلب - يمكن سائق ثاني سبقك فيه. حدّث الصفحة وجرب من جديد.');
+    }
 }
 
 // إيقاف صافرة الطلب الجديد لما السائق يضغط الشريط (يشوف الطلب فعلياً)
@@ -272,13 +329,15 @@ function markPickedUp(orderId) {
 // 🛠️ إصلاح جذري: التحديث كان دوري بس (كل 8 ثواني) - صار الحين مستمع لحظي
 // حقيقي (onSnapshot) يوصل الطلب الجديد فوراً بمجرد ما ينحفظ بالسحابة، مو
 // بعد انتظار دورة السحب التالية. هذا يحل مشكلة "الصفحة ما تتحدث مباشرة".
+// 🆕 الاستعلام الحين يشمل طلبات هذا السائق + حوض السواق المفتوح دفعة وحدة
+// (استعلام "in" بحقل واحد، ما يحتاج فهرس مركّب بفايرستور)
 let driverUnsubscribe = null;
 function startDriverAutoRefresh() {
     if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
     if (!db || !activeDriverName) return;
 
     driverUnsubscribe = db.collection('completed_orders')
-        .where('driverName', '==', activeDriverName)
+        .where('driverName', 'in', [activeDriverName, OPEN_DRIVER_POOL_MARKER])
         .onSnapshot(snap => {
             let all = getData('sys_completed_orders') || [];
             snap.docChanges().forEach(change => {
@@ -298,7 +357,7 @@ async function fetchDriverOrdersFromCloud() {
     if (!db || !activeDriverName || document.hidden) return;
     try {
         const snap = await db.collection('completed_orders')
-            .where('driverName', '==', activeDriverName)
+            .where('driverName', 'in', [activeDriverName, OPEN_DRIVER_POOL_MARKER])
             .get({ source: 'server' });
 
         if (snap.empty) { renderDriverOrders(); return; }
@@ -340,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1733';
+    const CURRENT_PAGE_VERSION = '1735';
 
     async function checkForFreshPageVersion() {
         try {
