@@ -84,82 +84,125 @@
                 </div>
 
                 <span id="cloudSyncIndicator"></span>
-
-                <button onclick="printPaperMenu()" class="gold-btn btn-sm"
-                        style="background:#ffd700;color:#000;border:none;font-weight:900;">
-                    <i class="fa-solid fa-print"></i> مينيو ورقي
-                </button>
-                <button onclick="downloadPaperMenuPDF(this)" class="gold-btn btn-sm"
-                        style="background:#1e1e28;color:#ffd700;border:1px solid #ffd700;font-weight:900;">
-                    <i class="fa-solid fa-file-pdf"></i> تحميل PDF
-                </button>
-                <button onclick="openDeliveryMenuEditor()" class="gold-btn btn-sm"
-                        style="background:#f59e0b;color:#000;border:none;font-weight:900;">
-                    <i class="fa-solid fa-motorcycle"></i> مينيو شركات التوصيل
-                </button>
-                <button onclick="printSmartMenu()" class="gold-btn btn-sm"
-                        style="background:#8b5cf6;color:#fff;border:none;font-weight:900;">
-                    <i class="fa-solid fa-brain"></i> المينيو الذكي 🖨️
-                </button>
-                <button onclick="downloadSmartMenuPDF(this)" class="gold-btn btn-sm"
-                        style="background:#1e1e28;color:#8b5cf6;border:1px solid #8b5cf6;font-weight:900;">
-                    <i class="fa-solid fa-file-pdf"></i> تحميل PDF ذكي
-                </button>
-                <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
-                        style="background:#3b82f6;color:#fff;border:none;">
-                    <i class="fa-solid fa-stethoscope"></i> فحص السحابة
-                </button>
-                <button onclick="repairCloudSync(this)" class="gold-btn btn-sm"
-                        style="background:#f59e0b;color:#000;border:none;font-weight:900;">
-                    <i class="fa-solid fa-wrench"></i> إصلاح المزامنة
-                </button>
-                <a href="costing.html" target="_blank" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">
-                    <i class="fa-solid fa-vault"></i> الخزينة
-                </a>
-                <a href="inventory.html" target="_blank" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">
-                    <i class="fa-solid fa-boxes-stacked"></i> المخزن
-                </a>
-                <a href="cashier.html" target="_blank" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">
-                    <i class="fa-solid fa-cash-register"></i> الكاشير
-                </a>
                 <button onclick="location.reload()" class="gold-btn btn-danger btn-sm">
                     <i class="fa-solid fa-lock"></i> قفل
                 </button>
             </div>
         </div>
+
+        <!-- 🆕 مجموعات أدوات سريعة منظمة - بدل الخلط العشوائي السابق -->
+        <div class="quick-tools-groups">
+            <div class="qt-group">
+                <div class="qt-group-label">🖨️ المينيو والطباعة</div>
+                <div class="qt-group-buttons">
+                    <button onclick="printPaperMenu()" class="gold-btn btn-sm"
+                            style="background:#ffd700;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-print"></i> مينيو ورقي
+                    </button>
+                    <button onclick="downloadPaperMenuPDF(this)" class="gold-btn btn-sm"
+                            style="background:#1e1e28;color:#ffd700;border:1px solid #ffd700;font-weight:900;">
+                        <i class="fa-solid fa-file-pdf"></i> PDF
+                    </button>
+                    <button onclick="openDeliveryMenuEditor()" class="gold-btn btn-sm"
+                            style="background:#f59e0b;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-motorcycle"></i> مينيو التوصيل
+                    </button>
+                    <button onclick="printSmartMenu()" class="gold-btn btn-sm"
+                            style="background:#8b5cf6;color:#fff;border:none;font-weight:900;">
+                        <i class="fa-solid fa-brain"></i> المينيو الذكي
+                    </button>
+                    <button onclick="downloadSmartMenuPDF(this)" class="gold-btn btn-sm"
+                            style="background:#1e1e28;color:#8b5cf6;border:1px solid #8b5cf6;font-weight:900;">
+                        <i class="fa-solid fa-file-pdf"></i> PDF ذكي
+                    </button>
+                </div>
+            </div>
+
+            <div class="qt-group">
+                <div class="qt-group-label">🔗 صفحات ثانية</div>
+                <div class="qt-group-buttons">
+                    <a href="costing.html" target="_blank" class="gold-btn btn-sm"
+                       style="background:#0d0d11;border:1px solid var(--gold-primary);
+                              color:#fbbf24;text-decoration:none;">
+                        <i class="fa-solid fa-vault"></i> الخزينة
+                    </a>
+                    <a href="inventory.html" target="_blank" class="gold-btn btn-sm"
+                       style="background:#0d0d11;border:1px solid var(--gold-primary);
+                              color:#fbbf24;text-decoration:none;">
+                        <i class="fa-solid fa-boxes-stacked"></i> المخزن
+                    </a>
+                    <a href="cashier.html" target="_blank" class="gold-btn btn-sm"
+                       style="background:#0d0d11;border:1px solid var(--gold-primary);
+                              color:#fbbf24;text-decoration:none;">
+                        <i class="fa-solid fa-cash-register"></i> الكاشير
+                    </a>
+                </div>
+            </div>
+
+            <div class="qt-group">
+                <div class="qt-group-label">🔧 أدوات فنية</div>
+                <div class="qt-group-buttons">
+                    <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
+                            style="background:#3b82f6;color:#fff;border:none;">
+                        <i class="fa-solid fa-stethoscope"></i> فحص السحابة
+                    </button>
+                    <button onclick="repairCloudSync(this)" class="gold-btn btn-sm"
+                            style="background:#f59e0b;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-wrench"></i> إصلاح المزامنة
+                    </button>
+                </div>
+            </div>
+        </div>
     </header>
+
+    <style>
+        .quick-tools-groups {
+            display: flex; gap: 18px; flex-wrap: wrap;
+            margin-top: 14px; padding-top: 12px; border-top: 1px dashed #24392c;
+        }
+        .qt-group { min-width: 200px; }
+        .qt-group-label {
+            font-size: 0.72rem; color: #888; font-weight: 900;
+            margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .qt-group-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+    </style>
 
     <!-- التبويبات -->
     <div class="admin-tabs">
+        <div class="tab-group-label">🍔 المينيو والمخزون</div>
         <button class="tab-btn active" onclick="switchAdminTab('tabMenuControl',this)">
             <i class="fa-solid fa-utensils"></i> الأصناف
         </button>
         <button class="tab-btn" onclick="switchAdminTab('tabCategoriesControl',this)">
             <i class="fa-solid fa-layer-group"></i> الأقسام
         </button>
+        <button class="tab-btn" onclick="switchAdminTab('tabAreasControl',this)">
+            <i class="fa-solid fa-map-location-dot"></i> المناطق
+        </button>
+
+        <div class="tab-group-label">👥 الزبائن والفريق</div>
         <button class="tab-btn" onclick="switchAdminTab('tabCustomersControl',this)">
             <i class="fa-solid fa-address-book"></i> الزبائن
         </button>
         <button class="tab-btn" onclick="switchAdminTab('tabDriversControl',this)">
             <i class="fa-solid fa-motorcycle"></i> الدليفري
         </button>
-        <button class="tab-btn" onclick="switchAdminTab('tabAreasControl',this)">
-            <i class="fa-solid fa-map-location-dot"></i> المناطق
-        </button>
-        <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl',this)">
-            <i class="fa-solid fa-print"></i> الطابعات
+        <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
+            <i class="fa-solid fa-users"></i> الكاشيرية
         </button>
         <button class="tab-btn"
-                onclick="switchAdminTab('tabInvoiceDesignControl',this)"
-                style="border-color:#c084fc;color:#c084fc;">
-            <i class="fa-solid fa-receipt"></i> تصميم الفاتورة
+                onclick="switchAdminTab('tabEmployeesControl',this)"
+                style="border-color:#38bdf8;color:#38bdf8;">
+            <i class="fa-solid fa-users"></i> 👥 الموظفين
         </button>
+        <button class="tab-btn"
+                onclick="switchAdminTab('tabVipControl',this)"
+                style="border-color:#ffd700;color:#ffd700;">
+            <i class="fa-solid fa-star"></i> أعضاء VIP
+        </button>
+
+        <div class="tab-group-label">💰 المبيعات والعروض</div>
         <button class="tab-btn"
                 onclick="switchAdminTab('tabDailyOpsControl',this)"
                 style="border-color:#10b981;color:#10b981;">
@@ -171,18 +214,15 @@
             <i class="fa-solid fa-gift"></i> عروض وبوكسات
         </button>
         <button class="tab-btn"
-                onclick="switchAdminTab('tabVipControl',this)"
-                style="border-color:#ffd700;color:#ffd700;">
-            <i class="fa-solid fa-star"></i> أعضاء VIP
+                onclick="switchAdminTab('tabInvoiceDesignControl',this)"
+                style="border-color:#c084fc;color:#c084fc;">
+            <i class="fa-solid fa-receipt"></i> تصميم الفاتورة
         </button>
-        <button class="tab-btn"
-                onclick="switchAdminTab('tabEmployeesControl',this)"
-                style="border-color:#38bdf8;color:#38bdf8;">
-            <i class="fa-solid fa-users"></i> 👥 الموظفين
+        <button class="tab-btn" onclick="switchAdminTab('tabPrintersControl',this)">
+            <i class="fa-solid fa-print"></i> الطابعات
         </button>
-        <button class="tab-btn" onclick="switchAdminTab('tabCashiersControl',this)">
-            <i class="fa-solid fa-users"></i> الكاشيرية
-        </button>
+
+        <div class="tab-group-label">⚙️ النظام والحماية</div>
         <button class="tab-btn" onclick="switchAdminTab('tabSecurityControl',this)">
             <i class="fa-solid fa-shield-halved"></i> الحماية
         </button>
@@ -205,6 +245,14 @@
             <i class="fa-solid fa-cloud-arrow-down"></i> النسخ الاحتياطي
         </button>
     </div>
+
+    <style>
+        .tab-group-label {
+            flex-basis: 100%; font-size: 0.7rem; color: #666; font-weight: 900;
+            margin: 10px 0 2px; padding-top: 6px; border-top: 1px solid #1e1e28;
+        }
+        .admin-tabs .tab-group-label:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+    </style>
 
     <!-- 1. تبويب الأصناف -->
     <div id="tabMenuControl" class="tab-content active" style="margin-top:15px;">
@@ -912,12 +960,19 @@
                 <button onclick="closeModal('itemsReportModal')"
                         class="gold-btn btn-sm" style="width:auto;">✕</button>
             </div>
-            <div style="display:flex;gap:5px;margin-bottom:8px;">
+            <div style="display:flex;gap:5px;margin-bottom:6px;">
                 <input type="date" id="itemsReportDateInput" class="gold-input-inline"
                        style="flex:2;" onchange="renderItemsReport(this.value)">
                 <button onclick="renderItemsReport(document.getElementById('itemsReportDateInput').value)"
                         class="gold-btn" style="flex:1;">عرض</button>
             </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;
+                          color:#ccc;cursor:pointer;margin-bottom:8px;">
+                <input type="checkbox" id="itemsReportShiftOnly"
+                       onchange="renderItemsReport(document.getElementById('itemsReportDateInput').value)"
+                       style="width:16px;height:16px;">
+                🕐 هذا الشيفت الحالي بس (بدل كل اليوم)
+            </label>
             <div style="background:#0d0d11;padding:6px;border-radius:7px;
                         margin-bottom:8px;font-size:0.8rem;text-align:center;">
                 <div id="itemsReportDateText" style="color:#fbbf24;font-weight:bold;"></div>
@@ -1812,7 +1867,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1741"></script>
+<script src="app.js?v=1743"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3759,7 +3814,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1741'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1741)
+    const CURRENT_PAGE_VERSION = '1743'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1743)
 
     async function checkForFreshPageVersion() {
         try {
