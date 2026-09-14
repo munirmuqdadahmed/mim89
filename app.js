@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1742';
+const MIM89_APP_VERSION = '1743';
 
 /* ==========================================
    المتغيرات العامة
@@ -4374,8 +4374,19 @@ function openItemsReportModal() {
 }
 
 function renderItemsReport(targetDate) {
-    const completed = (getData('sys_completed_orders')||[])
-        .filter(o => o.dateDate === targetDate);
+    // 🆕 دعم فلترة "هذا الشيفت بس" بدل كل اليوم التجاري كامل
+    const shiftOnly = document.getElementById('itemsReportShiftOnly')?.checked;
+    let completed;
+    let labelPrefix;
+
+    if (shiftOnly) {
+        completed = getShiftOrders(); // كل طلبات الشيفت الحالي المفتوح بس
+        labelPrefix = '🕐 هذا الشيفت الحالي';
+    } else {
+        completed = (getData('sys_completed_orders')||[]).filter(o => o.dateDate === targetDate);
+        labelPrefix = 'جرد يوم: ' + targetDate;
+    }
+
     const itemsMap  = {};
     let   grandQty  = 0;
 
@@ -4390,7 +4401,7 @@ function renderItemsReport(targetDate) {
     });
 
     const setTxt = (id,txt) => { const el=document.getElementById(id); if(el) el.innerText=txt; };
-    setTxt('itemsReportDateText', 'جرد يوم: ' + targetDate);
+    setTxt('itemsReportDateText', labelPrefix);
     setTxt('repTotalItemsQty',    grandQty + ' قطعة');
 
     const container = document.getElementById('repItemsSoldListDetail');
