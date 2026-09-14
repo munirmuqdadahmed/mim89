@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1741';
+const MIM89_APP_VERSION = '1742';
 
 /* ==========================================
    المتغيرات العامة
@@ -912,8 +912,31 @@ function startPeriodicCloudPull() {
             updateSyncIndicator(true);
             if (r && r.changed) refreshActiveUI(true);
         }));
+
+    // 🛠️ إصلاح جذري مهم جداً لمشكلة "الصفحة تتجمد بالموبايل بعد الرجوع
+    // من الخلفية" (مثلاً تسكر الشاشة أو تفتح تطبيق ثاني وترجع): متصفحات
+    // الموبايل (خصوصاً سفاري) توقف تنفيذ الجافاسكربت وتقطع اتصالات
+    // الشبكة المستمرة (المستمعين اللحظيين لفايرستور) وقت التعليق بالخلفية،
+    // وما تضمن استئنافها صح 100% لما ترجع الصفحة للواجهة. لو ضلت الصفحة
+    // مخفية فترة طويلة (أكثر من 3 دقائق)، أضمن حل هو تحديث الصفحة كاملة
+    // بدل ما نعتمد على استئناف اتصالات قديمة ممكن تكون انقطعت بصمت.
+    let hiddenSinceTs = null;
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) pullLatestFromCloud().then(r => {
+        if (document.hidden) {
+            hiddenSinceTs = Date.now();
+            return;
+        }
+        const hiddenDurationMs = hiddenSinceTs ? (Date.now() - hiddenSinceTs) : 0;
+        hiddenSinceTs = null;
+
+        if (hiddenDurationMs > 3 * 60 * 1000) {
+            // تعليق طويل - تحديث كامل أضمن من محاولة إصلاح اتصالات قديمة
+            if (!isCashierBusy()) location.reload();
+            return;
+        }
+
+        // تعليق قصير - يكفي سحب سريع وإعادة رسم
+        pullLatestFromCloud().then(r => {
             updateSyncIndicator(false);
             if (r && r.changed) refreshActiveUI(true);
         });
