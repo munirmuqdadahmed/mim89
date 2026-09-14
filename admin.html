@@ -958,7 +958,7 @@
 
     <!-- 📱 ذمة تطبيقات التوصيل -->
     <div id="platformSettlementModal" class="modal-overlay">
-        <div class="modal-body" style="max-width:480px;">
+        <div class="modal-body" style="max-width:600px;max-height:85vh;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;
                         margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
                 <h4 style="color:#c084fc;">
@@ -990,9 +990,6 @@
                     </button>
                 </div>
                 <div id="adminPlatformsList"></div>
-            </div>
-
-            <div id="platformSettlementList" style="max-height:400px;overflow-y:auto;">
             </div>
         </div>
     </div>
@@ -1815,7 +1812,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1740"></script>
+<script src="app.js?v=1741"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2937,7 +2934,6 @@ function printFinalDeliveryMenu() {
 
 // 📱 فتح نافذة ذمة تطبيقات التوصيل
 function openPlatformSettlementModal() {
-    if (typeof renderPlatformSettlementList === 'function') renderPlatformSettlementList();
     renderAdminPlatformsList();
     openModal('platformSettlementModal');
 }
@@ -3173,26 +3169,109 @@ function renderEmployeeFinanceHistory(emp) {
     ).join('');
 }
 
+// 🛠️ إعادة بناء كاملة: كل منصة توصيل صارت ببطاقة مستقلة تماماً عن
+// غيرها - اسمها، عمولتها، حذفها، وكل ذمتها المالية (مجمّعة بالشهر مع
+// إمكانية تعديل كل طلب وتسوية الشهر) كلها داخل نفس البطاقة. هذا يلغي أي
+// احتمال تلابس أو خلط بين بيانات منصة وثانية.
 function renderAdminPlatformsList() {
     const box = document.getElementById('adminPlatformsList');
     if (!box) return;
     const platforms = getData('sys_delivery_platforms') || [];
 
     if (platforms.length === 0) {
-        box.innerHTML = '<p style="color:#666;font-size:0.75rem;text-align:center;">' +
-            'لا توجد منصات مسجّلة بعد.</p>';
+        box.innerHTML = '<p style="color:#666;font-size:0.8rem;text-align:center;padding:14px;">' +
+            'لا توجد منصات مسجّلة بعد. أضف أول منصة من الأعلى.</p>';
         return;
     }
 
-    box.innerHTML = platforms.map(p =>
+    const allGroups = getPlatformSettlementGroups();
+
+    box.innerHTML = platforms.map(p => {
+        const myGroups = allGroups.filter(g => g.platform === p.name);
+        const totalOwed = myGroups.reduce((s,g) => s + g.total, 0);
+
+        const groupsHtml = myGroups.length === 0
+            ? '<p style="text-align:center;color:#10b981;padding:10px;font-size:0.82rem;">' +
+              '✅ لا توجد ذمة معلّقة حالياً</p>'
+            : myGroups.map((g, gIdx) => buildPlatformMonthGroupHtml(g, p.id + '_' + gIdx)).join('');
+
+        return '<div style="border:2px solid #c084fc;border-radius:12px;padding:12px;' +
+            'margin-bottom:16px;background:#0d0d11;">' +
+
+            // ---- رأس البطاقة: اسم المنصة + عمولتها + حذفها ----
+            '<div style="display:flex;justify-content:space-between;align-items:center;' +
+            'margin-bottom:4px;flex-wrap:wrap;gap:8px;">' +
+            '<div>' +
+            '<strong style="color:#c084fc;font-size:1.05rem;">📱 ' + p.name + '</strong>' +
+            '<span style="color:#888;font-size:0.75rem;"> (عمولة ' + (p.commissionPct||0) + '%)</span>' +
+            '</div>' +
+            '<button onclick="deletePlatformFromAdmin(\'' + p.id + '\')" ' +
+            'class="gold-btn btn-danger btn-sm" style="width:auto;padding:5px 12px;">' +
+            '🗑️ حذف المنصة</button>' +
+            '</div>' +
+
+            // ---- الذمة الكلية الحالية لهذي المنصة بس ----
+            '<div style="background:#1a1608;border-radius:8px;padding:8px;margin-bottom:10px;' +
+            'text-align:center;">' +
+            '<span style="color:#999;font-size:0.75rem;">إجمالي الذمة الحالية: </span>' +
+            '<strong style="color:#fbbf24;font-size:1rem;">' +
+            totalOwed.toLocaleString('ar-IQ') + ' د.ع</strong>' +
+            '</div>' +
+
+            // ---- كشف الحساب الخاص بهذي المنصة تحديداً ----
+            groupsHtml +
+            '</div>';
+    }).join('');
+}
+
+// بناء قسم شهر واحد لمنصة معيّنة (كشف الحساب + التسوية) - معزول تماماً
+// داخل بطاقة تلك المنصة بس
+function buildPlatformMonthGroupHtml(g, groupId) {
+    const ordersRows = g.orders.map(o => {
+        const adjusted = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null;
+        const displayAmt = adjusted ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
+        return '<div style="display:flex;justify-content:space-between;align-items:center;' +
+            'padding:6px 0;border-bottom:1px dashed #2a2a35;gap:6px;">' +
+            '<div style="font-size:0.78rem;">' +
+            '#' + o.orderNum + ' — ' + (o.customerName || 'زبون') +
+            (adjusted ? '<div style="font-size:0.68rem;color:#888;">' +
+                'فاتورتنا: ' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع (معدَّل)' +
+                '</div>' : '') +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:4px;">' +
+            '<input type="number" value="' + displayAmt + '" ' +
+            'onchange="adjustPlatformOrderAmount(\'' + o.id + '\', this.value)" ' +
+            'style="width:90px;padding:4px 6px;background:#0d0d11;border:1px solid ' +
+            (adjusted ? '#fbbf24' : '#333') + ';border-radius:5px;color:#fff;' +
+            'font-size:0.78rem;text-align:center;">' +
+            '<span style="font-size:0.7rem;color:#888;">د.ع</span>' +
+            '</div></div>';
+    }).join('');
+
+    return '<div style="background:#111116;border:1px solid #333;' +
+        'border-radius:9px;padding:10px;margin-bottom:8px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'background:#111116;padding:6px 10px;border-radius:6px;margin-bottom:4px;">' +
-        '<span style="font-size:0.8rem;">📱 <strong>' + p.name + '</strong>' +
-        ' <span style="color:#888;">(عمولة ' + (p.commissionPct||0) + '%)</span></span>' +
-        '<button onclick="deletePlatformFromAdmin(\'' + p.id + '\')" ' +
-        'class="gold-btn btn-danger btn-sm" style="width:auto;padding:2px 8px;">حذف</button>' +
-        '</div>'
-    ).join('');
+        'cursor:pointer;" onclick="toggleElementDisplay(\'' + groupId + '\')">' +
+        '<div>' +
+        '<span style="font-size:0.8rem;color:#ccc;">شهر ' + g.yearMonth + '</span>' +
+        '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;margin-top:3px;">' +
+        g.orders.length + ' طلب — الإجمالي: ' +
+        g.total.toLocaleString('ar-IQ') + ' د.ع ' +
+        '<span style="font-size:0.7rem;color:#888;">▾ كشف الحساب</span></div>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();settlePlatformMonth(\'' +
+        g.platform.replace(/'/g,"\\'") + '\',\'' + g.yearMonth + '\')" ' +
+        'class="gold-btn btn-sm" ' +
+        'style="background:#c084fc;color:#000;border:none;padding:8px 12px;' +
+        'font-weight:900;white-space:nowrap;">💰 تسوية الشهر</button>' +
+        '</div>' +
+        '<div id="' + groupId + '" style="display:none;margin-top:8px;' +
+        'border-top:1px solid #24392c;padding-top:8px;">' +
+        ordersRows +
+        '<p style="font-size:0.68rem;color:#888;margin-top:6px;">' +
+        '💡 عدّل مبلغ أي طلب ليطابق رقم التطبيق الفعلي (لو فيه فرق عن فاتورتك) - ' +
+        'هذا يأثر بس على حساب التسوية، مو على الفاتورة الأصلية.</p>' +
+        '</div></div>';
 }
 
 function addPlatformFromAdmin() {
@@ -3680,7 +3759,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1740'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1740)
+    const CURRENT_PAGE_VERSION = '1741'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1741)
 
     async function checkForFreshPageVersion() {
         try {
