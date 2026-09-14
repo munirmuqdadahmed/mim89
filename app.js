@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1740';
+const MIM89_APP_VERSION = '1741';
 
 /* ==========================================
    المتغيرات العامة
@@ -3490,7 +3490,7 @@ function renderShiftClosingReport() {
     // بالأعلى، فلا يصح نطرحها هنا مرة ثانية (يصير طرح مزدوج للمبلغ نفسه).
     const pendingAll = getUnsettledDeliveryOrders();
     const pending     = pendingAll.filter(o => !isPlatformDeliveryName(o.driverName));
-    const platformUnsettled = pendingAll.filter(o => isPlatformDeliveryName(o.driverName));
+    // (platformUnsettled محذوف - عرضه انتقل حصراً لتبويب الأدمن)
     const pendingCash = pending
         .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
         .reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
@@ -3575,24 +3575,11 @@ function renderShiftClosingReport() {
         html += '</div>';
     }
 
-    // 🆕 طلبات منصات التوصيل غير المسواة (ذمة بنكية شهرية - منفصلة تماماً)
-    if (platformUnsettled.length > 0) {
-        html += '<div style="background:#1a0d1a;padding:10px;border-radius:9px;' +
-            'margin-bottom:10px;border:1px solid rgba(192,57,246,0.4);">';
-        html += '<div style="color:#c084fc;font-weight:900;margin-bottom:6px;text-align:center;">' +
-            '📱 طلبات منصات توصيل (ذمة بنكية شهرية)</div>';
-        const byPlat = {};
-        platformUnsettled.forEach(o => {
-            byPlat[o.driverName] = (byPlat[o.driverName] || 0) + cleanPrice(o.totalAmount);
-        });
-        Object.keys(byPlat).forEach(p =>
-            html += row('📱 ' + p, money(byPlat[p]), '#c084fc')
-        );
-        html += '<p style="font-size:0.7rem;color:#888;margin-top:4px;">' +
-            'هذي المبالغ لا تُحتسب كاش بالدرج - تُسوّى شهرياً من تبويب ' +
-            '"ذمة تطبيقات التوصيل" بالأدمن.</p>';
-        html += '</div>';
-    }
+    // 🛠️ إصلاح جذري: حذفنا قسم "طلبات منصات توصيل" من هذا التقرير نهائياً.
+    // الكاشير ما يحتاج يعرف عن هذي الطلبات أي شي (لا عددها ولا مبلغها) -
+    // هذي البيانات صارت حصراً بتبويب "ذمة تطبيقات التوصيل" بالأدمن فقط.
+    // (كانت موجودة هنا كـ"تذكير معلوماتي" بس هذا يكشف مبالغ مالية للكاشير
+    // ما يصح يشوفها).
 
     // تسوية الصندوق
     html += '<div style="background:#1a1608;padding:12px;border-radius:9px;' +
@@ -3773,67 +3760,8 @@ function getPlatformSettlementGroups() {
     return Object.values(groups).sort((a,b) => a.yearMonth < b.yearMonth ? 1 : -1);
 }
 
-function renderPlatformSettlementList() {
-    const container = document.getElementById('platformSettlementList');
-    if (!container) return;
-
-    const groups = getPlatformSettlementGroups();
-    if (groups.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#10b981;padding:18px;' +
-            'font-weight:bold;">✅ لا توجد ذمم معلّقة مع أي منصة توصيل</p>';
-        return;
-    }
-
-    container.innerHTML = groups.map((g, gIdx) => {
-        const groupId = 'platGroup_' + gIdx;
-        const ordersRows = g.orders.map(o => {
-            const adjusted = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null;
-            const displayAmt = adjusted ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
-            return '<div style="display:flex;justify-content:space-between;align-items:center;' +
-                'padding:6px 0;border-bottom:1px dashed #2a2a35;gap:6px;">' +
-                '<div style="font-size:0.78rem;">' +
-                '#' + o.orderNum + ' — ' + (o.customerName || 'زبون') +
-                (adjusted ? '<div style="font-size:0.68rem;color:#888;">' +
-                    'فاتورتنا: ' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع (معدَّل)' +
-                    '</div>' : '') +
-                '</div>' +
-                '<div style="display:flex;align-items:center;gap:4px;">' +
-                '<input type="number" value="' + displayAmt + '" ' +
-                'onchange="adjustPlatformOrderAmount(\'' + o.id + '\', this.value)" ' +
-                'style="width:90px;padding:4px 6px;background:#0d0d11;border:1px solid ' +
-                (adjusted ? '#fbbf24' : '#333') + ';border-radius:5px;color:#fff;' +
-                'font-size:0.78rem;text-align:center;">' +
-                '<span style="font-size:0.7rem;color:#888;">د.ع</span>' +
-                '</div></div>';
-        }).join('');
-
-        return '<div style="background:#111116;border:1px solid #c084fc;' +
-            'border-radius:9px;padding:10px;margin-bottom:10px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;' +
-            'cursor:pointer;" onclick="toggleElementDisplay(\'' + groupId + '\')">' +
-            '<div>' +
-            '<strong style="color:#c084fc;">📱 ' + g.platform + '</strong>' +
-            '<span style="font-size:0.75rem;color:#888;"> — شهر ' + g.yearMonth + '</span>' +
-            '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;margin-top:3px;">' +
-            g.orders.length + ' طلب — الإجمالي: ' +
-            g.total.toLocaleString('ar-IQ') + ' د.ع ' +
-            '<span style="font-size:0.7rem;color:#888;">▾ كشف الحساب</span></div>' +
-            '</div>' +
-            '<button onclick="event.stopPropagation();settlePlatformMonth(\'' +
-            g.platform.replace(/'/g,"\\'") + '\',\'' + g.yearMonth + '\')" ' +
-            'class="gold-btn btn-sm" ' +
-            'style="background:#c084fc;color:#000;border:none;padding:8px 12px;' +
-            'font-weight:900;white-space:nowrap;">💰 تسوية الشهر</button>' +
-            '</div>' +
-            '<div id="' + groupId + '" style="display:none;margin-top:8px;' +
-            'border-top:1px solid #24392c;padding-top:8px;">' +
-            ordersRows +
-            '<p style="font-size:0.68rem;color:#888;margin-top:6px;">' +
-            '💡 عدّل مبلغ أي طلب ليطابق رقم التطبيق الفعلي (لو فيه فرق عن فاتورتك) - ' +
-            'هذا يأثر بس على حساب التسوية، مو على الفاتورة الأصلية.</p>' +
-            '</div></div>';
-    }).join('');
-}
+// 🛠️ ملاحظة: renderPlatformSettlementList القديمة انحذفت - استُبدلت
+// بنظام البطاقات المستقلة لكل منصة (renderAdminPlatformsList بملف admin.html)
 
 // إظهار/إخفاء كشف حساب منصة معيّنة
 function toggleElementDisplay(id) {
