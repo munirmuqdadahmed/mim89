@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1744';
+const MIM89_APP_VERSION = '1747';
 
 /* ==========================================
    المتغيرات العامة
@@ -4366,6 +4366,15 @@ function renderDailyReport(targetDate) {
 // 🔒 نفس الأمر: هذا التقرير أصبح حصرياً بلوحة الأدمن
 function openItemsReportModal() {
     const dateInput = document.getElementById('itemsReportDateInput');
+
+    // 🆕 تعبئة قائمة الأقسام للفلترة
+    const catSelect = document.getElementById('itemsReportCategoryFilter');
+    if (catSelect) {
+        const categories = getData('sys_categories') || [];
+        catSelect.innerHTML = '<option value="">📋 كل الأقسام</option>' +
+            categories.map(c => '<option value="' + c.id + '">' + c.name + '</option>').join('');
+    }
+
     if (dateInput) {
         dateInput.value = getTodayString();
         renderItemsReport(getTodayString());
@@ -4373,55 +4382,128 @@ function openItemsReportModal() {
     openModal('itemsReportModal');
 }
 
+// يحدد قسم صنف معيّن بالاسم (للربط بين اسم الصنف بالفاتورة والقسم الحالي له)
+function getItemCategoryIdByName(itemName) {
+    const items = getData('sys_items') || [];
+    const item = items.find(i => i.name === itemName);
+    if (!item) return null;
+    return item.categoryId !== undefined ? item.categoryId
+        : (item.catId !== undefined ? item.catId : item.category);
+}
+
 function renderItemsReport(targetDate) {
-    // 🆕 دعم فلترة "هذا الشيفت بس" بدل كل اليوم التجاري كامل
-    const shiftOnly = document.getElementById('itemsReportShiftOnly')?.checked;
+    const shiftOnly   = document.getElementById('itemsReportShiftOnly')?.checked;
+    const categoryId  = document.getElementById('itemsReportCategoryFilter')?.value || '';
     let completed;
     let labelPrefix;
 
     if (shiftOnly) {
-        completed = getShiftOrders(); // كل طلبات الشيفت الحالي المفتوح بس
+        completed = getShiftOrders();
         labelPrefix = '🕐 هذا الشيفت الحالي';
     } else {
         completed = (getData('sys_completed_orders')||[]).filter(o => o.dateDate === targetDate);
         labelPrefix = 'جرد يوم: ' + targetDate;
     }
 
-    const itemsMap  = {};
-    let   grandQty  = 0;
-
-    completed.forEach(o => {
-        (o.items||[]).forEach(i => {
-            const qty = cleanPrice(i.qty);
-            if (!itemsMap[i.name]) itemsMap[i.name] = { qty:0, total:0 };
-            itemsMap[i.name].qty   += qty;
-            itemsMap[i.name].total += cleanPrice(i.price) * qty;
-            grandQty += qty;
-        });
-    });
+    const itemsMap = buildItemsSalesMap(completed, categoryId);
+    const grandQty = Object.values(itemsMap).reduce((s,v) => s + v.qty, 0);
 
     const setTxt = (id,txt) => { const el=document.getElementById(id); if(el) el.innerText=txt; };
     setTxt('itemsReportDateText', labelPrefix);
     setTxt('repTotalItemsQty',    grandQty + ' قطعة');
 
-    const container = document.getElementById('repItemsSoldListDetail');
-    if (!container) return;
+    // 🆕 ترتيب من الأكثر مبيعاً للأقل (بدل ترتيب عشوائي مربك)
+    const sortedNames = Object.keys(itemsMap).sort((a,b) => itemsMap[b].qty - itemsMap[a].qty);
 
-    if (Object.keys(itemsMap).length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#666;padding:14px;">لا توجد مبيعات</p>';
-        return;
+    // 🆕 بانر الأكثر مبيعاً بارز فوق
+    const topBanner = document.getElementById('topSellerBanner');
+    if (sortedNames.length > 0 && topBanner) {
+        topBanner.style.display = 'block';
+        document.getElementById('topSellerName').innerText = '🍔 ' + sortedNames[0];
+        document.getElementById('topSellerQty').innerText =
+            itemsMap[sortedNames[0]].qty + ' قطعة — ' +
+            itemsMap[sortedNames[0]].total.toLocaleString('ar-IQ') + ' د.ع';
+    } else if (topBanner) {
+        topBanner.style.display = 'none';
     }
 
-    container.innerHTML = Object.keys(itemsMap).map(name =>
-        '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'background:#111116;padding:7px 10px;border-radius:7px;margin-bottom:4px;">' +
-        '<strong style="color:#fff;">● ' + name + '</strong>' +
-        '<div>' +
-        '<span style="color:#fbbf24;font-weight:bold;">' + itemsMap[name].qty + ' قطعة</span>' +
-        '<span style="color:#888;font-size:0.74rem;"> (' +
-        itemsMap[name].total.toLocaleString('ar-IQ') + ' د.ع)</span>' +
-        '</div></div>'
-    ).join('');
+    const container = document.getElementById('repItemsSoldListDetail');
+    if (container) {
+        if (sortedNames.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:#666;padding:14px;">لا توجد مبيعات</p>';
+        } else {
+            container.innerHTML = sortedNames.map((name, idx) =>
+                '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                'background:#111116;padding:7px 10px;border-radius:7px;margin-bottom:4px;' +
+                (idx === 0 ? 'border:1px solid #ffd700;' : '') + '">' +
+                '<strong style="color:#fff;">' + (idx === 0 ? '🥇' : '●') + ' ' + name + '</strong>' +
+                '<div>' +
+                '<span style="color:#fbbf24;font-weight:bold;">' + itemsMap[name].qty + ' قطعة</span>' +
+                '<span style="color:#888;font-size:0.74rem;"> (' +
+                itemsMap[name].total.toLocaleString('ar-IQ') + ' د.ع)</span>' +
+                '</div></div>'
+            ).join('');
+        }
+    }
+
+    render7DaysComparison(categoryId);
+}
+
+// يبني خريطة {اسم الصنف: {qty, total}} من قائمة طلبات، مفلترة بقسم معيّن لو محدد
+function buildItemsSalesMap(orders, categoryId) {
+    const itemsMap = {};
+    orders.forEach(o => {
+        (o.items||[]).forEach(i => {
+            if (categoryId) {
+                const itemCat = getItemCategoryIdByName(i.name);
+                if (String(itemCat) !== String(categoryId)) return;
+            }
+            const qty = cleanPrice(i.qty);
+            if (!itemsMap[i.name]) itemsMap[i.name] = { qty:0, total:0 };
+            itemsMap[i.name].qty   += qty;
+            itemsMap[i.name].total += cleanPrice(i.price) * qty;
+        });
+    });
+    return itemsMap;
+}
+
+// 🆕 مقارنة واضحة لآخر 7 أيام - مرتبة من أعلى مبيعات لأقلها، مع تمييز
+// أفضل يوم بالذهبي، حتى تعرف "أي يوم كان أكثر" بنظرة وحدة
+function render7DaysComparison(categoryId) {
+    const box = document.getElementById('last7DaysComparison');
+    if (!box) return;
+
+    const allOrders = getData('sys_completed_orders') || [];
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayOrders = allOrders.filter(o => o.dateDate === dateStr);
+        const itemsMap = buildItemsSalesMap(dayOrders, categoryId);
+        const qty = Object.values(itemsMap).reduce((s,v) => s + v.qty, 0);
+        days.push({
+            dateStr,
+            label: d.toLocaleDateString('ar-IQ', { weekday: 'long', day:'numeric', month:'numeric' }),
+            qty
+        });
+    }
+
+    const maxQty = Math.max(...days.map(d => d.qty), 1);
+    days.sort((a,b) => b.qty - a.qty);
+
+    box.innerHTML = days.map((d, idx) => {
+        const barPct = Math.round((d.qty / maxQty) * 100);
+        return '<div style="margin-bottom:6px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:2px;">' +
+            '<span style="color:' + (idx===0 ? '#ffd700':'#ccc') + ';font-weight:' + (idx===0?'900':'normal') + ';">' +
+            (idx===0 ? '🏆 ' : '') + d.label + '</span>' +
+            '<span style="color:#10b981;font-weight:bold;">' + d.qty + ' قطعة</span>' +
+            '</div>' +
+            '<div style="background:#1e1e28;border-radius:4px;height:6px;overflow:hidden;">' +
+            '<div style="background:' + (idx===0?'#ffd700':'#f59e0b') + ';height:100%;width:' + barPct + '%;"></div>' +
+            '</div></div>';
+    }).join('');
 }
 
 function exportItemsReportPDFAndWhatsApp() {
