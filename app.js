@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1748';
+const MIM89_APP_VERSION = '1749';
 
 /* ==========================================
    المتغيرات العامة
@@ -4355,10 +4355,21 @@ function renderDailyReport(targetDate) {
     setTxt('repTotalExpenses',  totalExp.toLocaleString('ar-IQ'));
     setTxt('repTotalSalaries',  totalSal.toLocaleString('ar-IQ'));
 
+    // 🛠️ إصلاح جذري مهم جداً: totalCash فوق يحسب كل مبيعات الكاش كأنها
+    // وصلت الصندوق فعلياً - لكن كاش طلبات التوصيل اللي "لسا بذمة السائق"
+    // (ما تسوّت بعد) أصلاً مو موجود بالصندوق حالياً، السائق لسا ماخذه
+    // بجيبه. لازم نطرحه، وإلا الصندوق الصافي يطلع منتفخ وهمياً.
+    const pendingCashOut = getUnsettledDeliveryOrders()
+        .filter(o => o.dateDate === targetDate)
+        .filter(o => !isPlatformDeliveryName(o.driverName)) // ذمة التطبيقات مالية منفصلة أصلاً
+        .filter(o => !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')))
+        .reduce((sum,o) => sum + cleanPrice(o.totalAmount), 0);
+    setTxt('repPendingDriverCash', pendingCashOut.toLocaleString('ar-IQ'));
+
     const openFloat = getDrawerOpeningFloat(targetDate);
     setTxt('repOpeningFloat',   openFloat.toLocaleString('ar-IQ'));
     setTxt('repNetCashBox',
-        Math.max(0, openFloat + totalCash - totalExp - totalSal).toLocaleString('ar-IQ'));
+        Math.max(0, openFloat + totalCash - pendingCashOut - totalExp - totalSal).toLocaleString('ar-IQ'));
 
     openDriverSettlementModal();
 }
