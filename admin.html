@@ -1111,6 +1111,27 @@
                 السعر العادي.
             </p>
             <input type="hidden" id="platformPricesTargetName">
+
+            <!-- 🆕 تطبيق نسبة تلقائية على كل الأصناف دفعة وحدة -->
+            <div style="background:#1a1608;border:1px solid #f59e0b;border-radius:8px;
+                        padding:10px;margin-bottom:12px;">
+                <div style="font-size:0.8rem;color:#f59e0b;font-weight:900;margin-bottom:6px;">
+                    ⚡ تطبيق نسبة عمولة تلقائياً على كل الأصناف
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <input type="number" id="bulkCommissionPct" class="gold-input-inline"
+                           placeholder="النسبة % (مثال: 26)" style="flex:1;">
+                    <button onclick="applyBulkPlatformCommission()" class="gold-btn"
+                            style="white-space:nowrap;background:#f59e0b;color:#000;font-weight:900;">
+                        تطبيق على الكل
+                    </button>
+                </div>
+                <p style="font-size:0.7rem;color:#999;margin-top:6px;">
+                    💡 يحسب لكل صنف: سعره العادي + النسبة، ويعبّي كل الخانات
+                    تحت تلقائياً (تكدر تراجعها أو تعدّل أي وحدة يدوياً قبل الحفظ).
+                </p>
+            </div>
+
             <div id="platformPricesList" style="max-height:400px;overflow-y:auto;"></div>
             <button onclick="savePlatformPrices()" class="gold-btn btn-block"
                     style="margin-top:12px;background:#f59e0b;color:#000;font-weight:900;">
@@ -2015,7 +2036,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1752"></script>
+<script src="app.js?v=1753"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3464,6 +3485,29 @@ function renderEmployeeFinanceHistory(emp) {
 // احتمال تلابس أو خلط بين بيانات منصة وثانية.
 // 🆕 فتح نافذة إدارة الأسعار الخاصة لمنصة معيّنة - قائمة كل الأصناف
 // مع سعرها العادي وحقل لسعرها الخاص بهذي المنصة تحديداً
+// 🆕 تطبيق نسبة (مثلاً عمولة المنصة) تلقائياً على كل الأصناف دفعة وحدة -
+// يحسب: السعر العادي + النسبة، ويعبّي كل خانة تلقائياً (تبقى قابلة
+// للمراجعة اليدوية قبل الحفظ النهائي)
+function applyBulkPlatformCommission() {
+    const pct = parseFloat(document.getElementById('bulkCommissionPct')?.value);
+    if (isNaN(pct)) return alert('⚠️ أدخل نسبة صحيحة (مثال: 26).');
+
+    const inputs = document.querySelectorAll('.platform-price-input');
+    let count = 0;
+
+    inputs.forEach(input => {
+        const normalPrice = cleanPrice(input.dataset.normalPrice);
+        if (normalPrice <= 0) return;
+        // نحسب السعر الجديد ونقرّبه لأقرب 50 د.ع (أرقام عملية للتداول اليومي)
+        const rawNew = normalPrice * (1 + pct / 100);
+        const rounded = Math.round(rawNew / 50) * 50;
+        input.value = rounded;
+        count++;
+    });
+
+    alert('✅ تم تطبيق نسبة ' + pct + '% على ' + count + ' صنف — راجعها ثم اضغط "حفظ الأسعار" بالأسفل.');
+}
+
 function openPlatformPricesModal(platformName) {
     document.getElementById('platformPricesTargetName').value = platformName;
     document.getElementById('platformPricesTitle').innerText = '💰 أسعار خاصة — ' + platformName;
@@ -3484,7 +3528,8 @@ function openPlatformPricesModal(platformName) {
                 '<span style="color:#666;font-size:0.72rem;"> (عادي: ' +
                 normalPrice.toLocaleString('ar-IQ') + ')</span></span>' +
                 '<input type="number" class="platform-price-input gold-input-inline" ' +
-                'data-item-id="' + i.id + '" value="' + platPrice + '" ' +
+                'data-item-id="' + i.id + '" data-normal-price="' + normalPrice + '" ' +
+                'value="' + platPrice + '" ' +
                 'placeholder="نفس العادي" style="width:110px;text-align:center;">' +
                 '</div>';
         }).join('');
@@ -4138,7 +4183,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1752'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1752)
+    const CURRENT_PAGE_VERSION = '1753'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1753)
 
     async function checkForFreshPageVersion() {
         try {
