@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1761';
+const MIM89_APP_VERSION = '1762';
 
 /* ==========================================
    المتغيرات العامة
@@ -2239,6 +2239,7 @@ async function retryKitchenQueueNow() {
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({
                     paperWidth: getInvoiceDesign().paperWidth,
+fontScale: getInvoiceDesign().fontScale || '1.0',
                     jobs: [{ printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }]
                 })
             });
@@ -2466,15 +2467,20 @@ function buildCustomerReceiptLines(ord) {
     if (!design.compactMode) L.push({ separator: 'solid' });
 
     // الحساب
-    L.push({ text: 'مجموع الوجبات: ' + money(ord.subtotal) + ' د.ع',
-        size:'normal', align:'right' });
+    // 🛠️ إصلاح: "مجموع الوجبات" يطلع بس لو فيه خصم أو توصيل يبرر وجوده -
+    // لو ماكو أي منهم، فهو نفس رقم "المطلوب" بالضبط، وطباعته يكون تكرار
+    // بلا فائدة (نفس الرقم مرتين على الورقة)
+    const hasAdjustments = cleanPrice(ord.discount) > 0 || cleanPrice(ord.deliveryFee) > 0;
+    if (hasAdjustments)
+        L.push({ text: 'مجموع الوجبات: ' + money(ord.subtotal) + ' د.ع',
+            size:'normal', align:'right' });
     if (cleanPrice(ord.discount) > 0)
         L.push({ text: 'خصم: -' + money(ord.discount) + ' د.ع',
             size:'normal', align:'right' });
     if (cleanPrice(ord.deliveryFee) > 0)
         L.push({ text: 'التوصيل: +' + money(ord.deliveryFee) + ' د.ع',
             size:'normal', align:'right' });
-    L.push({ separator: 'dash' });
+    if (hasAdjustments) L.push({ separator: 'dash' });
     L.push({ text: 'المطلوب: ' + money(ord.totalAmount) + ' د.ع',
         size:'big', align:'center', bold:true });
     if (cleanPrice(ord.cashGiven) > 0) {
@@ -2606,6 +2612,7 @@ async function printBothViaBridge(btnElement) {
     try {
         payload = {
             paperWidth: getInvoiceDesign().paperWidth, // 🛠️ يحدد للجسر عرض الورق الفعلي (58/80 مم)
+fontScale: getInvoiceDesign().fontScale || '1.0',
             jobs: [
                 {
                     printer:    'cashier',
@@ -3354,6 +3361,7 @@ async function reprintKitchenOnly(orderId, btnElement) {
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({
                 paperWidth: getInvoiceDesign().paperWidth,
+fontScale: getInvoiceDesign().fontScale || '1.0',
                 jobs:[{
                 printer:    'kitchen',
                 lines:      buildKitchenTicketLines(ord),
@@ -3386,6 +3394,7 @@ async function reprintCustomerOnly(orderId, btnElement) {
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({
                 paperWidth: getInvoiceDesign().paperWidth,
+fontScale: getInvoiceDesign().fontScale || '1.0',
                 jobs:[{
                 printer:    'cashier',
                 lines:      buildCustomerReceiptLines(ord),
@@ -6299,6 +6308,7 @@ function loadInvoiceDesignForm() {
     setVal('invoicePaperWidth',     d.paperWidth     || '80');
     setVal('invoiceLogoDataUrl',    d.logoDataUrl    || '');
     setVal('invoiceCustomExtraLine', d.customExtraLine || '');
+    setVal('invoiceFontScale',      d.fontScale       || '1.0');
 
     setChk('invoiceShowLogo',         d.showLogo);
     setChk('invoiceShowAddress',      d.showAddress);
@@ -6419,7 +6429,8 @@ function saveInvoiceDesign() {
         showDriverArea:   getChk('invoiceShowDriverArea'),
         showOrderNotes:   getChk('invoiceShowOrderNotes'),
         showItemNotes:    getChk('invoiceShowItemNotes'),
-        compactMode:      getChk('invoiceCompactMode')
+        compactMode:      getChk('invoiceCompactMode'),
+        fontScale:        getVal('invoiceFontScale') || '1.0'
     };
 
     setData('sys_invoice_design', design);
