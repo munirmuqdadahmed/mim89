@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1758';
+const MIM89_APP_VERSION = '1759';
 
 /* ==========================================
    المتغيرات العامة
@@ -444,11 +444,15 @@ function safeLocalSet(key, jsonText) {
 
         console.warn('⚠️ ذاكرة ممتلئة — جاري تحرير مساحة...');
 
-        // تقليص الفواتير
+        // تقليص الفواتير - 🛠️ نحذف المؤكدة الرفع للسحابة أولاً، ونحمي
+        // غير المزامنة قدر الإمكان حتى بحالة الطوارئ هذي
         try {
             const orders = JSON.parse(localStorage.getItem('sys_completed_orders') || '[]');
             if (Array.isArray(orders) && orders.length > 150) {
-                localStorage.setItem('sys_completed_orders', JSON.stringify(orders.slice(0, 150)));
+                const synced   = orders.filter(o => o._cloudSynced);
+                const unsynced = orders.filter(o => !o._cloudSynced);
+                const kept = unsynced.concat(synced).slice(0, Math.max(150, unsynced.length));
+                localStorage.setItem('sys_completed_orders', JSON.stringify(kept));
             }
         } catch (_) {}
 
@@ -894,8 +898,23 @@ function runSilentStorageMaintenance() {
         const usage = getStorageUsage();
         if (usage.totalBytes > 4 * 1024 * 1024) { // أكثر من 4MB
             const orders = getData('sys_completed_orders') || [];
-            if (orders.length > 200)
-                safeLocalSet('sys_completed_orders', JSON.stringify(orders.slice(0, 200)));
+            if (orders.length > 200) {
+                // 🛠️ إصلاح جذري خطير جداً: كنا نحذف أقدم الفواتير بالعدد بس،
+                // بدون أي فحص إذا وصلت السحابة فعلاً أو لا - هذا كان يضيع
+                // فواتير قديمة نهائياً (لا بالجهاز المحلي ولا بالسحابة) لو
+                // فشل رفعها لأي سبب. الحل: لا نحذف أي فاتورة غير مؤكدة
+                // الرفع (_cloudSynced) إطلاقاً، بغض النظر عن العدد - نقبل
+                // نمو الذاكرة كخيار أهون بكثير من ضياع بيانات مالية نهائياً.
+                const synced   = orders.filter(o => o._cloudSynced);
+                const unsynced = orders.filter(o => !o._cloudSynced);
+                if (synced.length > 200) {
+                    const trimmedSynced = synced.slice(0, 200);
+                    safeLocalSet('sys_completed_orders',
+                        JSON.stringify(unsynced.concat(trimmedSynced)));
+                }
+                // لو كل الفواتير غير مؤكدة (unsynced.length كبير)، ما نحذف
+                // شي - هذا مؤشر خطير يحتاج تدخل يدوي (زر "مزامنة" بالكاشير)
+            }
         }
     } catch (_) {}
 }
@@ -2247,6 +2266,19 @@ function manualRetryKitchenQueue() { retryKitchenQueueNow(); }
    ☁️ طابور إعادة محاولة رفع الفواتير للسحابة - يحل مشكلة الفواتير
    اللي تضل بجهاز الكاشير المحلي وحده وما توصل لأي جهاز ثاني
    ========================================== */
+// 🆕 دالة مشتركة: تعليم فاتورة كـ"مؤكدة الرفع للسحابة" - أساس ضروري
+// يحمي أي فاتورة لسا ما توصلت السحابة من الحذف التلقائي وقت صيانة الذاكرة
+function markOrderAsCloudSynced(orderId) {
+    try {
+        let all = getData('sys_completed_orders') || [];
+        const idx = all.findIndex(o => String(o.id) === String(orderId));
+        if (idx > -1 && !all[idx]._cloudSynced) {
+            all[idx]._cloudSynced = true;
+            safeLocalSet('sys_completed_orders', JSON.stringify(all));
+        }
+    } catch (_) {}
+}
+
 const ORDER_SYNC_QUEUE_KEY = 'sys_order_sync_queue';
 let orderSyncRetryTimer = null;
 
@@ -2303,6 +2335,7 @@ async function retryOrderSyncQueueNow() {
     for (const ord of queue) {
         try {
             await db.collection("completed_orders").doc(String(ord.id)).set(ord, { merge: true });
+            markOrderAsCloudSynced(ord.id);
         } catch (_) {
             stillPending.push(ord);
         }
@@ -2322,27 +2355,34 @@ function resumeOrderSyncQueueIfNeeded() {
 // 🆕 مزامنة فورية شاملة لكل فواتير اليوم المحلية - يحل المشكلة الحالية
 // بأثر رجعي (أي فاتورة سبق وفشلت برفعها قبل هذا الإصلاح، أو أي جهاز
 // عنده فواتير محلية ما وصلت السحابة لأي سبب)
+// 🛠️ إصلاح جذري: كانت هذي الأداة تزامن فواتير "اليوم" بس - لو فاتورة
+// قديمة (بتاريخ ماضي) ما وصلت السحابة من زمان، ما كان فيه طريقة
+// لاسترجاعها. الحين تزامن كل الفواتير المحلية الموجودة بهذا الجهاز،
+// بغض النظر عن تاريخها - فرصة استرجاع أي فاتورة قديمة ضايعة.
 async function resyncTodayOrdersToCloud(btnElement) {
     if (!db) return alert('⚠️ ماكو اتصال بقاعدة البيانات حالياً.');
 
     const orig = btnElement ? btnElement.innerHTML : '';
     if (btnElement) { btnElement.innerHTML = '⏳ جاري المزامنة...'; btnElement.disabled = true; }
 
-    const today = getTodayString();
-    const localToday = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
+    const localAll = getData('sys_completed_orders') || [];
 
     let synced = 0, failed = 0;
-    for (const ord of localToday) {
+    for (const ord of localAll) {
         try {
             await db.collection("completed_orders").doc(String(ord.id)).set(ord, { merge: true });
+            markOrderAsCloudSynced(ord.id);
             synced++;
         } catch (_) { failed++; }
     }
 
     if (btnElement) { btnElement.innerHTML = orig; btnElement.disabled = false; }
-    alert('✅ تمت مزامنة ' + synced + ' فاتورة من فواتير اليوم للسحابة' +
+    alert('✅ تمت مزامنة ' + synced + ' فاتورة (كل الفواتير المحفوظة بهذا الجهاز، ' +
+        'كل التواريخ) للسحابة' +
         (failed > 0 ? '\n⚠️ فشلت ' + failed + ' فاتورة (تأكد من الاتصال بالإنترنت وحاول مرة ثانية).' : '') +
-        '\n\nافتح الأدمن من أي جهاز ثاني الآن وتأكد وصلت المبيعات.');
+        '\n\nافتح إدارة الفواتير بالأدمن الآن ودوّر عن الفاتورة اللي تدوّر عليها.' +
+        '\n\n⚠️ ملاحظة: هذا يزامن بس اللي موجود بهذا الجهاز بالضبط - لو فاتورة ' +
+        'انمسحت من كاش هذا الجهاز (مثلاً قديمة جداً)، ما راح تلقاها حتى بعد المزامنة.');
 }
 
 /* ==========================================
@@ -2974,6 +3014,10 @@ function tryFinalizeAndClearOrder(silentMode) {
                     localStorage.setItem('mim89_save_counter', String(cnt));
                     if (cnt % 10 === 0) setTimeout(runSilentStorageMaintenance, 2000);
                 } catch (_) {}
+                // 🆕 نعلّم الفاتورة "مؤكدة الرفع للسحابة" - أساس ضروري
+                // يمنع صيانة الذاكرة من حذفها لاحقاً وهي لسا ما وصلت
+                // السحابة فعلياً (كان هذا سبب ضياع فواتير قديمة نهائياً)
+                markOrderAsCloudSynced(orderToSave.id);
                 // 🌟 منح نقاط MIM89 VIP تلقائياً لو رقم هاتف الزبون مسجّل بالنادي
                 if (typeof awardLoyaltyPoints === 'function') awardLoyaltyPoints(orderToSave);
             })
@@ -7020,15 +7064,29 @@ async function migrateOrdersToCloud(btnElement) {
 }
 
 function cleanupStorage() {
-    const orders = getData('sys_completed_orders') || [];
-    if (orders.length > 150 && !confirm(
-        'سيُحذف ' + (orders.length - 150) + ' فاتورة قديمة محلياً.\n' +
-        '(تبقى بالسحابة)\n\nهل تريد المتابعة؟'
+    const orders   = getData('sys_completed_orders') || [];
+    const synced   = orders.filter(o => o._cloudSynced);
+    const unsynced = orders.filter(o => !o._cloudSynced);
+
+    if (synced.length <= 150) {
+        if (unsynced.length > 0) {
+            alert('⚠️ عندك ' + unsynced.length + ' فاتورة لسا ما توصلت السحابة - ' +
+                'استخدم "مزامنة فواتير اليوم" بالكاشير أول قبل أي تنظيف.');
+        } else {
+            alert('✅ ماكو داعي للتنظيف حالياً.');
+        }
+        return;
+    }
+
+    if (!confirm(
+        'سيُحذف ' + (synced.length - 150) + ' فاتورة قديمة **مؤكدة الوجود بالسحابة** محلياً.\n' +
+        (unsynced.length > 0 ? '🛡️ ' + unsynced.length + ' فاتورة غير مزامنة راح تبقى محفوظة، ما راح تُحذف.\n\n' : '\n') +
+        'هل تريد المتابعة؟'
     )) return;
 
     try {
-        if (orders.length > 150)
-            localStorage.setItem('sys_completed_orders', JSON.stringify(orders.slice(0, 150)));
+        const trimmedSynced = synced.slice(0, 150);
+        localStorage.setItem('sys_completed_orders', JSON.stringify(unsynced.concat(trimmedSynced)));
 
         const items = getData('sys_items') || [];
         const light = items.map(it => {
