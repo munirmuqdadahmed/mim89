@@ -14,7 +14,9 @@
         /* ==========================================
            🆕 القائمة الجانبية الجديدة - تصميم كامل بديل
            ========================================== */
-        .admin-shell { display: flex; min-height: 100vh; }
+        /* 🛠️ ملاحظة: admin-shell (الحاوية الخارجية) لازم تبقى عادية بدون
+           flex - الـ flex الأفقي (قائمة + محتوى) صار على admin-shell-inner
+           تحديداً، حتى شريط الموبايل العلوي ما ينحشر جنبهم بالخطأ */
         .admin-sidebar {
             width: 235px; flex-shrink: 0; background: #0a0a0d;
             border-left: 1px solid #1e1e28; height: 100vh; position: sticky; top: 0;
@@ -44,6 +46,7 @@
             border: 1px solid #ef4444; border-radius: 8px; cursor: pointer;
             font-family: inherit; font-weight: bold; font-size: 0.82rem;
         }
+        .admin-shell-inner { display: flex; min-height: 100vh; }
         .admin-main-content { flex: 1; padding: 18px 22px; min-width: 0; overflow-x: hidden; }
         .admin-mobile-topbar { display: none; }
 
@@ -121,13 +124,17 @@
 <!-- لوحة الإدارة الرئيسية -->
 <div id="adminMainApp" style="display:none;" class="admin-shell">
 
-    <!-- 📱 شريط علوي بس بالموبايل (زر فتح القائمة) -->
+    <!-- 📱 شريط علوي بس بالموبايل (زر فتح القائمة) - خارج سياق flex
+         الأفقي عمداً، حتى يكون شريط كامل العرض بالأعلى مو محشور بالنص -->
     <div class="admin-mobile-topbar">
         <button onclick="toggleAdminSidebar()"><i class="fa-solid fa-bars"></i></button>
         <span class="brand-badge" style="font-size:0.8rem;">MIM89 ADMIN</span>
         <button onclick="location.reload()"><i class="fa-solid fa-lock"></i></button>
     </div>
     <div class="admin-sidebar-overlay" id="adminSidebarOverlay" onclick="toggleAdminSidebar()"></div>
+
+    <!-- 🆕 الحاوية الداخلية: هنا بس يصير flex أفقي (قائمة + محتوى) -->
+    <div class="admin-shell-inner">
 
     <!-- 🆕 القائمة الجانبية -->
     <aside class="admin-sidebar" id="adminSidebar">
@@ -1939,9 +1946,11 @@
 
     </main>
 
+    </div><!-- end admin-shell-inner -->
+
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1747"></script>
+<script src="app.js?v=1748"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -1988,9 +1997,9 @@ function adminPinSubmit() {
         : (entered === '1234')) {
 
         document.getElementById('authOverlay').style.display = 'none';
-        // 🛠️ إصلاح جذري: لازم flex مو block، وإلا القائمة الجانبية
-        // الجديدة تنكسر (تصير عمودية فوق المحتوى بدل جنبه)
-        document.getElementById('adminMainApp').style.display = 'flex';
+        // 🛠️ الحاوية الخارجية عادية (block) - الفليكس الأفقي صار محصور
+        // بالحاوية الداخلية admin-shell-inner فقط عبر CSS
+        document.getElementById('adminMainApp').style.display = 'block';
         loadAdminTabsData();
         if (typeof startLiveSalesBadgeUpdater === 'function')
             startLiveSalesBadgeUpdater();
@@ -3903,7 +3912,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1747'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1747)
+    const CURRENT_PAGE_VERSION = '1748'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1748)
 
     async function checkForFreshPageVersion() {
         try {
