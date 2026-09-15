@@ -1095,6 +1095,30 @@
 
     <!-- 📱 ذمة تطبيقات التوصيل -->
 
+    <!-- 💰 نافذة الأسعار الخاصة لمنصة معيّنة -->
+    <div id="platformPricesModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 id="platformPricesTitle" style="color:#f59e0b;">💰 أسعار خاصة</h4>
+                <button onclick="closeModal('platformPricesModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 حدد سعر خاص لأي صنف بهذي المنصة (مثلاً لتغطية نسبة عمولتها).
+                لما تختار هذي المنصة بالكاشير، الأسعار هذي تتطبّق تلقائياً
+                على أي صنف موجود بالسلة. اترك الخانة فاضية لو تريد نفس
+                السعر العادي.
+            </p>
+            <input type="hidden" id="platformPricesTargetName">
+            <div id="platformPricesList" style="max-height:400px;overflow-y:auto;"></div>
+            <button onclick="savePlatformPrices()" class="gold-btn btn-block"
+                    style="margin-top:12px;background:#f59e0b;color:#000;font-weight:900;">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ الأسعار
+            </button>
+        </div>
+    </div>
+
     <div id="platformSettlementModal" class="modal-overlay">
         <div class="modal-body" style="max-width:600px;max-height:85vh;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;
@@ -1991,7 +2015,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1749"></script>
+<script src="app.js?v=1752"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3438,6 +3462,67 @@ function renderEmployeeFinanceHistory(emp) {
 // غيرها - اسمها، عمولتها، حذفها، وكل ذمتها المالية (مجمّعة بالشهر مع
 // إمكانية تعديل كل طلب وتسوية الشهر) كلها داخل نفس البطاقة. هذا يلغي أي
 // احتمال تلابس أو خلط بين بيانات منصة وثانية.
+// 🆕 فتح نافذة إدارة الأسعار الخاصة لمنصة معيّنة - قائمة كل الأصناف
+// مع سعرها العادي وحقل لسعرها الخاص بهذي المنصة تحديداً
+function openPlatformPricesModal(platformName) {
+    document.getElementById('platformPricesTargetName').value = platformName;
+    document.getElementById('platformPricesTitle').innerText = '💰 أسعار خاصة — ' + platformName;
+
+    const items = (getData('sys_items') || []).filter(i => !i.isPaused);
+    const box = document.getElementById('platformPricesList');
+
+    if (items.length === 0) {
+        box.innerHTML = '<p style="color:#666;text-align:center;">لا توجد أصناف بعد</p>';
+    } else {
+        box.innerHTML = items.map(i => {
+            const normalPrice = cleanPrice(i.price);
+            const platPrice = (i.platformPrices && i.platformPrices[platformName] !== undefined)
+                ? i.platformPrices[platformName] : '';
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;' +
+                'border-bottom:1px dashed #24392c;">' +
+                '<span style="flex:1;font-size:0.85rem;">' + i.name +
+                '<span style="color:#666;font-size:0.72rem;"> (عادي: ' +
+                normalPrice.toLocaleString('ar-IQ') + ')</span></span>' +
+                '<input type="number" class="platform-price-input gold-input-inline" ' +
+                'data-item-id="' + i.id + '" value="' + platPrice + '" ' +
+                'placeholder="نفس العادي" style="width:110px;text-align:center;">' +
+                '</div>';
+        }).join('');
+    }
+
+    openModal('platformPricesModal');
+}
+
+// حفظ كل الأسعار الخاصة المُدخلة لهذي المنصة على كل الأصناف دفعة وحدة
+function savePlatformPrices() {
+    const platformName = document.getElementById('platformPricesTargetName').value;
+    if (!platformName) return;
+
+    let items = getData('sys_items') || [];
+    const inputs = document.querySelectorAll('.platform-price-input');
+    let savedCount = 0;
+
+    inputs.forEach(input => {
+        const itemId = input.dataset.itemId;
+        const val = input.value.trim();
+        const item = items.find(i => String(i.id) === String(itemId));
+        if (!item) return;
+
+        if (!item.platformPrices) item.platformPrices = {};
+
+        if (val === '') {
+            delete item.platformPrices[platformName]; // رجّعناها لنفس السعر العادي
+        } else {
+            item.platformPrices[platformName] = cleanPrice(val);
+            savedCount++;
+        }
+    });
+
+    setData('sys_items', items);
+    closeModal('platformPricesModal');
+    alert('✅ تم حفظ الأسعار الخاصة (' + savedCount + ' صنف له سعر مخصص بـ' + platformName + ').');
+}
+
 function renderAdminPlatformsList() {
     const box = document.getElementById('adminPlatformsList');
     if (!box) return;
@@ -3470,10 +3555,15 @@ function renderAdminPlatformsList() {
             '<strong style="color:#c084fc;font-size:1.05rem;">📱 ' + p.name + '</strong>' +
             '<span style="color:#888;font-size:0.75rem;"> (عمولة ' + (p.commissionPct||0) + '%)</span>' +
             '</div>' +
+            '<div style="display:flex;gap:6px;">' +
+            '<button onclick="openPlatformPricesModal(\'' + p.name.replace(/'/g,"\\'") + '\')" ' +
+            'class="gold-btn btn-sm" style="width:auto;padding:5px 12px;' +
+            'background:#f59e0b;color:#000;font-weight:900;">' +
+            '💰 أسعار خاصة</button>' +
             '<button onclick="deletePlatformFromAdmin(\'' + p.id + '\')" ' +
             'class="gold-btn btn-danger btn-sm" style="width:auto;padding:5px 12px;">' +
-            '🗑️ حذف المنصة</button>' +
-            '</div>' +
+            '🗑️ حذف</button>' +
+            '</div></div>' +
 
             // ---- الذمة الكلية الحالية لهذي المنصة بس ----
             '<div style="background:#1a1608;border-radius:8px;padding:8px;margin-bottom:10px;' +
@@ -3492,11 +3582,24 @@ function renderAdminPlatformsList() {
 // بناء قسم شهر واحد لمنصة معيّنة (كشف الحساب + التسوية) - معزول تماماً
 // داخل بطاقة تلك المنصة بس
 function buildPlatformMonthGroupHtml(g, groupId) {
+    // 🆕 نجيب نسبة عمولة هذي المنصة لحساب "الصافي" لكل طلب تلقائياً
+    const platforms = getData('sys_delivery_platforms') || [];
+    const platformObj = platforms.find(p => p.name === g.platform);
+    const commissionPct = platformObj ? cleanPrice(platformObj.commissionPct) : 0;
+
     const ordersRows = g.orders.map(o => {
         const adjusted = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null;
         const displayAmt = adjusted ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
-        return '<div style="display:flex;justify-content:space-between;align-items:center;' +
-            'padding:6px 0;border-bottom:1px dashed #2a2a35;gap:6px;">' +
+        // 🆕 الصافي المتوقع بعد خصم عمولة المنصة من المبلغ المعروض بهذا السطر
+        const netAfterCommission = Math.round(displayAmt * (1 - commissionPct / 100));
+
+        // 🆕 تفصيل الأصناف - نفس اللي تشوفه بتطبيق المنصة بالضبط
+        const itemsLine = (o.items || [])
+            .map(it => it.name + ' ×' + cleanPrice(it.qty))
+            .join('، ');
+
+        return '<div style="padding:6px 0;border-bottom:1px dashed #2a2a35;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">' +
             '<div style="font-size:0.78rem;">' +
             '#' + o.orderNum + ' — ' + (o.customerName || 'زبون') +
             (adjusted ? '<div style="font-size:0.68rem;color:#888;">' +
@@ -3510,8 +3613,17 @@ function buildPlatformMonthGroupHtml(g, groupId) {
             (adjusted ? '#fbbf24' : '#333') + ';border-radius:5px;color:#fff;' +
             'font-size:0.78rem;text-align:center;">' +
             '<span style="font-size:0.7rem;color:#888;">د.ع</span>' +
-            '</div></div>';
+            '</div></div>' +
+            (itemsLine ? '<div style="font-size:0.7rem;color:#aaa;margin-top:3px;">🍔 ' +
+                itemsLine + '</div>' : '') +
+            (commissionPct > 0 ? '<div style="font-size:0.7rem;color:#10b981;margin-top:2px;">' +
+                '💰 الصافي المتوقع (بعد عمولة ' + commissionPct + '%): ' +
+                netAfterCommission.toLocaleString('ar-IQ') + ' د.ع</div>' : '') +
+            '</div>';
     }).join('');
+
+    // 🆕 إجمالي الصافي المتوقع لكل الشهر (بعد العمولة) - يبيّن شكد يوصلك فعلياً
+    const totalNet = Math.round(g.total * (1 - commissionPct / 100));
 
     return '<div style="background:#111116;border:1px solid #333;' +
         'border-radius:9px;padding:10px;margin-bottom:8px;">' +
@@ -3521,7 +3633,9 @@ function buildPlatformMonthGroupHtml(g, groupId) {
         '<span style="font-size:0.8rem;color:#ccc;">شهر ' + g.yearMonth + '</span>' +
         '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;margin-top:3px;">' +
         g.orders.length + ' طلب — الإجمالي: ' +
-        g.total.toLocaleString('ar-IQ') + ' د.ع ' +
+        g.total.toLocaleString('ar-IQ') + ' د.ع' +
+        (commissionPct > 0 ? ' — <span style="color:#10b981;">الصافي المتوقع: ' +
+            totalNet.toLocaleString('ar-IQ') + ' د.ع</span>' : '') + ' ' +
         '<span style="font-size:0.7rem;color:#888;">▾ كشف الحساب</span></div>' +
         '</div>' +
         '<button onclick="event.stopPropagation();settlePlatformMonth(\'' +
@@ -4024,7 +4138,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1749'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1749)
+    const CURRENT_PAGE_VERSION = '1752'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1752)
 
     async function checkForFreshPageVersion() {
         try {
