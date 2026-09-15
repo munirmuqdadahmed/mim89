@@ -724,9 +724,18 @@
 
                 <label class="section-label">عرض ورق الطابعة:</label>
                 <select id="invoicePaperWidth" class="gold-input-inline"
-                        style="margin-bottom:14px;" onchange="renderInvoiceDesignPreview()">
+                        style="margin-bottom:10px;" onchange="renderInvoiceDesignPreview()">
                     <option value="80">80 مم (قياسي)</option>
                     <option value="58">58 مم (صغير)</option>
+                </select>
+
+                <!-- 🆕 حجم الخط - تحكم حقيقي بحجم الطباعة -->
+                <label class="section-label">📏 حجم الخط بالفاتورة:</label>
+                <select id="invoiceFontScale" class="gold-input-inline"
+                        style="margin-bottom:14px;" onchange="renderInvoiceDesignPreview()">
+                    <option value="0.8">صغير (يوفّر ورق أكثر)</option>
+                    <option value="1.0" selected>عادي (الافتراضي)</option>
+                    <option value="1.2">كبير (أوضح للقراءة)</option>
                 </select>
 
                 <!-- 🆕 وضع الفاتورة المضغوط -->
@@ -2184,7 +2193,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1761"></script>
+<script src="app.js?v=1762"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -4565,7 +4574,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1761'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1761)
+    const CURRENT_PAGE_VERSION = '1762'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1762)
 
     async function checkForFreshPageVersion() {
         try {
