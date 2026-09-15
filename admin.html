@@ -1463,6 +1463,10 @@
                 💡 هذا يبحث بكل الفواتير المحفوظة تاريخياً (مو بس الشيفت الحالي) —
                 تقدر تدور بأي تاريخ قديم، تعدّل السائق/المنصة، أو تحذف فاتورة غلط.
             </p>
+            <button onclick="openManualInvoiceAddModal()" class="gold-btn"
+                    style="background:#8b5cf6;color:#fff;font-weight:900;margin-bottom:10px;">
+                <i class="fa-solid fa-plus"></i> ➕ إضافة فاتورة مفقودة يدوياً (من فاتورة ورقية)
+            </button>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <input type="date" id="invMgrDateFilter" class="gold-input-inline"
                        style="flex:1;min-width:140px;" onchange="renderInvoiceManagerList()">
@@ -1481,6 +1485,56 @@
     </div>
 
     <!-- ✏️ نافذة تعديل فاتورة -->
+    <!-- ➕ نافذة إضافة فاتورة مفقودة يدوياً -->
+    <div id="manualInvoiceModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:460px;max-height:85vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 style="color:#8b5cf6;">➕ إضافة فاتورة مفقودة</h4>
+                <button onclick="closeModal('manualInvoiceModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 استخدمها لو عندك فاتورة ورقية مطبوعة (فقدت من النظام بسبب
+                مشكلة مزامنة قديمة) وتريد تسجّلها بالسجل يدوياً بنفس تفاصيلها.
+            </p>
+
+            <label class="section-label">رقم الطلب (من الفاتورة الورقية):</label>
+            <input type="number" id="manInvOrderNum" class="gold-input-inline" style="margin-bottom:10px;">
+
+            <label class="section-label">التاريخ:</label>
+            <input type="date" id="manInvDate" class="gold-input-inline" style="margin-bottom:10px;">
+
+            <label class="section-label">نوع الطلب:</label>
+            <select id="manInvOrderType" class="gold-input-inline" style="margin-bottom:10px;">
+                <option value="صالة">🍽️ صالة</option>
+                <option value="سفري">🛍️ سفري</option>
+                <option value="توصيل" selected>🛵 توصيل</option>
+            </select>
+
+            <label class="section-label">السائق / المنصة:</label>
+            <select id="manInvDriverSelect" class="gold-input-inline" style="margin-bottom:10px;"></select>
+
+            <label class="section-label">اسم الزبون:</label>
+            <input type="text" id="manInvCustName" class="gold-input-inline" style="margin-bottom:10px;"
+                   placeholder="زبون مباشر">
+
+            <label class="section-label">المبلغ الإجمالي (كما بالفاتورة الورقية):</label>
+            <input type="number" id="manInvTotalAmount" class="gold-input-inline" style="margin-bottom:10px;">
+
+            <label class="section-label">طريقة الدفع:</label>
+            <select id="manInvPaymentMethod" class="gold-input-inline" style="margin-bottom:14px;">
+                <option value="كاش">كاش</option>
+                <option value="فيزا">فيزا</option>
+            </select>
+
+            <button onclick="saveManualInvoice()" class="gold-btn btn-block"
+                    style="background:#8b5cf6;color:#fff;font-weight:900;">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ الفاتورة
+            </button>
+        </div>
+    </div>
+
     <div id="invoiceEditModal" class="modal-overlay">
         <div class="modal-body" style="max-width:460px;">
             <div style="display:flex;justify-content:space-between;align-items:center;
@@ -2113,7 +2167,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1758"></script>
+<script src="app.js?v=1759"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3266,6 +3320,81 @@ let activeEmployeeDetailId = null;
 /* ==========================================
    🧾 إدارة الفواتير - بحث كامل بالسجل التاريخي، تعديل، حذف
    ========================================== */
+function openManualInvoiceAddModal() {
+    document.getElementById('manInvOrderNum').value = '';
+    document.getElementById('manInvDate').value = getTodayString();
+    document.getElementById('manInvOrderType').value = 'توصيل';
+    document.getElementById('manInvCustName').value = '';
+    document.getElementById('manInvTotalAmount').value = '';
+    document.getElementById('manInvPaymentMethod').value = 'كاش';
+
+    const driverSelect = document.getElementById('manInvDriverSelect');
+    const drivers   = getData('sys_drivers') || [];
+    const platforms = getData('sys_delivery_platforms') || [];
+    driverSelect.innerHTML =
+        '<option value="-">-- بدون --</option>' +
+        '<optgroup label="🛵 سائقو المطعم">' +
+        drivers.map(d => '<option value="' + d.name + '">' + d.name + '</option>').join('') +
+        '</optgroup>' +
+        (platforms.length > 0
+            ? '<optgroup label="📱 منصات التوصيل">' +
+              platforms.map(p => '<option value="' + p.name + '">📱 ' + p.name + '</option>').join('') +
+              '</optgroup>'
+            : '');
+
+    openModal('manualInvoiceModal');
+}
+
+async function saveManualInvoice() {
+    const orderNum = cleanPrice(document.getElementById('manInvOrderNum').value);
+    const dateDate = document.getElementById('manInvDate').value;
+    const orderType = document.getElementById('manInvOrderType').value;
+    const driverName = document.getElementById('manInvDriverSelect').value;
+    const custName = document.getElementById('manInvCustName').value.trim() || 'زبون مباشر';
+    const totalAmount = cleanPrice(document.getElementById('manInvTotalAmount').value);
+    const paymentMethod = document.getElementById('manInvPaymentMethod').value;
+
+    if (!orderNum) return alert('⚠️ أدخل رقم الطلب.');
+    if (!dateDate) return alert('⚠️ أدخل التاريخ.');
+    if (!totalAmount) return alert('⚠️ أدخل المبلغ الإجمالي.');
+
+    // نتأكد ما نكرر فاتورة موجودة أصلاً بنفس الرقم والتاريخ
+    const existing = getData('sys_completed_orders') || [];
+    if (existing.some(o => cleanPrice(o.orderNum) === orderNum && o.dateDate === dateDate)) {
+        if (!confirm('⚠️ فيه فاتورة بنفس الرقم والتاريخ موجودة أصلاً. تريد تضيفها كفاتورة ثانية برضو؟')) return;
+    }
+
+    const newOrder = {
+        id: 'MANUAL_' + Date.now(),
+        orderNum, dateDate, orderType,
+        driverName: (orderType === 'توصيل') ? driverName : '-',
+        customerName: custName,
+        totalAmount, paymentMethod,
+        items: [], // ماكو تفاصيل أصناف - فاتورة مُدخلة يدوياً من الورق بس
+        isSettled: false,
+        isManuallyAdded: true, // 🆕 علامة توضيحية إنها أُدخلت يدوياً، مو من الكاشير مباشرة
+        createdTimestamp: Date.now(),
+        timestamp: new Date().toLocaleTimeString('ar-IQ', { hour:'2-digit', minute:'2-digit' })
+    };
+
+    let all = getData('sys_completed_orders') || [];
+    all.unshift(newOrder);
+    setData('sys_completed_orders', all);
+
+    if (typeof db !== 'undefined' && db) {
+        try {
+            await db.collection('completed_orders').doc(newOrder.id).set(newOrder);
+            markOrderAsCloudSynced(newOrder.id);
+        } catch (err) {
+            alert('⚠️ اتحفظت محلياً بس تعذّر رفعها للسحابة الآن. جرب "إصلاح المزامنة" لاحقاً.');
+        }
+    }
+
+    closeModal('manualInvoiceModal');
+    renderInvoiceManagerList();
+    alert('✅ تمت إضافة الفاتورة #' + orderNum + ' للسجل!');
+}
+
 function renderInvoiceManagerList() {
     const box = document.getElementById('invMgrList');
     const summaryEl = document.getElementById('invMgrSummary');
@@ -4419,7 +4548,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1758'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1758)
+    const CURRENT_PAGE_VERSION = '1759'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1759)
 
     async function checkForFreshPageVersion() {
         try {
