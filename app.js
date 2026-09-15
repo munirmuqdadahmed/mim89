@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1754';
+const MIM89_APP_VERSION = '1755';
 
 /* ==========================================
    المتغيرات العامة
@@ -729,8 +729,18 @@ async function pullLatestFromCloud() {
 
     // الفواتير
     try {
-        const ordSnap = await db.collection("completed_orders")
-            .orderBy("createdTimestamp", "desc").limit(200).get({ source: 'server' });
+        let ordSnap;
+        try {
+            ordSnap = await db.collection("completed_orders")
+                .orderBy("createdTimestamp", "desc").limit(200).get({ source: 'server' });
+        } catch (orderByErr) {
+            // 🛠️ إصلاح جذري: لو الاستعلام المرتب فشل لأي سبب (مثلاً مشكلة
+            // فهرسة على هذا الحقل)، نحاول استعلام بسيط بدون ترتيب بدل ما
+            // نفشل بالكامل - هذا كان يخلي "مبيعات اليوم" تطلع صفر بأي
+            // جهاز جديد ما عنده كاش محلي (زي الموبايل أول مرة يفتح الأدمن)
+            console.warn("⚠️ فشل استعلام الفواتير المرتب، نجرب استعلام بديل:", orderByErr);
+            ordSnap = await db.collection("completed_orders").limit(300).get({ source: 'server' });
+        }
         if (!ordSnap.empty) {
             const cloudOrders = [];
             ordSnap.forEach(d => cloudOrders.push(d.data()));
@@ -6606,6 +6616,18 @@ async function runCloudDiagnostics(btnElement) {
     } catch (err) {
         lines.push("❌ القراءة فشلت:\n" + translateFirestoreError(err));
         finishDiagnostics(lines,btnElement,orig); return;
+    }
+
+    // 🆕 فحص محدد لاستعلام الفواتير (نفس الاستعلام الحقيقي المسؤول عن
+    // "مبيعات اليوم" بالأدمن) - يكشف لو فيه مشكلة بترتيب النتائج
+    // (orderBy) تمنع وصول البيانات لأي جهاز جديد ما عنده كاش محلي
+    try {
+        const ordSnap = await db.collection("completed_orders")
+            .orderBy("createdTimestamp", "desc").limit(5).get({ source: 'server' });
+        lines.push("✅ قراءة الفواتير (مرتبة) تعمل (" + ordSnap.size + " نتيجة).");
+    } catch (err) {
+        lines.push("❌ قراءة الفواتير المرتبة فشلت (هذا سبب عدم ظهور " +
+            "مبيعات اليوم بجهاز جديد):\n" + translateFirestoreError(err));
     }
 
     // اختبار الكتابة
