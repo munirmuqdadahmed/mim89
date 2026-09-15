@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1757';
+const MIM89_APP_VERSION = '1758';
 
 /* ==========================================
    المتغيرات العامة
@@ -2244,6 +2244,108 @@ async function retryKitchenQueueNow() {
 function manualRetryKitchenQueue() { retryKitchenQueueNow(); }
 
 /* ==========================================
+   ☁️ طابور إعادة محاولة رفع الفواتير للسحابة - يحل مشكلة الفواتير
+   اللي تضل بجهاز الكاشير المحلي وحده وما توصل لأي جهاز ثاني
+   ========================================== */
+const ORDER_SYNC_QUEUE_KEY = 'sys_order_sync_queue';
+let orderSyncRetryTimer = null;
+
+function addToOrderSyncRetryQueue(order) {
+    let queue = JSON.parse(localStorage.getItem(ORDER_SYNC_QUEUE_KEY) || '[]');
+    if (queue.some(o => String(o.id) === String(order.id))) return; // موجودة أصلاً
+    queue.push(order);
+    localStorage.setItem(ORDER_SYNC_QUEUE_KEY, JSON.stringify(queue));
+    updateOrderSyncBanner();
+    startOrderSyncRetryLoop();
+}
+
+// تنبيه ثابت بأعلى الشاشة - يضل ظاهر لين ترفع كل الفواتير المعلّقة فعلياً
+function updateOrderSyncBanner() {
+    const queue = JSON.parse(localStorage.getItem(ORDER_SYNC_QUEUE_KEY) || '[]');
+    let banner = document.getElementById('orderSyncBanner');
+
+    if (queue.length === 0) {
+        if (banner) banner.remove();
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'orderSyncBanner';
+        banner.style.cssText =
+            'position:fixed;top:0;right:0;left:0;z-index:99997;' +
+            'background:#7c2d12;color:#fff;text-align:center;padding:9px 14px;' +
+            'font-weight:900;font-size:0.82rem;cursor:pointer;' +
+            'border-bottom:2px solid #f97316;box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+        banner.onclick = () => retryOrderSyncQueueNow();
+        document.body.appendChild(banner);
+    }
+    banner.innerHTML = '☁️ ' + queue.length + ' فاتورة ما وصلت السحابة بعد (يحاول تلقائياً) — ' +
+        'أرقام: ' + queue.map(o => '#' + o.orderNum).join('، ') +
+        ' <span style="text-decoration:underline;">— اضغط للمحاولة الآن</span>';
+}
+
+function startOrderSyncRetryLoop() {
+    if (orderSyncRetryTimer) return;
+    orderSyncRetryTimer = setInterval(retryOrderSyncQueueNow, 15000);
+}
+
+async function retryOrderSyncQueueNow() {
+    let queue = JSON.parse(localStorage.getItem(ORDER_SYNC_QUEUE_KEY) || '[]');
+    if (queue.length === 0) {
+        if (orderSyncRetryTimer) { clearInterval(orderSyncRetryTimer); orderSyncRetryTimer = null; }
+        updateOrderSyncBanner();
+        return;
+    }
+    if (!db) return; // ماكو اتصال أصلاً - ننتظر الدورة الجاية
+
+    const stillPending = [];
+    for (const ord of queue) {
+        try {
+            await db.collection("completed_orders").doc(String(ord.id)).set(ord, { merge: true });
+        } catch (_) {
+            stillPending.push(ord);
+        }
+    }
+
+    localStorage.setItem(ORDER_SYNC_QUEUE_KEY, JSON.stringify(stillPending));
+    updateOrderSyncBanner();
+}
+
+// استئناف الطابور تلقائياً عند تحميل أي صفحة (لو ضل فيه فواتير معلّقة
+// من جلسة سابقة، مثلاً الكاشير حدّث الصفحة أو سكرها قبل ما ترفع)
+function resumeOrderSyncQueueIfNeeded() {
+    updateOrderSyncBanner();
+    startOrderSyncRetryLoop();
+}
+
+// 🆕 مزامنة فورية شاملة لكل فواتير اليوم المحلية - يحل المشكلة الحالية
+// بأثر رجعي (أي فاتورة سبق وفشلت برفعها قبل هذا الإصلاح، أو أي جهاز
+// عنده فواتير محلية ما وصلت السحابة لأي سبب)
+async function resyncTodayOrdersToCloud(btnElement) {
+    if (!db) return alert('⚠️ ماكو اتصال بقاعدة البيانات حالياً.');
+
+    const orig = btnElement ? btnElement.innerHTML : '';
+    if (btnElement) { btnElement.innerHTML = '⏳ جاري المزامنة...'; btnElement.disabled = true; }
+
+    const today = getTodayString();
+    const localToday = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
+
+    let synced = 0, failed = 0;
+    for (const ord of localToday) {
+        try {
+            await db.collection("completed_orders").doc(String(ord.id)).set(ord, { merge: true });
+            synced++;
+        } catch (_) { failed++; }
+    }
+
+    if (btnElement) { btnElement.innerHTML = orig; btnElement.disabled = false; }
+    alert('✅ تمت مزامنة ' + synced + ' فاتورة من فواتير اليوم للسحابة' +
+        (failed > 0 ? '\n⚠️ فشلت ' + failed + ' فاتورة (تأكد من الاتصال بالإنترنت وحاول مرة ثانية).' : '') +
+        '\n\nافتح الأدمن من أي جهاز ثاني الآن وتأكد وصلت المبيعات.');
+}
+
+/* ==========================================
    🖨️ بناء الفواتير - مُبسّطة ونظيفة
    ========================================== */
 
@@ -2875,7 +2977,18 @@ function tryFinalizeAndClearOrder(silentMode) {
                 // 🌟 منح نقاط MIM89 VIP تلقائياً لو رقم هاتف الزبون مسجّل بالنادي
                 if (typeof awardLoyaltyPoints === 'function') awardLoyaltyPoints(orderToSave);
             })
-            .catch(err => console.error('تعذّر رفع الفاتورة:', err));
+            .catch(err => {
+                // 🛠️ إصلاح جذري خطير جداً: كان هذا الخطأ يُسجَّل بصمت
+                // بالكونسول بس (ما يشوفه أي حد أبداً) والفاتورة تضل بجهاز
+                // الكاشير المحلي وحده - ما توصل لأي جهاز ثاني (الأدمن،
+                // الموبايل...)، وممكن تضيع نهائياً لو انسكرت الصفحة قبل
+                // ما تنرفع. الحل: نفس نظام طابور طباعة المطبخ بالضبط -
+                // إعادة محاولة تلقائية دائمة + تنبيه ثابت بالشاشة.
+                console.error('تعذّر رفع الفاتورة:', err);
+                addToOrderSyncRetryQueue(orderToSave);
+            });
+    } else {
+        addToOrderSyncRetryQueue(orderToSave);
     }
 
     // خصم المواد من المخزن
@@ -7405,6 +7518,7 @@ function initCashierPage() {
     setTimeout(() => {
         if (typeof updateKitchenQueueBanner === 'function') updateKitchenQueueBanner();
         if (typeof startKitchenRetryLoop === 'function') startKitchenRetryLoop();
+        if (typeof resumeOrderSyncQueueIfNeeded === 'function') resumeOrderSyncQueueIfNeeded();
     }, 1500);
 }
 
