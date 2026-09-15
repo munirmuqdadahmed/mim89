@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1760';
+const MIM89_APP_VERSION = '1761';
 
 /* ==========================================
    المتغيرات العامة
@@ -2414,14 +2414,19 @@ function buildCustomerReceiptLines(ord) {
         L.push({ text: design.addressLine, size:'normal', align:'center' });
     L.push({ separator: 'solid' });
 
-    // رقم الطلب
-    L.push({ text: 'رقم الطلب', size:'normal', align:'center' });
-    L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
+    // رقم الطلب - 🆕 بالوضع المضغوط: سطر وحد بدل سطرين (يوفّر مسافة محسوسة)
+    if (design.compactMode) {
+        L.push({ text: 'طلب #' + ord.orderNum, size:'huge', align:'center', bold:true });
+    } else {
+        L.push({ text: 'رقم الطلب', size:'normal', align:'center' });
+        L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
+    }
     L.push({ separator: 'dash' });
 
     // بيانات الفاتورة
     L.push({ text: ord.timestamp + ' — ' + ord.dateDate, size:'normal', align:'center' });
-    L.push({ text: 'الكاشير: ' + (ord.cashierName||'الرئيسي'), size:'normal', align:'right' });
+    if (!design.compactMode)
+        L.push({ text: 'الكاشير: ' + (ord.cashierName||'الرئيسي'), size:'normal', align:'right' });
     L.push({ separator: 'dash' });
 
     // نوع الخدمة + طريقة الدفع (مدمجين بسطر وحد يوفّر مسافة، مطابق للفاتورة المرجعية)
@@ -2458,7 +2463,7 @@ function buildCustomerReceiptLines(ord) {
 
     L.push({ separator: 'dash' });
     L.push({ text: 'عدد القطع: ' + totalQty, size:'normal', align:'right' });
-    L.push({ separator: 'solid' });
+    if (!design.compactMode) L.push({ separator: 'solid' });
 
     // الحساب
     L.push({ text: 'مجموع الوجبات: ' + money(ord.subtotal) + ' د.ع',
@@ -2478,8 +2483,9 @@ function buildCustomerReceiptLines(ord) {
         L.push({ text: 'الباقي: ' + money(ord.cashChange) + ' د.ع',
             size:'normal', align:'right', bold:true });
     }
-    L.push({ text: 'الدفع: ' + (ord.paymentMethod||'كاش'),
-        size:'normal', align:'right' });
+    // 🛠️ إصلاح: حذفنا سطر "الدفع: كاش" المكرر هنا - كان مطبوع أصلاً
+    // بالأعلى مدمج مع نوع الخدمة ("توصيل | الدفع: كاش")، فطباعته مرة
+    // ثانية هنا كانت تكرار بلا داعي يهدر ورق.
 
     if (design.showOrderNotes && ord.orderNotes)
         L.push({ text: 'ملاحظة: ' + ord.orderNotes, size:'normal', align:'right' });
@@ -6301,6 +6307,7 @@ function loadInvoiceDesignForm() {
     setChk('invoiceShowDriverArea',   d.showDriverArea);
     setChk('invoiceShowOrderNotes',   d.showOrderNotes);
     setChk('invoiceShowItemNotes',    d.showItemNotes);
+    setChk('invoiceCompactMode',      d.compactMode);
 
     const preview = document.getElementById('invoiceLogoPreview');
     if (preview) {
@@ -6411,7 +6418,8 @@ function saveInvoiceDesign() {
         showCustomerName: getChk('invoiceShowCustomerName'),
         showDriverArea:   getChk('invoiceShowDriverArea'),
         showOrderNotes:   getChk('invoiceShowOrderNotes'),
-        showItemNotes:    getChk('invoiceShowItemNotes')
+        showItemNotes:    getChk('invoiceShowItemNotes'),
+        compactMode:      getChk('invoiceCompactMode')
     };
 
     setData('sys_invoice_design', design);
