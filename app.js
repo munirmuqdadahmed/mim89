@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1753';
+const MIM89_APP_VERSION = '1754';
 
 /* ==========================================
    المتغيرات العامة
@@ -2349,7 +2349,13 @@ function buildKitchenTicketLines(ord) {
     L.push({ separator: 'solid' });
     L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
     L.push({ separator: 'solid' });
-    L.push({ text: ord.orderType, size:'big', align:'center', bold:true });
+    // 🆕 لو الطلب توصيل عن طريق منصة (بلي، طلبات...)، نبيّن اسم المنصة
+    // صراحة بدل كلمة "توصيل" العامة بس - يعرف المطبخ لأي جهة يجهزون
+    const orderTypeLabel = (ord.orderType === 'توصيل' && ord.driverName &&
+        typeof isPlatformDeliveryName === 'function' && isPlatformDeliveryName(ord.driverName))
+        ? 'توصيل ' + ord.driverName
+        : ord.orderType;
+    L.push({ text: orderTypeLabel, size:'big', align:'center', bold:true });
     if (ord.orderType === 'توصيل' && ord.area)
         L.push({ text: '📍 ' + ord.area, size:'big', align:'center', bold:true });
     if (ord.customerName && ord.customerName !== 'زبون مباشر')
