@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1751';
+const MIM89_APP_VERSION = '1752';
 
 /* ==========================================
    المتغيرات العامة
@@ -3855,6 +3855,50 @@ function isPlatformDeliveryName(driverName) {
     if (!driverName) return false;
     const platforms = getData('sys_delivery_platforms') || [];
     return platforms.some(p => p.name === driverName);
+}
+
+// 🆕 عند اختيار منصة توصيل (بلي، طلبات...) بالكاشير، نفحص إذا عندها
+// أسعار خاصة محفوظة لأصناف السلة الحالية، ونطبّقها تلقائياً - يحل مشكلة
+// اختلاف السعر بين ما يقرأه الكاشير وما تعرضه المنصة للزبون
+function onPosDriverSelectChanged() {
+    const selectedName = document.getElementById('posDriverSelect')?.value;
+    if (!selectedName || !isPlatformDeliveryName(selectedName)) return;
+    if (!posCart || posCart.length === 0) return;
+
+    const platforms = getData('sys_delivery_platforms') || [];
+    const platform = platforms.find(p => p.name === selectedName);
+    if (!platform) return;
+
+    const allItems = getData('sys_items') || [];
+    let changedCount = 0;
+
+    posCart.forEach(cartItem => {
+        const baseItem = allItems.find(i =>
+            String(i.id) === String(cartItem.id) || cleanPrice(i.id) === cleanPrice(cartItem.id)
+        );
+        if (!baseItem || !baseItem.platformPrices) return;
+        const platPrice = baseItem.platformPrices[selectedName];
+        if (platPrice === undefined || platPrice === null || platPrice === '') return;
+
+        const newPrice = cleanPrice(platPrice);
+        if (newPrice > 0 && newPrice !== cleanPrice(cartItem.price)) {
+            cartItem.price = newPrice;
+            changedCount++;
+        }
+    });
+
+    if (changedCount > 0) {
+        recalculateActiveDiscount();
+        renderPosCart();
+        // تنبيه هادئ (مو alert يوقف الشغل) يخلي الكاشير يعرف شنو صار
+        const notice = document.createElement('div');
+        notice.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);' +
+            'background:#f59e0b;color:#000;padding:10px 18px;border-radius:8px;' +
+            'font-weight:900;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+        notice.innerText = '💰 تحدّثت أسعار ' + changedCount + ' صنف لأسعار "' + selectedName + '" الخاصة';
+        document.body.appendChild(notice);
+        setTimeout(() => notice.remove(), 3500);
+    }
 }
 
 // 🛠️ إصلاح مهم: ذمة السائقين يجب ألا ترتبط بحدود الشيفت الحالي - إذا انقفل
