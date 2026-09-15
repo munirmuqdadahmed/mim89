@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1759';
+const MIM89_APP_VERSION = '1760';
 
 /* ==========================================
    المتغيرات العامة
@@ -7132,6 +7132,13 @@ function setupPublicMenuRealtimeListener(retryCount) {
                 // تلقائياً بدل ما يضل الزبون عالق على "جاري التحميل" للأبد
                 if (retryCount < 4) {
                     setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 1500 * (retryCount + 1));
+                } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
+                    // 🆕 كل المحاولات فشلت - إعادة تحميل كاملة تلقائية
+                    // (مرة وحدة بس بهذي الجلسة، حتى ما تصير حلقة تحديث
+                    // لا نهائية) تعيد تهيئة كل شي من الصفر (تسجيل الدخول
+                    // المجهول، الاتصال بالسحابة...) بدل تكرار نفس المحاولة
+                    sessionStorage.setItem('mim89_auto_reload_done', '1');
+                    setTimeout(() => location.reload(), 2000);
                 }
             }
         );
@@ -7198,12 +7205,18 @@ function renderPublicMenuUI() {
 
     // 🆕 تحسين تجربة: لو ما وصلت أصناف بعد (أول ثواني تحميل الصفحة)، نعرض
     // رسالة تحميل واضحة بدل فراغ صامت يخلي الزبون يظن المينيو معطّل
+    // 🛠️ إصلاح إضافي: زر "أعد المحاولة" فوري - شبكة أمان يدوية للزبون
+    // لو انحاصر لأي سبب (حتى لو 4 محاولات تلقائية فشلت)، تحديث الصفحة
+    // كاملة يحل أغلب حالات التعليق بغض النظر عن السبب الجذري
     if (!items || items.length === 0) {
         sectionsContainer.innerHTML =
             '<div style="text-align:center;padding:60px 20px;color:#999;">' +
             '<div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>' +
             '<div style="font-weight:900;">جاري تحميل المينيو...</div>' +
             '<div style="font-size:0.8rem;margin-top:6px;">تأكد من اتصالك بالإنترنت</div>' +
+            '<button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;' +
+            'background:var(--gold-primary,#ffd700);color:#000;border:none;border-radius:8px;' +
+            'font-weight:900;font-size:0.85rem;cursor:pointer;">🔄 إعادة تحميل الصفحة</button>' +
             '</div>';
         return;
     }
