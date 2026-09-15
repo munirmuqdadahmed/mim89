@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1756';
+const MIM89_APP_VERSION = '1757';
 
 /* ==========================================
    المتغيرات العامة
@@ -6599,6 +6599,28 @@ async function runCloudDiagnostics(btnElement) {
         btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> فحص...';
         btnElement.disabled  = true;
     }
+
+    // 🆕 معلومات خام عن ساعة وتاريخ هذا الجهاز تحديداً - نوريها أول شي
+    // قبل أي فحص ثاني، حتى لو ساعة النظام تبين صحيحة بالعين، ممكن يكون
+    // فيه خلل بإعداد "المنطقة الزمنية" (timezone) تحديداً يأثر على حساب
+    // "اليوم التجاري" بدون ما يبين بالساعة العادية أبداً
+    try {
+        const now = new Date();
+        const tzOffsetMin = now.getTimezoneOffset(); // بالدقائق
+        const tzOffsetHrs = -(tzOffsetMin / 60); // نقلبها لصيغة UTC+X مفهومة
+        lines.push("🕐 وقت هذا الجهاز الخام: " + now.toString());
+        lines.push("🌍 إزاحة المنطقة الزمنية بهذا الجهاز: UTC" +
+            (tzOffsetHrs >= 0 ? "+" : "") + tzOffsetHrs);
+        if (tzOffsetHrs !== 3) {
+            lines.push("⚠️ المفروض تكون UTC+3 (بغداد) بالضبط. لو مكتوب رقم " +
+                "ثاني، معناته إعداد 'Time Zone' بالجهاز مو مضبوط على بغداد " +
+                "(حتى لو الساعة المعروضة تبين صحيحة بالعين المجردة).");
+        } else {
+            lines.push("✅ المنطقة الزمنية مضبوطة صح على بغداد.");
+        }
+        lines.push("📅 اليوم التجاري المحسوب من هذا الجهاز: " + getTodayString());
+        lines.push("");
+    } catch (_) {}
 
     if (typeof firebase === 'undefined') {
         lines.push("❌ مكتبة Firebase غير محمّلة.");
