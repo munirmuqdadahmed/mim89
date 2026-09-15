@@ -1625,6 +1625,42 @@
             </button>
         </div>
 
+        <!-- 🆕 تصدير كل العروض لمنصة معيّنة دفعة وحدة - جاهز للإرسال للشركة -->
+        <div class="card" style="border-color:#f59e0b;max-width:600px;margin:0 auto 16px;">
+            <h4 style="color:#f59e0b;margin-bottom:10px;">
+                📤 تصدير كل العروض لمنصة معيّنة (لإرسالها للشركة)
+            </h4>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 يجمّع كل عروضك بمستند واحد جاهز للطباعة أو التحميل، بأسعار
+                هذي المنصة المحسوبة تلقائياً (بعد عمولتها) — ترسله مباشرة
+                لفريق المنصة يفعّلوه عندهم.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <select id="comboExportPlatformSelect" class="gold-input-inline" style="flex:1;min-width:160px;"></select>
+                <button onclick="exportAllCombosForPlatform('print')" class="gold-btn"
+                        style="background:#f59e0b;color:#000;font-weight:900;">
+                    🖨️ طباعة الكل
+                </button>
+                <button onclick="exportAllCombosForPlatform('pdf')" class="gold-btn"
+                        style="background:#1e1e28;color:#f59e0b;border:1px solid #f59e0b;font-weight:900;">
+                    📄 تحميل PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- 🆕 فلتر منصة لقائمة العروض - يسهّل مراجعة/تعديل أسعار منصة وحدة -->
+        <div style="max-width:600px;margin:0 auto 10px;display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.82rem;color:#999;white-space:nowrap;">🔍 عرض أسعار منصة:</label>
+            <select id="comboListPlatformFilter" class="gold-input-inline"
+                    onchange="renderComboDealsList()" style="flex:1;">
+                <option value="">كل المنصات</option>
+            </select>
+        </div>
+
+        <!-- 🆕 ملخص إجمالي العروض -->
+        <div id="comboDealsSummary" style="max-width:600px;margin:0 auto 14px;text-align:center;
+                    color:#999;font-size:0.85rem;"></div>
+
         <!-- نموذج إضافة/تعديل بوكس -->
         <div class="card" style="border-color:#ec4899;margin-bottom:16px;max-width:600px;
                     margin-left:auto;margin-right:auto;">
@@ -4428,6 +4464,32 @@ function renderComboDealsList() {
     const combos    = getComboDeals();
     const platforms = getData('sys_delivery_platforms') || [];
 
+    // 🆕 تعبئة قوائم اختيار المنصة (التصدير + الفلتر) لو لسا فاضية
+    const exportSelect = document.getElementById('comboExportPlatformSelect');
+    const filterSelect = document.getElementById('comboListPlatformFilter');
+    if (exportSelect && exportSelect.options.length === 0) {
+        exportSelect.innerHTML = platforms.length === 0
+            ? '<option value="">-- أضف منصة توصيل أول --</option>'
+            : platforms.map(p => '<option value="' + p.name + '">' + p.name + '</option>').join('');
+    }
+    if (filterSelect && filterSelect.options.length <= 1) {
+        filterSelect.innerHTML = '<option value="">كل المنصات</option>' +
+            platforms.map(p => '<option value="' + p.name + '">' + p.name + '</option>').join('');
+    }
+
+    const activeFilter = filterSelect?.value || '';
+    const filteredPlatforms = activeFilter
+        ? platforms.filter(p => p.name === activeFilter)
+        : platforms;
+
+    // 🆕 ملخص إجمالي العروض
+    const summaryEl = document.getElementById('comboDealsSummary');
+    if (summaryEl) {
+        summaryEl.innerHTML = '📦 إجمالي العروض: <strong style="color:#ec4899;">' +
+            combos.length + '</strong>' +
+            (activeFilter ? ' &nbsp;|&nbsp; تعرض أسعار: <strong style="color:#f59e0b;">' + activeFilter + '</strong>' : '');
+    }
+
     if (combos.length === 0) {
         box.innerHTML = '<p style="color:#666;text-align:center;padding:20px;">' +
             'ما فيه بوكسات مضافة بعد.</p>';
@@ -4435,10 +4497,10 @@ function renderComboDealsList() {
     }
 
     box.innerHTML = combos.map(combo => {
-        const platformRows = platforms.length === 0
+        const platformRows = filteredPlatforms.length === 0
             ? '<p style="color:#666;font-size:0.78rem;">أضف منصات توصيل من تبويب ' +
               '"العمليات اليومية" (أو صفحة الخزينة) حتى تطلع هنا أسعارها تلقائياً.</p>'
-            : platforms.map(p => {
+            : filteredPlatforms.map(p => {
                 const calc = computeComboForPlatform(combo, p.commissionPct);
                 return '<tr>' +
                     '<td style="font-weight:bold;color:#f59e0b;">' + p.name + '</td>' +
@@ -4494,6 +4556,69 @@ function renderComboDealsList() {
 }
 
 // 🖨️ طباعة/تصدير بوكس واحد لمنصة معيّنة (بدون كشف الصافي - نظيف للإرسال)
+// 🆕 تصدير كل العروض لمنصة معيّنة دفعة وحدة - مستند واحد جاهز للإرسال
+// لفريق شركة التوصيل يفعّلونه عندهم بضغطة وحدة
+function exportAllCombosForPlatform(mode) {
+    const platformName = document.getElementById('comboExportPlatformSelect')?.value;
+    if (!platformName) return alert('⚠️ اختر منصة أول.');
+
+    const platform = (getData('sys_delivery_platforms') || []).find(p => p.name === platformName);
+    if (!platform) return alert('⚠️ تعذّر إيجاد بيانات المنصة.');
+
+    const combos = getComboDeals();
+    if (combos.length === 0) return alert('⚠️ ماكو عروض مضافة بعد.');
+
+    const cardsHtml = combos.map(combo => {
+        const calc = computeComboForPlatform(combo, platform.commissionPct);
+        return `
+        <div class="box">
+            <div class="name">🎁 ${combo.name}</div>
+            <div class="ing">${combo.ingredients || ''}</div>
+            <div class="old">${calc.declaredPrice.toLocaleString('ar-IQ')} د.ع</div>
+            <div class="new">${calc.salePrice.toLocaleString('ar-IQ')} د.ع</div>
+        </div>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>MIM89 - كل العروض - ${platformName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 15mm; }
+body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;padding:10px;}
+.hdr{text-align:center;border-bottom:3px double #000;padding-bottom:12px;margin-bottom:20px;}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.box{border:2px solid #000;border-radius:10px;padding:16px;text-align:center;
+     page-break-inside:avoid;}
+.name{font-size:19px;font-weight:900;margin-bottom:6px;}
+.ing{font-size:12px;color:#444;margin-bottom:12px;min-height:32px;}
+.old{text-decoration:line-through;color:#999;font-size:14px;}
+.new{color:#c0392b;font-size:26px;font-weight:900;}
+</style></head><body>
+<div class="hdr"><h2>MIM89 FAST FOOD</h2><p>كل العروض المتاحة - ${platformName}</p></div>
+<div class="grid">${cardsHtml}</div>
+</body></html>`;
+
+    if (mode === 'print') {
+        let iframe = document.getElementById('printIframeHidden');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'printIframeHidden';
+            iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+            document.body.appendChild(iframe);
+        }
+        const doc = iframe.contentWindow.document;
+        doc.open(); doc.write(html); doc.close();
+        setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
+    } else if (mode === 'pdf') {
+        if (typeof exportHtmlToPDF === 'function') {
+            exportHtmlToPDF(html, 'MIM89-عروض-' + platformName + '.pdf', null);
+        } else {
+            alert('⚠️ تعذّر تحميل أداة PDF. جرب زر الطباعة بدلاً منه.');
+        }
+    }
+}
+
 function printComboForPlatform(comboId, platformName) {
     const combo = getComboDeals().find(c => c.id === comboId);
     const platform = (getData('sys_delivery_platforms') || []).find(p => p.name === platformName);
