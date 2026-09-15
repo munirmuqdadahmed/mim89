@@ -179,6 +179,9 @@
             <button class="sidebar-item" onclick="switchAdminTab('tabDailyOpsControl',this)">
                 <i class="fa-solid fa-list-check"></i> العمليات اليومية
             </button>
+            <button class="sidebar-item" onclick="switchAdminTab('tabInvoiceManager',this)">
+                <i class="fa-solid fa-magnifying-glass-dollar"></i> 🧾 إدارة الفواتير
+            </button>
             <button class="sidebar-item" onclick="switchAdminTab('tabComboDealsControl',this)">
                 <i class="fa-solid fa-gift"></i> عروض وبوكسات
             </button>
@@ -1450,6 +1453,80 @@
         </div>
     </div>
 
+    <!-- 🧾 تبويب إدارة الفواتير -->
+    <div id="tabInvoiceManager" class="tab-content">
+        <div class="card" style="max-width:900px;margin:0 auto 16px;">
+            <h4 style="color:#f59e0b;margin-bottom:10px;">
+                🧾 إدارة الفواتير — كل السجل التاريخي
+            </h4>
+            <p class="hint" style="margin-bottom:10px;">
+                💡 هذا يبحث بكل الفواتير المحفوظة تاريخياً (مو بس الشيفت الحالي) —
+                تقدر تدور بأي تاريخ قديم، تعدّل السائق/المنصة، أو تحذف فاتورة غلط.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <input type="date" id="invMgrDateFilter" class="gold-input-inline"
+                       style="flex:1;min-width:140px;" onchange="renderInvoiceManagerList()">
+                <input type="text" id="invMgrSearchInput" class="gold-input-inline"
+                       placeholder="🔍 بحث برقم الطلب أو الاسم أو الهاتف..."
+                       style="flex:2;min-width:200px;" oninput="renderInvoiceManagerList()">
+                <button onclick="document.getElementById('invMgrDateFilter').value='';
+                                 document.getElementById('invMgrSearchInput').value='';
+                                 renderInvoiceManagerList();"
+                        class="gold-btn btn-sm" style="width:auto;">مسح الفلتر</button>
+            </div>
+            <div id="invMgrSummary" style="text-align:center;color:#999;font-size:0.85rem;
+                        margin-bottom:10px;"></div>
+            <div id="invMgrList" style="max-height:600px;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- ✏️ نافذة تعديل فاتورة -->
+    <div id="invoiceEditModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:460px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 id="invEditTitle" style="color:#f59e0b;">✏️ تعديل الفاتورة</h4>
+                <button onclick="closeModal('invoiceEditModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <input type="hidden" id="invEditOrderId">
+
+            <label class="section-label">نوع الطلب:</label>
+            <select id="invEditOrderType" class="gold-input-inline" style="margin-bottom:10px;">
+                <option value="صالة">🍽️ صالة</option>
+                <option value="سفري">🛍️ سفري</option>
+                <option value="توصيل">🛵 توصيل</option>
+            </select>
+
+            <label class="section-label">السائق / المنصة:</label>
+            <select id="invEditDriverSelect" class="gold-input-inline" style="margin-bottom:10px;"></select>
+
+            <label class="section-label">اسم الزبون:</label>
+            <input type="text" id="invEditCustName" class="gold-input-inline" style="margin-bottom:10px;">
+
+            <label class="section-label">رقم الهاتف:</label>
+            <input type="text" id="invEditCustPhone" class="gold-input-inline"
+                   style="margin-bottom:10px;direction:ltr;text-align:left;">
+
+            <label class="section-label">طريقة الدفع:</label>
+            <select id="invEditPaymentMethod" class="gold-input-inline" style="margin-bottom:10px;">
+                <option value="كاش">كاش</option>
+                <option value="فيزا">فيزا</option>
+            </select>
+
+            <label class="section-label">حالة التسوية:</label>
+            <select id="invEditIsSettled" class="gold-input-inline" style="margin-bottom:14px;">
+                <option value="false">⏳ غير مسوّاة</option>
+                <option value="true">✅ مسوّاة</option>
+            </select>
+
+            <button onclick="saveInvoiceEdit()" class="gold-btn btn-block"
+                    style="background:#f59e0b;color:#000;font-weight:900;">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ التعديل
+            </button>
+        </div>
+    </div>
+
     <!-- 🎁 تبويب عروض وبوكسات -->
     <div id="tabComboDealsControl" class="tab-content"
          style="margin-top:15px;display:none;">
@@ -2036,7 +2113,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1753"></script>
+<script src="app.js?v=1758"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2175,6 +2252,8 @@ function switchAdminTab(tabId, btn) {
     }
     if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function')
         renderEmployeesTab();
+    if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
+        renderInvoiceManagerList();
 }
 
 /* ==========================================
@@ -3184,6 +3263,163 @@ function openPlatformSettlementModal() {
    ========================================== */
 let activeEmployeeDetailId = null;
 
+/* ==========================================
+   🧾 إدارة الفواتير - بحث كامل بالسجل التاريخي، تعديل، حذف
+   ========================================== */
+function renderInvoiceManagerList() {
+    const box = document.getElementById('invMgrList');
+    const summaryEl = document.getElementById('invMgrSummary');
+    if (!box) return;
+
+    const dateFilter = document.getElementById('invMgrDateFilter')?.value || '';
+    const searchRaw  = (document.getElementById('invMgrSearchInput')?.value || '').toLowerCase();
+
+    let list = getData('sys_completed_orders') || [];
+
+    if (dateFilter) list = list.filter(o => o.dateDate === dateFilter);
+    if (searchRaw) {
+        list = list.filter(o =>
+            String(o.orderNum || '').includes(searchRaw) ||
+            String(o.customerName || '').toLowerCase().includes(searchRaw) ||
+            String(o.phone || '').includes(searchRaw)
+        );
+    }
+
+    // الأحدث أولاً
+    list.sort((a,b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp));
+    list = list.slice(0, 200); // حد أقصى للعرض حتى ما تتعلق الصفحة لو السجل ضخم
+
+    if (summaryEl) {
+        const total = list.reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
+        summaryEl.innerHTML = 'النتائج: <strong style="color:#fbbf24;">' + list.length +
+            '</strong> &nbsp;|&nbsp; الإجمالي: <strong style="color:#10b981;">' +
+            total.toLocaleString('ar-IQ') + ' د.ع</strong>' +
+            (list.length === 200 ? ' <span style="color:#888;">(أول 200 نتيجة - ضيّق البحث لو تريد أدق)</span>' : '');
+    }
+
+    if (list.length === 0) {
+        box.innerHTML = '<p style="text-align:center;color:#666;padding:20px;">لا توجد فواتير مطابقة</p>';
+        return;
+    }
+
+    box.innerHTML = list.map(o => {
+        const typeIcon = o.orderType==='توصيل' ? '🛵' : o.orderType==='سفري' ? '🛍️' : '🍽️';
+        return '<div style="background:#111116;border:1px solid #1e1e28;padding:10px;' +
+            'border-radius:9px;margin-bottom:6px;display:flex;justify-content:space-between;' +
+            'align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<div style="min-width:0;">' +
+            '<strong style="color:#fbbf24;font-size:0.88rem;">#' + o.orderNum +
+            ' ' + typeIcon + ' ' + o.orderType + '</strong>' +
+            ' <span style="color:#10b981;font-weight:bold;">' +
+            cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع</span>' +
+            '<div style="font-size:0.73rem;color:#bbb;margin-top:2px;">' +
+            (o.dateDate||'') + ' ' + (o.timestamp||'') + ' • ' + (o.customerName||'زبون') +
+            (o.phone ? ' • 📞' + o.phone : '') +
+            (o.driverName && o.driverName!=='-'
+                ? ' • 🛵 ' + (o.driverName === OPEN_DRIVER_POOL_MARKER ? '🔓 بانتظار سائق' : o.driverName)
+                : '') +
+            (o.isSettled ? ' • <span style="color:#10b981;">✅ مسوّاة</span>' : ' • <span style="color:#f59e0b;">⏳ غير مسوّاة</span>') +
+            '</div></div>' +
+            '<div style="display:flex;gap:5px;">' +
+            '<button onclick="openInvoiceEditModal(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:6px 12px;background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;">✏️ تعديل</button>' +
+            '<button onclick="deleteInvoiceFromManager(\'' + o.id + '\')" class="gold-btn btn-danger btn-sm" ' +
+            'style="width:auto;padding:6px 12px;">🗑️ حذف</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+function openInvoiceEditModal(orderId) {
+    const orders = getData('sys_completed_orders') || [];
+    const ord = orders.find(o => String(o.id) === String(orderId));
+    if (!ord) return alert('⚠️ تعذّر إيجاد الفاتورة.');
+
+    document.getElementById('invEditOrderId').value = orderId;
+    document.getElementById('invEditTitle').innerText = '✏️ تعديل فاتورة #' + ord.orderNum;
+    document.getElementById('invEditOrderType').value = ord.orderType || 'صالة';
+    document.getElementById('invEditCustName').value = ord.customerName || '';
+    document.getElementById('invEditCustPhone').value = ord.phone || '';
+    document.getElementById('invEditPaymentMethod').value =
+        (ord.paymentMethod && String(ord.paymentMethod).includes('فيزا')) ? 'فيزا' : 'كاش';
+    document.getElementById('invEditIsSettled').value = ord.isSettled ? 'true' : 'false';
+
+    // تعبئة قائمة السائقين/المنصات (نفس مصدر الكاشير)
+    const driverSelect = document.getElementById('invEditDriverSelect');
+    const drivers   = getData('sys_drivers') || [];
+    const platforms = getData('sys_delivery_platforms') || [];
+    driverSelect.innerHTML =
+        '<option value="-">-- بدون --</option>' +
+        '<option value="' + OPEN_DRIVER_POOL_MARKER + '">🔓 حوض السواق المفتوح</option>' +
+        '<optgroup label="🛵 سائقو المطعم">' +
+        drivers.map(d => '<option value="' + d.name + '">' + d.name + '</option>').join('') +
+        '</optgroup>' +
+        (platforms.length > 0
+            ? '<optgroup label="📱 منصات التوصيل">' +
+              platforms.map(p => '<option value="' + p.name + '">📱 ' + p.name + '</option>').join('') +
+              '</optgroup>'
+            : '');
+    driverSelect.value = ord.driverName || '-';
+
+    openModal('invoiceEditModal');
+}
+
+async function saveInvoiceEdit() {
+    const orderId = document.getElementById('invEditOrderId').value;
+    let orders = getData('sys_completed_orders') || [];
+    const idx = orders.findIndex(o => String(o.id) === String(orderId));
+    if (idx === -1) return alert('⚠️ تعذّر إيجاد الفاتورة.');
+
+    const orderType    = document.getElementById('invEditOrderType').value;
+    const driverName   = document.getElementById('invEditDriverSelect').value;
+    const custName     = document.getElementById('invEditCustName').value.trim();
+    const custPhone    = document.getElementById('invEditCustPhone').value.trim();
+    const paymentMethod = document.getElementById('invEditPaymentMethod').value;
+    const isSettled    = document.getElementById('invEditIsSettled').value === 'true';
+
+    orders[idx] = {
+        ...orders[idx],
+        orderType, customerName: custName, phone: custPhone,
+        paymentMethod, isSettled,
+        driverName: (orderType === 'توصيل') ? driverName : '-',
+        lastModified: Date.now()
+    };
+
+    setData('sys_completed_orders', orders);
+
+    // رفع التعديل للسحابة فوراً
+    if (typeof db !== 'undefined' && db) {
+        try {
+            await db.collection('completed_orders').doc(String(orderId))
+                .set(orders[idx], { merge: true });
+        } catch (err) {
+            alert('⚠️ اتحفظ التعديل محلياً، بس تعذّر رفعه للسحابة الآن:\n' + err.message +
+                '\nجرب "إصلاح المزامنة" لاحقاً.');
+        }
+    }
+
+    closeModal('invoiceEditModal');
+    renderInvoiceManagerList();
+    alert('✅ تم حفظ التعديل!');
+}
+
+function deleteInvoiceFromManager(orderId) {
+    if (!confirm('⚠️ حذف هذي الفاتورة نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+
+    requireOwnerPin('حذف فاتورة', async () => {
+        let orders = getData('sys_completed_orders') || [];
+        orders = orders.filter(o => String(o.id) !== String(orderId));
+        setData('sys_completed_orders', orders);
+
+        if (typeof db !== 'undefined' && db) {
+            try { await db.collection('completed_orders').doc(String(orderId)).delete(); }
+            catch (err) { console.warn('تعذّر حذف الفاتورة من السحابة:', err); }
+        }
+
+        renderInvoiceManagerList();
+        alert('✅ تم حذف الفاتورة.');
+    });
+}
+
 function renderEmployeesTab() {
     const box = document.getElementById('employeesListBox');
     if (!box) return;
@@ -4183,7 +4419,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1753'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1753)
+    const CURRENT_PAGE_VERSION = '1758'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1758)
 
     async function checkForFreshPageVersion() {
         try {
