@@ -13,6 +13,64 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
+        /* ==========================================
+           🆕 القائمة الجانبية - نفس نظام لوحة الأدمن (اتساق بصري)
+           ========================================== */
+        .admin-shell { }
+        .admin-shell-inner { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 220px; flex-shrink: 0; background: #0a0a0d;
+            border-left: 1px solid #1e1e28; height: 100vh; position: sticky; top: 0;
+            overflow-y: auto; padding: 16px 10px; display: flex; flex-direction: column;
+        }
+        .sidebar-brand { text-align: center; padding-bottom: 12px; border-bottom: 1px solid #1e1e28; margin-bottom: 8px; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: transparent; border: none; border-radius: 8px; color: #ccc;
+            font-family: inherit; font-size: 0.82rem; cursor: pointer; text-align: right;
+            width: 100%; text-decoration: none;
+        }
+        .sidebar-item i { width: 16px; text-align: center; }
+        .sidebar-item:hover { background: #16161c; }
+        .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent);
+            color: #ffd700; font-weight: 900; border-right: 3px solid #ffd700;
+            padding-right: 9px;
+        }
+        .sidebar-lock-btn {
+            margin-top: 10px; padding: 10px; background: #3d0d0d; color: #ef4444;
+            border: 1px solid #ef4444; border-radius: 8px; cursor: pointer;
+            font-family: inherit; font-weight: bold; font-size: 0.82rem;
+        }
+        .admin-main-content { flex: 1; padding: 18px 22px; min-width: 0; overflow-x: hidden; }
+        .admin-mobile-topbar { display: none; }
+        .costing-tab-content { display: none; }
+        .costing-tab-content.active { display: block; }
+
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                position: fixed; right: -260px; top: 0; z-index: 500;
+                transition: right 0.25s ease; width: 220px; height: 100vh;
+                box-shadow: -6px 0 24px rgba(0,0,0,0.55);
+            }
+            .admin-sidebar.open { right: 0; }
+            .admin-mobile-topbar {
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 12px 16px; background: #0a0a0d; border-bottom: 1px solid #1e1e28;
+                position: sticky; top: 0; z-index: 100;
+            }
+            .admin-mobile-topbar button {
+                background: #1e1e28; border: 1px solid #333; color: #ffd700;
+                width: 38px; height: 38px; border-radius: 8px; font-size: 1.1rem;
+            }
+            .admin-sidebar-overlay {
+                display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400;
+            }
+            .admin-sidebar-overlay.open { display: block; }
+            .admin-main-content { padding: 12px; }
+        }
+
         .period-bar {
             display:flex; gap:6px; flex-wrap:wrap;
             background:#0d0d11; border:1px solid var(--card-border);
@@ -95,102 +153,131 @@
     </div>
 </div>
 
-<div class="container" id="mainFinancialApp" style="display:none;">
+<div class="admin-shell" id="mainFinancialApp" style="display:none;">
 
-    <header class="admin-header">
-        <div style="display:flex;justify-content:space-between;align-items:center;
-                    flex-wrap:wrap;gap:10px;">
-            <div>
+    <!-- 📱 شريط علوي بالموبايل بس -->
+    <div class="admin-mobile-topbar">
+        <button onclick="toggleCostingSidebar()"><i class="fa-solid fa-bars"></i></button>
+        <span class="brand-badge" style="font-size:0.8rem;">MIM89 الخزينة</span>
+        <button onclick="location.reload()"><i class="fa-solid fa-lock"></i></button>
+    </div>
+    <div class="admin-sidebar-overlay" id="costingSidebarOverlay" onclick="toggleCostingSidebar()"></div>
+
+    <div class="admin-shell-inner">
+
+        <!-- 🆕 القائمة الجانبية -->
+        <aside class="admin-sidebar" id="costingSidebar">
+            <div class="sidebar-brand">
                 <span class="brand-badge">MIM89 الخزينة</span>
-                <p style="color:var(--text-muted);font-size:0.78rem;margin-top:4px;margin-bottom:0;">
-                    الوارد الفعلي • المبيعات • المصاريف • الأرباح • رأس المال
-                </p>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <a href="admin.html" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">
-                    <i class="fa-solid fa-user-shield"></i> الأدمن
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active" onclick="switchCostingTab('tabOverview',this)">
+                    <i class="fa-solid fa-house"></i> نظرة عامة
+                </button>
+                <button class="sidebar-item" onclick="switchCostingTab('tabExpensesSalaries',this)">
+                    <i class="fa-solid fa-wallet"></i> المصاريف والرواتب
+                </button>
+                <button class="sidebar-item" onclick="switchCostingTab('tabItemsArchive',this)">
+                    <i class="fa-solid fa-trophy"></i> الأصناف والأرشيف
+                </button>
+                <button class="sidebar-item" onclick="switchCostingTab('tabPlatforms',this)">
+                    <i class="fa-solid fa-motorcycle"></i> منصات التوصيل
+                </button>
+                <button class="sidebar-item" onclick="switchCostingTab('tabCapital',this)">
+                    <i class="fa-solid fa-piggy-bank"></i> رأس المال والثوابت
+                </button>
+                <button class="sidebar-item" onclick="switchCostingTab('tabItemCosting',this)">
+                    <i class="fa-solid fa-list-check"></i> تكلفة الأصناف
+                </button>
+
+                <div style="border-top:1px solid #1e1e28;margin:10px 4px;"></div>
+                <a href="admin.html" class="sidebar-item">
+                    <i class="fa-solid fa-user-shield"></i> لوحة الأدمن
                 </a>
-                <a href="cashier.html" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">
+                <a href="cashier.html" class="sidebar-item">
                     <i class="fa-solid fa-cash-register"></i> الكاشير
                 </a>
-                <button onclick="location.reload()" class="gold-btn btn-danger btn-sm">
-                    <i class="fa-solid fa-lock"></i> قفل
-                </button>
+            </nav>
+
+            <button class="sidebar-lock-btn" onclick="location.reload()">
+                <i class="fa-solid fa-lock"></i> قفل الجلسة
+            </button>
+        </aside>
+
+        <!-- 🆕 المحتوى الرئيسي -->
+        <main class="admin-main-content">
+
+            <!-- اختيار الفترة - ظاهر دائماً فوق كل الأقسام (يفلتر الكل) -->
+            <div class="period-bar" style="position:sticky;top:0;z-index:50;">
+                <span style="color:#666;font-size:0.8rem;font-weight:800;">📅 الفترة:</span>
+                <button class="period-btn active" data-p="today"
+                        onclick="setPeriod('today',this)">اليوم</button>
+                <button class="period-btn" data-p="yesterday"
+                        onclick="setPeriod('yesterday',this)">أمس</button>
+                <button class="period-btn" data-p="week"
+                        onclick="setPeriod('week',this)">آخر 7 أيام</button>
+                <button class="period-btn" data-p="month"
+                        onclick="setPeriod('month',this)">هذا الشهر</button>
+                <button class="period-btn" data-p="all"
+                        onclick="setPeriod('all',this)">الكل</button>
+                <div style="display:flex;gap:5px;align-items:center;margin-right:auto;">
+                    <input type="date" id="fromDate" class="gold-input-inline"
+                           style="width:auto;font-size:0.78rem;"
+                           onchange="setPeriod('custom',null)">
+                    <span style="color:#555;">→</span>
+                    <input type="date" id="toDate" class="gold-input-inline"
+                           style="width:auto;font-size:0.78rem;"
+                           onchange="setPeriod('custom',null)">
+                </div>
             </div>
-        </div>
-    </header>
 
-    <!-- اختيار الفترة -->
-    <div class="period-bar">
-        <span style="color:#666;font-size:0.8rem;font-weight:800;">📅 الفترة:</span>
-        <button class="period-btn active" data-p="today"
-                onclick="setPeriod('today',this)">اليوم</button>
-        <button class="period-btn" data-p="yesterday"
-                onclick="setPeriod('yesterday',this)">أمس</button>
-        <button class="period-btn" data-p="week"
-                onclick="setPeriod('week',this)">آخر 7 أيام</button>
-        <button class="period-btn" data-p="month"
-                onclick="setPeriod('month',this)">هذا الشهر</button>
-        <button class="period-btn" data-p="all"
-                onclick="setPeriod('all',this)">الكل</button>
-        <div style="display:flex;gap:5px;align-items:center;margin-right:auto;">
-            <input type="date" id="fromDate" class="gold-input-inline"
-                   style="width:auto;font-size:0.78rem;"
-                   onchange="setPeriod('custom',null)">
-            <span style="color:#555;">→</span>
-            <input type="date" id="toDate" class="gold-input-inline"
-                   style="width:auto;font-size:0.78rem;"
-                   onchange="setPeriod('custom',null)">
-        </div>
-    </div>
+            <!-- 🏠 نظرة عامة -->
+            <div id="tabOverview" class="costing-tab-content active">
 
-    <!-- 🛠️ توضيح: هذا رقم "تسوية نقد بالدرج" لعدّ الكاش فقط - وليس دخلاً أو
-         ربحاً. المدوّر (float) يظهر هنا فقط لأنه جزء من الكاش الموجود فعلياً
-         بالدرج، لكنه لا يُحتسب إطلاقاً ضمن "إجمالي المبيعات" أو "الربح" بالأسفل. -->
-    <div class="drawer-hero">
-        <span class="label">🧮 الكاش المتوقع بالدرج (تسوية نقدية - ليس دخلاً)</span>
-        <div class="value num" id="heroDrawer">0 د.ع</div>
-        <span class="sub" id="heroSub">
-            المدوّر + مبيعات الكاش − الصرفيات − الرواتب − مع السائقين
-        </span>
-        <p style="font-size:0.72rem;color:#888;margin-top:6px;line-height:1.6;">
-            ⚠️ المدوّر هنا فقط لعدّ الكاش الفعلي بالدرج، وهو غير محتسب ضمن
-            "إجمالي المبيعات" أو "الربح" بالأسفل — تلك الأرقام مبنية فقط على
-            قيمة الفواتير الفعلية.
-        </p>
-    </div>
+            <!-- 🛠️ توضيح: هذا رقم "تسوية نقد بالدرج" لعدّ الكاش فقط - وليس دخلاً أو
+                 ربحاً. المدوّر (float) يظهر هنا فقط لأنه جزء من الكاش الموجود فعلياً
+                 بالدرج، لكنه لا يُحتسب إطلاقاً ضمن "إجمالي المبيعات" أو "الربح" بالأسفل. -->
+            <div class="drawer-hero">
+                <span class="label">🧮 الكاش المتوقع بالدرج (تسوية نقدية - ليس دخلاً)</span>
+                <div class="value num" id="heroDrawer">0 د.ع</div>
+                <span class="sub" id="heroSub">
+                    المدوّر + مبيعات الكاش − الصرفيات − الرواتب − مع السائقين
+                </span>
+                <p style="font-size:0.72rem;color:#888;margin-top:6px;line-height:1.6;">
+                    ⚠️ المدوّر هنا فقط لعدّ الكاش الفعلي بالدرج، وهو غير محتسب ضمن
+                    "إجمالي المبيعات" أو "الربح" بالأسفل — تلك الأرقام مبنية فقط على
+                    قيمة الفواتير الفعلية.
+                </p>
+            </div>
 
-    <!-- المؤشرات -->
-    <div class="kpi-grid">
-        <div class="kpi">
-            <span class="t">إجمالي المبيعات</span>
-            <div class="v num" id="kSales" style="color:#fbbf24;">0</div>
-        </div>
-        <div class="kpi">
-            <span class="t">عدد الفواتير</span>
-            <div class="v num" id="kOrders" style="color:#fff;">0</div>
-        </div>
-        <div class="kpi">
-            <span class="t">متوسط الفاتورة</span>
-            <div class="v num" id="kAvg" style="color:#38bdf8;">0</div>
-        </div>
-        <div class="kpi">
-            <span class="t">تكلفة المواد</span>
-            <div class="v num" id="kCost" style="color:#ef4444;">0</div>
-        </div>
-        <div class="kpi">
-            <span class="t">مجمل الربح</span>
-            <div class="v num" id="kGross" style="color:#10b981;">0</div>
-        </div>
-        <div class="kpi">
-            <span class="t">صافي الربح</span>
-            <div class="v num" id="kNet" style="color:#10b981;">0</div>
-        </div>
-    </div>
+            <!-- المؤشرات -->
+            <div class="kpi-grid">
+                <div class="kpi">
+                    <span class="t">إجمالي المبيعات</span>
+                    <div class="v num" id="kSales" style="color:#fbbf24;">0</div>
+                </div>
+                <div class="kpi">
+                    <span class="t">عدد الفواتير</span>
+                    <div class="v num" id="kOrders" style="color:#fff;">0</div>
+                </div>
+                <div class="kpi">
+                    <span class="t">متوسط الفاتورة</span>
+                    <div class="v num" id="kAvg" style="color:#38bdf8;">0</div>
+                </div>
+                <div class="kpi">
+                    <span class="t">تكلفة المواد</span>
+                    <div class="v num" id="kCost" style="color:#ef4444;">0</div>
+                </div>
+                <div class="kpi">
+                    <span class="t">مجمل الربح</span>
+                    <div class="v num" id="kGross" style="color:#10b981;">0</div>
+                </div>
+                <div class="kpi">
+                    <span class="t">صافي الربح</span>
+                    <div class="v num" id="kNet" style="color:#10b981;">0</div>
+                </div>
+            </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
                 gap:14px;margin-bottom:14px;">
@@ -212,7 +299,10 @@
         </div>
 
     </div>
+    </div><!-- end tabOverview -->
 
+    <!-- 💸 المصاريف والرواتب -->
+    <div id="tabExpensesSalaries" class="costing-tab-content">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
                 gap:14px;margin-bottom:14px;">
 
@@ -233,7 +323,10 @@
         </div>
 
     </div>
+    </div><!-- end tabExpensesSalaries -->
 
+    <!-- 🏆 الأصناف والأرشيف -->
+    <div id="tabItemsArchive" class="costing-tab-content">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
                 gap:14px;margin-bottom:14px;">
 
@@ -254,7 +347,10 @@
         </div>
 
     </div>
+    </div><!-- end tabItemsArchive -->
 
+    <!-- 🚚 منصات التوصيل -->
+    <div id="tabPlatforms" class="costing-tab-content">
     <!-- 🆕 شركات التوصيل الخارجية (طلبات، طلباتي، توترز...) -->
     <div class="card" style="border-color:#f59e0b;">
         <div class="sec-title" style="color:#f59e0b;">
@@ -312,7 +408,10 @@
             <div id="promoSimResult"></div>
         </div>
     </div>
+    </div><!-- end tabPlatforms -->
 
+    <!-- 💰 رأس المال والثوابت -->
+    <div id="tabCapital" class="costing-tab-content">
     <!-- المصاريف الثابتة -->
     <div class="card">
         <div class="sec-title">
@@ -357,7 +456,10 @@
         </div>
         <div id="capitalBox"></div>
     </div>
+    </div><!-- end tabCapital -->
 
+    <!-- 🍔 تكلفة الأصناف -->
+    <div id="tabItemCosting" class="costing-tab-content">
     <!-- تكلفة الأصناف -->
     <div class="card">
         <div class="sec-title">
@@ -395,10 +497,15 @@
             </table>
         </div>
     </div>
+    </div><!-- end tabItemCosting -->
+
+        </main>
+
+    </div><!-- end admin-shell-inner -->
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1735"></script>
+<script src="app.js?v=1750"></script>
 <script>
 /* ==========================================
    PIN الخزينة
@@ -482,6 +589,24 @@ function initCostingApp() {
 /* ==========================================
    الفترة الزمنية
    ========================================== */
+// 🆕 التنقل بين أقسام الخزينة
+function switchCostingTab(tabId, btn) {
+    document.querySelectorAll('.costing-tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#costingSidebar .sidebar-item').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById(tabId);
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
+
+    const sidebar = document.getElementById('costingSidebar');
+    if (sidebar && sidebar.classList.contains('open')) toggleCostingSidebar();
+    document.querySelector('.admin-main-content')?.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function toggleCostingSidebar() {
+    document.getElementById('costingSidebar')?.classList.toggle('open');
+    document.getElementById('costingSidebarOverlay')?.classList.toggle('open');
+}
+
 function setPeriod(p, btn) {
     currentPeriod = p;
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -1290,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1735'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1735)
+    const CURRENT_PAGE_VERSION = '1736'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1750)
 
     async function checkForFreshPageVersion() {
         try {
