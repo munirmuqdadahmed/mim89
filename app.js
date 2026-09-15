@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1755';
+const MIM89_APP_VERSION = '1756';
 
 /* ==========================================
    المتغيرات العامة
@@ -6625,32 +6625,46 @@ async function runCloudDiagnostics(btnElement) {
         const ordSnap = await db.collection("completed_orders")
             .orderBy("createdTimestamp", "desc").limit(5).get({ source: 'server' });
         lines.push("✅ قراءة الفواتير (مرتبة) تعمل (" + ordSnap.size + " نتيجة).");
+
+        // 🆕 فحص دقيق: نبيّن تاريخ "اليوم" المحسوب بهذا الجهاز تحديداً،
+        // وآخر تاريخ فعلي موجود بأحدث فاتورة بالسحابة - لو مختلفين، هذا
+        // سبب ظهور "0 مبيعات" بجهاز معيّن رغم إن البيانات موجودة فعلاً
+        const todayHere = getTodayString();
+        lines.push("📅 تاريخ اليوم المحسوب بهذا الجهاز: " + todayHere);
+        if (!ordSnap.empty) {
+            const latestOrderDate = ordSnap.docs[0].data().dateDate;
+            lines.push("📅 تاريخ آخر فاتورة موجودة بالسحابة: " + (latestOrderDate || "غير محدد"));
+            if (latestOrderDate && latestOrderDate !== todayHere) {
+                lines.push("⚠️ التاريخين مختلفين! هذا سبب ظهور صفر مبيعات " +
+                    "بهذا الجهاز - تأكد من ضبط التاريخ/التوقيت بجهازك صحيح.");
+            }
+        }
+
+        // كم طلب موجود بالكاش المحلي حالياً، وكم منهم يطابق تاريخ اليوم
+        const localAll = getData('sys_completed_orders') || [];
+        const localToday = localAll.filter(o => o.dateDate === todayHere);
+        lines.push("💾 إجمالي الفواتير بالكاش المحلي بهذا الجهاز: " + localAll.length);
+        lines.push("💾 منها بتاريخ اليوم (" + todayHere + "): " + localToday.length);
     } catch (err) {
         lines.push("❌ قراءة الفواتير المرتبة فشلت (هذا سبب عدم ظهور " +
             "مبيعات اليوم بجهاز جديد):\n" + translateFirestoreError(err));
     }
 
-    // اختبار الكتابة
+    // 🛠️ إصلاح جذري: اختبار الكتابة كان يستخدم طلب REST خام بمفتاح API
+    // بس، بدون رمز تسجيل الدخول المجهول - هذا يفشل دائماً بـ403 (قواعد
+    // الحماية تشترط request.auth != null) حتى لو كتابة التطبيق الحقيقي
+    // (عبر SDK المصادق) تعمل تماماً بشكل طبيعي. هذا كان يعطي "إنذار كاذب"
+    // مربك وغير مرتبط فعلياً بمشكلة "مبيعات اليوم". الحل: نختبر الكتابة
+    // بنفس الطريقة اللي يستخدمها التطبيق الحقيقي (SDK مع مصادقة صحيحة).
     let writeOk = false;
     try {
-        const controller = new AbortController();
-        const to = setTimeout(() => controller.abort(), 12000);
-        const resp = await fetch(
-            'https://firestore.googleapis.com/v1/projects/mim89-ff938/' +
-            'databases/(default)/documents/system_store/_diag?key=AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI',
-            {
-                method:  'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ fields:{ content:{ stringValue:"diag" } } }),
-                signal:  controller.signal
-            }
+        await db.collection('system_store').doc('_diag').set(
+            { content: 'diag', ts: Date.now() }, { merge: true }
         );
-        clearTimeout(to);
-        if (resp.ok) { writeOk = true; lines.push("✅ الكتابة تعمل!"); }
-        else lines.push("❌ الكتابة مرفوضة. رمز: " + resp.status);
-    } catch (e) {
-        lines.push("❌ تعذّر الوصول لـ Firebase REST.\n" +
-            "تحقق من الإنترنت أو قواعد Firestore Rules.");
+        writeOk = true;
+        lines.push("✅ الكتابة تعمل!");
+    } catch (err) {
+        lines.push("❌ الكتابة مرفوضة:\n" + translateFirestoreError(err));
     }
 
     lines.push("\n═══ الخلاصة ═══");
