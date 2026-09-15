@@ -985,6 +985,10 @@
                     <span>الرواتب:</span>
                     - <strong id="repTotalSalaries">0</strong> د.ع
                 </div>
+                <div style="display:flex;justify-content:space-between;color:#f59e0b;">
+                    <span>💰 كاش لسا بذمة السواق (توصيل معلّق):</span>
+                    - <strong id="repPendingDriverCash">0</strong> د.ع
+                </div>
                 <div style="display:flex;justify-content:space-between;font-size:0.95rem;
                             font-weight:bold;background:#1e1e28;padding:5px;border-radius:5px;
                             margin-top:5px;">
@@ -1601,7 +1605,7 @@
                 </button>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                 <div class="info-stat-box">
                     <div style="font-size:0.7rem;color:#888;">سلف هذا الشهر</div>
                     <div id="empMonthAdvances" style="font-size:1.1rem;font-weight:900;color:#f59e0b;"></div>
@@ -1611,12 +1615,49 @@
                     <div id="empMonthSalaryPaid" style="font-size:1.1rem;font-weight:900;color:#10b981;"></div>
                 </div>
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                <div class="info-stat-box">
+                    <div style="font-size:0.7rem;color:#888;">🗓️ أيام الحضور هذا الشهر</div>
+                    <div id="empDaysWorked" style="font-size:1.1rem;font-weight:900;color:#38bdf8;"></div>
+                </div>
+                <div class="info-stat-box">
+                    <div style="font-size:0.7rem;color:#888;">💵 الراتب المستحق لين الحين</div>
+                    <div id="empAccruedSalary" style="font-size:1.1rem;font-weight:900;color:#10b981;"></div>
+                </div>
+            </div>
 
             <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">📋 سجل الحضور (آخر 30 يوم)</h5>
             <div id="empAttendanceHistory" style="max-height:150px;overflow-y:auto;margin-bottom:14px;"></div>
 
             <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">💰 سجل السلف والرواتب</h5>
-            <div id="empFinanceHistory" style="max-height:200px;overflow-y:auto;"></div>
+            <div id="empFinanceHistory" style="max-height:200px;overflow-y:auto;margin-bottom:14px;"></div>
+
+            <!-- 🆕 حاسبة التصفية النهائية - لموظف يريد يترك العمل -->
+            <div style="border:1.5px solid #38bdf8;border-radius:10px;padding:12px;background:#0a1420;">
+                <h5 style="color:#38bdf8;font-size:0.88rem;margin-bottom:8px;">
+                    🏁 حاسبة التصفية النهائية
+                </h5>
+                <p class="hint" style="margin-bottom:10px;">
+                    حدد الفترة (مثلاً من أول الشهر لين اليوم)، وتحسب لك
+                    بالضبط: أيام حضوره الفعلية × راتبه اليومي، ناقص أي
+                    سلف أو رواتب مدفوعة بنفس الفترة = الصافي المستحق له بالضبط.
+                </p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div>
+                        <label class="section-label">من تاريخ:</label>
+                        <input type="date" id="settlementFromDate" class="gold-input-inline">
+                    </div>
+                    <div>
+                        <label class="section-label">لين تاريخ:</label>
+                        <input type="date" id="settlementToDate" class="gold-input-inline">
+                    </div>
+                </div>
+                <button onclick="calculateEmployeeSettlement()" class="gold-btn btn-block"
+                        style="background:#38bdf8;color:#000;font-weight:900;margin-bottom:10px;">
+                    🧮 احسب التصفية
+                </button>
+                <div id="settlementResult"></div>
+            </div>
         </div>
     </div>
 
@@ -1950,7 +1991,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1748"></script>
+<script src="app.js?v=1749"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3223,6 +3264,12 @@ function openEmployeeDetailModal(id) {
     renderEmployeeAttendanceHistory(emp);
     renderEmployeeFinanceHistory(emp);
 
+    // 🆕 تواريخ افتراضية لحاسبة التصفية: من أول الشهر الحالي لين اليوم
+    const today = getTodayString();
+    document.getElementById('settlementFromDate').value = today.slice(0,8) + '01';
+    document.getElementById('settlementToDate').value = today;
+    document.getElementById('settlementResult').innerHTML = '';
+
     openModal('employeeDetailModal');
 }
 
@@ -3230,6 +3277,7 @@ function renderEmployeeFinanceStats(emp) {
     const thisMonth = getTodayString().slice(0, 7); // "YYYY-MM"
     const expenses  = getData('sys_expenses') || [];
     const salaries  = getData('sys_salaries') || [];
+    const attendance = getData('sys_attendance') || [];
 
     const monthAdvances = expenses
         .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
@@ -3241,6 +3289,70 @@ function renderEmployeeFinanceStats(emp) {
 
     document.getElementById('empMonthAdvances').innerText = monthAdvances.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('empMonthSalaryPaid').innerText = monthSalaryPaid.toLocaleString('ar-IQ') + ' د.ع';
+
+    // 🆕 أيام العمل الفعلية هذا الشهر (من سجل الحضور) + الراتب المستحق بناءً عليها
+    const daysWorkedThisMonth = attendance
+        .filter(a => a.employeeId === emp.id && a.status === 'present' && String(a.dateDate).slice(0,7) === thisMonth)
+        .length;
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dailyRate = cleanPrice(emp.monthlySalary) / daysInMonth;
+    const accruedSalary = Math.round(dailyRate * daysWorkedThisMonth);
+
+    const daysBox = document.getElementById('empDaysWorked');
+    const accruedBox = document.getElementById('empAccruedSalary');
+    if (daysBox)    daysBox.innerText = daysWorkedThisMonth + ' يوم';
+    if (accruedBox) accruedBox.innerText = accruedSalary.toLocaleString('ar-IQ') + ' د.ع';
+}
+
+// 🆕 حاسبة التصفية النهائية - لموظف يريد يترك العمل: أيام حضوره الفعلية
+// خلال فترة معيّنة × الراتب اليومي، ناقص السلف المسحوبة بنفس الفترة،
+// ناقص أي راتب انصرف له أصلاً بنفس الفترة = الصافي المستحق له بالضبط
+function calculateEmployeeSettlement() {
+    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+
+    const fromDate = document.getElementById('settlementFromDate')?.value;
+    const toDate   = document.getElementById('settlementToDate')?.value || getTodayString();
+    const resultBox = document.getElementById('settlementResult');
+    if (!fromDate) { resultBox.innerHTML = '<p style="color:#ef4444;">⚠️ حدد تاريخ البداية.</p>'; return; }
+
+    const attendance = getData('sys_attendance') || [];
+    const expenses   = getData('sys_expenses') || [];
+    const salaries   = getData('sys_salaries') || [];
+
+    const presentDays = attendance.filter(a =>
+        a.employeeId === emp.id && a.status === 'present' &&
+        a.dateDate >= fromDate && a.dateDate <= toDate
+    ).length;
+
+    const advancesInRange = expenses.filter(e =>
+        e.type === 'سلفة' && e.employee === emp.name &&
+        e.dateDate >= fromDate && e.dateDate <= toDate
+    ).reduce((s,e) => s + cleanPrice(e.amount), 0);
+
+    const salaryPaidInRange = salaries.filter(s =>
+        s.employee === emp.name && s.dateDate >= fromDate && s.dateDate <= toDate
+    ).reduce((s,x) => s + cleanPrice(x.amount), 0);
+
+    // متوسط الراتب اليومي على أساس 30 يوم (تقريب عملي معتاد)
+    const dailyRate = cleanPrice(emp.monthlySalary) / 30;
+    const earnedSalary = Math.round(dailyRate * presentDays);
+    const netSettlement = earnedSalary - advancesInRange - salaryPaidInRange;
+
+    resultBox.innerHTML = `
+        <div class="info-row"><span class="lbl">أيام الحضور بالفترة</span><span class="val">${presentDays} يوم</span></div>
+        <div class="info-row"><span class="lbl">الراتب المستحق عن هذي الأيام</span><span class="val" style="color:#10b981;">${earnedSalary.toLocaleString('ar-IQ')} د.ع</span></div>
+        <div class="info-row"><span class="lbl">سلف مسحوبة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${advancesInRange.toLocaleString('ar-IQ')} د.ع</span></div>
+        <div class="info-row"><span class="lbl">رواتب مصروفة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${salaryPaidInRange.toLocaleString('ar-IQ')} د.ع</span></div>
+        <div class="info-row" style="border-top:2px solid #38bdf8;margin-top:6px;padding-top:8px;">
+            <span class="lbl" style="font-weight:900;color:#fff;">${netSettlement >= 0 ? '💰 الصافي المستحق للموظف' : '⚠️ الصافي المستحق على الموظف'}</span>
+            <span class="val" style="font-size:1.1rem;color:${netSettlement >= 0 ? '#10b981' : '#ef4444'};">
+                ${Math.abs(netSettlement).toLocaleString('ar-IQ')} د.ع
+            </span>
+        </div>
+    `;
 }
 
 function renderEmployeeAttendanceHistory(emp) {
@@ -3912,7 +4024,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1748'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1748)
+    const CURRENT_PAGE_VERSION = '1749'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1749)
 
     async function checkForFreshPageVersion() {
         try {
