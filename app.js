@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1749';
+const MIM89_APP_VERSION = '1751';
 
 /* ==========================================
    المتغيرات العامة
@@ -1265,15 +1265,22 @@ function getOrderSequenceLocal() {
     const completed  = getData('sys_completed_orders') || [];
     const todayStr   = getTodayString();
     const todayOrders = completed.filter(o => o.dateDate === todayStr);
+    let maxNum = 0;
     if (todayOrders.length > 0) {
-        let maxNum = 0;
         todayOrders.forEach(o => {
             const num = cleanPrice(o.orderNum || o.orderNumber);
             if (num > maxNum) maxNum = num;
         });
-        if (maxNum > 0) return maxNum + 1;
     }
-    return 101;
+
+    // 🆕 نأخذ بعين الاعتبار آخر تصحيح وصل من السحابة (لو جهاز كاشير ثاني
+    // سوّى طلبات ما وصلت لسا لهذا الجهاز محلياً) - يمنع تكرار الأرقام
+    try {
+        const correction = cleanPrice(localStorage.getItem('sys_order_seq_correction'));
+        if (correction > maxNum) maxNum = correction - 1; // -1 لأن التصحيح نفسه هو "الرقم الجاي"
+    } catch (_) {}
+
+    return maxNum > 0 ? maxNum + 1 : 101;
 }
 
 async function getNextOrderNumberFromCloud() {
@@ -2044,11 +2051,19 @@ async function proceedToPrintAfterCash() {
     let orderNumSeq = consumePrefetchedOrderNumber();
     if (orderNumSeq === null) orderNumSeq = getOrderSequenceLocal();
 
-    // مزامنة السحابة في الخلفية بدون توقف
+    // 🛠️ إصلاح جذري مهم جداً: كان الفحص السحابي يعدّل orderNum لهذا
+    // الطلب بالذات بالخلفية بعد إنشائه - لو الطباعة صارت قبل ما يوصل رد
+    // السحابة، والحفظ بالسجل صار بعده (أو العكس)، يطلع رقمين مختلفين
+    // لنفس الطلب بالضبط (الفاتورة الورقية تقرأ رقم، والسجل يقرأ رقم ثاني).
+    // الحل: رقم هذا الطلب يضل ثابت 100% من أول لحظة لين يخلص (نفس الرقم
+    // بالطباعة والحفظ مضمون)، والفحص السحابي يصحح العداد المحلي للطلب
+    // الجاي بس (يمنع تكرار الأرقام مستقبلاً بين أكثر من جهاز كاشير).
     getNextOrderNumberFromCloud()
         .then(cloudNum => {
-            if (activePendingPrintOrder && cloudNum > orderNumSeq) {
-                activePendingPrintOrder.orderNum = cloudNum;
+            if (cloudNum > orderNumSeq) {
+                // نصحح العداد المحلي حتى الطلب القادم ياخذ رقم صحيح غير
+                // مكرر - بدون ما نلمس رقم الطلب الحالي المطبوع/المحفوظ
+                try { localStorage.setItem('sys_order_seq_correction', String(cloudNum)); } catch (_) {}
             }
         })
         .catch(() => {});
@@ -2118,6 +2133,105 @@ function updatePrintStatusBadges() {
         kitBadge.style.color  = isKitchenPrinted ? "#10b981" : "#888";
     }
 }
+
+/* ==========================================
+   🔴 طابور إعادة المحاولة لطباعة المطبخ - يحل مشكلة انقطاع الكهرباء
+   ========================================== */
+const KITCHEN_QUEUE_KEY = 'sys_kitchen_print_queue';
+let kitchenRetryTimer = null;
+
+// إضافة طلب لطابور إعادة المحاولة (فشلت طباعة مطبخه لأي سبب)
+function addToKitchenRetryQueue(ord) {
+    let queue = JSON.parse(localStorage.getItem(KITCHEN_QUEUE_KEY) || '[]');
+    if (queue.some(q => String(q.orderId) === String(ord.id))) return; // موجود أصلاً بالطابور
+    queue.push({ orderId: ord.id, orderNum: ord.orderNum, addedAt: Date.now() });
+    localStorage.setItem(KITCHEN_QUEUE_KEY, JSON.stringify(queue));
+    updateKitchenQueueBanner();
+    startKitchenRetryLoop();
+}
+
+// تنبيه ثابت بأسفل الشاشة - يضل ظاهر لين تنطبع كل التذاكر المعلّقة، ما
+// يعتمد على تذكّر الكاشير أبداً
+function updateKitchenQueueBanner() {
+    const queue = JSON.parse(localStorage.getItem(KITCHEN_QUEUE_KEY) || '[]');
+    let banner = document.getElementById('kitchenQueueBanner');
+
+    if (queue.length === 0) {
+        if (banner) banner.remove();
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'kitchenQueueBanner';
+        banner.style.cssText =
+            'position:fixed;bottom:0;right:0;left:0;z-index:99998;' +
+            'background:#3d0d0d;color:#fff;text-align:center;padding:10px 14px;' +
+            'font-weight:900;font-size:0.85rem;cursor:pointer;' +
+            'border-top:2px solid #ef4444;box-shadow:0 -4px 12px rgba(0,0,0,0.4);';
+        banner.onclick = () => retryKitchenQueueNow();
+        document.body.appendChild(banner);
+    }
+    banner.innerHTML = '🔴 ' + queue.length + ' تذكرة مطبخ بانتظار الطباعة (يحاول تلقائياً) — ' +
+        'أرقام: ' + queue.map(q => '#' + q.orderNum).join('، ') +
+        ' <span style="text-decoration:underline;">— اضغط للمحاولة الآن</span>';
+}
+
+// يبدأ حلقة إعادة المحاولة الدورية (كل 20 ثانية) - تتوقف لحالها لما
+// يفضى الطابور كامل
+function startKitchenRetryLoop() {
+    if (kitchenRetryTimer) return; // شغّالة أصلاً
+    kitchenRetryTimer = setInterval(retryKitchenQueueNow, 20000);
+}
+
+// تنفيذ محاولة إعادة طباعة فعلية - بالتسلسل وحدة وحدة (مو دفعة وحدة)
+// حتى ما تتزاحم كل التذاكر المتراكمة على الطابعة دفعة وحدة لما ترجع
+// الكهرباء فجأة، ويضمن ترتيب صحيح حسب وقت الطلب
+async function retryKitchenQueueNow() {
+    let queue = JSON.parse(localStorage.getItem(KITCHEN_QUEUE_KEY) || '[]');
+    if (queue.length === 0) {
+        if (kitchenRetryTimer) { clearInterval(kitchenRetryTimer); kitchenRetryTimer = null; }
+        updateKitchenQueueBanner();
+        return;
+    }
+
+    queue.sort((a,b) => a.addedAt - b.addedAt); // الأقدم أولاً - نفس ترتيب وصول الطلبات
+    const allOrders = getData('sys_completed_orders') || [];
+    const stillPending = [];
+    let succeededCount = 0;
+
+    for (const q of queue) {
+        const ord = allOrders.find(o => String(o.id) === String(q.orderId));
+        if (!ord) continue; // الطلب انحذف لأي سبب نادر - نتجاهله ونشيله من الطابور
+
+        try {
+            const resp = await fetch(getPrintBridgeUrl(), {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({
+                    paperWidth: getInvoiceDesign().paperWidth,
+                    jobs: [{ printer: 'kitchen', lines: buildKitchenTicketLines(ord), openDrawer: false }]
+                })
+            });
+            const r = await resp.json();
+            if (r.success) succeededCount++;
+            else stillPending.push(q);
+        } catch (_) {
+            stillPending.push(q); // الجسر أو الطابعة لسا مو راجعة - نحاول بالدورة الجاية
+        }
+    }
+
+    localStorage.setItem(KITCHEN_QUEUE_KEY, JSON.stringify(stillPending));
+    updateKitchenQueueBanner();
+
+    if (succeededCount > 0) {
+        console.log('✅ طُبعت ' + succeededCount + ' تذكرة مطبخ كانت متراكمة بالطابور.');
+    }
+}
+
+// إعادة محاولة فورية يدوية (لما الكاشير يضغط التنبيه بنفسه، بدون انتظار
+// الـ 20 ثانية التلقائية)
+function manualRetryKitchenQueue() { retryKitchenQueueNow(); }
 
 /* ==========================================
    🖨️ بناء الفواتير - مُبسّطة ونظيفة
@@ -2410,10 +2524,17 @@ async function printBothViaBridge(btnElement) {
                     btnElement.innerHTML = '✅ تمت الطباعة';
                     btnElement.disabled  = false;
                 }
-                if (!isKitchenPrinted)
-                    alert('⚠️ تذكرة المطبخ ما انطبعت (تحقق من طابعة المطبخ).\n' +
-                        'فاتورة الزبون انطبعت والطلب اكتمل - تكدر تعيد طباعة ' +
-                        'تذكرة المطبخ لاحقاً من "سجل الفواتير".');
+                if (!isKitchenPrinted) {
+                    // 🛠️ إصلاح جذري: بدل تنبيه لمرة وحدة يعتمد على تذكّر
+                    // الكاشير يدوياً (سهل ينسى وسط الزحمة، وخصوصاً بانقطاع
+                    // الكهرباء عن طابعة المطبخ تحديداً)، نضيف الطلب لطابور
+                    // إعادة محاولة دائم يحاول تلقائياً كل 20 ثانية، ويطلع
+                    // تنبيه ثابت بالشاشة يذكّر الكاشير لين تنجح الطباعة فعلاً
+                    addToKitchenRetryQueue(ord);
+                    alert('⚠️ تذكرة المطبخ ما انطبعت (احتمال انقطاع كهرباء عن طابعة المطبخ).\n' +
+                        'الطلب #' + ord.orderNum + ' انضاف لطابور إعادة المحاولة التلقائي - ' +
+                        'بيحاول يطبعها لحاله كل ٢٠ ثانية لين تنجح، بدون ما تحتاج تتذكرها.');
+                }
                 setTimeout(() => tryFinalizeAndClearOrder(true), 300);
                 return;
             }
@@ -7171,6 +7292,12 @@ function refreshPendingDeliveryBadge() {
 function initCashierPage() {
     initData();
     sessionStorage.removeItem('active_cashier');
+    // 🆕 استئناف طابور إعادة محاولة طباعة المطبخ لو ضل فيه تذاكر معلّقة
+    // من قبل (مثلاً الكاشير حدّث الصفحة أثناء انقطاع الكهرباء)
+    setTimeout(() => {
+        if (typeof updateKitchenQueueBanner === 'function') updateKitchenQueueBanner();
+        if (typeof startKitchenRetryLoop === 'function') startKitchenRetryLoop();
+    }, 1500);
 }
 
 // تهيئة الأدمن
