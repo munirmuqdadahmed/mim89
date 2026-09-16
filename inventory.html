@@ -13,6 +13,61 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
+        /* ==========================================
+           🆕 القائمة الجانبية - نفس نظام الأدمن والخزينة (اتساق بصري)
+           ========================================== */
+        .admin-shell-inner { display: flex; min-height: 100vh; }
+        .admin-sidebar {
+            width: 220px; flex-shrink: 0; background: #0a0a0d;
+            border-left: 1px solid #1e1e28; height: 100vh; position: sticky; top: 0;
+            overflow-y: auto; padding: 16px 10px; display: flex; flex-direction: column;
+        }
+        .sidebar-brand { text-align: center; padding-bottom: 12px; border-bottom: 1px solid #1e1e28; margin-bottom: 8px; }
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: transparent; border: none; border-radius: 8px; color: #ccc;
+            font-family: inherit; font-size: 0.82rem; cursor: pointer; text-align: right;
+            width: 100%; text-decoration: none;
+        }
+        .sidebar-item i { width: 16px; text-align: center; }
+        .sidebar-item:hover { background: #16161c; }
+        .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(255,215,0,0.15), transparent);
+            color: #ffd700; font-weight: 900; border-right: 3px solid #ffd700;
+            padding-right: 9px;
+        }
+        .sidebar-lock-btn {
+            margin-top: 10px; padding: 10px; background: #3d0d0d; color: #ef4444;
+            border: 1px solid #ef4444; border-radius: 8px; cursor: pointer;
+            font-family: inherit; font-weight: bold; font-size: 0.82rem;
+        }
+        .admin-main-content { flex: 1; padding: 18px 22px; min-width: 0; overflow-x: hidden; }
+        .admin-mobile-topbar { display: none; }
+
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                position: fixed; right: -260px; top: 0; z-index: 500;
+                transition: right 0.25s ease; width: 220px; height: 100vh;
+                box-shadow: -6px 0 24px rgba(0,0,0,0.55);
+            }
+            .admin-sidebar.open { right: 0; }
+            .admin-mobile-topbar {
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 12px 16px; background: #0a0a0d; border-bottom: 1px solid #1e1e28;
+                position: sticky; top: 0; z-index: 100;
+            }
+            .admin-mobile-topbar button {
+                background: #1e1e28; border: 1px solid #333; color: #ffd700;
+                width: 38px; height: 38px; border-radius: 8px; font-size: 1.1rem;
+            }
+            .admin-sidebar-overlay {
+                display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 400;
+            }
+            .admin-sidebar-overlay.open { display: block; }
+            .admin-main-content { padding: 12px; }
+        }
+
         .inv-tabs {
             display:flex; gap:6px; overflow-x:auto; padding-bottom:8px;
             margin-bottom:14px; scrollbar-width:none;
@@ -82,67 +137,70 @@
     </div>
 </div>
 
-<div class="container" id="invMainApp" style="display:none;">
+<div class="admin-shell" id="invMainApp" style="display:none;">
 
-    <header class="admin-header">
-        <div style="display:flex;justify-content:space-between;align-items:center;
-                    flex-wrap:wrap;gap:10px;">
-            <div>
-                <span class="brand-badge">MIM89 المخزن</span>
-                <p style="color:var(--text-muted);font-size:0.78rem;
-                           margin-top:4px;margin-bottom:0;">
-                    المواد • المشتريات • الجرد • تفكيك المبيعات • الهدر
-                </p>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <a href="admin.html" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">الأدمن</a>
-                <a href="costing.html" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">الخزينة</a>
-                <a href="cashier.html" class="gold-btn btn-sm"
-                   style="background:#0d0d11;border:1px solid var(--gold-primary);
-                          color:#fbbf24;text-decoration:none;">الكاشير</a>
-                <button onclick="location.reload()" class="gold-btn btn-danger btn-sm">
-                    خروج
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- تبويبات المخزن - بدون تكرار -->
-    <div class="inv-tabs">
-        <button class="inv-tab active"
-                onclick="switchInvTab('tabMenuBoard',this)"
-                style="border-color:var(--gold-primary);">
-            <i class="fa-solid fa-table-list"></i> 📊 لوحة المينيو
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabStock',this)">
-            <i class="fa-solid fa-warehouse"></i> المواد والمخزون
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabRecipes',this)"
-                style="border-color:#a855f7;color:#d8b4fe;">
-            <i class="fa-solid fa-flask"></i> 🧪 تفكيك الأصناف
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabPurchase',this)">
-            <i class="fa-solid fa-truck"></i> المشتريات
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabCount',this)">
-            <i class="fa-solid fa-clipboard-check"></i> الجرد الفعلي
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabUsage',this)">
-            <i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabVariance',this)"
-                style="border-color:#ef4444;color:#ff9b9b;">
-            <i class="fa-solid fa-triangle-exclamation"></i> الهدر
-        </button>
-        <button class="inv-tab" onclick="switchInvTab('tabSetup',this)"
-                style="border-color:#10b981;color:#7fe3c0;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> الإعداد السريع
-        </button>
+    <!-- 📱 شريط علوي بالموبايل بس -->
+    <div class="admin-mobile-topbar">
+        <button onclick="toggleInventorySidebar()"><i class="fa-solid fa-bars"></i></button>
+        <span class="brand-badge" style="font-size:0.8rem;">MIM89 المخزن</span>
+        <button onclick="location.reload()"><i class="fa-solid fa-lock"></i></button>
     </div>
+    <div class="admin-sidebar-overlay" id="invSidebarOverlay" onclick="toggleInventorySidebar()"></div>
+
+    <div class="admin-shell-inner">
+
+        <!-- 🆕 القائمة الجانبية -->
+        <aside class="admin-sidebar" id="invSidebar">
+            <div class="sidebar-brand">
+                <span class="brand-badge">MIM89 المخزن</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active"
+                        onclick="switchInvTab('tabMenuBoard',this)">
+                    <i class="fa-solid fa-table-list"></i> 📊 لوحة المينيو
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabStock',this)">
+                    <i class="fa-solid fa-warehouse"></i> المواد والمخزون
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabRecipes',this)">
+                    <i class="fa-solid fa-flask"></i> 🧪 تفكيك الأصناف
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabPurchase',this)">
+                    <i class="fa-solid fa-truck"></i> المشتريات
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabCount',this)">
+                    <i class="fa-solid fa-clipboard-check"></i> الجرد الفعلي
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabUsage',this)">
+                    <i class="fa-solid fa-scale-balanced"></i> تفكيك المبيعات
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabVariance',this)">
+                    <i class="fa-solid fa-triangle-exclamation"></i> الهدر
+                </button>
+                <button class="sidebar-item" onclick="switchInvTab('tabSetup',this)">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> الإعداد السريع
+                </button>
+
+                <div style="border-top:1px solid #1e1e28;margin:10px 4px;"></div>
+                <a href="admin.html" class="sidebar-item">
+                    <i class="fa-solid fa-user-shield"></i> لوحة الأدمن
+                </a>
+                <a href="costing.html" class="sidebar-item">
+                    <i class="fa-solid fa-vault"></i> الخزينة
+                </a>
+                <a href="cashier.html" class="sidebar-item">
+                    <i class="fa-solid fa-cash-register"></i> الكاشير
+                </a>
+            </nav>
+
+            <button class="sidebar-lock-btn" onclick="location.reload()">
+                <i class="fa-solid fa-lock"></i> قفل الجلسة
+            </button>
+        </aside>
+
+        <!-- 🆕 المحتوى الرئيسي -->
+        <main class="admin-main-content">
 
     <!-- ============ لوحة المينيو ============ -->
     <div id="tabMenuBoard" class="inv-page">
@@ -600,9 +658,13 @@
 
     </div>
 
-</div>
+        </main>
 
-<script src="app.js?v=1735"></script>
+    </div><!-- end admin-shell-inner -->
+
+</div><!-- end invMainApp -->
+
+<script src="app.js?v=1763"></script>
 <script>
 /* ==========================================
    PIN المخزن
@@ -691,12 +753,23 @@ function initInventoryApp() {
 /* ==========================================
    التنقل بين التبويبات
    ========================================== */
+// 🆕 فتح/إغلاق القائمة الجانبية بالموبايل
+function toggleInventorySidebar() {
+    document.getElementById('invSidebar')?.classList.toggle('open');
+    document.getElementById('invSidebarOverlay')?.classList.toggle('open');
+}
+
 function switchInvTab(id, btn) {
     document.querySelectorAll('.inv-page').forEach(p => p.style.display = 'none');
-    document.querySelectorAll('.inv-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#invSidebar .sidebar-item').forEach(b => b.classList.remove('active'));
     const page = document.getElementById(id);
     if (page) page.style.display = 'block';
     if (btn)  btn.classList.add('active');
+
+    // بالموبايل: نسكر القائمة الجانبية تلقائياً بعد اختيار قسم
+    const sidebar = document.getElementById('invSidebar');
+    if (sidebar && sidebar.classList.contains('open')) toggleInventorySidebar();
+    document.querySelector('.admin-main-content')?.scrollTo({ top: 0, behavior: 'instant' });
 
     if (id === 'tabMenuBoard')  renderMenuBoard();
     if (id === 'tabStock')      renderInventoryTable();
@@ -2101,7 +2174,7 @@ document.addEventListener('DOMContentLoaded', () => {
    أو وصفة شغّال عليها، وإعادة تحميل قسرية تمسحها قبل الحفظ!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1735'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1735)
+    const CURRENT_PAGE_VERSION = '1763'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=)
 
     async function checkForFreshPageVersion() {
         try {
