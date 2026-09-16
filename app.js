@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1763';
+const MIM89_APP_VERSION = '1764';
 
 /* ==========================================
    المتغيرات العامة
@@ -997,8 +997,12 @@ function startPeriodicCloudPull() {
     // الموبايل (خصوصاً سفاري) توقف تنفيذ الجافاسكربت وتقطع اتصالات
     // الشبكة المستمرة (المستمعين اللحظيين لفايرستور) وقت التعليق بالخلفية،
     // وما تضمن استئنافها صح 100% لما ترجع الصفحة للواجهة. لو ضلت الصفحة
-    // مخفية فترة طويلة (أكثر من 3 دقائق)، أضمن حل هو تحديث الصفحة كاملة
-    // بدل ما نعتمد على استئناف اتصالات قديمة ممكن تكون انقطعت بصمت.
+    // مخفية فترة طويلة، أضمن حل هو تحديث الصفحة كاملة بدل ما نعتمد على
+    // استئناف اتصالات قديمة ممكن تكون انقطعت بصمت.
+    // 🆕 إصلاح إضافي: هذا كان يزعج الزبون بالمينيو العام - يبدّل تطبيق
+    // (واتساب مثلاً) لأكثر من 3 دقائق وهو شي عادي جداً بالموبايل، ويرجع
+    // يلقى الصفحة تحدّثت وضاع مكانه/سلته. الحين نتأكد سلة الزبون فاضية
+    // كمان (مو بس الكاشير)، ورفعنا المهلة لـ10 دقائق بدل 3 لتقليل الإزعاج.
     let hiddenSinceTs = null;
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -1008,9 +1012,10 @@ function startPeriodicCloudPull() {
         const hiddenDurationMs = hiddenSinceTs ? (Date.now() - hiddenSinceTs) : 0;
         hiddenSinceTs = null;
 
-        if (hiddenDurationMs > 3 * 60 * 1000) {
+        if (hiddenDurationMs > 10 * 60 * 1000) {
             // تعليق طويل - تحديث كامل أضمن من محاولة إصلاح اتصالات قديمة
-            if (!isCashierBusy()) location.reload();
+            const publicCartHasItems = typeof cart !== 'undefined' && Array.isArray(cart) && cart.length > 0;
+            if (!isCashierBusy() && !publicCartHasItems) location.reload();
             return;
         }
 
