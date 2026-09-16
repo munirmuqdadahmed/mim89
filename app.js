@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1762';
+const MIM89_APP_VERSION = '1763';
 
 /* ==========================================
    المتغيرات العامة
@@ -770,11 +770,61 @@ async function pullLatestFromCloud() {
         }
     } catch (e) { console.warn("تعذّر سحب الفواتير:", e); }
 
+    // 🛠️ إصلاح جذري خطير: الصرفيات والرواتب كانت بدون أي مزامنة سحابية
+    // إطلاقاً - هذا كان يخلي حسابات "الراتب المستحق" و"السلف" بالموظفين
+    // تطلع غلط لو تحقق منها من جهاز غير اللي سجّلها. نفس منطق دمج
+    // الفواتير بالضبط (اتحاد بين المحلي والسحابي، بدون فقدان أي سجل)
+    try {
+        const expSnap = await db.collection("expenses").limit(500).get({ source: 'server' });
+        if (!expSnap.empty) {
+            const cloudExpenses = [];
+            expSnap.forEach(d => cloudExpenses.push(d.data()));
+            const localExpenses = getData('sys_expenses') || [];
+            const byId = {};
+            cloudExpenses.concat(localExpenses).forEach(e => { byId[String(e.id)] = e; });
+            const merged = Object.values(byId).sort((a,b) =>
+                cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp)
+            );
+            const after = JSON.stringify(merged);
+            if (after !== JSON.stringify(localExpenses)) {
+                safeLocalSet('sys_expenses', after);
+                changed = true;
+            }
+        }
+    } catch (e) { console.warn("تعذّر سحب الصرفيات:", e); }
+
+    try {
+        const salSnap = await db.collection("salaries").limit(500).get({ source: 'server' });
+        if (!salSnap.empty) {
+            const cloudSalaries = [];
+            salSnap.forEach(d => cloudSalaries.push(d.data()));
+            const localSalaries = getData('sys_salaries') || [];
+            const byId = {};
+            cloudSalaries.concat(localSalaries).forEach(s => { byId[String(s.id)] = s; });
+            const merged = Object.values(byId).sort((a,b) =>
+                cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp)
+            );
+            const after = JSON.stringify(merged);
+            if (after !== JSON.stringify(localSalaries)) {
+                safeLocalSet('sys_salaries', after);
+                changed = true;
+            }
+        }
+    } catch (e) { console.warn("تعذّر سحب الرواتب:", e); }
+
     // الإعدادات المشتركة
     const SHARED_KEYS = [
         'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
         'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
-        'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance'
+        'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance',
+        // 🛠️ إصلاح جذري خطير: هذولة كانوا مفقودين تماماً من المزامنة -
+        // أي تعديل عليهم بجهاز (إضافة/تعديل بوكس، تغيير عمولة منصة) كان
+        // يضل حبيس هذاك الجهاز بس، وما يوصل لأي جهاز ثاني (الموبايل مثلاً)
+        'sys_combo_deals', 'sys_delivery_platforms',
+        // 🆕 فحص شامل كشف هذولة أيضاً مفقودين - إعدادات يحررها إداري
+        // واحد بالعادة، فمخاطرة التعارض منخفضة، بعكس البيانات المعاملاتية
+        // (الصرفيات/الرواتب) اللي لها آلية دمج خاصة أدق بالأعلى
+        'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -3502,6 +3552,15 @@ function addNewExpenseRecord() {
     expenses.unshift(expData);
     setData('sys_expenses', expenses);
 
+    // 🛠️ إصلاح جذري خطير: كانت الصرفيات تنحفظ محلياً بس بدون أي رفع
+    // للسحابة إطلاقاً - أي جهاز ثاني (الأدمن، الخزينة) ما يشوفها أبداً.
+    // هذا كان يخلي حسابات "الراتب المستحق" بالموظفين تطلع غلط لو تحقق
+    // منها من جهاز غير اللي سجّل فيه الصرفية.
+    if (typeof db !== 'undefined' && db) {
+        db.collection('expenses').doc(expData.id).set(expData)
+            .catch(err => console.warn('تعذّر رفع الصرفية للسحابة:', err));
+    }
+
     logAudit('صرفية', {
         amount,
         type,
@@ -3597,6 +3656,13 @@ function addSalaryRecord() {
         let salaries = getData('sys_salaries') || [];
         salaries.unshift(salaryData);
         setData('sys_salaries', salaries);
+
+        // 🛠️ إصلاح جذري خطير: نفس مشكلة الصرفيات - الراتب كان ينحفظ
+        // محلياً بس، ما يوصل لأي جهاز ثاني
+        if (typeof db !== 'undefined' && db) {
+            db.collection('salaries').doc(salaryData.id).set(salaryData)
+                .catch(err => console.warn('تعذّر رفع الراتب للسحابة:', err));
+        }
 
         // 🔐 تسجيل في سجل التدقيق
         logAudit('راتب / صرفية موظف', {
