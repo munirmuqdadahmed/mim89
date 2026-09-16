@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1764';
+const MIM89_APP_VERSION = '1765';
 
 /* ==========================================
    المتغيرات العامة
@@ -3075,7 +3075,13 @@ function tryFinalizeAndClearOrder(silentMode) {
     if (db) {
         db.collection("completed_orders")
             .doc(String(orderToSave.id))
-            .set(orderToSave, { merge: true })
+            .set({
+                ...orderToSave,
+                // 🆕 طابع زمني حقيقي من سيرفر جوجل نفسه - مستقل 100% عن
+                // ساعة أي جهاز (كاشير أو موبايل). يخلينا نتأكد بدليل قاطع
+                // لاحقاً هل ساعة جهاز معيّن غلط، بمقارنته بهذا الرقم
+                serverReceivedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true })
             .then(() => {
                 try {
                     const cnt = cleanPrice(localStorage.getItem('mim89_save_counter')) + 1;
@@ -6901,8 +6907,29 @@ async function runCloudDiagnostics(btnElement) {
         const todayHere = getTodayString();
         lines.push("📅 تاريخ اليوم المحسوب بهذا الجهاز: " + todayHere);
         if (!ordSnap.empty) {
-            const latestOrderDate = ordSnap.docs[0].data().dateDate;
-            lines.push("📅 تاريخ آخر فاتورة موجودة بالسحابة: " + (latestOrderDate || "غير محدد"));
+            const latestData = ordSnap.docs[0].data();
+            const latestOrderDate = latestData.dateDate;
+            lines.push("📅 تاريخ آخر فاتورة (حسب ساعة الكاشير وقت الحفظ): " + (latestOrderDate || "غير محدد"));
+
+            // 🆕 الدليل القاطع: نقارن هذا التاريخ (اللي حسبته ساعة جهاز
+            // الكاشير بنفسه) مع الوقت الحقيقي اللي وصلت فيه هذي الفاتورة
+            // فعلياً لسيرفر جوجل (مستقل 100% عن أي جهاز) - لو مختلفين،
+            // هذا دليل قاطع إن ساعة جهاز الكاشير غلط، مو مشكلة تانية
+            if (latestData.serverReceivedAt) {
+                const serverDate = latestData.serverReceivedAt.toDate();
+                const serverDateStr = getBusinessDayString(serverDate);
+                lines.push("🌍 نفس الفاتورة حسب ساعة سيرفر جوجل الحقيقية (مستقلة عن أي جهاز): " + serverDateStr);
+                if (latestOrderDate && serverDateStr !== latestOrderDate) {
+                    lines.push("🔴 دليل قاطع: ساعة/تاريخ جهاز الكاشير غلط بمقدار " +
+                        "يوم على الأقل! السيرفر يقول الفاتورة وصلت بتاريخ " +
+                        serverDateStr + "، بس جهاز الكاشير سجّلها بتاريخ " +
+                        latestOrderDate + ". لازم تصحيح تاريخ/ساعة جهاز " +
+                        "الكاشير نفسه (مو الموبايل).");
+                } else {
+                    lines.push("✅ تاريخ جهاز الكاشير مطابق تماماً لسيرفر جوجل - ساعته سليمة.");
+                }
+            }
+
             if (latestOrderDate && latestOrderDate !== todayHere) {
                 lines.push("⚠️ التاريخين مختلفين! هذا سبب ظهور صفر مبيعات " +
                     "بهذا الجهاز - تأكد من ضبط التاريخ/التوقيت بجهازك صحيح.");
