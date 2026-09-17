@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1767';
+const MIM89_APP_VERSION = '1768';
 
 /* ==========================================
    المتغيرات العامة
@@ -1528,6 +1528,17 @@ function switchCashierTab(tabId, btn) {
     if (btn) btn.classList.add('active');
 }
 
+// 🆕 إظهار/إخفاء خانة "رقم الفاتورة الأصلية" عند تفعيل خيار الإضافة
+function togglePrevOrderLinkBox() {
+    const box = document.getElementById('prevOrderLinkBox');
+    const checked = document.getElementById('posLinkToPrevOrder')?.checked;
+    if (box) box.style.display = checked ? 'block' : 'none';
+    if (!checked) {
+        const input = document.getElementById('posLinkedOrderNum');
+        if (input) input.value = '';
+    }
+}
+
 function selectOrderType(btnElement) {
     document.querySelectorAll('#posOrderTypeGroup .toggle-btn')
         .forEach(b => b.classList.remove('active'));
@@ -1721,6 +1732,11 @@ function clearPosCart() {
     posCart = [];
     clearAllDiscounts();
     renderPosCart();
+
+    // 🆕 نصفّر خيار "إضافة على فاتورة سابقة" مع كل سلة جديدة - يمنع
+    // بقاءه مفعّل بالغلط للطلب الجاي
+    const linkChk = document.getElementById('posLinkToPrevOrder');
+    if (linkChk) { linkChk.checked = false; togglePrevOrderLinkBox(); }
 }
 
 function addNoteToCartItem(cartIndex, noteText) {
@@ -2205,6 +2221,12 @@ async function proceedToPrintAfterCash() {
         area:          area,
         paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
         driverName:    driverName,
+        // 🆕 لو هذي إضافة على فاتورة سابقة (زبون طلب شي زيادة بعد ما
+        // طبعنا فاتورته الأولى) - نحفظ رقم الفاتورة الأصلية حتى تذكرة
+        // المطبخ توضحه صراحة، بدل رقم جديد يلخبط المطبخ
+        linkedToOrderNum: document.getElementById('posLinkToPrevOrder')?.checked
+            ? cleanPrice(document.getElementById('posLinkedOrderNum')?.value) || null
+            : null,
         // 🆕 موقع GPS - يُستخرج من رابط خرائط جوجل الملصق (لو موجود)، وينحفظ
         // بالطلب حتى يوصل للسائق مباشرة بدون ما يحتاج يسأل الزبون العنوان
         gpsLocation:   parseGpsLinkToLatLng(document.getElementById('posGpsLink')?.value),
@@ -2520,6 +2542,11 @@ function buildCustomerReceiptLines(ord) {
         L.push({ text: 'رقم الطلب', size:'normal', align:'center' });
         L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
     }
+    // 🆕 لو إضافة على طلب سابق، نوضحها هنا كمان
+    if (ord.linkedToOrderNum) {
+        L.push({ text: '🔗 إضافة على طلب #' + ord.linkedToOrderNum,
+            size:'normal', align:'center', bold:true });
+    }
     L.push({ separator: 'dash' });
 
     // بيانات الفاتورة
@@ -2610,6 +2637,13 @@ function buildKitchenTicketLines(ord) {
     L.push({ text: ord.timestamp, size:'normal', align:'center' });
     L.push({ separator: 'solid' });
     L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
+    // 🆕 لو هذي إضافة على فاتورة سابقة، نبرزها بأوضح شكل ممكن فوق كل
+    // شي ثاني - أهم معلومة بالتذكرة، حتى ما يشتبه المطبخ إنه طلب جديد مستقل
+    if (ord.linkedToOrderNum) {
+        L.push({ separator: 'solid' });
+        L.push({ text: '🔗 إضافة على طلب #' + ord.linkedToOrderNum,
+            size:'big', align:'center', bold:true });
+    }
     L.push({ separator: 'solid' });
     // 🆕 لو الطلب توصيل عن طريق منصة (بلي، طلبات...)، نبيّن اسم المنصة
     // صراحة بدل كلمة "توصيل" العامة بس - يعرف المطبخ لأي جهة يجهزون
