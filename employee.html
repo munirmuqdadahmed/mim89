@@ -88,10 +88,7 @@
             <h2 style="color:var(--gold-primary);">بوابة الموظفين</h2>
             <p style="color:#888;font-size:0.85rem;margin-top:4px;">MIM89 FAST FOOD</p>
 
-            <label class="section-label" style="margin-top:18px;display:block;text-align:right;">اختر اسمك:</label>
-            <select id="empLoginSelect" class="gold-input-inline" style="margin-bottom:14px;"></select>
-
-            <p style="color:#888;font-size:0.8rem;">أدخل رمزك السري (4 أرقام)</p>
+            <p style="color:#888;font-size:0.8rem;margin-top:18px;">أدخل رمزك السري (4 أرقام)</p>
             <div class="pin-dots-emp" id="empPinDots">
                 <div class="pin-dot-emp"></div><div class="pin-dot-emp"></div>
                 <div class="pin-dot-emp"></div><div class="pin-dot-emp"></div>
@@ -248,21 +245,7 @@ let empClockTickTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     try { if (typeof initData === 'function') initData(); } catch (_) {}
-    setTimeout(populateEmpLoginSelect, 1200);
 });
-
-function populateEmpLoginSelect() {
-    const select = document.getElementById('empLoginSelect');
-    if (!select) return;
-    const employees = (typeof getData === 'function' ? getData('sys_employees') : []) || [];
-    if (employees.length === 0) {
-        select.innerHTML = '<option value="">لا يوجد موظفين مسجّلين - راجع الإدارة</option>';
-        return;
-    }
-    select.innerHTML = employees.map(e =>
-        '<option value="' + e.id + '">' + e.name + (e.role ? ' — ' + e.role : '') + '</option>'
-    ).join('');
-}
 
 function empPinPress(digit) {
     if (empPinBuffer.length >= 4) return;
@@ -279,28 +262,26 @@ function renderEmpPinDots() {
 }
 
 function empAttemptLogin() {
-    const employeeId = document.getElementById('empLoginSelect')?.value;
     const errEl = document.getElementById('empLoginError');
-    if (!employeeId) { errEl.innerText = 'اختر اسمك أول.'; empPinClear(); return; }
-
     const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === employeeId);
-    if (!emp) { errEl.innerText = 'تعذّر إيجاد بياناتك.'; empPinClear(); return; }
 
-    if (!emp.pin) {
-        errEl.innerText = 'ماكو رمز دخول مسجّل لك - اطلب من الإدارة تضيفه.';
+    // 🆕 الرمز نفسه يحدد الموظف - ندوّر عن موظف رمزه يطابق المُدخل
+    const matches = employees.filter(e => e.pin && String(e.pin) === empPinBuffer);
+
+    if (matches.length === 0) {
+        errEl.innerText = 'رمز غير صحيح، حاول مرة ثانية.';
         empPinClear();
         return;
     }
-    if (String(emp.pin) !== empPinBuffer) {
-        errEl.innerText = 'الرمز غلط، حاول مرة ثانية.';
+    if (matches.length > 1) {
+        errEl.innerText = 'فيه أكثر من موظف بنفس الرمز - راجع الإدارة لتصحيحه.';
         empPinClear();
         return;
     }
 
     errEl.innerText = '';
-    activeEmployeeSession = emp;
-    sessionStorage.setItem('active_employee_id', emp.id);
+    activeEmployeeSession = matches[0];
+    sessionStorage.setItem('active_employee_id', activeEmployeeSession.id);
     showEmpDashboard();
 }
 
