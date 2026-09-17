@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="بوابة الموظفين">
+    <title>MIM89 - بوابة الموظفين</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        body { background:#0a0a0d; }
+        .emp-shell { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; }
+
+        /* شاشة الدخول */
+        .emp-login-card {
+            background: #111116; border: 1.5px solid var(--gold-primary);
+            border-radius: 16px; padding: 24px 20px; margin-top: 60px; text-align: center;
+        }
+        .emp-login-card .logo { font-size: 2.5rem; margin-bottom: 8px; }
+        .pin-dots-emp { display:flex; justify-content:center; gap:10px; margin:16px 0; }
+        .pin-dot-emp {
+            width:16px; height:16px; border-radius:50%; border:2px solid var(--gold-primary);
+            background:transparent; transition:background 0.15s;
+        }
+        .pin-dot-emp.filled { background: var(--gold-primary); }
+        .pin-keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px; }
+        .pin-key {
+            background:#1a1a20; border:1px solid #2a2a35; color:#fff; border-radius:12px;
+            padding:16px 0; font-size:1.3rem; font-weight:900; cursor:pointer; font-family:inherit;
+        }
+        .pin-key:active { background:#2a2a35; }
+        .pin-key.wide { grid-column: span 1; }
+
+        /* لوحة الموظف */
+        .emp-header {
+            display:flex; justify-content:space-between; align-items:center;
+            background:#111116; border:1px solid #1e1e28; border-radius:14px;
+            padding:14px 16px; margin-bottom:14px;
+        }
+        .emp-clock-card {
+            background:linear-gradient(135deg,#0d2418,#081712); border:2px solid #10b981;
+            border-radius:16px; padding:24px 16px; text-align:center; margin-bottom:14px;
+        }
+        .emp-clock-card.out {
+            background:linear-gradient(135deg,#2a1010,#1a0808); border-color:#ef4444;
+        }
+        .big-clock-btn {
+            width:100%; padding:18px; border-radius:14px; border:none;
+            font-size:1.15rem; font-weight:900; font-family:inherit; cursor:pointer;
+            background:#10b981; color:#000; margin-top:12px;
+        }
+        .big-clock-btn.out-btn { background:#ef4444; color:#fff; }
+        .emp-stat-grid {
+            display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;
+        }
+        .emp-stat-box {
+            background:#111116; border:1px solid #1e1e28; border-radius:12px;
+            padding:14px; text-align:center;
+        }
+        .emp-stat-box .lbl { font-size:0.72rem; color:#888; margin-bottom:4px; }
+        .emp-stat-box .val { font-size:1.3rem; font-weight:900; }
+        .emp-card {
+            background:#111116; border:1px solid #1e1e28; border-radius:14px;
+            padding:16px; margin-bottom:14px;
+        }
+        .emp-req-item {
+            background:#0d0d11; border-radius:9px; padding:10px; margin-bottom:6px;
+            font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;
+        }
+        .req-status-pending { color:#f59e0b; }
+        .req-status-approved { color:#10b981; }
+        .req-status-rejected { color:#ef4444; }
+    </style>
+</head>
+<body class="admin-body">
+
+<div class="emp-shell">
+
+    <!-- 🔐 شاشة الدخول -->
+    <div id="empLoginScreen">
+        <div class="emp-login-card">
+            <div class="logo">👤</div>
+            <h2 style="color:var(--gold-primary);">بوابة الموظفين</h2>
+            <p style="color:#888;font-size:0.85rem;margin-top:4px;">MIM89 FAST FOOD</p>
+
+            <label class="section-label" style="margin-top:18px;display:block;text-align:right;">اختر اسمك:</label>
+            <select id="empLoginSelect" class="gold-input-inline" style="margin-bottom:14px;"></select>
+
+            <p style="color:#888;font-size:0.8rem;">أدخل رمزك السري (4 أرقام)</p>
+            <div class="pin-dots-emp" id="empPinDots">
+                <div class="pin-dot-emp"></div><div class="pin-dot-emp"></div>
+                <div class="pin-dot-emp"></div><div class="pin-dot-emp"></div>
+            </div>
+            <div class="pin-keypad">
+                <button class="pin-key" onclick="empPinPress('1')">1</button>
+                <button class="pin-key" onclick="empPinPress('2')">2</button>
+                <button class="pin-key" onclick="empPinPress('3')">3</button>
+                <button class="pin-key" onclick="empPinPress('4')">4</button>
+                <button class="pin-key" onclick="empPinPress('5')">5</button>
+                <button class="pin-key" onclick="empPinPress('6')">6</button>
+                <button class="pin-key" onclick="empPinPress('7')">7</button>
+                <button class="pin-key" onclick="empPinPress('8')">8</button>
+                <button class="pin-key" onclick="empPinPress('9')">9</button>
+                <button class="pin-key" onclick="empPinClear()">✕</button>
+                <button class="pin-key" onclick="empPinPress('0')">0</button>
+                <button class="pin-key" onclick="empPinBackspace()">⌫</button>
+            </div>
+            <p id="empLoginError" style="color:#ef4444;margin-top:12px;font-size:0.82rem;min-height:20px;"></p>
+        </div>
+    </div>
+
+    <!-- 🏠 لوحة الموظف -->
+    <div id="empDashboard" style="display:none;">
+
+        <div class="emp-header">
+            <div>
+                <strong id="empDashName" style="color:var(--gold-primary);font-size:1.1rem;"></strong>
+                <div id="empDashRole" style="color:#888;font-size:0.78rem;"></div>
+            </div>
+            <button onclick="empLogout()" class="gold-btn btn-sm"
+                    style="width:auto;padding:8px 14px;background:#3d0d0d;color:#ef4444;
+                           border:1px solid #ef4444;">
+                <i class="fa-solid fa-right-from-bracket"></i> خروج
+            </button>
+        </div>
+
+        <!-- تسجيل الحضور/الانصراف -->
+        <div class="emp-clock-card" id="empClockCard">
+            <div style="font-size:0.85rem;color:#7fddb8;" id="empClockStatusLabel">جاهز لتسجيل الحضور</div>
+            <div style="font-size:2rem;font-weight:900;color:#fff;margin-top:6px;" id="empClockTimeDisplay">--:--</div>
+            <button id="empClockActionBtn" class="big-clock-btn" onclick="empHandleClockAction()">
+                🟢 تسجيل حضور
+            </button>
+        </div>
+
+        <!-- إحصائيات الشهر -->
+        <div class="emp-stat-grid">
+            <div class="emp-stat-box">
+                <div class="lbl">🗓️ أيام الحضور هذا الشهر</div>
+                <div class="val" style="color:#38bdf8;" id="empStatDays">0</div>
+            </div>
+            <div class="emp-stat-box">
+                <div class="lbl">⏱️ إجمالي الساعات</div>
+                <div class="val" style="color:#38bdf8;" id="empStatHours">0</div>
+            </div>
+        </div>
+
+        <!-- الحساب المالي -->
+        <div class="emp-card">
+            <h4 style="color:var(--gold-primary);margin-bottom:10px;">💰 حسابي هذا الشهر</h4>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #24392c;">
+                <span style="color:#888;">الراتب المستحق لين الحين</span>
+                <strong style="color:#10b981;" id="empAccruedSalary">0 د.ع</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #24392c;">
+                <span style="color:#888;">سلف مسحوبة</span>
+                <strong style="color:#ef4444;" id="empAdvancesTaken">0 د.ع</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;">
+                <span style="color:#888;">راتب مستلم فعلاً</span>
+                <strong style="color:#888;" id="empSalaryPaid">0 د.ع</strong>
+            </div>
+        </div>
+
+        <!-- طلبات -->
+        <div class="emp-card">
+            <h4 style="color:var(--gold-primary);margin-bottom:10px;">📝 تقديم طلب</h4>
+            <div style="display:flex;gap:8px;">
+                <button onclick="openModal('empAdvanceModal')" class="gold-btn btn-block"
+                        style="background:#f59e0b;color:#000;font-weight:900;">
+                    💵 طلب سلفة
+                </button>
+                <button onclick="openModal('empLeaveModal')" class="gold-btn btn-block"
+                        style="background:#8b5cf6;color:#fff;font-weight:900;">
+                    🏖️ إجازة/استراحة
+                </button>
+            </div>
+        </div>
+
+        <!-- سجل طلباتي -->
+        <div class="emp-card">
+            <h4 style="color:var(--gold-primary);margin-bottom:10px;">📋 طلباتي</h4>
+            <div id="empMyRequestsList"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 💵 نافذة طلب سلفة -->
+<div id="empAdvanceModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:400px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:10px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#f59e0b;">💵 طلب سلفة</h4>
+            <button onclick="closeModal('empAdvanceModal')" class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <label class="section-label">المبلغ المطلوب (د.ع):</label>
+        <input type="number" id="empAdvanceAmount" class="gold-input-inline" style="margin-bottom:10px;">
+        <label class="section-label">السبب (اختياري):</label>
+        <textarea id="empAdvanceReason" class="gold-input-inline" rows="2" style="margin-bottom:14px;"></textarea>
+        <button onclick="empSubmitAdvanceRequest()" class="gold-btn btn-block"
+                style="background:#f59e0b;color:#000;font-weight:900;">
+            إرسال الطلب للمالك
+        </button>
+    </div>
+</div>
+
+<!-- 🏖️ نافذة طلب إجازة/استراحة -->
+<div id="empLeaveModal" class="modal-overlay">
+    <div class="modal-body" style="max-width:400px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    margin-bottom:10px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+            <h4 style="color:#8b5cf6;">🏖️ طلب إجازة / استراحة</h4>
+            <button onclick="closeModal('empLeaveModal')" class="gold-btn btn-sm" style="width:auto;">✕</button>
+        </div>
+        <label class="section-label">النوع:</label>
+        <select id="empLeaveType" class="gold-input-inline" style="margin-bottom:10px;">
+            <option value="استراحة اليوم">⏸️ استراحة اليوم (ساعة أو أكثر)</option>
+            <option value="إجازة يوم">📅 إجازة يوم كامل</option>
+            <option value="إجازة عدة أيام">🗓️ إجازة عدة أيام</option>
+        </select>
+        <label class="section-label">من تاريخ:</label>
+        <input type="date" id="empLeaveFrom" class="gold-input-inline" style="margin-bottom:10px;">
+        <label class="section-label">لين تاريخ (لو أكثر من يوم):</label>
+        <input type="date" id="empLeaveTo" class="gold-input-inline" style="margin-bottom:10px;">
+        <label class="section-label">السبب:</label>
+        <textarea id="empLeaveReason" class="gold-input-inline" rows="2" style="margin-bottom:14px;"></textarea>
+        <button onclick="empSubmitLeaveRequest()" class="gold-btn btn-block"
+                style="background:#8b5cf6;color:#fff;font-weight:900;">
+            إرسال الطلب للمالك
+        </button>
+    </div>
+</div>
+
+<script src="app.js?v=1769"></script>
+<script>
+/* ==========================================
+   👤 بوابة الموظفين - منطق تسجيل الدخول والعرض
+   ========================================== */
+let empPinBuffer = '';
+let activeEmployeeSession = null;
+let empClockTickTimer = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { if (typeof initData === 'function') initData(); } catch (_) {}
+    setTimeout(populateEmpLoginSelect, 1200);
+});
+
+function populateEmpLoginSelect() {
+    const select = document.getElementById('empLoginSelect');
+    if (!select) return;
+    const employees = (typeof getData === 'function' ? getData('sys_employees') : []) || [];
+    if (employees.length === 0) {
+        select.innerHTML = '<option value="">لا يوجد موظفين مسجّلين - راجع الإدارة</option>';
+        return;
+    }
+    select.innerHTML = employees.map(e =>
+        '<option value="' + e.id + '">' + e.name + (e.role ? ' — ' + e.role : '') + '</option>'
+    ).join('');
+}
+
+function empPinPress(digit) {
+    if (empPinBuffer.length >= 4) return;
+    empPinBuffer += digit;
+    renderEmpPinDots();
+    if (empPinBuffer.length === 4) setTimeout(empAttemptLogin, 150);
+}
+function empPinBackspace() { empPinBuffer = empPinBuffer.slice(0, -1); renderEmpPinDots(); }
+function empPinClear() { empPinBuffer = ''; renderEmpPinDots(); }
+function renderEmpPinDots() {
+    document.querySelectorAll('.pin-dot-emp').forEach((dot, i) => {
+        dot.classList.toggle('filled', i < empPinBuffer.length);
+    });
+}
+
+function empAttemptLogin() {
+    const employeeId = document.getElementById('empLoginSelect')?.value;
+    const errEl = document.getElementById('empLoginError');
+    if (!employeeId) { errEl.innerText = 'اختر اسمك أول.'; empPinClear(); return; }
+
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === employeeId);
+    if (!emp) { errEl.innerText = 'تعذّر إيجاد بياناتك.'; empPinClear(); return; }
+
+    if (!emp.pin) {
+        errEl.innerText = 'ماكو رمز دخول مسجّل لك - اطلب من الإدارة تضيفه.';
+        empPinClear();
+        return;
+    }
+    if (String(emp.pin) !== empPinBuffer) {
+        errEl.innerText = 'الرمز غلط، حاول مرة ثانية.';
+        empPinClear();
+        return;
+    }
+
+    errEl.innerText = '';
+    activeEmployeeSession = emp;
+    sessionStorage.setItem('active_employee_id', emp.id);
+    showEmpDashboard();
+}
+
+function empLogout() {
+    sessionStorage.removeItem('active_employee_id');
+    activeEmployeeSession = null;
+    empPinClear();
+    if (empClockTickTimer) clearInterval(empClockTickTimer);
+    document.getElementById('empDashboard').style.display = 'none';
+    document.getElementById('empLoginScreen').style.display = 'block';
+}
+
+function showEmpDashboard() {
+    document.getElementById('empLoginScreen').style.display = 'none';
+    document.getElementById('empDashboard').style.display = 'block';
+    document.getElementById('empDashName').innerText = '👋 ' + activeEmployeeSession.name;
+    document.getElementById('empDashRole').innerText = activeEmployeeSession.role || '';
+    renderEmpClockCard();
+    renderEmpStats();
+    renderEmpMyRequests();
+    if (empClockTickTimer) clearInterval(empClockTickTimer);
+    empClockTickTimer = setInterval(renderEmpClockCard, 30000);
+}
+
+function renderEmpClockCard() {
+    if (!activeEmployeeSession) return;
+    const att = getEmployeeTodayAttendance(activeEmployeeSession.id);
+    const card = document.getElementById('empClockCard');
+    const label = document.getElementById('empClockStatusLabel');
+    const timeDisplay = document.getElementById('empClockTimeDisplay');
+    const btn = document.getElementById('empClockActionBtn');
+
+    if (!att || !att.clockInTime) {
+        card.classList.remove('out');
+        label.innerText = 'جاهز لتسجيل الحضور';
+        timeDisplay.innerText = new Date().toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'});
+        btn.className = 'big-clock-btn';
+        btn.innerHTML = '🟢 تسجيل حضور';
+    } else if (att.clockInTime && !att.clockOutTime) {
+        card.classList.remove('out');
+        const hoursSoFar = ((Date.now() - att.clockInTime) / 3600000).toFixed(1);
+        label.innerText = 'مسجّل حضور منذ ' + new Date(att.clockInTime).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'});
+        timeDisplay.innerText = hoursSoFar + ' ساعة';
+        btn.className = 'big-clock-btn out-btn';
+        btn.innerHTML = '🔴 تسجيل انصراف';
+    } else {
+        card.classList.add('out');
+        label.innerText = 'خلصت دوامك اليوم ✅';
+        timeDisplay.innerText = att.hoursWorked + ' ساعة اليوم';
+        btn.className = 'big-clock-btn';
+        btn.innerHTML = '🟢 تسجيل حضور (دوام إضافي)';
+    }
+}
+
+function empHandleClockAction() {
+    if (!activeEmployeeSession) return;
+    const att = getEmployeeTodayAttendance(activeEmployeeSession.id);
+    let result;
+    if (!att || !att.clockInTime || att.clockOutTime) {
+        result = employeeClockIn(activeEmployeeSession.id);
+    } else {
+        result = employeeClockOut(activeEmployeeSession.id);
+    }
+    if (!result.ok) { alert('⚠️ ' + result.msg); return; }
+    renderEmpClockCard();
+    renderEmpStats();
+}
+
+function renderEmpStats() {
+    if (!activeEmployeeSession) return;
+    const summary = getEmployeeMonthSummary(activeEmployeeSession.id);
+    document.getElementById('empStatDays').innerText  = summary.daysPresent + ' يوم';
+    document.getElementById('empStatHours').innerText = summary.totalHours + ' س';
+
+    const accrued = getEmployeeAccruedSalary(activeEmployeeSession);
+    const finance = getEmployeeMonthFinance(activeEmployeeSession);
+    document.getElementById('empAccruedSalary').innerText = accrued.toLocaleString('ar-IQ') + ' د.ع';
+    document.getElementById('empAdvancesTaken').innerText = finance.advances.toLocaleString('ar-IQ') + ' د.ع';
+    document.getElementById('empSalaryPaid').innerText    = finance.salaryPaid.toLocaleString('ar-IQ') + ' د.ع';
+}
+
+function renderEmpMyRequests() {
+    if (!activeEmployeeSession) return;
+    const box = document.getElementById('empMyRequestsList');
+    const requests = (getData('sys_employee_requests') || [])
+        .filter(r => r.employeeId === activeEmployeeSession.id)
+        .slice(0, 15);
+
+    if (requests.length === 0) {
+        box.innerHTML = '<p style="color:#666;text-align:center;padding:10px;">ماكو طلبات بعد</p>';
+        return;
+    }
+
+    const statusLabel = { pending: '⏳ قيد المراجعة', approved: '✅ موافق عليه', rejected: '❌ مرفوض' };
+    const statusClass = { pending: 'req-status-pending', approved: 'req-status-approved', rejected: 'req-status-rejected' };
+
+    box.innerHTML = requests.map(r => {
+        const typeLabel = r.type === 'advance'
+            ? '💵 سلفة ' + cleanPrice(r.amount).toLocaleString('ar-IQ') + ' د.ع'
+            : '🏖️ ' + (r.leaveType || 'إجازة');
+        return '<div class="emp-req-item">' +
+            '<span>' + typeLabel + '<br><span style="color:#666;font-size:0.7rem;">' + r.dateDate + '</span></span>' +
+            '<strong class="' + (statusClass[r.status]||'') + '">' + (statusLabel[r.status]||r.status) + '</strong>' +
+            '</div>';
+    }).join('');
+}
+
+async function empSubmitAdvanceRequest() {
+    const amount = cleanPrice(document.getElementById('empAdvanceAmount').value);
+    const reason = document.getElementById('empAdvanceReason').value.trim();
+    if (!amount) return alert('⚠️ أدخل المبلغ.');
+
+    await submitEmployeeRequest(activeEmployeeSession.id, activeEmployeeSession.name, 'advance', { amount, reason });
+    document.getElementById('empAdvanceAmount').value = '';
+    document.getElementById('empAdvanceReason').value = '';
+    closeModal('empAdvanceModal');
+    renderEmpMyRequests();
+    alert('✅ تم إرسال طلب السلفة للمالك، بتشوف حالته هنا لما يوافق أو يرفض.');
+}
+
+async function empSubmitLeaveRequest() {
+    const leaveType = document.getElementById('empLeaveType').value;
+    const fromDate  = document.getElementById('empLeaveFrom').value;
+    const toDate    = document.getElementById('empLeaveTo').value || fromDate;
+    const reason    = document.getElementById('empLeaveReason').value.trim();
+    if (!fromDate) return alert('⚠️ حدد التاريخ.');
+
+    await submitEmployeeRequest(activeEmployeeSession.id, activeEmployeeSession.name, 'leave',
+        { leaveType, fromDate, toDate, reason });
+    document.getElementById('empLeaveFrom').value = '';
+    document.getElementById('empLeaveTo').value = '';
+    document.getElementById('empLeaveReason').value = '';
+    closeModal('empLeaveModal');
+    renderEmpMyRequests();
+    alert('✅ تم إرسال طلبك للمالك، بتشوف حالته هنا لما يوافق أو يرفض.');
+}
+
+// استئناف الجلسة لو الموظف حدّث الصفحة بدون ما يسجّل خروج
+setTimeout(() => {
+    const savedId = sessionStorage.getItem('active_employee_id');
+    if (savedId && typeof getData === 'function') {
+        const employees = getData('sys_employees') || [];
+        const emp = employees.find(e => e.id === savedId);
+        if (emp) { activeEmployeeSession = emp; showEmpDashboard(); }
+    }
+}, 1500);
+</script>
+</body>
+</html>
