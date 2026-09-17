@@ -291,6 +291,11 @@
                       color:#fbbf24;text-decoration:none;">
                 <i class="fa-solid fa-cash-register"></i> الكاشير
             </a>
+            <a href="employee.html" target="_blank" class="gold-btn btn-sm"
+               style="background:#0d0d11;border:1px solid #38bdf8;
+                      color:#38bdf8;text-decoration:none;">
+                <i class="fa-solid fa-users"></i> بوابة الموظفين
+            </a>
         </div>
 
         <div class="dash-section-title">🔧 أدوات فنية</div>
@@ -1794,6 +1799,15 @@
     <div id="tabEmployeesControl" class="tab-content"
          style="margin-top:15px;display:none;">
 
+        <!-- 🆕 طلبات الموظفين المعلّقة (سلف وإجازات) -->
+        <div class="card" style="max-width:550px;margin:0 auto 16px;border-color:#f59e0b;">
+            <h4 style="color:#f59e0b;margin-bottom:10px;">
+                📋 طلبات الموظفين
+                <span id="empPendingRequestsCount" style="font-size:0.75rem;color:#888;"></span>
+            </h4>
+            <div id="empPendingRequestsList"></div>
+        </div>
+
         <!-- إضافة/تعديل موظف -->
         <div class="card" style="max-width:550px;margin:0 auto 16px;">
             <h4 id="empFormTitle" style="color:#38bdf8;margin-bottom:10px;">➕ إضافة موظف جديد</h4>
@@ -1807,7 +1821,10 @@
                 <input type="number" id="empSalary" class="gold-input-inline" placeholder="الراتب الشهري (د.ع)">
             </div>
             <label class="section-label">تاريخ المباشرة:</label>
-            <input type="date" id="empStartDate" class="gold-input-inline" style="margin-bottom:10px;">
+            <input type="date" id="empStartDate" class="gold-input-inline" style="margin-bottom:8px;">
+            <label class="section-label">🔑 رمز دخول بوابة الموظف (4 أرقام):</label>
+            <input type="text" id="empPin" class="gold-input-inline" maxlength="4"
+                   placeholder="مثال: 1234" style="margin-bottom:10px;direction:ltr;text-align:center;">
             <div style="display:flex;gap:8px;">
                 <button onclick="saveEmployee()" class="gold-btn btn-block"
                         style="background:#38bdf8;color:#000;font-weight:900;">
@@ -2229,7 +2246,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1762"></script>
+<script src="app.js?v=1769"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2366,8 +2383,10 @@ function switchAdminTab(tabId, btn) {
         loadVipSettingsForm();
         loadVipMembersFromCloud();
     }
-    if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function')
+    if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function') {
         renderEmployeesTab();
+        if (typeof renderEmpPendingRequests === 'function') renderEmpPendingRequests();
+    }
     if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
         renderInvoiceManagerList();
 }
@@ -3611,6 +3630,90 @@ function deleteInvoiceFromManager(orderId) {
     });
 }
 
+/* ==========================================
+   📋 طلبات الموظفين - عرض وموافقة/رفض
+   ========================================== */
+function renderEmpPendingRequests() {
+    const box = document.getElementById('empPendingRequestsList');
+    const countEl = document.getElementById('empPendingRequestsCount');
+    if (!box) return;
+
+    const requests = (getData('sys_employee_requests') || []).filter(r => r.status === 'pending');
+    if (countEl) countEl.innerText = requests.length > 0 ? '(' + requests.length + ' بانتظار الرد)' : '';
+
+    if (requests.length === 0) {
+        box.innerHTML = '<p style="color:#666;text-align:center;padding:10px;">ماكو طلبات معلّقة حالياً</p>';
+        return;
+    }
+
+    box.innerHTML = requests.map(r => {
+        const typeLabel = r.type === 'advance'
+            ? '💵 سلفة ' + cleanPrice(r.amount).toLocaleString('ar-IQ') + ' د.ع'
+            : '🏖️ ' + (r.leaveType || 'إجازة') +
+              (r.fromDate ? ' (' + r.fromDate + (r.toDate && r.toDate !== r.fromDate ? ' → ' + r.toDate : '') + ')' : '');
+        return '<div style="background:#0d0d11;border-radius:9px;padding:10px;margin-bottom:6px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+            '<strong style="color:#fff;font-size:0.85rem;">👤 ' + r.employeeName + '</strong>' +
+            '<span style="font-size:0.7rem;color:#888;">' + r.dateDate + '</span>' +
+            '</div>' +
+            '<div style="font-size:0.82rem;color:#fbbf24;margin-bottom:4px;">' + typeLabel + '</div>' +
+            (r.reason ? '<div style="font-size:0.76rem;color:#aaa;margin-bottom:8px;">💬 ' + r.reason + '</div>' : '') +
+            '<div style="display:flex;gap:6px;">' +
+            '<button onclick="approveEmpRequest(\'' + r.id + '\')" class="gold-btn btn-sm" ' +
+            'style="background:#10b981;color:#000;font-weight:900;">✅ موافقة</button>' +
+            '<button onclick="rejectEmpRequest(\'' + r.id + '\')" class="gold-btn btn-sm" ' +
+            'style="background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;">❌ رفض</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+async function approveEmpRequest(reqId) {
+    let requests = getData('sys_employee_requests') || [];
+    const req = requests.find(r => r.id === reqId);
+    if (!req) return;
+
+    // لو سلفة، ننشئ سجل الصرفية الفعلي تلقائياً - نفس ما لو الكاشير سجّلها يدوياً
+    if (req.type === 'advance') {
+        const expData = {
+            id:               "EXP_" + Date.now(),
+            type:             'سلفة',
+            amount:           cleanPrice(req.amount),
+            note:             'سلفة: ' + req.employeeName + ' | عبر طلب من بوابة الموظفين' +
+                              (req.reason ? ' - ' + req.reason : ''),
+            employee:         req.employeeName,
+            dateDate:         getTodayString(),
+            createdTimestamp: Date.now(),
+            cashierName:      'موافقة إدارية'
+        };
+        let expenses = getData('sys_expenses') || [];
+        expenses.unshift(expData);
+        setData('sys_expenses', expenses);
+        if (typeof db !== 'undefined' && db) {
+            try { await db.collection('expenses').doc(expData.id).set(expData); }
+            catch (err) { console.warn('تعذّر رفع صرفية السلفة للسحابة:', err); }
+        }
+    }
+
+    req.status = 'approved';
+    req.resolvedAt = Date.now();
+    setData('sys_employee_requests', requests);
+    renderEmpPendingRequests();
+    alert('✅ تمت الموافقة على طلب ' + req.employeeName +
+        (req.type === 'advance' ? ' وسُجّلت السلفة تلقائياً كصرفية.' : '.'));
+}
+
+function rejectEmpRequest(reqId) {
+    let requests = getData('sys_employee_requests') || [];
+    const req = requests.find(r => r.id === reqId);
+    if (!req) return;
+    if (!confirm('رفض طلب ' + req.employeeName + '؟')) return;
+
+    req.status = 'rejected';
+    req.resolvedAt = Date.now();
+    setData('sys_employee_requests', requests);
+    renderEmpPendingRequests();
+}
+
 function renderEmployeesTab() {
     const box = document.getElementById('employeesListBox');
     if (!box) return;
@@ -3667,6 +3770,7 @@ function resetEmployeeForm() {
     document.getElementById('empPhone').value = '';
     document.getElementById('empSalary').value = '';
     document.getElementById('empStartDate').value = '';
+    document.getElementById('empPin').value = '';
     document.getElementById('empFormTitle').innerText = '➕ إضافة موظف جديد';
 }
 
@@ -3677,8 +3781,10 @@ function saveEmployee() {
     const phone    = document.getElementById('empPhone').value.trim();
     const salary   = cleanPrice(document.getElementById('empSalary').value);
     const startDate = document.getElementById('empStartDate').value;
+    const pin      = document.getElementById('empPin').value.trim();
 
     if (!name) return alert('⚠️ أدخل اسم الموظف.');
+    if (pin && !/^\d{4}$/.test(pin)) return alert('⚠️ رمز الدخول لازم يكون 4 أرقام بالضبط.');
 
     let employees = getData('sys_employees') || [];
 
@@ -3687,11 +3793,12 @@ function saveEmployee() {
         if (emp) {
             emp.name = name; emp.role = role; emp.phone = phone;
             emp.monthlySalary = salary; emp.startDate = startDate;
+            if (pin) emp.pin = pin;
         }
     } else {
         employees.push({
             id: 'EMP_' + Date.now(), name, role, phone,
-            monthlySalary: salary, startDate, createdAt: Date.now()
+            monthlySalary: salary, startDate, pin: pin || null, createdAt: Date.now()
         });
     }
 
@@ -3712,6 +3819,7 @@ function editEmployee(id) {
     document.getElementById('empPhone').value = emp.phone || '';
     document.getElementById('empSalary').value = emp.monthlySalary || '';
     document.getElementById('empStartDate').value = emp.startDate || '';
+    document.getElementById('empPin').value = emp.pin || '';
     document.getElementById('empFormTitle').innerText = '✏️ تعديل: ' + emp.name;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -4699,7 +4807,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1762'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1762)
+    const CURRENT_PAGE_VERSION = '1769'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1769)
 
     async function checkForFreshPageVersion() {
         try {
