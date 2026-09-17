@@ -1799,6 +1799,21 @@
     <div id="tabEmployeesControl" class="tab-content"
          style="margin-top:15px;display:none;">
 
+        <!-- 🆕 إعداد ساعات الدوام القياسية - أساس حساب راتب الساعة -->
+        <div class="card" style="max-width:550px;margin:0 auto 16px;border-color:#38bdf8;">
+            <h4 style="color:#38bdf8;margin-bottom:8px;">⏱️ ساعات الدوام القياسية باليوم</h4>
+            <p class="hint" style="margin-bottom:8px;">
+                💡 هذا الرقم أساس حساب "راتب الساعة" لكل الموظفين: الراتب
+                الشهري ÷ 30 يوم ÷ هذا الرقم = راتب الساعة الواحدة.
+            </p>
+            <div style="display:flex;gap:8px;">
+                <input type="number" id="empStandardHours" class="gold-input-inline"
+                       placeholder="مثال: 8" style="flex:1;">
+                <button onclick="saveStandardWorkHours()" class="gold-btn"
+                        style="background:#38bdf8;color:#000;font-weight:900;">حفظ</button>
+            </div>
+        </div>
+
         <!-- 🆕 طلبات الموظفين المعلّقة (سلف وإجازات) -->
         <div class="card" style="max-width:550px;margin:0 auto 16px;border-color:#f59e0b;">
             <h4 style="color:#f59e0b;margin-bottom:10px;">
@@ -2246,7 +2261,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1769"></script>
+<script src="app.js?v=1770"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2386,6 +2401,7 @@ function switchAdminTab(tabId, btn) {
     if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function') {
         renderEmployeesTab();
         if (typeof renderEmpPendingRequests === 'function') renderEmpPendingRequests();
+        if (typeof loadStandardWorkHours === 'function') loadStandardWorkHours();
     }
     if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
         renderInvoiceManagerList();
@@ -3633,6 +3649,18 @@ function deleteInvoiceFromManager(orderId) {
 /* ==========================================
    📋 طلبات الموظفين - عرض وموافقة/رفض
    ========================================== */
+// 🆕 حفظ وتحميل إعداد ساعات الدوام القياسية
+function saveStandardWorkHours() {
+    const val = cleanPrice(document.getElementById('empStandardHours').value);
+    if (val <= 0 || val > 24) return alert('⚠️ أدخل رقم منطقي بين 1 و24 ساعة.');
+    setData('sys_employee_settings', { standardHoursPerDay: val });
+    alert('✅ تم الحفظ. راتب الساعة الحين يُحسب على أساس ' + val + ' ساعة باليوم.');
+}
+function loadStandardWorkHours() {
+    const input = document.getElementById('empStandardHours');
+    if (input) input.value = getStandardWorkHoursPerDay();
+}
+
 function renderEmpPendingRequests() {
     const box = document.getElementById('empPendingRequestsList');
     const countEl = document.getElementById('empPendingRequestsCount');
@@ -3870,19 +3898,15 @@ function renderEmployeeFinanceStats(emp) {
     document.getElementById('empMonthAdvances').innerText = monthAdvances.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('empMonthSalaryPaid').innerText = monthSalaryPaid.toLocaleString('ar-IQ') + ' د.ع';
 
-    // 🆕 أيام العمل الفعلية هذا الشهر (من سجل الحضور) + الراتب المستحق بناءً عليها
-    const daysWorkedThisMonth = attendance
-        .filter(a => a.employeeId === emp.id && a.status === 'present' && String(a.dateDate).slice(0,7) === thisMonth)
-        .length;
-
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const dailyRate = cleanPrice(emp.monthlySalary) / daysInMonth;
-    const accruedSalary = Math.round(dailyRate * daysWorkedThisMonth);
+    // 🛠️ إصلاح جذري: نستخدم الدالة المشتركة المصلّحة (بالساعات الفعلية،
+    // مو بعدد أيام الحضور) بدل حساب مكرر هنا كان يعطي راتب يوم كامل
+    // حتى لو الموظف داوم دقيقة وحدة بس
+    const summary = getEmployeeMonthSummary(emp.id);
+    const accruedSalary = getEmployeeAccruedSalary(emp);
 
     const daysBox = document.getElementById('empDaysWorked');
     const accruedBox = document.getElementById('empAccruedSalary');
-    if (daysBox)    daysBox.innerText = daysWorkedThisMonth + ' يوم';
+    if (daysBox)    daysBox.innerText = summary.totalHours + ' ساعة (' + summary.daysPresent + ' يوم حضور)';
     if (accruedBox) accruedBox.innerText = accruedSalary.toLocaleString('ar-IQ') + ' د.ع';
 }
 
@@ -3902,6 +3926,12 @@ function calculateEmployeeSettlement() {
     const expenses   = getData('sys_expenses') || [];
     const salaries   = getData('sys_salaries') || [];
 
+    // 🛠️ إصلاح جذري: نحسب الساعات الفعلية المنجزة بهذي الفترة بالضبط
+    // (مو عدد أيام الحضور)، حتى لو الموظف داوم جزء من اليوم بس
+    const hoursInRange = attendance
+        .filter(a => a.employeeId === emp.id && a.status === 'present' &&
+                     a.dateDate >= fromDate && a.dateDate <= toDate)
+        .reduce((s,a) => s + (cleanPrice(a.hoursWorked) || 0), 0);
     const presentDays = attendance.filter(a =>
         a.employeeId === emp.id && a.status === 'present' &&
         a.dateDate >= fromDate && a.dateDate <= toDate
@@ -3916,14 +3946,15 @@ function calculateEmployeeSettlement() {
         s.employee === emp.name && s.dateDate >= fromDate && s.dateDate <= toDate
     ).reduce((s,x) => s + cleanPrice(x.amount), 0);
 
-    // متوسط الراتب اليومي على أساس 30 يوم (تقريب عملي معتاد)
-    const dailyRate = cleanPrice(emp.monthlySalary) / 30;
-    const earnedSalary = Math.round(dailyRate * presentDays);
+    // 🛠️ راتب الساعة الحقيقي: الراتب الشهري ÷ 30 يوم ÷ ساعات الدوام
+    // القياسية (إعداد قابل للتعديل، افتراضي 8) × الساعات الفعلية بالفترة
+    const hourlyRate = cleanPrice(emp.monthlySalary) / (30 * getStandardWorkHoursPerDay());
+    const earnedSalary = Math.round(hourlyRate * hoursInRange);
     const netSettlement = earnedSalary - advancesInRange - salaryPaidInRange;
 
     resultBox.innerHTML = `
-        <div class="info-row"><span class="lbl">أيام الحضور بالفترة</span><span class="val">${presentDays} يوم</span></div>
-        <div class="info-row"><span class="lbl">الراتب المستحق عن هذي الأيام</span><span class="val" style="color:#10b981;">${earnedSalary.toLocaleString('ar-IQ')} د.ع</span></div>
+        <div class="info-row"><span class="lbl">الساعات الفعلية بالفترة</span><span class="val">${hoursInRange.toFixed(1)} ساعة (${presentDays} يوم حضور)</span></div>
+        <div class="info-row"><span class="lbl">الراتب المستحق عن هذي الساعات</span><span class="val" style="color:#10b981;">${earnedSalary.toLocaleString('ar-IQ')} د.ع</span></div>
         <div class="info-row"><span class="lbl">سلف مسحوبة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${advancesInRange.toLocaleString('ar-IQ')} د.ع</span></div>
         <div class="info-row"><span class="lbl">رواتب مصروفة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${salaryPaidInRange.toLocaleString('ar-IQ')} د.ع</span></div>
         <div class="info-row" style="border-top:2px solid #38bdf8;margin-top:6px;padding-top:8px;">
@@ -4807,7 +4838,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1769'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1769)
+    const CURRENT_PAGE_VERSION = '1770'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1770)
 
     async function checkForFreshPageVersion() {
         try {
