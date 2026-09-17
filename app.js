@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1765';
+const MIM89_APP_VERSION = '1767';
 
 /* ==========================================
    المتغيرات العامة
@@ -1461,11 +1461,54 @@ function loginCashier() {
         loadPosDeliveryAreas();
         listenForIncomingOrders();
         prefetchOrderNumber();
+
+        // 🆕 تطبيق رقم المتصل التلقائي (ماكرو دروب) - يجيب الرقم من
+        // رابط الصفحة نفسه (ثابت 100%، ما ينكسر أبداً مهما تغيّرت
+        // الواجهة مستقبلاً)، بدل الاعتماد على "كتابة" بمكان معيّن بالشاشة
+        applyIncomingCallerPhone();
     } else {
         const errEl = document.getElementById('authError');
         if (errEl) errEl.innerText = "الرمز غير صحيح!";
         logAudit('محاولة دخول فاشلة', { attempt: inputPass.slice(0,2) + '**' });
     }
+}
+
+// 🆕 تطبيق رقم المتصل التلقائي على خانة الهاتف بالكاشير - يعبّي الرقم
+// ويختار "توصيل" تلقائياً (الأغلب يتصلون لطلب توصيل)، مع تنبيه واضح
+function applyIncomingCallerPhone() {
+    const phone = window.pendingCallerPhone;
+    if (!phone) return;
+    window.pendingCallerPhone = null;
+
+    setTimeout(() => {
+        const phoneInput = document.getElementById('posCustPhone');
+        if (phoneInput) {
+            phoneInput.value = phone;
+            phoneInput.style.background = '#0d3d1a';
+            phoneInput.style.borderColor = '#10b981';
+        }
+
+        // 🛠️ اختيار "توصيل" عن طريق نفس آلية أزرار نوع الخدمة الحقيقية
+        // (مو قائمة منسدلة - نظام أزرار toggle بالكاشير)
+        if (typeof selectedPosOrderType !== 'undefined' && selectedPosOrderType !== 'delivery') {
+            const deliveryBtn = document.querySelector('#posOrderTypeGroup .toggle-btn[data-value="delivery"]');
+            if (deliveryBtn) selectOrderType(deliveryBtn);
+        }
+
+        // تنبيه بصري واضح - يعرف الكاشير إن الرقم جا تلقائياً من المكالمة
+        const notice = document.createElement('div');
+        notice.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);' +
+            'background:#10b981;color:#000;padding:10px 18px;border-radius:8px;' +
+            'font-weight:900;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+        notice.innerText = '📞 تم تعبئة رقم المتصل تلقائياً: ' + phone;
+        document.body.appendChild(notice);
+        setTimeout(() => notice.remove(), 4000);
+
+        // ننظّف رابط الصفحة من المعامل حتى ما يعاود يتطبّق لو الصفحة انحدّثت
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', location.pathname);
+        }
+    }, 500);
 }
 
 function logoutCashier() {
@@ -5053,6 +5096,71 @@ function stopContinuousAlert() {
     if (continuousAlertTimer) { clearInterval(continuousAlertTimer); continuousAlertTimer = null; }
 }
 
+/* ==========================================
+   🌐 تنبيه الطلبات الأونلاين الجديدة - مستقل تماماً عن الواتساب/الشريحة
+   ========================================== */
+// 🆕 يحل مشكلة الاعتماد على الواتساب لمعرفة وصول طلب جديد من المينيو
+// الإلكتروني - لو الواتساب أو الشريحة تعطلت، الطلب نفسه أصلاً محفوظ
+// بالسحابة أوتوماتيكياً (بغض النظر عن الواتساب)، وهذا النظام يراقب
+// وصوله مباشرة من قاعدة البيانات نفسها، ويطلع تنبيه صوتي + بصري بشاشة
+// الكاشير فوراً - صفر اعتماد على أي تطبيق خارجي
+let onlineOrderAlertUnsub = null;
+let seenOnlineOrderIds = null;
+
+function startOnlineOrderWatcher() {
+    if (onlineOrderAlertUnsub || !db) return;
+
+    onlineOrderAlertUnsub = db.collection('completed_orders')
+        .where('isOnlineAutoOrder', '==', true)
+        .orderBy('createdTimestamp', 'desc')
+        .limit(15)
+        .onSnapshot(snap => {
+            const currentIds = new Set(snap.docs.map(d => d.id));
+
+            // أول مرة نحمّل فيها الصفحة - نسجّل الموجود بصمت بدون تنبيه
+            if (seenOnlineOrderIds === null) {
+                seenOnlineOrderIds = currentIds;
+                return;
+            }
+
+            let newOrder = null;
+            snap.docs.forEach(d => {
+                if (!seenOnlineOrderIds.has(d.id)) newOrder = d.data();
+            });
+            seenOnlineOrderIds = currentIds;
+
+            if (newOrder) {
+                startContinuousAlert();
+                showOnlineOrderBanner(newOrder);
+            }
+        }, err => console.warn('⚠️ تعذّر تفعيل مراقبة الطلبات الأونلاين:', err));
+}
+
+function showOnlineOrderBanner(ord) {
+    let banner = document.getElementById('onlineOrderAlertBanner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'onlineOrderAlertBanner';
+        banner.style.cssText =
+            'position:fixed;top:0;right:0;left:0;z-index:99999;' +
+            'background:#0d3d1a;color:#fff;text-align:center;padding:12px 16px;' +
+            'font-weight:900;font-size:0.9rem;cursor:pointer;' +
+            'border-bottom:3px solid #10b981;box-shadow:0 4px 14px rgba(0,0,0,0.5);';
+        banner.onclick = () => acknowledgeOnlineOrderAlert();
+        document.body.appendChild(banner);
+    }
+    banner.innerHTML = '🌐🔔 طلب أونلاين جديد وصل! #' + (ord.orderNum || '؟') +
+        ' — ' + (ord.customerName || 'زبون') +
+        ' — ' + cleanPrice(ord.totalAmount).toLocaleString('ar-IQ') + ' د.ع' +
+        ' <span style="text-decoration:underline;">— اضغط للتأكيد</span>';
+}
+
+function acknowledgeOnlineOrderAlert() {
+    stopContinuousAlert();
+    const banner = document.getElementById('onlineOrderAlertBanner');
+    if (banner) banner.remove();
+}
+
 function playSingleBeep() {
     try {
         if (!globalAudioCtx)
@@ -7700,13 +7808,44 @@ function refreshPendingDeliveryBadge() {
 // تهيئة الكاشير عند تحميل الصفحة
 function initCashierPage() {
     initData();
-    sessionStorage.removeItem('active_cashier');
+
+    // 🆕 رقم المتصل التلقائي (ماكرو دروب) - يوصل كرابط ?callerPhone=07xxxxxxxxx
+    // لو الكاشير مسجّل دخول أصلاً بنفس الجلسة، ما نفرض تسجيل دخول جديد
+    // (كان هذا يكسر تجربة "الرقم يتعبّى تلقائياً وقت المكالمة" تماماً) -
+    // نطبّق الرقم مباشرة على الجلسة المفتوحة ونكمل عادي بدون أي مقاطعة
+    const urlParams   = new URLSearchParams(location.search);
+    const callerPhone = urlParams.get('callerPhone');
+    const alreadyLoggedIn = sessionStorage.getItem('active_cashier');
+
+    if (callerPhone && alreadyLoggedIn) {
+        window.pendingCallerPhone = callerPhone;
+        // نعيد تفعيل بيانات الكاشير المفتوحة من قبل بدون تسجيل دخول جديد
+        try { activeCashierUser = JSON.parse(alreadyLoggedIn); } catch (_) {}
+        const overlay = document.getElementById('authOverlay');
+        if (overlay) overlay.style.display = 'none';
+        const app = document.getElementById('cashierMainApp');
+        if (app) app.style.display = 'flex';
+        loadPosDirectMenu('all');
+        loadDriversAndAppDropdowns();
+        loadPosDeliveryAreas();
+        listenForIncomingOrders();
+        prefetchOrderNumber();
+        applyIncomingCallerPhone();
+    } else {
+        // تسجيل دخول عادي - لو فيه رقم متصل وصل بس الجلسة مو مفتوحة،
+        // نخزّنه مؤقتاً حتى يتعبّى تلقائياً أول ما يدخل الكاشير رمزه
+        if (callerPhone) window.pendingCallerPhone = callerPhone;
+        sessionStorage.removeItem('active_cashier');
+    }
+
     // 🆕 استئناف طابور إعادة محاولة طباعة المطبخ لو ضل فيه تذاكر معلّقة
     // من قبل (مثلاً الكاشير حدّث الصفحة أثناء انقطاع الكهرباء)
     setTimeout(() => {
         if (typeof updateKitchenQueueBanner === 'function') updateKitchenQueueBanner();
         if (typeof startKitchenRetryLoop === 'function') startKitchenRetryLoop();
         if (typeof resumeOrderSyncQueueIfNeeded === 'function') resumeOrderSyncQueueIfNeeded();
+        // 🆕 مراقبة الطلبات الأونلاين الجديدة - مستقل تماماً عن الواتساب/الشريحة
+        if (typeof startOnlineOrderWatcher === 'function') startOnlineOrderWatcher();
     }, 1500);
 }
 
