@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1768';
+const MIM89_APP_VERSION = '1769';
 
 /* ==========================================
    المتغيرات العامة
@@ -824,7 +824,10 @@ async function pullLatestFromCloud() {
         // 🆕 فحص شامل كشف هذولة أيضاً مفقودين - إعدادات يحررها إداري
         // واحد بالعادة، فمخاطرة التعارض منخفضة، بعكس البيانات المعاملاتية
         // (الصرفيات/الرواتب) اللي لها آلية دمج خاصة أدق بالأعلى
-        'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings'
+        'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings',
+        // 🆕 بوابة الموظفين - طلبات السلف والإجازات لازم تتزامن فوراً
+        // بين جهاز الموظف والأدمن حتى يقدر المالك يوافق/يرفض بسرعة
+        'sys_employee_requests'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -2389,6 +2392,106 @@ function manualRetryKitchenQueue() { retryKitchenQueueNow(); }
    ========================================== */
 // 🆕 دالة مشتركة: تعليم فاتورة كـ"مؤكدة الرفع للسحابة" - أساس ضروري
 // يحمي أي فاتورة لسا ما توصلت السحابة من الحذف التلقائي وقت صيانة الذاكرة
+/* ==========================================
+   👤 بوابة الموظفين - دوال مشتركة (تُستخدم من employee.html و admin.html)
+   ========================================== */
+
+// تسجيل حضور (بداية الدوام) - وقت حقيقي بالمللي ثانية
+function employeeClockIn(employeeId) {
+    const today = getTodayString();
+    let attendance = getData('sys_attendance') || [];
+    const existing = attendance.find(a => a.employeeId === employeeId && a.dateDate === today);
+
+    if (existing && existing.clockInTime && !existing.clockOutTime) {
+        return { ok: false, msg: 'مسجّل حضور أصلاً اليوم.' };
+    }
+    if (existing) {
+        existing.clockInTime = Date.now();
+        existing.clockOutTime = null;
+        existing.status = 'present';
+    } else {
+        attendance.push({
+            employeeId, dateDate: today, status: 'present',
+            clockInTime: Date.now(), clockOutTime: null, timestamp: Date.now()
+        });
+    }
+    setData('sys_attendance', attendance);
+    return { ok: true };
+}
+
+// تسجيل انصراف (نهاية الدوام) - يحسب الساعات المنجزة تلقائياً
+function employeeClockOut(employeeId) {
+    const today = getTodayString();
+    let attendance = getData('sys_attendance') || [];
+    const existing = attendance.find(a => a.employeeId === employeeId && a.dateDate === today);
+
+    if (!existing || !existing.clockInTime) return { ok: false, msg: 'ما سجّلت حضور اليوم أصلاً.' };
+    if (existing.clockOutTime)          return { ok: false, msg: 'مسجّل انصراف أصلاً.' };
+
+    existing.clockOutTime  = Date.now();
+    existing.hoursWorked   = +((existing.clockOutTime - existing.clockInTime) / 3600000).toFixed(2);
+    setData('sys_attendance', attendance);
+    return { ok: true, hours: existing.hoursWorked };
+}
+
+// حالة حضور الموظف اليوم بالضبط (مسجّل دخول؟ خرج؟ لا شي؟)
+function getEmployeeTodayAttendance(employeeId) {
+    const today = getTodayString();
+    const attendance = getData('sys_attendance') || [];
+    return attendance.find(a => a.employeeId === employeeId && a.dateDate === today) || null;
+}
+
+// ملخص هذا الشهر: أيام حضور + إجمالي الساعات
+function getEmployeeMonthSummary(employeeId) {
+    const thisMonth = getTodayString().slice(0, 7);
+    const attendance = getData('sys_attendance') || [];
+    const monthRecords = attendance.filter(a =>
+        a.employeeId === employeeId && a.status === 'present' &&
+        String(a.dateDate).slice(0, 7) === thisMonth
+    );
+    const totalHours = monthRecords.reduce((s,a) => s + (cleanPrice(a.hoursWorked) || 0), 0);
+    return { daysPresent: monthRecords.length, totalHours: +totalHours.toFixed(1) };
+}
+
+// الراتب المستحق حتى الآن هذا الشهر - نفس منطق حاسبة التصفية بالأدمن
+function getEmployeeAccruedSalary(emp) {
+    const summary = getEmployeeMonthSummary(emp.id);
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dailyRate = cleanPrice(emp.monthlySalary) / daysInMonth;
+    return Math.round(dailyRate * summary.daysPresent);
+}
+
+// السلف المسحوبة والرواتب المستلمة هذا الشهر
+function getEmployeeMonthFinance(emp) {
+    const thisMonth = getTodayString().slice(0, 7);
+    const expenses = getData('sys_expenses') || [];
+    const salaries = getData('sys_salaries') || [];
+    const advances = expenses
+        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,e) => s + cleanPrice(e.amount), 0);
+    const salaryPaid = salaries
+        .filter(s => s.employee === emp.name && String(s.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,x) => s + cleanPrice(x.amount), 0);
+    return { advances, salaryPaid };
+}
+
+// تقديم طلب موظف (سلفة أو إجازة/استراحة) - ينتظر موافقة الأدمن
+async function submitEmployeeRequest(employeeId, employeeName, type, data) {
+    const req = {
+        id: 'REQ_' + Date.now(),
+        employeeId, employeeName, type, // 'advance' | 'leave'
+        ...data,
+        status: 'pending',
+        createdAt: Date.now(),
+        dateDate: getTodayString()
+    };
+    let requests = getData('sys_employee_requests') || [];
+    requests.unshift(req);
+    setData('sys_employee_requests', requests);
+    return req;
+}
+
 function markOrderAsCloudSynced(orderId) {
     try {
         let all = getData('sys_completed_orders') || [];
