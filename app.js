@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1769';
+const MIM89_APP_VERSION = '1770';
 
 /* ==========================================
    المتغيرات العامة
@@ -827,7 +827,7 @@ async function pullLatestFromCloud() {
         'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings',
         // 🆕 بوابة الموظفين - طلبات السلف والإجازات لازم تتزامن فوراً
         // بين جهاز الموظف والأدمن حتى يقدر المالك يوافق/يرفض بسرعة
-        'sys_employee_requests'
+        'sys_employee_requests', 'sys_employee_settings'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -2454,12 +2454,25 @@ function getEmployeeMonthSummary(employeeId) {
 }
 
 // الراتب المستحق حتى الآن هذا الشهر - نفس منطق حاسبة التصفية بالأدمن
+// 🛠️ إصلاح جذري خطير: كان الحساب يعتمد على "عدد أيام الحضور" (حتى لو
+// الموظف سجّل حضور وانصراف بنفس الدقيقة!) ويعطيه راتب يوم كامل - هذا
+// غلط تماماً بالعراق حيث الأجرة تحسب بالساعة الفعلية، مو باليوم. الحين
+// يحسب: راتب الساعة الحقيقي (الراتب الشهري ÷ أيام الشهر ÷ ساعات الدوام
+// القياسية) × الساعات المنجزة فعلياً بالضبط.
 function getEmployeeAccruedSalary(emp) {
     const summary = getEmployeeMonthSummary(emp.id);
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const dailyRate = cleanPrice(emp.monthlySalary) / daysInMonth;
-    return Math.round(dailyRate * summary.daysPresent);
+    const standardHoursPerDay = getStandardWorkHoursPerDay();
+    const hourlyRate = cleanPrice(emp.monthlySalary) / (daysInMonth * standardHoursPerDay);
+    return Math.round(hourlyRate * summary.totalHours);
+}
+
+// 🆕 عدد ساعات الدوام القياسية باليوم - إعداد قابل للتعديل من الأدمن،
+// يُستخدم لحساب راتب الساعة الحقيقي (افتراضي 8 ساعات، شائع بالعراق)
+function getStandardWorkHoursPerDay() {
+    const settings = getData('sys_employee_settings') || {};
+    return cleanPrice(settings.standardHoursPerDay) || 8;
 }
 
 // السلف المسحوبة والرواتب المستلمة هذا الشهر
