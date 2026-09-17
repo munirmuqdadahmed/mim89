@@ -3814,6 +3814,14 @@ function saveEmployee() {
     if (!name) return alert('⚠️ أدخل اسم الموظف.');
     if (pin && !/^\d{4}$/.test(pin)) return alert('⚠️ رمز الدخول لازم يكون 4 أرقام بالضبط.');
 
+    // 🆕 لازم الرمز يكون فريد - بوابة الموظفين تحدد الموظف بالرمز نفسه
+    // بدون اختيار اسم، فلو تكرر الرمز بين موظفين يصير الدخول ملخبط
+    if (pin) {
+        const existing = (getData('sys_employees') || [])
+            .find(e => e.pin === pin && e.id !== id);
+        if (existing) return alert('⚠️ الرمز "' + pin + '" مستخدم أصلاً من "' + existing.name + '" - اختر رمز مختلف.');
+    }
+
     let employees = getData('sys_employees') || [];
 
     if (id) {
