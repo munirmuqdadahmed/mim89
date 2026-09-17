@@ -183,6 +183,31 @@
                                     onclick="selectOrderType(this)">🛵 توصيل</button>
                         </div>
 
+                        <!-- 🆕 ربط بفاتورة سابقة - لما الزبون يريد يضيف شي
+                             بعد ما طبعنا فاتورته الأولى، حتى يعرف المطبخ
+                             هذي الإضافة تخص أي طلب بالضبط -->
+                        <label style="display:flex;align-items:center;gap:6px;
+                                      font-size:0.78rem;color:#c084fc;cursor:pointer;
+                                      margin:4px 0;">
+                            <input type="checkbox" id="posLinkToPrevOrder"
+                                   onchange="togglePrevOrderLinkBox()"
+                                   style="width:16px;height:16px;">
+                            🔗 إضافة على فاتورة سبق وطبعتها؟
+                        </label>
+                        <div id="prevOrderLinkBox" style="display:none;margin:3px 0 6px;
+                                    background:#1a1020;padding:6px;border-radius:7px;
+                                    border:1px solid #c084fc;">
+                            <span class="section-label" style="color:#c084fc;">
+                                رقم الفاتورة الأصلية:
+                            </span>
+                            <input type="number" id="posLinkedOrderNum" class="gold-input-inline"
+                                   placeholder="مثال: 106" style="text-align:center;">
+                            <p class="hint" style="margin-top:4px;font-size:0.68rem;">
+                                💡 تذكرة المطبخ بتطلع واضح "🔗 إضافة على طلب #106"
+                                بدل رقم جديد يلخبط المطبخ
+                            </p>
+                        </div>
+
                         <!-- السائق -->
                         <div id="driverSelectBox"
                              style="display:none;margin:3px 0;background:#0d0d11;
@@ -744,7 +769,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1758"></script>
+<script src="app.js?v=1768"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -872,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
    بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1758'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1758)
+    const CURRENT_PAGE_VERSION = '1768'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1768)
 
     async function checkForFreshPageVersion() {
         try {
