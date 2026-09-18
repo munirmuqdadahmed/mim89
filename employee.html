@@ -327,6 +327,13 @@ function showEmpDashboard() {
     renderEmpMyRequests();
     if (empClockTickTimer) clearInterval(empClockTickTimer);
     empClockTickTimer = setInterval(renderEmpClockCard, 1000);
+
+    // 🆕 نطلب إذن الموقع بالخلفية بمجرد فتح اللوحة (مو وقت الضغط على
+    // الزر) - هذا يخلي المتصفح يسأل الإذن هسه لو أول مرة، فلما يضغط
+    // "تسجيل حضور" فعلياً يكون الإذن محلول أصلاً ولا يوقف عنده شي
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
+    }
 }
 
 // 🆕 تنسيق الوقت المنقضي بصيغة رسمية HH:MM:SS
