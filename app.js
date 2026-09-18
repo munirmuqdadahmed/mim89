@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1771';
+const MIM89_APP_VERSION = '1772';
 
 /* ==========================================
    المتغيرات العامة
@@ -2466,13 +2466,17 @@ function getEmployeeMonthSummary(employeeId) {
 // غلط تماماً بالعراق حيث الأجرة تحسب بالساعة الفعلية، مو باليوم. الحين
 // يحسب: راتب الساعة الحقيقي (الراتب الشهري ÷ أيام الشهر ÷ ساعات الدوام
 // القياسية) × الساعات المنجزة فعلياً بالضبط.
+// 🆕 الراتب المستحق = (راتب الساعة × الساعات الفعلية هذا الشهر) +
+// أي "رصيد إضافي مستحق" حطه الأدمن يدوياً (مثلاً أيام من الشهر الماضي
+// قبل هذا النظام، أو أي تسوية ثانية) - مبلغ ثابت، مو محسوب بالساعات
 function getEmployeeAccruedSalary(emp) {
     const summary = getEmployeeMonthSummary(emp.id);
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const standardHoursPerDay = getStandardWorkHoursPerDay();
     const hourlyRate = cleanPrice(emp.monthlySalary) / (daysInMonth * standardHoursPerDay);
-    return Math.round(hourlyRate * summary.totalHours);
+    const hoursBasedAmount = Math.round(hourlyRate * summary.totalHours);
+    return hoursBasedAmount + cleanPrice(emp.carryoverAmount);
 }
 
 // 🆕 عدد ساعات الدوام القياسية باليوم - إعداد قابل للتعديل من الأدمن،
