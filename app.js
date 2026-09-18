@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1770';
+const MIM89_APP_VERSION = '1771';
 
 /* ==========================================
    المتغيرات العامة
@@ -2397,7 +2397,7 @@ function manualRetryKitchenQueue() { retryKitchenQueueNow(); }
    ========================================== */
 
 // تسجيل حضور (بداية الدوام) - وقت حقيقي بالمللي ثانية
-function employeeClockIn(employeeId) {
+async function employeeClockIn(employeeId) {
     const today = getTodayString();
     let attendance = getData('sys_attendance') || [];
     const existing = attendance.find(a => a.employeeId === employeeId && a.dateDate === today);
@@ -2405,14 +2405,21 @@ function employeeClockIn(employeeId) {
     if (existing && existing.clockInTime && !existing.clockOutTime) {
         return { ok: false, msg: 'مسجّل حضور أصلاً اليوم.' };
     }
+
+    // 🆕 التقاط الموقع صامتاً بالخلفية - ما يظهر أي شي للموظف، ولا
+    // ينتظره (لو تأخر الجهاز بإعطاء الموقع، التسجيل يكمل عادي بدونه)
+    const locationData = await silentlyCaptureClockInLocation();
+
     if (existing) {
         existing.clockInTime = Date.now();
         existing.clockOutTime = null;
         existing.status = 'present';
+        existing.clockInLocation = locationData;
     } else {
         attendance.push({
             employeeId, dateDate: today, status: 'present',
-            clockInTime: Date.now(), clockOutTime: null, timestamp: Date.now()
+            clockInTime: Date.now(), clockOutTime: null, timestamp: Date.now(),
+            clockInLocation: locationData
         });
     }
     setData('sys_attendance', attendance);
@@ -2503,6 +2510,111 @@ async function submitEmployeeRequest(employeeId, employeeName, type, data) {
     requests.unshift(req);
     setData('sys_employee_requests', requests);
     return req;
+}
+
+/* ==========================================
+   🎉 عبارات تحفيزية يومية لبوابة الموظفين - عبارة جديدة كل يوم
+   ========================================== */
+const EMPLOYEE_MOTIVATIONAL_PHRASES = [
+    "عفية بالبطل 💪", "عفية بالذيب 🐺", "عفية عليك يا نمر 🐯", "الله يقويك 🙌",
+    "شد حيلك اليوم يا وحش 🔥", "الله يعطيك العافية", "ماشاء الله عليك 👏",
+    "عاشت الأيادي", "الله يبارك فيك", "تسلم يمناك", "فد واحد بس زيك ما يجيبونه",
+    "هذا الشغل مثلك بس", "ياريت الكل مثلك", "دوامك اليوم زينة 🌟",
+    "اليوم يومك يا بطل", "شغلك يشرح القلب ❤️", "الله يديم عليك النشاط",
+    "رجال الرجال وصل 💪", "الأسطورة حضرت اليوم", "خل الكل يتعلم منك",
+    "هذا اللي نسميه التزام حقيقي", "ماكو أحسن منك", "يا سلام عليك 🔥",
+    "الله يخليلنا ياك", "نشاطك يعدي لكل المحل", "همتك ما تنكسر أبداً",
+    "عالباب البطل داخل 🚪", "شغلك أحلى شي اليوم", "إنت السبب بنجاحنا",
+    "الله يبارك بجهودك", "صحتك وعافيتك أهم شي عدنا", "خل الهمة تستمر هيچ",
+    "يديدة اليوم يا نجم ⭐", "أبطالنا ما ينخذلون", "شغلك يستاهل كل تقدير",
+    "بيك نفتخر 🙏", "إنت مثال يُحتذى فيه", "أعطيتنا درس بالالتزام",
+    "رجالنا ما يخيب ظنهم", "اليوم كان يوم استثنائي منك", "شكراً لهمتك العالية",
+    "إنت الطاقة الإيجابية بالمحل", "خلي حماسك يستمر هيچ دايماً", "ما نضل نشتغل بدونك",
+    "نورت المحل اليوم 💡", "حضورك يفرق كبير", "فخورين بيك",
+    "إنت قدها وقدود", "تستاهل كل خير", "الله يوفقك دنيا وآخرة",
+    "ماكو كلام يوصف جهدك", "إنت سند الفريق كله", "خلي همتك مثل اليوم دايماً",
+    "هسه نعرف شنو معنى الالتزام", "إنت مثال العامل الجاد", "شغلك يتكلم عنك بلا كلام",
+    "عيوني عليك يا شاطر 👀", "صراحة تستاهل كل الاحترام", "أنت قدوة لزملائك",
+    "عساك دايماً بخير وعافية", "بيك المحل يزهو", "الله يديم عليك الصحة",
+    "احنا محظوظين بيك", "اشتغل وياك شرف الك", "عمرك ما تخذلنا",
+    "إنت زينة المكان", "شغلك مثل الذهب 🥇", "أنت الأفضل بلا منازع",
+    "خل التميز يستمر هيچ", "يعطيك العافية يا محارب ⚔️", "إنت مو موظف، إنت شريك نجاح",
+    "شغلك اليوم كان رائع فعلاً", "كل الاحترام لجهودك", "الله يحفظك ويبارك بعمرك",
+    "أنت طاقة ما تنطفي أبداً", "شكراً لأنك موجود", "إنت مصدر فخر الينا",
+    "ما نبالغ إذا كلنا نتعلم منك", "إنت مثال الإخلاص بالشغل", "عاش من رباك 🙌",
+    "شغلك اليوم كان خارق للعادة", "إنت البطل الحقيقي بهذا المحل", "الله يديم النعمة عليك",
+    "عساك دايم قوي وبخير", "إنت غير عن البقية بالالتزام", "شكراً لأنك ما تتأخر أبداً",
+    "وجودك يريح القلب", "إنت السبب إحنا نبتسم اليوم", "شغلك يستحق التصفيق 👏",
+    "إنت مصدر إلهام لينا كلنا", "خل نضل نفتخر بيك دايماً", "يا هلا بالنشيط",
+    "همتك اليوم عالية وحلوة", "الله يعينك ويقويك أكثر", "شكراً لجهدك المتواصل",
+    "إنت واحد من مليون", "شغلك اليوم كلل بالنجاح", "دايماً بالموعد، دايماً محترم",
+    "أنت قيمة مضافة للفريق", "الله يوفقك بكل خطوة", "شكراً لالتزامك اليومي"
+];
+
+// عبارة تحفيزية جديدة كل يوم - نفس العبارة تضل طول اليوم، وتتغير باليوم
+// الجاي (تدور بالقائمة كاملة قبل ما تكرر أي عبارة)
+function getTodayMotivationalPhrase() {
+    const dayOfYear = Math.floor(
+        (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
+    );
+    return EMPLOYEE_MOTIVATIONAL_PHRASES[dayOfYear % EMPLOYEE_MOTIVATIONAL_PHRASES.length];
+}
+
+/* ==========================================
+   ⏱️ تقسيم الساعات: شيفت أساسي (6 ساعات) + إضافي (نفس الراتب)
+   ========================================== */
+// 🆕 الدوام الكامل 12 ساعة، لكن الشيفت الأساسي 6 ساعات - أي شي زيادة
+// يُحسب "إضافي" (بنفس راتب الساعة العادي، مو ضعف) - هذا تقسيم عرضي بس
+// للمتابعة والتحفيز، ما يغيّر معادلة الراتب (لأنه نفس السعر أصلاً)
+const EMPLOYEE_BASE_SHIFT_HOURS = 6;
+function splitShiftAndOvertimeHours(totalHours) {
+    const shiftHours = Math.min(totalHours, EMPLOYEE_BASE_SHIFT_HOURS);
+    const overtimeHours = Math.max(0, totalHours - EMPLOYEE_BASE_SHIFT_HOURS);
+    return { shiftHours: +shiftHours.toFixed(1), overtimeHours: +overtimeHours.toFixed(1) };
+}
+
+/* ==========================================
+   📍 التحقق الصامت من موقع تسجيل الحضور - يقارن موقع الموظف الحقيقي
+   بموقع المطعم المسجّل، بدون ما يعرف الموظف إنه يصير فحص إطلاقاً
+   ========================================== */
+// حساب المسافة بالمتر بين نقطتين جغرافيتين (معادلة Haversine)
+function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000; // نصف قطر الأرض بالمتر
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+// يجيب موقع المطعم المسجّل بالأدمن (lat/lng) أو null لو ما انضبط بعد
+function getRestaurantLocation() {
+    const settings = getData('sys_employee_settings') || {};
+    return settings.restaurantLocation || null;
+}
+
+// 🆕 التقاط موقع الموظف صامتاً وقت تسجيل الحضور، ومقارنته بموقع المطعم
+// - الموظف ما يشوف أي تنبيه أو واجهة تدل إنه فيه فحص موقع يصير أصلاً
+function silentlyCaptureClockInLocation() {
+    return new Promise(resolve => {
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const empLat = pos.coords.latitude, empLng = pos.coords.longitude;
+                const restLoc = getRestaurantLocation();
+                let distanceMeters = null, isOutsideLocation = false;
+                if (restLoc) {
+                    distanceMeters = Math.round(calculateDistanceMeters(empLat, empLng, restLoc.lat, restLoc.lng));
+                    isOutsideLocation = distanceMeters > 200; // هامش 200م لدقة الجي بي اس والمبنى
+                }
+                resolve({ lat: empLat, lng: empLng, distanceMeters, isOutsideLocation });
+            },
+            () => resolve(null), // رفض الإذن أو فشل - نكمل عادي بصمت تام
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+        );
+    });
 }
 
 function markOrderAsCloudSynced(orderId) {
@@ -6594,6 +6706,9 @@ function loadAdminTabsData() {
     loadInvoiceDesignForm();
     if (typeof startLiveSalesBadgeUpdater === 'function')
         startLiveSalesBadgeUpdater();
+    // 🆕 فحص فوري لأي تسجيل حضور مشبوه (من خارج موقع المطعم) لآخر 7 أيام
+    if (typeof renderOutsideLocationAlert === 'function')
+        renderOutsideLocationAlert();
 }
 
 function loadPrinterSettings() {
