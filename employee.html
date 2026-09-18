@@ -251,7 +251,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1771"></script>
+<script src="app.js?v=1772"></script>
 <script>
 /* ==========================================
    👤 بوابة الموظفين - منطق تسجيل الدخول والعرض
@@ -324,7 +324,17 @@ function showEmpDashboard() {
     renderEmpStats();
     renderEmpMyRequests();
     if (empClockTickTimer) clearInterval(empClockTickTimer);
-    empClockTickTimer = setInterval(renderEmpClockCard, 30000);
+    empClockTickTimer = setInterval(renderEmpClockCard, 1000);
+}
+
+// 🆕 تنسيق الوقت المنقضي بصيغة رسمية HH:MM:SS
+function formatElapsedTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    const pad = n => String(n).padStart(2, '0');
+    return pad(h) + ':' + pad(m) + ':' + pad(s);
 }
 
 function renderEmpClockCard() {
@@ -343,15 +353,19 @@ function renderEmpClockCard() {
         btn.innerHTML = '🟢 تسجيل حضور';
     } else if (att.clockInTime && !att.clockOutTime) {
         card.classList.remove('out');
-        const hoursSoFar = ((Date.now() - att.clockInTime) / 3600000).toFixed(1);
         label.innerText = 'مسجّل حضور منذ ' + new Date(att.clockInTime).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'});
-        timeDisplay.innerText = hoursSoFar + ' ساعة';
+        // 🆕 عداد حي بصيغة رسمية HH:MM:SS يتحدث كل ثانية
+        timeDisplay.innerText = formatElapsedTime(Date.now() - att.clockInTime);
+        timeDisplay.style.fontFamily = "'Courier New', monospace";
+        timeDisplay.style.letterSpacing = '2px';
         btn.className = 'big-clock-btn out-btn';
         btn.innerHTML = '🔴 تسجيل انصراف';
     } else {
         card.classList.add('out');
         label.innerText = 'خلصت دوامك اليوم ✅';
-        timeDisplay.innerText = att.hoursWorked + ' ساعة اليوم';
+        timeDisplay.innerText = formatElapsedTime(cleanPrice(att.hoursWorked) * 3600000) + ' اليوم';
+        timeDisplay.style.fontFamily = "'Courier New', monospace";
+        timeDisplay.style.letterSpacing = '2px';
         btn.className = 'big-clock-btn';
         btn.innerHTML = '🟢 تسجيل حضور (دوام إضافي)';
     }
