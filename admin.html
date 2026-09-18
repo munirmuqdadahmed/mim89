@@ -1006,6 +1006,10 @@
                     <strong id="repTotalVisa" style="color:#38bdf8;">0</strong> د.ع
                 </div>
                 <div style="display:flex;justify-content:space-between;">
+                    <span>📱 ذمة منصات التوصيل (مو كاش بالصندوق):</span>
+                    <strong id="repPlatformOwed" style="color:#c084fc;">0</strong> د.ع
+                </div>
+                <div style="display:flex;justify-content:space-between;">
                     <span>أجور التوصيل:</span>
                     <strong id="repTotalDelivery">0</strong> د.ع
                 </div>
@@ -2399,7 +2403,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1773"></script>
+<script src="app.js?v=1775"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3814,7 +3818,26 @@ function saveRestaurantLocationManual() {
     if (isNaN(lat) || isNaN(lng)) return alert('⚠️ أدخل خط العرض وخط الطول (أرقام).');
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return alert('⚠️ الأرقام غير منطقية لموقع جغرافي حقيقي.');
 
-    saveRestaurantLocationValue({ lat, lng });
+    // 🆕 تحقق من إن الإحداثيات منطقية لموقع بالعراق - يكشف فوراً أخطاء
+    // شائعة زي تبديل خط العرض بخط الطول بالغلط (سبب رئيسي لمسافات وهمية
+    // ضخمة تطلع بالتقارير لاحقاً)
+    const looksLikeIraq = lat >= 28 && lat <= 38 && lng >= 38 && lng <= 50;
+    if (!looksLikeIraq) {
+        const swapped = confirm(
+            '⚠️ هذي الإحداثيات ما تبين ضمن نطاق العراق المعتاد.\n\n' +
+            'خط العرض: ' + lat + ' | خط الطول: ' + lng + '\n\n' +
+            'احتمال كبير إنك بدّلت الرقمين بالغلط (خط العرض مكان الطول). ' +
+            'اضغط "موافق" حتى أبدّلهم تلقائياً وأحفظهم صح، أو "إلغاء" لتصحيحهم بنفسك.'
+        );
+        if (swapped) {
+            saveRestaurantLocationValue({ lat: lng, lng: lat });
+        } else {
+            return;
+        }
+    } else {
+        saveRestaurantLocationValue({ lat, lng });
+    }
+
     document.getElementById('restaurantLatInput').value = '';
     document.getElementById('restaurantLngInput').value = '';
 }
@@ -3832,9 +3855,14 @@ function loadRestaurantLocationStatus() {
     const statusEl = document.getElementById('restaurantLocationStatus');
     if (!statusEl) return;
     const loc = getRestaurantLocation();
-    statusEl.innerText = loc
-        ? '✅ الموقع مسجّل حالياً (' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ')'
-        : '⚠️ ماكو موقع مسجّل بعد - التحقق من الموقع غير مفعّل حالياً.';
+    if (!loc) {
+        statusEl.innerHTML = '⚠️ ماكو موقع مسجّل بعد - التحقق من الموقع غير مفعّل حالياً.';
+        return;
+    }
+    const mapsLink = 'https://www.google.com/maps?q=' + loc.lat + ',' + loc.lng;
+    statusEl.innerHTML = '✅ الموقع مسجّل حالياً (' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ') — ' +
+        '<a href="' + mapsLink + '" target="_blank" style="color:#38bdf8;text-decoration:underline;">' +
+        '🗺️ تحقق منه بخرائط جوجل</a>';
 }
 
 // 🆕 حفظ وتحميل إعداد ساعات الدوام القياسية
@@ -5238,7 +5266,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1773'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1773)
+    const CURRENT_PAGE_VERSION = '1775'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1775)
 
     async function checkForFreshPageVersion() {
         try {
