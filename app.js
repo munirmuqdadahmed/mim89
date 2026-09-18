@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1772';
+const MIM89_APP_VERSION = '1773';
 
 /* ==========================================
    المتغيرات العامة
@@ -359,12 +359,31 @@ function cleanPrice(val) {
 // الشائعة: ?q=lat,lng أو destination=lat,lng أو حتى أرقام مباشرة)
 function parseGpsLinkToLatLng(text) {
     if (!text || !text.trim()) return null;
-    const match = String(text).match(/(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
-    if (!match) return null;
-    const lat = parseFloat(match[1]);
-    const lng = parseFloat(match[2]);
-    if (isNaN(lat) || isNaN(lng)) return null;
-    return { lat, lng };
+    // 🛠️ نجرب عدة صيغ شائعة لروابط جوجل مابس (مو بس صيغة وحدة)
+    const patterns = [
+        /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,           // .../@25.276,55.296,17z
+        /q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,           // ?q=25.276,55.296
+        /ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,          // ?ll=25.276,55.296
+        /(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/        // أي رقمين مفصولين بفاصلة
+    ];
+    for (const pattern of patterns) {
+        const match = String(text).match(pattern);
+        if (match) {
+            const lat = parseFloat(match[1]);
+            const lng = parseFloat(match[2]);
+            if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+                return { lat, lng };
+            }
+        }
+    }
+    return null;
+}
+
+// 🆕 يتعرف على الروابط المختصرة (maps.app.goo.gl، goo.gl/maps) اللي ما
+// تحتوي إحداثيات بالرابط نفسه إطلاقاً - تحتاج فتحها بالمتصفح للحصول
+// على الرابط الكامل، ما يكدر يقرأها أي كود مباشرة بدون فتحها فعلياً
+function isShortenedMapsLink(text) {
+    return /maps\.app\.goo\.gl|goo\.gl\/maps/i.test(String(text || ''));
 }
 
 // قراءة قسم الصنف
@@ -827,7 +846,7 @@ async function pullLatestFromCloud() {
         'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings',
         // 🆕 بوابة الموظفين - طلبات السلف والإجازات لازم تتزامن فوراً
         // بين جهاز الموظف والأدمن حتى يقدر المالك يوافق/يرفض بسرعة
-        'sys_employee_requests', 'sys_employee_settings'
+        'sys_employee_requests', 'sys_employee_settings', 'sys_employee_deductions'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -2467,8 +2486,7 @@ function getEmployeeMonthSummary(employeeId) {
 // يحسب: راتب الساعة الحقيقي (الراتب الشهري ÷ أيام الشهر ÷ ساعات الدوام
 // القياسية) × الساعات المنجزة فعلياً بالضبط.
 // 🆕 الراتب المستحق = (راتب الساعة × الساعات الفعلية هذا الشهر) +
-// أي "رصيد إضافي مستحق" حطه الأدمن يدوياً (مثلاً أيام من الشهر الماضي
-// قبل هذا النظام، أو أي تسوية ثانية) - مبلغ ثابت، مو محسوب بالساعات
+// رصيد إضافي مستحق (يدوي) - خصومات هذا الشهر (يدوية، بسبب مكتوب)
 function getEmployeeAccruedSalary(emp) {
     const summary = getEmployeeMonthSummary(emp.id);
     const now = new Date();
@@ -2476,7 +2494,28 @@ function getEmployeeAccruedSalary(emp) {
     const standardHoursPerDay = getStandardWorkHoursPerDay();
     const hourlyRate = cleanPrice(emp.monthlySalary) / (daysInMonth * standardHoursPerDay);
     const hoursBasedAmount = Math.round(hourlyRate * summary.totalHours);
-    return hoursBasedAmount + cleanPrice(emp.carryoverAmount);
+
+    const thisMonth = getTodayString().slice(0, 7);
+    const deductions = getData('sys_employee_deductions') || [];
+    const monthDeductions = deductions
+        .filter(d => d.employeeId === emp.id && String(d.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,d) => s + cleanPrice(d.amount), 0);
+
+    return hoursBasedAmount + cleanPrice(emp.carryoverAmount) - monthDeductions;
+}
+
+// 🆕 تسجيل خصم على موظف - يحتاج سبب مكتوب، ويظهر للموظف نفسه (شفافية)
+async function applyEmployeeDeduction(employeeId, employeeName, amount, reason) {
+    const ded = {
+        id: 'DED_' + Date.now(),
+        employeeId, employeeName, amount: cleanPrice(amount),
+        reason: reason || 'بدون سبب مذكور',
+        dateDate: getTodayString(), createdAt: Date.now()
+    };
+    let deductions = getData('sys_employee_deductions') || [];
+    deductions.unshift(ded);
+    setData('sys_employee_deductions', deductions);
+    return ded;
 }
 
 // 🆕 عدد ساعات الدوام القياسية باليوم - إعداد قابل للتعديل من الأدمن،
@@ -2555,13 +2594,11 @@ const EMPLOYEE_MOTIVATIONAL_PHRASES = [
     "أنت قيمة مضافة للفريق", "الله يوفقك بكل خطوة", "شكراً لالتزامك اليومي"
 ];
 
-// عبارة تحفيزية جديدة كل يوم - نفس العبارة تضل طول اليوم، وتتغير باليوم
-// الجاي (تدور بالقائمة كاملة قبل ما تكرر أي عبارة)
+// عبارة تحفيزية عشوائية - تتغير كل مرة يدخل الموظف لحسابه (مو ثابتة
+// طول اليوم)، حتى يحس بشي جديد كل مرة يسجّل دخول
 function getTodayMotivationalPhrase() {
-    const dayOfYear = Math.floor(
-        (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000
-    );
-    return EMPLOYEE_MOTIVATIONAL_PHRASES[dayOfYear % EMPLOYEE_MOTIVATIONAL_PHRASES.length];
+    const idx = Math.floor(Math.random() * EMPLOYEE_MOTIVATIONAL_PHRASES.length);
+    return EMPLOYEE_MOTIVATIONAL_PHRASES[idx];
 }
 
 /* ==========================================
