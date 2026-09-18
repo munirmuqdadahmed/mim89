@@ -4347,17 +4347,31 @@ function renderEmployeeAttendanceHistory(emp) {
     }
 
     box.innerHTML = attendance.map(a => {
-        // 🆕 علامة تحذير لو تسجيل الحضور صار من خارج موقع المطعم
-        const outsideFlag = (a.clockInLocation && a.clockInLocation.isOutsideLocation)
-            ? '<span style="color:#ef4444;font-weight:900;margin-right:6px;" ' +
-              'title="سجّل حضور من بعيد عن المطعم (' + a.clockInLocation.distanceMeters + ' متر)">' +
-              '⚠️ خارج الموقع (' + a.clockInLocation.distanceMeters + 'م)</span>'
-            : '';
+        // 🆕 إصلاح جذري: نفرّق بين 3 حالات - داخل الموقع (طبيعي)، خارج
+        // الموقع (تحذير أحمر)، أو ماكو بيانات موقع أصلاً (الموظف رفض
+        // إذن الموقع بالمتصفح، أو جهازه ما يدعمه) - قبل هذا الإصلاح،
+        // الحالة الثالثة كانت تبين وكأنها طبيعية تماماً بدون أي إشارة،
+        // فيوهم الأدمن إن التحقق شغّال وكل شي زين
+        let locationFlag = '';
+        if (a.status === 'present' && a.clockInTime) {
+            if (a.clockInLocation && a.clockInLocation.isOutsideLocation) {
+                locationFlag = '<span style="color:#ef4444;font-weight:900;margin-right:6px;" ' +
+                    'title="سجّل حضور من بعيد عن المطعم (' + a.clockInLocation.distanceMeters + ' متر)">' +
+                    '⚠️ خارج الموقع (' + a.clockInLocation.distanceMeters + 'م)</span>';
+            } else if (a.clockInLocation && !a.clockInLocation.isOutsideLocation) {
+                locationFlag = '<span style="color:#10b981;font-size:0.68rem;" title="تأكدنا إنه داخل نطاق المطعم">📍✅</span>';
+            } else if (!a.isManualEntry) {
+                // ماكو بيانات موقع إطلاقاً - غالباً رفض إذن الموقع بالمتصفح
+                locationFlag = '<span style="color:#888;font-size:0.68rem;cursor:help;" ' +
+                    'title="ماكو بيانات موقع لهذا التسجيل - الموظف على الأغلب رفض إذن الموقع بالمتصفح، فالتحقق ما اشتغل لهذا اليوم">' +
+                    '📍❔ ماكو تحقق موقع</span>';
+            }
+        }
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;' +
         'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
         '<span>' + a.dateDate + (a.isManualEntry ? ' <span style="color:#888;font-size:0.68rem;">(يدوي)</span>' : '') + '</span>' +
         '<span style="display:flex;align-items:center;gap:8px;">' +
-        outsideFlag +
+        locationFlag +
         '<span style="color:' + (a.status === 'present' ? '#10b981' : '#ef4444') + ';font-weight:bold;">' +
         (a.status === 'present'
             ? '✅ ' + (cleanPrice(a.hoursWorked) > 0 ? cleanPrice(a.hoursWorked) + ' ساعة' : 'حاضر')
