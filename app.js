@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1773';
+const MIM89_APP_VERSION = '1775';
 
 /* ==========================================
    المتغيرات العامة
@@ -4086,7 +4086,7 @@ function computeTodaySalesSummary() {
     const salaries = getShiftSalaries();
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalPlatformPending = 0,
-        totalDelivery = 0, totalExp = 0, totalSal = 0;
+        totalDelivery = 0, totalExp = 0, totalSal = 0, platformOrdersCount = 0;
 
     orders.forEach(o => {
         const amt = cleanPrice(o.totalAmount);
@@ -4098,6 +4098,7 @@ function computeTodaySalesSummary() {
         // بالبنك"، مو "توفر كاش بالدرج".
         if (isPlatformDeliveryName(o.driverName)) {
             totalPlatformPending += amt;
+            platformOrdersCount++;
         } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             totalVisa += amt;
         } else {
@@ -4112,6 +4113,7 @@ function computeTodaySalesSummary() {
 
     return {
         ordersCount:   orders.length,
+        platformOrdersCount, // 🆕 عدد فواتير المنصات بهذا الشيفت
         totalSales,
         totalCash,
         totalVisa,
@@ -4277,8 +4279,8 @@ function renderShiftClosingReport() {
     // الكلي (يشمل الفيزا) بطلب الإدارة - يبقى فقط ما يلزم لتسوية نقد الصندوق
     html += row('كاش:', money(cash), '#10b981');
     html += row('فيزا:', money(visa), '#38bdf8');
-    if (platformPending > 0)
-        html += row('📱 طلبات تطبيقات (ذمة، مو كاش):', money(platformPending), '#c084fc');
+    // 🛠️ إصلاح بطلب المالك: ذمة المنصات ما تظهر للكاشير إطلاقاً هنا،
+    // تضل معلومة حصرية بالأدمن بس (حتى لو موجودة بالحساب الداخلي)
     if (discounts > 0)
         html += row('⚠️ الخصومات:', '−' + money(discounts), '#ef4444');
     html += row('أجور التوصيل:', money(deliveryFees), '#aaa');
@@ -4426,6 +4428,8 @@ function confirmCloseShiftAndLogout() {
             closedTs:             Date.now(),
             dateDate:             getTodayString(),
             ordersCount:          s.ordersCount,
+            platformOrdersCount:  s.platformOrdersCount || 0,
+            totalPlatformPending: s.totalPlatformPending || 0,
             totalSales:           s.totalSales,
             totalCash:            s.totalCash,
             totalVisa:            s.totalVisa,
@@ -5101,7 +5105,7 @@ function renderDailyReport(targetDate) {
     const salaries  = (getData('sys_salaries')||[])
         .filter(s => s.dateDate === targetDate);
 
-    let totalSales=0, totalCash=0, totalVisa=0,
+    let totalSales=0, totalCash=0, totalVisa=0, totalPlatformOwed=0,
         totalDelivery=0, netFood=0, totalExp=0, totalSal=0;
 
     completed.forEach(o => {
@@ -5109,8 +5113,18 @@ function renderDailyReport(targetDate) {
         totalSales    += amt;
         totalDelivery += cleanPrice(o.deliveryFee);
         netFood       += cleanPrice(o.subtotal);
-        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) totalVisa += amt;
-        else totalCash += amt;
+
+        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
+            totalVisa += amt;
+        } else if (isPlatformDeliveryName(o.driverName)) {
+            // 🛠️ إصلاح جذري خطير: طلبات المنصات (بلي، طلبات...) فلوسها
+            // مو نقد بالصندوق فعلياً - تنوصل بحوالة بنكية لاحقاً وتتحاسب
+            // ضمن "ذمة تطبيقات التوصيل" المنفصلة. كانت تنحسب "كاش" هنا
+            // بالغلط، وهذا يضخّم "الصافي بالصندوق" بمبلغ وهمي كبير جداً.
+            totalPlatformOwed += amt;
+        } else {
+            totalCash += amt;
+        }
     });
 
     expenses.forEach(e => totalExp += cleanPrice(e.amount));
@@ -5126,6 +5140,7 @@ function renderDailyReport(targetDate) {
     setTxt('repOrdersCount',    completed.length);
     setTxt('repTotalCash',      totalCash.toLocaleString('ar-IQ'));
     setTxt('repTotalVisa',      totalVisa.toLocaleString('ar-IQ'));
+    setTxt('repPlatformOwed',   totalPlatformOwed.toLocaleString('ar-IQ'));
     setTxt('repTotalDelivery',  totalDelivery.toLocaleString('ar-IQ'));
     setTxt('repNetFood',        netFood.toLocaleString('ar-IQ'));
     setTxt('repTotalExpenses',  totalExp.toLocaleString('ar-IQ'));
