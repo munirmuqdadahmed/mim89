@@ -238,6 +238,9 @@
             </div>
         </div>
 
+        <!-- 🆕 تنبيه الحضور من خارج موقع المطعم - يظهر بس لو فيه شي مشبوه -->
+        <div id="outsideLocationAlertBox"></div>
+
         <div class="dash-section-title">🖨️ المينيو والطباعة</div>
         <div class="dash-cards-row">
             <button onclick="printPaperMenu()" class="gold-btn btn-sm"
@@ -1799,6 +1802,24 @@
     <div id="tabEmployeesControl" class="tab-content"
          style="margin-top:15px;display:none;">
 
+        <!-- 🆕 موقع المطعم الحقيقي - للتحقق الصامت من مواقع تسجيل الحضور -->
+        <div class="card" style="max-width:550px;margin:0 auto 16px;border-color:#8b5cf6;">
+            <h4 style="color:#8b5cf6;margin-bottom:8px;">📍 موقع المطعم الحقيقي</h4>
+            <p class="hint" style="margin-bottom:8px;">
+                💡 يستخدم للتحقق الصامت: لما موظف يسجّل حضور، نقارن موقعه
+                الفعلي بهذا الموقع بدون ما يعرف هو إنه فيه فحص أصلاً. لو
+                سجّل من برا (البيت مثلاً)، يطلعلك علامة تحذير بسجله.
+            </p>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+                <input type="text" id="restaurantGpsLinkInput" class="gold-input-inline"
+                       placeholder="الصق رابط موقع المطعم من خرائط جوجل هنا"
+                       style="flex:1;direction:ltr;text-align:left;">
+                <button onclick="saveRestaurantLocation()" class="gold-btn"
+                        style="background:#8b5cf6;color:#fff;font-weight:900;white-space:nowrap;">حفظ</button>
+            </div>
+            <p id="restaurantLocationStatus" style="font-size:0.75rem;color:#888;"></p>
+        </div>
+
         <!-- 🆕 إعداد ساعات الدوام القياسية - أساس حساب راتب الساعة -->
         <div class="card" style="max-width:550px;margin:0 auto 16px;border-color:#38bdf8;">
             <h4 style="color:#38bdf8;margin-bottom:8px;">⏱️ ساعات الدوام القياسية باليوم</h4>
@@ -2303,7 +2324,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1770"></script>
+<script src="app.js?v=1771"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -2444,6 +2465,7 @@ function switchAdminTab(tabId, btn) {
         renderEmployeesTab();
         if (typeof renderEmpPendingRequests === 'function') renderEmpPendingRequests();
         if (typeof loadStandardWorkHours === 'function') loadStandardWorkHours();
+        if (typeof loadRestaurantLocationStatus === 'function') loadRestaurantLocationStatus();
     }
     if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
         renderInvoiceManagerList();
@@ -3691,6 +3713,31 @@ function deleteInvoiceFromManager(orderId) {
 /* ==========================================
    📋 طلبات الموظفين - عرض وموافقة/رفض
    ========================================== */
+// 🆕 حفظ موقع المطعم الحقيقي من رابط خرائط جوجل
+function saveRestaurantLocation() {
+    const link = document.getElementById('restaurantGpsLinkInput').value.trim();
+    if (!link) return alert('⚠️ الصق رابط الموقع أول.');
+
+    const loc = parseGpsLinkToLatLng(link);
+    if (!loc) return alert('⚠️ تعذّر قراءة الإحداثيات من هذا الرابط. تأكد إنه رابط خرائط جوجل صحيح.');
+
+    let settings = getData('sys_employee_settings') || {};
+    settings.restaurantLocation = loc;
+    setData('sys_employee_settings', settings);
+    document.getElementById('restaurantGpsLinkInput').value = '';
+    loadRestaurantLocationStatus();
+    alert('✅ تم حفظ موقع المطعم. الحين أي تسجيل حضور بعيد عنه بيتعلّم تلقائياً.');
+}
+
+function loadRestaurantLocationStatus() {
+    const statusEl = document.getElementById('restaurantLocationStatus');
+    if (!statusEl) return;
+    const loc = getRestaurantLocation();
+    statusEl.innerText = loc
+        ? '✅ الموقع مسجّل حالياً (' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ')'
+        : '⚠️ ماكو موقع مسجّل بعد - التحقق من الموقع غير مفعّل حالياً.';
+}
+
 // 🆕 حفظ وتحميل إعداد ساعات الدوام القياسية
 function saveStandardWorkHours() {
     const val = cleanPrice(document.getElementById('empStandardHours').value);
@@ -3701,6 +3748,41 @@ function saveStandardWorkHours() {
 function loadStandardWorkHours() {
     const input = document.getElementById('empStandardHours');
     if (input) input.value = getStandardWorkHoursPerDay();
+}
+
+// 🆕 فحص أي تسجيل حضور مشبوه (من خارج موقع المطعم) بآخر 7 أيام، وعرضه
+// كتنبيه واضح بالصفحة الرئيسية - يوريك مين سجّل حضور وهو مو فعلياً بالمحل
+function renderOutsideLocationAlert() {
+    const box = document.getElementById('outsideLocationAlertBox');
+    if (!box) return;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const cutoff = sevenDaysAgo.toISOString().split('T')[0];
+
+    const attendance = getData('sys_attendance') || [];
+    const employees  = getData('sys_employees') || [];
+
+    const suspicious = attendance.filter(a =>
+        a.dateDate >= cutoff && a.clockInLocation && a.clockInLocation.isOutsideLocation
+    );
+
+    if (suspicious.length === 0) { box.innerHTML = ''; return; }
+
+    const rows = suspicious.map(a => {
+        const emp = employees.find(e => e.id === a.employeeId);
+        return '<div style="display:flex;justify-content:space-between;font-size:0.8rem;' +
+            'padding:5px 0;border-bottom:1px dashed rgba(239,68,68,0.3);">' +
+            '<span>👤 ' + (emp ? emp.name : 'موظف محذوف') + ' — ' + a.dateDate + '</span>' +
+            '<strong style="color:#fca5a5;">' + a.clockInLocation.distanceMeters + ' متر من المطعم</strong>' +
+            '</div>';
+    }).join('');
+
+    box.innerHTML = '<div class="card" style="border-color:#ef4444;background:#2a0d0d;margin-bottom:16px;">' +
+        '<h4 style="color:#ef4444;margin-bottom:8px;">' +
+        '⚠️ تسجيلات حضور مشبوهة (آخر 7 أيام)</h4>' +
+        '<p class="hint" style="margin-bottom:8px;">هذولة سجّلوا حضور وهم بعيدين عن موقع المطعم المسجّل:</p>' +
+        rows + '</div>';
 }
 
 function renderEmpPendingRequests() {
@@ -4098,19 +4180,26 @@ function renderEmployeeAttendanceHistory(emp) {
         return;
     }
 
-    box.innerHTML = attendance.map(a =>
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;' +
+    box.innerHTML = attendance.map(a => {
+        // 🆕 علامة تحذير لو تسجيل الحضور صار من خارج موقع المطعم
+        const outsideFlag = (a.clockInLocation && a.clockInLocation.isOutsideLocation)
+            ? '<span style="color:#ef4444;font-weight:900;margin-right:6px;" ' +
+              'title="سجّل حضور من بعيد عن المطعم (' + a.clockInLocation.distanceMeters + ' متر)">' +
+              '⚠️ خارج الموقع (' + a.clockInLocation.distanceMeters + 'م)</span>'
+            : '';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;' +
         'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
         '<span>' + a.dateDate + (a.isManualEntry ? ' <span style="color:#888;font-size:0.68rem;">(يدوي)</span>' : '') + '</span>' +
         '<span style="display:flex;align-items:center;gap:8px;">' +
+        outsideFlag +
         '<span style="color:' + (a.status === 'present' ? '#10b981' : '#ef4444') + ';font-weight:bold;">' +
         (a.status === 'present'
             ? '✅ ' + (cleanPrice(a.hoursWorked) > 0 ? cleanPrice(a.hoursWorked) + ' ساعة' : 'حاضر')
             : '❌ غائب') + '</span>' +
         '<button onclick="deleteAttendanceRecord(\'' + emp.id + '\',\'' + a.dateDate + '\')" ' +
         'style="background:none;border:none;color:#666;cursor:pointer;font-size:0.75rem;">🗑️</button>' +
-        '</span></div>'
-    ).join('');
+        '</span></div>';
+    }).join('');
 }
 
 // حذف سجل حضور يوم معيّن - لتصحيح إدخال غلط بدون تصفير كل السجل
@@ -4969,7 +5058,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1770'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1770)
+    const CURRENT_PAGE_VERSION = '1771'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1771)
 
     async function checkForFreshPageVersion() {
         try {
