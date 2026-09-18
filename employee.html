@@ -126,6 +126,11 @@
             </button>
         </div>
 
+        <!-- 🆕 عبارة تحفيزية جديدة كل يوم -->
+        <div id="empMotivationBanner" style="text-align:center;background:linear-gradient(90deg,#1a1608,#0d0d11);
+                    border:1px solid var(--gold-primary);border-radius:12px;padding:10px;
+                    margin-bottom:14px;color:var(--gold-primary);font-weight:900;font-size:0.95rem;"></div>
+
         <!-- تسجيل الحضور/الانصراف -->
         <div class="emp-clock-card" id="empClockCard">
             <div style="font-size:0.85rem;color:#7fddb8;" id="empClockStatusLabel">جاهز لتسجيل الحضور</div>
@@ -144,6 +149,18 @@
             <div class="emp-stat-box">
                 <div class="lbl">⏱️ إجمالي الساعات</div>
                 <div class="val" style="color:#38bdf8;" id="empStatHours">0</div>
+            </div>
+        </div>
+
+        <!-- 🆕 تقسيم اليوم: شيفت أساسي + إضافي -->
+        <div class="emp-stat-grid">
+            <div class="emp-stat-box">
+                <div class="lbl">🕐 ساعات الشيفت اليوم (أساسي)</div>
+                <div class="val" style="color:#10b981;font-size:1.05rem;" id="empTodayShiftHours">0</div>
+            </div>
+            <div class="emp-stat-box">
+                <div class="lbl">➕ ساعات إضافية اليوم</div>
+                <div class="val" style="color:#f59e0b;font-size:1.05rem;" id="empTodayOvertimeHours">0</div>
             </div>
         </div>
 
@@ -234,7 +251,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1770"></script>
+<script src="app.js?v=1771"></script>
 <script>
 /* ==========================================
    👤 بوابة الموظفين - منطق تسجيل الدخول والعرض
@@ -299,6 +316,10 @@ function showEmpDashboard() {
     document.getElementById('empDashboard').style.display = 'block';
     document.getElementById('empDashName').innerText = '👋 ' + activeEmployeeSession.name;
     document.getElementById('empDashRole').innerText = activeEmployeeSession.role || '';
+    // 🆕 عبارة تحفيزية جديدة كل يوم
+    const motivationEl = document.getElementById('empMotivationBanner');
+    if (motivationEl && typeof getTodayMotivationalPhrase === 'function')
+        motivationEl.innerText = getTodayMotivationalPhrase();
     renderEmpClockCard();
     renderEmpStats();
     renderEmpMyRequests();
@@ -336,16 +357,23 @@ function renderEmpClockCard() {
     }
 }
 
-function empHandleClockAction() {
+async function empHandleClockAction() {
     if (!activeEmployeeSession) return;
+    const btn = document.getElementById('empClockActionBtn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري التسجيل...'; // نفس مظهر أي تحميل عادي - ما يلمّح لفحص موقع
+
     const att = getEmployeeTodayAttendance(activeEmployeeSession.id);
     let result;
     if (!att || !att.clockInTime || att.clockOutTime) {
-        result = employeeClockIn(activeEmployeeSession.id);
+        result = await employeeClockIn(activeEmployeeSession.id);
     } else {
         result = employeeClockOut(activeEmployeeSession.id);
     }
-    if (!result.ok) { alert('⚠️ ' + result.msg); return; }
+
+    btn.disabled = false;
+    if (!result.ok) { alert('⚠️ ' + result.msg); btn.innerHTML = originalText; return; }
     renderEmpClockCard();
     renderEmpStats();
 }
@@ -355,6 +383,17 @@ function renderEmpStats() {
     const summary = getEmployeeMonthSummary(activeEmployeeSession.id);
     document.getElementById('empStatDays').innerText  = summary.daysPresent + ' يوم';
     document.getElementById('empStatHours').innerText = summary.totalHours + ' س';
+
+    // 🆕 تقسيم ساعات اليوم الحالي لشيفت أساسي (6 س) وإضافي - للمتابعة
+    // فقط، بدون تأثير على حساب الراتب (نفس السعر بالاثنين)
+    const todayAtt = getEmployeeTodayAttendance(activeEmployeeSession.id);
+    const todayHours = todayAtt ? (cleanPrice(todayAtt.hoursWorked) ||
+        (todayAtt.clockInTime && !todayAtt.clockOutTime
+            ? (Date.now() - todayAtt.clockInTime) / 3600000 : 0)) : 0;
+    const split = typeof splitShiftAndOvertimeHours === 'function'
+        ? splitShiftAndOvertimeHours(todayHours) : { shiftHours: 0, overtimeHours: 0 };
+    document.getElementById('empTodayShiftHours').innerText = split.shiftHours + ' س';
+    document.getElementById('empTodayOvertimeHours').innerText = split.overtimeHours + ' س';
 
     const accrued = getEmployeeAccruedSalary(activeEmployeeSession);
     const finance = getEmployeeMonthFinance(activeEmployeeSession);
