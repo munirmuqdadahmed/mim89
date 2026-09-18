@@ -1896,7 +1896,49 @@
                 </div>
             </div>
 
-            <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">📋 سجل الحضور (آخر 30 يوم)</h5>
+            <!-- 🆕 إضافة ساعات عمل يدوياً بأثر رجعي - لموظف قديم قبل هذا
+                 النظام، أو تصحيح سجل معيّن -->
+            <div style="border:1.5px solid #10b981;border-radius:10px;padding:12px;
+                        background:#0a1f16;margin-bottom:14px;">
+                <h5 style="color:#10b981;font-size:0.88rem;margin-bottom:8px;">
+                    ➕ إضافة/تعديل ساعات يدوياً
+                </h5>
+                <p class="hint" style="margin-bottom:8px;">
+                    💡 لموظف شغال من قبل هذا النظام - أدخل تاريخ واحد، أو
+                    فترة كاملة (مثلاً شهرين) بمعدل ساعات يومي تقريبي، ويتم
+                    تسجيلها كأنه داوم فعلياً كل يوم بهذي الفترة.
+                </p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div>
+                        <label class="section-label">من تاريخ:</label>
+                        <input type="date" id="manualHoursFromDate" class="gold-input-inline">
+                    </div>
+                    <div>
+                        <label class="section-label">لين تاريخ (اختياري):</label>
+                        <input type="date" id="manualHoursToDate" class="gold-input-inline">
+                    </div>
+                </div>
+                <label class="section-label">معدل ساعات العمل باليوم الواحد:</label>
+                <input type="number" id="manualHoursPerDay" class="gold-input-inline"
+                       placeholder="مثال: 8" style="margin-bottom:8px;">
+                <p class="hint" style="margin-bottom:8px;">
+                    ⚠️ لو حددت "لين تاريخ"، يسجّل نفس المعدل لكل يوم بالفترة
+                    (عدا الجمعة تلقائياً - عدّلها يدوياً لو تشتغلون كل الأيام).
+                </p>
+                <button onclick="addManualEmployeeHours()" class="gold-btn btn-block"
+                        style="background:#10b981;color:#000;font-weight:900;">
+                    <i class="fa-solid fa-clock"></i> إضافة الساعات
+                </button>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <h5 style="color:#ccc;font-size:0.85rem;">📋 سجل الحضور (آخر 30 يوم)</h5>
+                <button onclick="resetEmployeeAttendanceRecord()" class="gold-btn btn-sm"
+                        style="width:auto;padding:4px 10px;background:#3d0d0d;color:#ef4444;
+                               border:1px solid #ef4444;font-size:0.72rem;">
+                    🔄 تصفير كل السجل
+                </button>
+            </div>
             <div id="empAttendanceHistory" style="max-height:150px;overflow-y:auto;margin-bottom:14px;"></div>
 
             <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">💰 سجل السلف والرواتب</h5>
@@ -3974,6 +4016,71 @@ function calculateEmployeeSettlement() {
     `;
 }
 
+// 🆕 إضافة/تعديل ساعات عمل يدوياً بأثر رجعي - يدعم يوم واحد أو فترة
+// كاملة بمعدل يومي تقريبي (لموظف كان شغال قبل هذا النظام)
+async function addManualEmployeeHours() {
+    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+
+    const fromDate = document.getElementById('manualHoursFromDate').value;
+    const toDate   = document.getElementById('manualHoursToDate').value || fromDate;
+    const hoursPerDay = cleanPrice(document.getElementById('manualHoursPerDay').value);
+
+    if (!fromDate) return alert('⚠️ حدد التاريخ.');
+    if (!hoursPerDay || hoursPerDay <= 0 || hoursPerDay > 24)
+        return alert('⚠️ أدخل معدل ساعات منطقي (1-24).');
+
+    let attendance = getData('sys_attendance') || [];
+    let addedCount = 0;
+
+    const start = new Date(fromDate);
+    const end   = new Date(toDate);
+    if (end < start) return alert('⚠️ تاريخ النهاية قبل تاريخ البداية.');
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        // نتجاوز الجمعة تلقائياً كعطلة أسبوعية اعتيادية - يمكن حذف هذا
+        // الشرط لو المطعم يشتغل كل أيام الأسبوع بدون استثناء
+        if (d.getDay() === 5) continue; // 5 = الجمعة
+
+        const dateStr = d.toISOString().split('T')[0];
+        const existingIdx = attendance.findIndex(a => a.employeeId === emp.id && a.dateDate === dateStr);
+        const record = {
+            employeeId: emp.id, dateDate: dateStr, status: 'present',
+            hoursWorked: hoursPerDay, clockInTime: null, clockOutTime: null,
+            timestamp: Date.now(), isManualEntry: true
+        };
+        if (existingIdx > -1) attendance[existingIdx] = record;
+        else attendance.push(record);
+        addedCount++;
+    }
+
+    setData('sys_attendance', attendance);
+    document.getElementById('manualHoursFromDate').value = '';
+    document.getElementById('manualHoursToDate').value = '';
+    document.getElementById('manualHoursPerDay').value = '';
+
+    renderEmployeeFinanceStats(emp);
+    renderEmployeeAttendanceHistory(emp);
+    alert('✅ تمت إضافة ' + addedCount + ' يوم بمعدل ' + hoursPerDay + ' ساعة (تجاوزنا أيام الجمعة تلقائياً).');
+}
+
+// 🆕 تصفير كامل سجل حضور موظف معيّن - يبدأ من الصفر (يحتاج رمز المالك
+// لأنه إجراء حساس يمحو سجل كامل)
+function resetEmployeeAttendanceRecord() {
+    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+    if (!confirm('⚠️ هذا يمسح كل سجل حضور "' + emp.name + '" نهائياً (كل الساعات المسجّلة). متأكد؟')) return;
+
+    requireOwnerPin('تصفير سجل حضور ' + emp.name, () => {
+        let attendance = getData('sys_attendance') || [];
+        attendance = attendance.filter(a => a.employeeId !== emp.id);
+        setData('sys_attendance', attendance);
+        renderEmployeeFinanceStats(emp);
+        renderEmployeeAttendanceHistory(emp);
+        alert('✅ تم تصفير سجل حضور ' + emp.name + ' بالكامل.');
+    });
+}
+
 function renderEmployeeAttendanceHistory(emp) {
     const box = document.getElementById('empAttendanceHistory');
     const attendance = (getData('sys_attendance') || [])
@@ -3992,13 +4099,29 @@ function renderEmployeeAttendanceHistory(emp) {
     }
 
     box.innerHTML = attendance.map(a =>
-        '<div style="display:flex;justify-content:space-between;padding:4px 0;' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;' +
         'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
-        '<span>' + a.dateDate + '</span>' +
+        '<span>' + a.dateDate + (a.isManualEntry ? ' <span style="color:#888;font-size:0.68rem;">(يدوي)</span>' : '') + '</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;">' +
         '<span style="color:' + (a.status === 'present' ? '#10b981' : '#ef4444') + ';font-weight:bold;">' +
-        (a.status === 'present' ? '✅ حاضر' : '❌ غائب') + '</span>' +
-        '</div>'
+        (a.status === 'present'
+            ? '✅ ' + (cleanPrice(a.hoursWorked) > 0 ? cleanPrice(a.hoursWorked) + ' ساعة' : 'حاضر')
+            : '❌ غائب') + '</span>' +
+        '<button onclick="deleteAttendanceRecord(\'' + emp.id + '\',\'' + a.dateDate + '\')" ' +
+        'style="background:none;border:none;color:#666;cursor:pointer;font-size:0.75rem;">🗑️</button>' +
+        '</span></div>'
     ).join('');
+}
+
+// حذف سجل حضور يوم معيّن - لتصحيح إدخال غلط بدون تصفير كل السجل
+function deleteAttendanceRecord(employeeId, dateDate) {
+    if (!confirm('حذف سجل يوم ' + dateDate + '؟')) return;
+    let attendance = getData('sys_attendance') || [];
+    attendance = attendance.filter(a => !(a.employeeId === employeeId && a.dateDate === dateDate));
+    setData('sys_attendance', attendance);
+
+    const emp = (getData('sys_employees') || []).find(e => e.id === employeeId);
+    if (emp) { renderEmployeeFinanceStats(emp); renderEmployeeAttendanceHistory(emp); }
 }
 
 function markAttendance(status) {
