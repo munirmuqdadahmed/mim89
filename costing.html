@@ -505,7 +505,7 @@
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1750"></script>
+<script src="app.js?v=1775"></script>
 <script>
 /* ==========================================
    PIN الخزينة
@@ -1236,6 +1236,11 @@ function renderShiftArchive() {
             '<div style="font-size:0.78rem;color:#ccc;">' +
             'المبيعات: <strong>' + (s.totalSales||0).toLocaleString('ar-IQ') + '</strong> — ' +
             s.ordersCount + ' فاتورة</div>' +
+            (s.platformOrdersCount > 0
+                ? '<div style="font-size:0.76rem;color:#c084fc;">' +
+                  '📱 منها للمنصات: <strong>' + s.platformOrdersCount + ' فاتورة</strong>' +
+                  ' بقيمة <strong>' + (s.totalPlatformPending||0).toLocaleString('ar-IQ') + '</strong> د.ع</div>'
+                : '') +
             '<div style="font-size:0.78rem;color:#ccc;">' +
             'الصرفيات: <strong style="color:#ef4444;">' +
             ((s.totalExpenses||0)+(s.totalSalaries||0)).toLocaleString('ar-IQ') +
@@ -1415,7 +1420,7 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1736'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1750)
+    const CURRENT_PAGE_VERSION = '1775'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1775)
 
     async function checkForFreshPageVersion() {
         try {
