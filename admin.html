@@ -1917,6 +1917,28 @@
                 </div>
             </div>
 
+            <!-- 🆕 رصيد إضافي مستحق - لأيام/مبالغ من قبل هذا النظام (مثلاً
+                 الشهر الماضي) - مبلغ ثابت تحدده أنت، ينضاف تلقائياً على
+                 الراتب المستحق بالساعات، وما يحتاج أي شي بصفحة الموظف -->
+            <div style="border:1.5px solid #ec4899;border-radius:10px;padding:12px;
+                        background:#1f0a16;margin-bottom:14px;">
+                <h5 style="color:#ec4899;font-size:0.88rem;margin-bottom:6px;">
+                    💰 رصيد إضافي مستحق (من قبل هذا النظام)
+                </h5>
+                <p class="hint" style="margin-bottom:8px;">
+                    💡 لموظف له أيام أو مبلغ مستحق من قبل ما نبدأ نظام
+                    الساعات (مثلاً الشهر الماضي) - حدد المبلغ يدوياً هنا،
+                    وينضاف تلقائياً على راتبه المستحق فوق (عند الموظف وعندك
+                    بالأدمن)، بدون أي إضافة أو تعقيد بصفحته هو.
+                </p>
+                <div style="display:flex;gap:8px;">
+                    <input type="number" id="empCarryoverAmount" class="gold-input-inline"
+                           placeholder="المبلغ بالدينار" style="flex:1;">
+                    <button onclick="saveEmployeeCarryoverAmount()" class="gold-btn"
+                            style="background:#ec4899;color:#fff;font-weight:900;">حفظ</button>
+                </div>
+            </div>
+
             <!-- 🆕 إضافة ساعات عمل يدوياً بأثر رجعي - لموظف قديم قبل هذا
                  النظام، أو تصحيح سجل معيّن -->
             <div style="border:1.5px solid #10b981;border-radius:10px;padding:12px;
@@ -2324,7 +2346,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1771"></script>
+<script src="app.js?v=1772"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -4013,6 +4035,22 @@ function openEmployeeDetailModal(id) {
     openModal('employeeDetailModal');
 }
 
+// 🆕 حفظ الرصيد الإضافي المستحق (مبلغ ثابت يدوي، مثلاً أيام الشهر
+// الماضي قبل نظام الساعات) - ينضاف تلقائياً على الراتب المستحق بالساعات
+function saveEmployeeCarryoverAmount() {
+    if (!activeEmployeeDetailId) return;
+    const amount = cleanPrice(document.getElementById('empCarryoverAmount').value);
+
+    let employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+
+    emp.carryoverAmount = amount;
+    setData('sys_employees', employees);
+    renderEmployeeFinanceStats(emp);
+    alert('✅ تم حفظ الرصيد الإضافي (' + amount.toLocaleString('ar-IQ') + ' د.ع) - انضاف تلقائياً على راتبه المستحق.');
+}
+
 function renderEmployeeFinanceStats(emp) {
     const thisMonth = getTodayString().slice(0, 7); // "YYYY-MM"
     const expenses  = getData('sys_expenses') || [];
@@ -4029,6 +4067,10 @@ function renderEmployeeFinanceStats(emp) {
 
     document.getElementById('empMonthAdvances').innerText = monthAdvances.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('empMonthSalaryPaid').innerText = monthSalaryPaid.toLocaleString('ar-IQ') + ' د.ع';
+
+    // 🆕 تعبئة حقل الرصيد الإضافي المستحق بقيمته الحالية
+    const carryoverInput = document.getElementById('empCarryoverAmount');
+    if (carryoverInput) carryoverInput.value = cleanPrice(emp.carryoverAmount) || '';
 
     // 🛠️ إصلاح جذري: نستخدم الدالة المشتركة المصلّحة (بالساعات الفعلية،
     // مو بعدد أيام الحضور) بدل حساب مكرر هنا كان يعطي راتب يوم كامل
@@ -5058,7 +5100,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1771'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1771)
+    const CURRENT_PAGE_VERSION = '1772'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1772)
 
     async function checkForFreshPageVersion() {
         try {
