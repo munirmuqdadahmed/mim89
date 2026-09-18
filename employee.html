@@ -179,6 +179,8 @@
                 <span style="color:#888;">راتب مستلم فعلاً</span>
                 <strong style="color:#888;" id="empSalaryPaid">0 د.ع</strong>
             </div>
+            <!-- 🆕 خصومات هذا الشهر - شفافية كاملة، الموظف يشوف السبب -->
+            <div id="empDeductionsBox"></div>
         </div>
 
         <!-- طلبات -->
@@ -251,7 +253,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1772"></script>
+<script src="app.js?v=1773"></script>
 <script>
 /* ==========================================
    👤 بوابة الموظفين - منطق تسجيل الدخول والعرض
@@ -414,6 +416,23 @@ function renderEmpStats() {
     document.getElementById('empAccruedSalary').innerText = accrued.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('empAdvancesTaken').innerText = finance.advances.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('empSalaryPaid').innerText    = finance.salaryPaid.toLocaleString('ar-IQ') + ' د.ع';
+
+    // 🆕 عرض خصومات هذا الشهر بشفافية - الموظف يشوف المبلغ والسبب
+    const thisMonth = getTodayString().slice(0, 7);
+    const deductions = (getData('sys_employee_deductions') || [])
+        .filter(d => d.employeeId === activeEmployeeSession.id && String(d.dateDate).slice(0,7) === thisMonth);
+    const dedBox = document.getElementById('empDeductionsBox');
+    if (dedBox) {
+        dedBox.innerHTML = deductions.length === 0 ? '' :
+            '<div style="border-top:1px dashed #24392c;margin-top:8px;padding-top:8px;">' +
+            '<div style="color:#ef4444;font-size:0.78rem;font-weight:900;margin-bottom:4px;">⚠️ خصومات هذا الشهر:</div>' +
+            deductions.map(d =>
+                '<div style="display:flex;justify-content:space-between;font-size:0.76rem;padding:2px 0;">' +
+                '<span style="color:#aaa;">' + d.dateDate + ' — ' + d.reason + '</span>' +
+                '<strong style="color:#fca5a5;">-' + cleanPrice(d.amount).toLocaleString('ar-IQ') + ' د.ع</strong>' +
+                '</div>'
+            ).join('') + '</div>';
+    }
 }
 
 function renderEmpMyRequests() {
