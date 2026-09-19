@@ -239,6 +239,9 @@
         </div>
 
         <!-- 🆕 تنبيه الحضور من خارج موقع المطعم - يظهر بس لو فيه شي مشبوه -->
+        <!-- 🆕 حالة جهاز الكاشير الحية - تعرف من أي مكان هل شغّال ومتصل الآن -->
+        <div id="cashierHeartbeatBox" style="max-width:600px;margin:0 auto 16px;"></div>
+
         <div id="outsideLocationAlertBox"></div>
 
         <div class="dash-section-title">🖨️ المينيو والطباعة</div>
@@ -2403,7 +2406,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1775"></script>
+<script src="app.js?v=1776"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3879,6 +3882,54 @@ function loadStandardWorkHours() {
 
 // 🆕 فحص أي تسجيل حضور مشبوه (من خارج موقع المطعم) بآخر 7 أيام، وعرضه
 // كتنبيه واضح بالصفحة الرئيسية - يوريك مين سجّل حضور وهو مو فعلياً بالمحل
+// 🆕 عرض حالة جهاز الكاشير الحية - تعرف من أي مكان هل الكاشير شغّال
+// ومتصل الآن، بدون ما تحتاج تكون بالمحل فعلياً
+async function renderCashierHeartbeatStatus() {
+    const box = document.getElementById('cashierHeartbeatBox');
+    if (!box) return;
+
+    box.innerHTML = '<div class="card" style="border-color:#38bdf8;text-align:center;">' +
+        '<span style="color:#888;">⏳ جاري التحقق من جهاز الكاشير...</span></div>';
+
+    const status = typeof getCashierHeartbeatStatus === 'function'
+        ? await getCashierHeartbeatStatus() : null;
+
+    if (!status || !status.lastSeenAt) {
+        box.innerHTML = '<div class="card" style="border-color:#888;text-align:center;">' +
+            '<span style="color:#888;">💓 ماكو بيانات نبضة حياة بعد - ' +
+            'حدّث الكاشير للنسخة الجديدة حتى تفعل.</span></div>';
+        return;
+    }
+
+    const minutesAgo = Math.round((Date.now() - status.lastSeenAt) / 60000);
+    let statusColor, statusIcon, statusText;
+
+    if (minutesAgo <= 3) {
+        statusColor = '#10b981'; statusIcon = '🟢';
+        statusText = 'شغّال ومتصل الحين';
+    } else if (minutesAgo <= 15) {
+        statusColor = '#f59e0b'; statusIcon = '🟡';
+        statusText = 'آخر نشاط قبل ' + minutesAgo + ' دقيقة - يمكن مشغول أو النت بطيء';
+    } else {
+        const hoursAgo = Math.round(minutesAgo / 60);
+        statusColor = '#ef4444'; statusIcon = '🔴';
+        statusText = 'ماكو نشاط من ' + (hoursAgo > 0 ? hoursAgo + ' ساعة' : minutesAgo + ' دقيقة') +
+            ' - احتمال الجهاز مطفي أو مقطوع عن النت!';
+    }
+
+    box.innerHTML = '<div class="card" style="border-color:' + statusColor + ';">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<h4 style="color:' + statusColor + ';margin:0;">' + statusIcon + ' جهاز الكاشير: ' + statusText + '</h4>' +
+        '<button onclick="renderCashierHeartbeatStatus()" class="gold-btn btn-sm" ' +
+        'style="width:auto;padding:4px 10px;">🔄</button></div>' +
+        '<p style="font-size:0.76rem;color:#888;margin-top:6px;">' +
+        'الكاشير: ' + (status.cashierName || '-') + ' • الإصدار: v' + (status.appVersion || '-') +
+        (status.pendingSyncCount > 0
+            ? ' • <span style="color:#f59e0b;">⚠️ ' + status.pendingSyncCount + ' فاتورة بانتظار المزامنة</span>'
+            : ' • <span style="color:#10b981;">✅ كل الفواتير متزامنة</span>') +
+        '</p></div>';
+}
+
 function renderOutsideLocationAlert() {
     const box = document.getElementById('outsideLocationAlertBox');
     if (!box) return;
@@ -5282,7 +5333,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1775'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1775)
+    const CURRENT_PAGE_VERSION = '1776'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1776)
 
     async function checkForFreshPageVersion() {
         try {
