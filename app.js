@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1780';
+const MIM89_APP_VERSION = '1781';
 
 /* ==========================================
    المتغيرات العامة
@@ -2326,6 +2326,11 @@ async function proceedToPrintAfterCash() {
         linkedToOrderNum: document.getElementById('posLinkToPrevOrder')?.checked
             ? cleanPrice(document.getElementById('posLinkedOrderNum')?.value) || null
             : null,
+        // 🆕 رقم فاتورة المنصة الخارجي (بلي/طلبات...) - يربط رقم فاتورتك
+        // الداخلي برقم فاتورتهم، يسهّل المطابقة عند التسوية الشهرية
+        platformOrderRef: (driverName && isPlatformDeliveryName(driverName))
+            ? (document.getElementById('posPlatformOrderRef')?.value || '').trim() || null
+            : null,
         // 🆕 موقع GPS - يُستخرج من رابط خرائط جوجل الملصق (لو موجود)، وينحفظ
         // بالطلب حتى يوصل للسائق مباشرة بدون ما يحتاج يسأل الزبون العنوان
         gpsLocation:   parseGpsLinkToLatLng(document.getElementById('posGpsLink')?.value),
@@ -2468,10 +2473,32 @@ fontScale: getInvoiceDesign().fontScale || '1.0',
         } catch (_) {
             stillPending.push(q); // الجسر أو الطابعة لسا مو راجعة - نحاول بالدورة الجاية
         }
+
+        // 🆕 فاصل 2.5 ثانية بين كل طباعة والثانية - أغلب الطابعات
+        // الحرارية الرخيصة عندها ذاكرة داخلية محدودة، ولو وصلها طلب
+        // طباعة ثاني بسرعة قبل ما تخلص الأول (خصوصاً بعد رجوع الكهرباء
+        // وفيه طابور متراكم)، ممكن تتجاهل الطلب الأول وتطبع بس الأخير
+        if (queue.indexOf(q) < queue.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2500));
+        }
     }
 
     localStorage.setItem(KITCHEN_QUEUE_KEY, JSON.stringify(stillPending));
     updateKitchenQueueBanner();
+
+    // 🆕 تنبيه مرئي بنتيجة المحاولة - يخلي الكاشير يشوف بعينه شنو صار
+    // بالضبط، بدل سجل صامت بالكونسول محد يشوفه
+    if (succeededCount > 0 || stillPending.length > 0) {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);' +
+            'background:#1e1e28;color:#fff;padding:10px 18px;border-radius:8px;' +
+            'font-weight:700;font-size:0.8rem;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.4);' +
+            'border:1px solid ' + (stillPending.length > 0 ? '#f59e0b' : '#10b981') + ';';
+        notice.innerText = (succeededCount > 0 ? '✅ طُبعت ' + succeededCount + ' تذكرة. ' : '') +
+            (stillPending.length > 0 ? '⏳ لسا ' + stillPending.length + ' بالانتظار.' : '🎉 كلها انطبعت!');
+        document.body.appendChild(notice);
+        setTimeout(() => notice.remove(), 4000);
+    }
 
     if (succeededCount > 0) {
         console.log('✅ طُبعت ' + succeededCount + ' تذكرة مطبخ كانت متراكمة بالطابور.');
@@ -4554,6 +4581,18 @@ function isPlatformDeliveryName(driverName) {
 // اختلاف السعر بين ما يقرأه الكاشير وما تعرضه المنصة للزبون
 function onPosDriverSelectChanged() {
     const selectedName = document.getElementById('posDriverSelect')?.value;
+
+    // 🆕 إظهار/إخفاء خانة رقم فاتورة المنصة - بغض النظر عن حالة السلة
+    const refBox = document.getElementById('platformOrderRefBox');
+    if (refBox) {
+        const isPlatform = selectedName && isPlatformDeliveryName(selectedName);
+        refBox.style.display = isPlatform ? 'block' : 'none';
+        if (!isPlatform) {
+            const refInput = document.getElementById('posPlatformOrderRef');
+            if (refInput) refInput.value = '';
+        }
+    }
+
     if (!selectedName || !isPlatformDeliveryName(selectedName)) return;
     if (!posCart || posCart.length === 0) return;
 
