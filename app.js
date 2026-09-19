@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1776';
+const MIM89_APP_VERSION = '1777';
 
 /* ==========================================
    المتغيرات العامة
@@ -320,10 +320,22 @@ try {
         // تكون مفتوحة بالكامل لأي حد بالعالم بدون أي شرط إطلاقاً.
         if (typeof firebase.auth === 'function') {
             auth = firebase.auth(); // 🛠️ كان مفقوداً - يحتاجه نظام VIP
-            firebaseAuthReadyPromise = firebase.auth().signInAnonymously()
-                .catch(err => {
+            // 🛠️ إصلاح جذري خطير جداً: signInAnonymously() كان بدون أي
+            // مهلة زمنية - لو "تعلّق" (مو فشل بصراحة، بس ضل معلّق بدون
+            // رد لأي سبب شبكي، خصوصاً لو فيه حجب/بطء على نطاقات جوجل
+            // تحديداً حتى لو باقي الإنترنت شغّال زين) كان كل شي بالتطبيق
+            // ينتظره يضل معلّق للأبد - مهما أعاد الزبون تحميل الصفحة،
+            // نفس التعليق يتكرر بلا نهاية. الحل: مهلة 8 ثواني كحد أقصى،
+            // نكمل بعدها عادي بدل الانتظار الأبدي.
+            const authTimeout = new Promise(resolve =>
+                setTimeout(() => resolve('timeout'), 8000)
+            );
+            firebaseAuthReadyPromise = Promise.race([
+                firebase.auth().signInAnonymously().catch(err => {
                     console.warn('⚠️ تعذّر تسجيل الدخول المجهول بفايربيس:', err);
-                });
+                }),
+                authTimeout
+            ]);
         }
 
         if (localStorage.getItem('mim89_disable_persistence') !== '1') {
