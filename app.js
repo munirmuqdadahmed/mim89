@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1779';
+const MIM89_APP_VERSION = '1780';
 
 /* ==========================================
    المتغيرات العامة
@@ -771,17 +771,26 @@ async function pullLatestFromCloud() {
     } catch (e) { console.warn("تعذّر سحب الأقسام:", e); }
 
     // الفواتير
+    // 🛠️ إصلاح جذري خطير جداً لاستهلاك الحصة اليومية بفايرستور: كنا نعيد
+    // جلب آخر 200-500 سجل (طلبات/صرفيات/رواتب) **كل دقيقة، للأبد**، من
+    // كل جهاز مفتوح - هذا يستهلك عشرات آلاف القراءات يومياً من جهاز
+    // واحد بس (كاشير مفتوح 12 ساعة = مئات آلاف القراءات)، ويفرغ الحصة
+    // المجانية بسرعة. الحل: نفلتر بتاريخ حديث بس (آخر 3 أيام، يغطي
+    // اليوم + هامش أمان لعبور منتصف الليل)، بدل جلب مئات السجلات
+    // القديمة بلا داعي كل دورة تحديث.
+    const recentCutoff = new Date();
+    recentCutoff.setDate(recentCutoff.getDate() - 3);
+    const recentCutoffStr = recentCutoff.toISOString().split('T')[0];
+
     try {
         let ordSnap;
         try {
             ordSnap = await db.collection("completed_orders")
-                .orderBy("createdTimestamp", "desc").limit(200).get({ source: 'server' });
-        } catch (orderByErr) {
-            // 🛠️ إصلاح جذري: لو الاستعلام المرتب فشل لأي سبب (مثلاً مشكلة
-            // فهرسة على هذا الحقل)، نحاول استعلام بسيط بدون ترتيب بدل ما
-            // نفشل بالكامل - هذا كان يخلي "مبيعات اليوم" تطلع صفر بأي
-            // جهاز جديد ما عنده كاش محلي (زي الموبايل أول مرة يفتح الأدمن)
-            console.warn("⚠️ فشل استعلام الفواتير المرتب، نجرب استعلام بديل:", orderByErr);
+                .where("dateDate", ">=", recentCutoffStr).limit(400).get({ source: 'server' });
+        } catch (whereErr) {
+            // 🛠️ استعلام احتياطي شامل لو فشل الفلتر بالتاريخ لأي سبب
+            // (مثلاً فهرسة) - يضمن وصول البيانات حتى لو الطريقة المثلى فشلت
+            console.warn("⚠️ فشل فلتر التاريخ، نجرب استعلام بديل:", whereErr);
             ordSnap = await db.collection("completed_orders").limit(300).get({ source: 'server' });
         }
         if (!ordSnap.empty) {
@@ -814,7 +823,8 @@ async function pullLatestFromCloud() {
     // تطلع غلط لو تحقق منها من جهاز غير اللي سجّلها. نفس منطق دمج
     // الفواتير بالضبط (اتحاد بين المحلي والسحابي، بدون فقدان أي سجل)
     try {
-        const expSnap = await db.collection("expenses").limit(500).get({ source: 'server' });
+        const expSnap = await db.collection("expenses")
+            .where("dateDate", ">=", recentCutoffStr).limit(300).get({ source: 'server' });
         if (!expSnap.empty) {
             const cloudExpenses = [];
             expSnap.forEach(d => cloudExpenses.push(d.data()));
@@ -833,7 +843,8 @@ async function pullLatestFromCloud() {
     } catch (e) { console.warn("تعذّر سحب الصرفيات:", e); }
 
     try {
-        const salSnap = await db.collection("salaries").limit(500).get({ source: 'server' });
+        const salSnap = await db.collection("salaries")
+            .where("dateDate", ">=", recentCutoffStr).limit(300).get({ source: 'server' });
         if (!salSnap.empty) {
             const cloudSalaries = [];
             salSnap.forEach(d => cloudSalaries.push(d.data()));
@@ -1072,7 +1083,7 @@ function startPeriodicCloudPull() {
             });
         }
         if (typeof sendCashierHeartbeat === 'function') sendCashierHeartbeat();
-    }, 60000);
+    }, 90000); // 🛠️ من 60 لـ90 ثانية - توفير إضافي بالحصة اليومية، بدون تأثير محسوس (التحديثات الفورية تغطيها المستمعين اللحظيين أصلاً)
 
     window.addEventListener('online', () =>
         pullLatestFromCloud().then(r => {
