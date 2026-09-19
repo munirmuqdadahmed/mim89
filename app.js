@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1778';
+const MIM89_APP_VERSION = '1779';
 
 /* ==========================================
    المتغيرات العامة
@@ -748,7 +748,10 @@ async function pullLatestFromCloud() {
                 changed = true;
             }
         }
-    } catch (e) { console.warn("تعذّر سحب الأصناف:", e); }
+    } catch (e) {
+        console.warn("تعذّر سحب الأصناف:", e);
+        window.lastMenuLoadError = 'pull: ' + ((e && e.code) ? (e.code + ': ' + e.message) : String(e));
+    }
 
     // الأقسام
     try {
@@ -7738,6 +7741,10 @@ function setupPublicMenuRealtimeListener(retryCount) {
             },
             err => {
                 console.warn('⚠️ خطأ بمستمع المينيو العام:', err);
+                // 🆕 نحفظ الخطأ الفعلي عالمياً حتى نقدر نعرضه بالشاشة
+                // العالقة مباشرة - بدل ما نخمّن السبب من بعيد، نخلي
+                // المستخدم يشوفه بعينه ويرسلّه لينا
+                window.lastMenuLoadError = (err && err.code) ? (err.code + ': ' + err.message) : String(err);
                 renderPublicMenuUI();
                 // 🆕 شبكة أمان: لو المستمع فشل (مثلاً رفض مؤقت من قواعد
                 // الحماية قبل ما يخلص تسجيل الدخول المجهول)، نعيد المحاولة
@@ -7826,6 +7833,12 @@ function renderPublicMenuUI() {
             '<div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>' +
             '<div style="font-weight:900;">جاري تحميل المينيو...</div>' +
             '<div style="font-size:0.8rem;margin-top:6px;">تأكد من اتصالك بالإنترنت</div>' +
+            (window.lastMenuLoadError
+                ? '<div style="margin-top:14px;padding:10px;background:#1a0d0d;' +
+                  'border:1px solid #ef4444;border-radius:8px;font-size:0.72rem;' +
+                  'color:#fca5a5;direction:ltr;text-align:left;word-break:break-all;">' +
+                  '⚠️ تفاصيل تقنية (صوّرها وأرسلها):<br>' + window.lastMenuLoadError + '</div>'
+                : '') +
             '<button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;' +
             'background:var(--gold-primary,#ffd700);color:#000;border:none;border-radius:8px;' +
             'font-weight:900;font-size:0.85rem;cursor:pointer;">🔄 إعادة تحميل الصفحة</button>' +
