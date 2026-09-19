@@ -222,6 +222,19 @@
                             </select>
                         </div>
 
+                        <!-- 🆕 رقم فاتورة المنصة - يظهر بس لو اخترت منصة
+                             توصيل (بلي/طلبات...)، يربط رقم فاتورتك الداخلي
+                             برقم فاتورة المنصة نفسها -->
+                        <div id="platformOrderRefBox" style="display:none;margin:3px 0;
+                                    background:#1a1020;padding:5px 6px;border-radius:7px;
+                                    border:1px solid #c084fc;">
+                            <span class="section-label" style="color:#c084fc;">
+                                <i class="fa-solid fa-hashtag"></i> رقم فاتورة المنصة:
+                            </span>
+                            <input type="text" id="posPlatformOrderRef" class="gold-input-inline"
+                                   placeholder="مثال: 28609818" style="direction:ltr;text-align:left;">
+                        </div>
+
                         <!-- المنطقة -->
                         <div id="posAreaBox"
                              style="display:none;margin:3px 0;background:#0d0d11;
@@ -769,7 +782,7 @@
 
 
 <!-- السكريبت -->
-<script src="app.js?v=1768"></script>
+<script src="app.js?v=1781"></script>
 <script>
 /* ==========================================
    PIN الكاشير
@@ -897,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
    بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1768'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1768)
+    const CURRENT_PAGE_VERSION = '1781'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1781)
 
     async function checkForFreshPageVersion() {
         try {
