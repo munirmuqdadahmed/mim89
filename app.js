@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1777';
+const MIM89_APP_VERSION = '1778';
 
 /* ==========================================
    المتغيرات العامة
@@ -724,7 +724,12 @@ async function pullLatestFromCloud() {
 
     // الأصناف
     try {
-        const snap = await db.collection("menu_items").get({ source: 'server' });
+        // 🆕 مهلة 7 ثواني مباشرة على هذا الاستعلام تحديداً - أهم استعلام
+        // بالتطبيق (يوقف عرض المينيو بالكامل لو تعلّق)
+        const snap = await Promise.race([
+            db.collection("menu_items").get({ source: 'server' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 7000))
+        ]);
         if (!snap.empty) {
             const cloudItems = [];
             snap.forEach(doc => {
@@ -953,7 +958,17 @@ async function initData() {
     refreshActiveUI();
 
     // سحب من السحابة يتفوق على المحلي
-    await pullLatestFromCloud();
+    // 🛠️ إصلاح جذري خطير آخر: نفس فئة مشكلة "التعليق الأبدي" اللي
+    // صلحناها بالمصادقة، بس هذي المرة بجلب البيانات نفسه (menu_items
+    // وغيرها) - كانت بدون أي مهلة زمنية. لو استعلام Firestore واحد
+    // "تعلّق" (مو فشل بصراحة، بس ضل منتظر رد بدون جواب لأي سبب شبكي)،
+    // كل التطبيق يضل معلّق للأبد حتى لو المصادقة نفسها اشتغلت صح 100%.
+    // مهلة 10 ثواني كحد أقصى، نكمل بعدها عادي (مع نظام إعادة المحاولة
+    // اللي يشتغل بالخلفية أصلاً كشبكة أمان إضافية).
+    await Promise.race([
+        pullLatestFromCloud(),
+        new Promise(resolve => setTimeout(resolve, 10000))
+    ]);
 
     // 🛠️ إصلاح جذري: هذا هو سبب "المينيو يطلع فاضي عند بعض الزبائن" -
     // كنا نرسم الواجهة مرة وحدة بس (بالسطر فوق)، قبل ما تكتمل عملية سحب
