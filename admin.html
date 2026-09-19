@@ -4395,8 +4395,24 @@ function renderEmployeeAttendanceHistory(emp) {
                     '📍❔ ماكو تحقق موقع</span>';
             }
         }
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;' +
-        'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
+        // 🆕 إصلاح مهم: نبيّن وقت الدخول والخروج الفعلي بالضبط (مو بس
+        // "حاضر" وساعات مجردة) - يخلي الأدمن يعرف بالضبط شنو صار
+        const timeRange = (() => {
+            if (a.status !== 'present') return '';
+            const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'}) : null;
+            const inTime  = fmtTime(a.clockInTime);
+            const outTime = fmtTime(a.clockOutTime);
+            if (inTime && outTime)
+                return '<div style="font-size:0.7rem;color:#888;margin-top:1px;">دخل: ' + inTime + ' — خرج: ' + outTime + '</div>';
+            if (inTime && !outTime)
+                return '<div style="font-size:0.7rem;color:#f59e0b;margin-top:1px;">دخل: ' + inTime + ' — لسا ما سجّل خروج</div>';
+            if (a.isManualEntry)
+                return '<div style="font-size:0.7rem;color:#888;margin-top:1px;">إدخال يدوي - بدون أوقات محددة</div>';
+            return '';
+        })();
+
+        return '<div style="padding:4px 0;border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
         '<span>' + a.dateDate + (a.isManualEntry ? ' <span style="color:#888;font-size:0.68rem;">(يدوي)</span>' : '') + '</span>' +
         '<span style="display:flex;align-items:center;gap:8px;">' +
         locationFlag +
@@ -4406,7 +4422,7 @@ function renderEmployeeAttendanceHistory(emp) {
             : '❌ غائب') + '</span>' +
         '<button onclick="deleteAttendanceRecord(\'' + emp.id + '\',\'' + a.dateDate + '\')" ' +
         'style="background:none;border:none;color:#666;cursor:pointer;font-size:0.75rem;">🗑️</button>' +
-        '</span></div>';
+        '</span></div>' + timeRange + '</div>';
     }).join('');
 }
 
