@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1775';
+const MIM89_APP_VERSION = '1776';
 
 /* ==========================================
    المتغيرات العامة
@@ -991,10 +991,45 @@ function runSilentStorageMaintenance() {
     } catch (_) {}
 }
 
+// 🆕 نبضة حياة من الكاشير - يحل مشكلة "ما أقدر أتأكد من بعد إذا جهاز
+// الكاشير بالمحل شغّال ومتصل أو لا". كل دقيقة، لو هذي الصفحة هي صفحة
+// الكاشير فعلياً (مسجّل دخول)، نكتب بالسحابة "أنا شغال الحين" + كم فاتورة
+// معلّقة بطابور المزامنة. من أي جهاز ثاني (موبايلك)، تقدر تشوف "آخر
+// نبضة" وتعرف فوراً هل الكاشير حي أو ميت بدون ما تحتاج تكون بالمحل.
+async function sendCashierHeartbeat() {
+    try {
+        const isCashierPage = !!document.getElementById('cashierMainApp');
+        const isLoggedIn    = !!sessionStorage.getItem('active_cashier');
+        if (!isCashierPage || !isLoggedIn || !db) return;
+
+        const pendingQueue = JSON.parse(localStorage.getItem(ORDER_SYNC_QUEUE_KEY) || '[]');
+        await db.collection('system_store').doc('cashier_heartbeat').set({
+            lastSeenAt: Date.now(),
+            cashierName: activeCashierUser ? activeCashierUser.name : 'غير معروف',
+            appVersion: MIM89_APP_VERSION,
+            pendingSyncCount: pendingQueue.length,
+            online: navigator.onLine
+        });
+    } catch (_) {} // فشل الإرسال بحد ذاته دليل غير مباشر على مشكلة اتصال - نتجاهله بصمت
+}
+
+// 🆕 قراءة حالة آخر نبضة من أي جهاز (يُستخدم بالأدمن/التشخيص)
+async function getCashierHeartbeatStatus() {
+    try {
+        if (!db) return null;
+        const doc = await db.collection('system_store').doc('cashier_heartbeat').get({ source: 'server' });
+        if (!doc.exists) return null;
+        return doc.data();
+    } catch (_) {
+        return null;
+    }
+}
+
 // 🔁 سحب دوري كل 60 ثانية
 let cloudPullTimer = null;
 function startPeriodicCloudPull() {
     if (cloudPullTimer) clearInterval(cloudPullTimer);
+    if (typeof sendCashierHeartbeat === 'function') sendCashierHeartbeat(); // نبضة فورية عند البداية
     cloudPullTimer = setInterval(() => {
         if (!isCashierBusy() && navigator.onLine) {
             pullLatestFromCloud().then(r => {
@@ -1006,6 +1041,7 @@ function startPeriodicCloudPull() {
                 if (r && r.changed) refreshActiveUI(true);
             });
         }
+        if (typeof sendCashierHeartbeat === 'function') sendCashierHeartbeat();
     }, 60000);
 
     window.addEventListener('online', () =>
@@ -6765,6 +6801,9 @@ function loadAdminTabsData() {
     // 🆕 فحص فوري لأي تسجيل حضور مشبوه (من خارج موقع المطعم) لآخر 7 أيام
     if (typeof renderOutsideLocationAlert === 'function')
         renderOutsideLocationAlert();
+    // 🆕 فحص فوري لحالة جهاز الكاشير الحية (شغّال ومتصل أو لا)
+    if (typeof renderCashierHeartbeatStatus === 'function')
+        renderCashierHeartbeatStatus();
 }
 
 function loadPrinterSettings() {
