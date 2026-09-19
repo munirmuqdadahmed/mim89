@@ -2406,7 +2406,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1776"></script>
+<script src="app.js?v=1781"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -3653,7 +3653,8 @@ function renderInvoiceManagerList() {
         list = list.filter(o =>
             String(o.orderNum || '').includes(searchRaw) ||
             String(o.customerName || '').toLowerCase().includes(searchRaw) ||
-            String(o.phone || '').includes(searchRaw)
+            String(o.phone || '').includes(searchRaw) ||
+            String(o.platformOrderRef || '').toLowerCase().includes(searchRaw)
         );
     }
 
@@ -4559,9 +4560,17 @@ function applyBulkPlatformCommission() {
     inputs.forEach(input => {
         const normalPrice = cleanPrice(input.dataset.normalPrice);
         if (normalPrice <= 0) return;
-        // نحسب السعر الجديد ونقرّبه لأقرب 50 د.ع (أرقام عملية للتداول اليومي)
-        const rawNew = normalPrice * (1 + pct / 100);
-        const rounded = Math.round(rawNew / 50) * 50;
+        // 🛠️ إصلاح جذري خطير: كنا نحسب "السعر العادي + النسبة" (ضرب
+        // بـ1.26 مثلاً) - هذا رياضياً غلط ويعوّض ناقص! لأن عمولة المنصة
+        // تُخصم من السعر الجديد (المرفوع)، مو من السعر الأصلي - يعني لو
+        // رفعت 2500 لـ3150 (×1.26)، وبعدها خصمت المنصة 26% من الـ3150،
+        // يرجعلك 2331 بس - أقل من الـ2500 الأصلي! الصيغة الصحيحة رياضياً
+        // اللي تضمن رجوع نفس السعر الأصلي بالضبط بعد خصم العمولة هي
+        // القسمة على (1 - النسبة)، مو الضرب بـ(1 + النسبة).
+        const rawNew = normalPrice / (1 - pct / 100);
+        // 🛠️ بطلب المالك: بدون تقريب لأقرب 50 - يحسب الرقم الدقيق بالضبط
+        // (تقريب لأقرب دينار صحيح بس، لأن الدينار ماكو كسور)
+        const rounded = Math.round(rawNew);
         input.value = rounded;
         count++;
     });
@@ -4708,6 +4717,8 @@ function buildPlatformMonthGroupHtml(g, groupId) {
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">' +
             '<div style="font-size:0.78rem;">' +
             '#' + o.orderNum + ' — ' + (o.customerName || 'زبون') +
+            (o.platformOrderRef ? ' <span style="color:#c084fc;font-size:0.72rem;">' +
+                '(رقمهم: ' + o.platformOrderRef + ')</span>' : '') +
             (adjusted ? '<div style="font-size:0.68rem;color:#888;">' +
                 'فاتورتنا: ' + cleanPrice(o.totalAmount).toLocaleString('ar-IQ') + ' د.ع (معدَّل)' +
                 '</div>' : '') +
@@ -5333,7 +5344,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1776'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1776)
+    const CURRENT_PAGE_VERSION = '1781'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1781)
 
     async function checkForFreshPageVersion() {
         try {
