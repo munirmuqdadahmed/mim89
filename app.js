@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1781';
+const MIM89_APP_VERSION = '1782';
 
 /* ==========================================
    المتغيرات العامة
@@ -4603,6 +4603,11 @@ function onPosDriverSelectChanged() {
     const allItems = getData('sys_items') || [];
     let changedCount = 0;
 
+    // 🆕 خصم مؤقت لفترة محددة - نتأكد هل مفعّل اليوم بالضبط
+    const today = getTodayString();
+    const promo = platform.tempPromo;
+    const promoActive = promo && today >= promo.fromDate && today <= promo.toDate;
+
     posCart.forEach(cartItem => {
         const baseItem = allItems.find(i =>
             String(i.id) === String(cartItem.id) || cleanPrice(i.id) === cleanPrice(cartItem.id)
@@ -4611,7 +4616,10 @@ function onPosDriverSelectChanged() {
         const platPrice = baseItem.platformPrices[selectedName];
         if (platPrice === undefined || platPrice === null || platPrice === '') return;
 
-        const newPrice = cleanPrice(platPrice);
+        let newPrice = cleanPrice(platPrice);
+        // 🆕 نطبّق نسبة الخصم المؤقت فوق سعر المنصة، لو العرض مفعّل اليوم
+        if (promoActive) newPrice = Math.round(newPrice * (1 - promo.pct / 100));
+
         if (newPrice > 0 && newPrice !== cleanPrice(cartItem.price)) {
             cartItem.price = newPrice;
             changedCount++;
