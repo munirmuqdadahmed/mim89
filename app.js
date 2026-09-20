@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1782';
+const MIM89_APP_VERSION = '1783';
 
 /* ==========================================
    المتغيرات العامة
@@ -673,6 +673,45 @@ function setupCategoriesRealtimeSync() {
         },
         err => console.log("خطأ مزامنة أقسام:", err)
     );
+}
+
+// 🆕🛠️ إصلاح جذري خطير جداً لاستهلاك حصة فايرستور اليومية: صفحة المينيو
+// العام (index.html) كانت تشغّل initData()/pullLatestFromCloud() الكاملة
+// بالضبط متلها متل شاشة الكاشير/الأدمن - يعني كل زبون يفتح المينيو
+// (حتى لو بس يتصفح) كان يقرأ: كل الأصناف + آخر 400 فاتورة + 300 صرفية +
+// 300 راتب + كلمات المرور + 18 مستند إعدادات داخلية (كاشيرية، سائقين،
+// موظفين...) - أكثر من 1000 قراءة بأول فتح للصفحة بس، وتتكرر بالكامل كل
+// 90 ثانية طول ما التبويب مفتوح بجوال الزبون. زبون وحد يسيب الصفحة مفتوحة
+// شوي = مئات آلاف القراءات بمفرده، وهذا سبب انفجار الحصة المجانية اليومية
+// حتى بدون أي "حمل قوي" حقيقي. الحل: مزامنة لحظية خفيفة جداً (Listeners)
+// بس للإعدادات القليلة اللي المينيو العام فعلاً يحتاجها - بلا فواتير،
+// بلا صرفيات، بلا رواتب، بلا كلمات مرور، بلا بيانات موظفين/سائقين إطلاقاً
+// (هذا كمان يسكر ثغرة كانت تسرّب بيانات داخلية حساسة لمتصفح كل زبون).
+const PUBLIC_MENU_SETTINGS_KEYS = [
+    'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
+    'sys_coupons', 'sys_menu_announcement'
+];
+function setupPublicSettingsRealtimeSync() {
+    if (!db) return;
+    PUBLIC_MENU_SETTINGS_KEYS.forEach(key => {
+        db.collection("system_store").doc(key).onSnapshot(
+            { includeMetadataChanges: true },
+            docSnap => {
+                if (!docSnap.exists) return;
+                if (docSnap.metadata && docSnap.metadata.fromCache) return;
+                const data = docSnap.data();
+                if (data && data.content) {
+                    const before = localStorage.getItem(key);
+                    if (before !== data.content) {
+                        localStorage.setItem(key, data.content);
+                        if (!isCashierBusy() && typeof refreshActiveUI === 'function')
+                            refreshActiveUI();
+                    }
+                }
+            },
+            err => console.log("خطأ مزامنة إعدادات المينيو العام (" + key + "):", err)
+        );
+    });
 }
 
 // 🧾 مزامنة لحظية لتصميم الفاتورة (شعار / نصوص / إظهار-إخفاء)
@@ -7825,6 +7864,25 @@ function setupPublicMenuRealtimeListener(retryCount) {
 }
 
 async function loadPublicMenu() {
+    // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
+    // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
+    // (لا سحب فواتير، لا صرفيات، لا رواتب، لا كلمات مرور - المينيو العام
+    // ما إله أي داعي يشوف أو يخزّن أي من هذي البيانات بمتصفح الزبون)
+    if (!localStorage.getItem('sys_items'))
+        localStorage.setItem('sys_items', JSON.stringify([]));
+    if (!localStorage.getItem('sys_categories'))
+        localStorage.setItem('sys_categories', JSON.stringify(DEFAULT_DATA.categories));
+    if (!localStorage.getItem('sys_working_hours'))
+        localStorage.setItem('sys_working_hours', JSON.stringify({ open:"10:00", close:"23:59", enabled:false }));
+    if (!localStorage.getItem('sys_areas'))
+        localStorage.setItem('sys_areas', JSON.stringify(DEFAULT_DATA.deliveryAreas));
+    if (!localStorage.getItem('sys_out_of_stock'))
+        localStorage.setItem('sys_out_of_stock', JSON.stringify([]));
+    if (!localStorage.getItem('sys_coupons'))
+        localStorage.setItem('sys_coupons', JSON.stringify([]));
+    if (!localStorage.getItem('sys_menu_announcement'))
+        localStorage.setItem('sys_menu_announcement', JSON.stringify(DEFAULT_DATA.menuAnnouncement));
+
     // 🛠️ إصلاح جذري مهم جداً: كان هذا يفعّل مستمع المينيو فوراً بدون ما
     // ينتظر اكتمال تسجيل الدخول المجهول. لو الشبكة بطيئة شوي (خصوصاً أول
     // زيارة على جهاز ما سجّل دخول مجهول فيه قبل)، أول محاولة قراءة تنرفض
@@ -7832,7 +7890,12 @@ async function loadPublicMenu() {
     // فيضل الزبون عالق على "جاري تحميل المينيو" للأبد. الحين ننتظر اكتمال
     // تسجيل الدخول أولاً قبل ما نحاول نقرا أي شي من قاعدة البيانات.
     try { await firebaseAuthReadyPromise; } catch (_) {}
-    setupPublicMenuRealtimeListener();
+
+    setupPublicMenuRealtimeListener();     // مينيو (لحظي وخفيف)
+    setupCategoriesRealtimeSync();         // أقسام (لحظي وخفيف)
+    setupPublicSettingsRealtimeSync();     // إعدادات عامة خفيفة (لحظي، بلا استعلامات دورية)
+
+    if (typeof renderStatusBadge === 'function') renderStatusBadge();
 }
 
 // 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل (نص، عرض/إخفاء)
@@ -8327,11 +8390,17 @@ window.addEventListener('storage', (event) => {
 });
 
 // تهيئة عند تحميل الصفحة
+// 🆕🛠️ إصلاح جذري خطير جداً لاستهلاك حصة فايرستور: initData() الكاملة
+// (فواتير + صرفيات + رواتب + كلمات مرور + 18 مستند إعدادات داخلية) كانت
+// تشتغل لكل صفحة بلا استثناء - حتى صفحة المينيو العام اللي يفتحها آلاف
+// الزباين. الحين: المينيو العام ياخذ مسار خفيف مخصص (loadPublicMenu)،
+// وصفحات الطاقم فقط (كاشير/أدمن/مخزن) تستخدم initData() الكاملة.
 document.addEventListener('DOMContentLoaded', () => {
-    initData();
     if (typeof showVersionBadge === 'function') showVersionBadge();
     if (document.body.classList.contains('public-menu-body')) {
         loadPublicMenu();
+    } else {
+        initData();
     }
 });
 
