@@ -5004,7 +5004,7 @@ function generatePlatformExportPdf() {
                 ${showPrice ? 'إجمالي السعر: ' + totalPrice.toLocaleString('ar-IQ') + ' د.ع<br>' : ''}
                 ${showNet ? 'إجمالي الصافي المتوقع: ' + totalNet.toLocaleString('ar-IQ') + ' د.ع' : ''}
             </div>
-            <script>window.onload = () => window.print();</script>
+            <script>window.onload = () => window.print();<\/script>
         </body></html>
     `);
     win.document.close();
