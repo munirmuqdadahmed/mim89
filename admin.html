@@ -1574,6 +1574,31 @@
                     style="background:#8b5cf6;color:#fff;font-weight:900;margin-bottom:10px;">
                 <i class="fa-solid fa-plus"></i> ➕ إضافة فاتورة مفقودة يدوياً (من فاتورة ورقية)
             </button>
+
+            <!-- 🆕 أرشفة وتصدير الفواتير - تصدير + حذف اختياري من السحابة -->
+            <div style="border:1.5px solid #38bdf8;border-radius:10px;padding:12px;
+                        background:#0a1420;margin-bottom:12px;">
+                <h5 style="color:#38bdf8;font-size:0.9rem;margin-bottom:6px;">
+                    📦 أرشفة وتصدير الفواتير
+                </h5>
+                <p class="hint" style="margin-bottom:8px;">
+                    💡 صدّر فترة معينة كملف تحفظه عندك، وبعدها (اختياري)
+                    احذفها من السحابة حتى تخفّف حجم قاعدة البيانات.
+                </p>
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <input type="date" id="archiveFromDate" class="gold-input-inline" style="flex:1;">
+                    <input type="date" id="archiveToDate" class="gold-input-inline" style="flex:1;">
+                </div>
+                <button onclick="exportInvoicesArchive()" class="gold-btn btn-block"
+                        style="background:#38bdf8;color:#000;font-weight:900;margin-bottom:8px;">
+                    ⬇️ تصدير كملف CSV (يفتح بالإكسل)
+                </button>
+                <button onclick="deleteArchivedInvoices()" class="gold-btn btn-block"
+                        style="background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;">
+                    🗑️ حذف هذي الفترة من السحابة (بعد التصدير)
+                </button>
+                <p id="archiveStatusMsg" style="font-size:0.72rem;color:#888;margin-top:6px;"></p>
+            </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <input type="date" id="invMgrDateFilter" class="gold-input-inline"
                        style="flex:1;min-width:140px;" onchange="renderInvoiceManagerList()">
@@ -3702,6 +3727,96 @@ async function saveManualInvoice() {
     closeModal('manualInvoiceModal');
     renderInvoiceManagerList();
     alert('✅ تمت إضافة الفاتورة #' + orderNum + ' للسجل!');
+}
+
+// 🆕 تصدير فواتير فترة معينة كملف CSV يفتح بالإكسل - يشمل كل التفاصيل
+async function exportInvoicesArchive() {
+    const from = document.getElementById('archiveFromDate').value;
+    const to   = document.getElementById('archiveToDate').value;
+    const statusEl = document.getElementById('archiveStatusMsg');
+    if (!from || !to) return alert('⚠️ حدد الفترة (من تاريخ - إلى تاريخ).');
+    if (to < from) return alert('⚠️ تاريخ النهاية قبل البداية.');
+
+    statusEl.innerText = '⏳ جاري سحب الفواتير من السحابة...';
+    let orders = [];
+    try {
+        const snap = await db.collection('completed_orders')
+            .where('dateDate', '>=', from).where('dateDate', '<=', to)
+            .get({ source: 'server' });
+        snap.forEach(d => orders.push(d.data()));
+    } catch (e) {
+        statusEl.innerText = '❌ فشل السحب: ' + e.message;
+        return;
+    }
+
+    if (orders.length === 0) {
+        statusEl.innerText = '⚠️ ماكو فواتير بهذي الفترة.';
+        return;
+    }
+
+    // بناء ملف CSV - يفتح مباشرة بالإكسل، يدعم العربي (BOM UTF-8)
+    const headers = ['التاريخ','الوقت','رقم الطلب','الزبون','الهاتف','نوع الخدمة',
+        'السائق/المنصة','طريقة الدفع','الأصناف','المجموع','مستقر؟'];
+    const rows = orders.map(o => [
+        o.dateDate, o.timestamp, o.orderNum, o.customerName || '', o.customerPhone || '',
+        o.orderType || '', o.driverName || '', o.paymentMethod || '',
+        (o.items || []).map(it => it.name + ' x' + cleanPrice(it.qty)).join(' | '),
+        cleanPrice(o.totalAmount), o.isSettled ? 'نعم' : 'لا'
+    ]);
+    const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => '"' + String(cell).replace(/"/g,'""') + '"').join(','))
+        .join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'فواتير_' + from + '_الى_' + to + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    statusEl.innerHTML = '✅ تم تصدير ' + orders.length + ' فاتورة. ' +
+        '<strong style="color:#f59e0b;">تأكد الملف انحفظ عندك قبل ما تحذف من السحابة!</strong>';
+}
+
+// 🆕 حذف فواتير فترة معينة من السحابة (بعد التصدير) - إجراء حساس يحتاج
+// رمز المالك، ويحذف بالدفعات (Firestore يقبل 500 عملية بالدفعة الوحدة)
+async function deleteArchivedInvoices() {
+    const from = document.getElementById('archiveFromDate').value;
+    const to   = document.getElementById('archiveToDate').value;
+    const statusEl = document.getElementById('archiveStatusMsg');
+    if (!from || !to) return alert('⚠️ حدد الفترة أول.');
+
+    if (!confirm('⚠️ هذا يحذف كل فواتير الفترة (' + from + ' → ' + to + ') نهائياً من ' +
+        'السحابة، بدون رجعة. تأكدت الملف اتصدّر واتحفظ عندك؟')) return;
+
+    requireOwnerPin('حذف أرشيف الفواتير (' + from + ' → ' + to + ')', async () => {
+        statusEl.innerText = '⏳ جاري الحذف...';
+        try {
+            const snap = await db.collection('completed_orders')
+                .where('dateDate', '>=', from).where('dateDate', '<=', to)
+                .get({ source: 'server' });
+
+            const docs = snap.docs;
+            let deletedCount = 0;
+            for (let i = 0; i < docs.length; i += 450) {
+                const batch = db.batch();
+                docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                deletedCount += Math.min(450, docs.length - i);
+            }
+
+            // نحذفها من التخزين المحلي كمان
+            let localOrders = getData('sys_completed_orders') || [];
+            localOrders = localOrders.filter(o => !(o.dateDate >= from && o.dateDate <= to));
+            setData('sys_completed_orders', localOrders);
+
+            statusEl.innerText = '✅ تم حذف ' + deletedCount + ' فاتورة من السحابة والجهاز.';
+        } catch (e) {
+            statusEl.innerText = '❌ فشل الحذف: ' + e.message;
+        }
+    });
 }
 
 function renderInvoiceManagerList() {
