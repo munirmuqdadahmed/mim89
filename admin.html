@@ -971,6 +971,39 @@
     <!-- ==== النوافذ المنقولة من الكاشير (تُفتح من الأزرار أعلاه) ==== -->
 
     <!-- الكشف اليومي -->
+    <!-- 🆕 نافذة تصدير كشف حساب المنصة - قابلة للتخصيص، تُطبع كـPDF -->
+    <div id="platformExportModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:420px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-bottom:8px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 style="color:#38bdf8;">📄 تصدير كشف الحساب</h4>
+                <button onclick="closeModal('platformExportModal')"
+                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <p class="hint" style="margin-bottom:8px;">اختر شنو تريد يظهر بالكشف:</p>
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;">
+                <input type="checkbox" id="exportColOrderNum" checked style="width:16px;height:16px;">
+                رقم الطلب ورقمهم
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;">
+                <input type="checkbox" id="exportColItems" checked style="width:16px;height:16px;">
+                الأصناف
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;">
+                <input type="checkbox" id="exportColPrice" checked style="width:16px;height:16px;">
+                السعر (فاتورتنا بالمنصة)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;margin-bottom:14px;cursor:pointer;">
+                <input type="checkbox" id="exportColNet" checked style="width:16px;height:16px;">
+                الصافي المتوقع (بعد العمولة)
+            </label>
+            <button onclick="generatePlatformExportPdf()" class="gold-btn btn-block"
+                    style="background:#38bdf8;color:#000;font-weight:900;">
+                🖨️ إنشاء الكشف (احفظه PDF من نافذة الطباعة)
+            </button>
+        </div>
+    </div>
+
     <div id="dailyReportModal" class="modal-overlay">
         <div class="modal-body">
             <div style="display:flex;justify-content:space-between;align-items:center;
@@ -1171,9 +1204,42 @@
                     </button>
                 </div>
                 <p style="font-size:0.7rem;color:#999;margin-top:6px;">
-                    💡 يحسب لكل صنف: سعره العادي + النسبة، ويعبّي كل الخانات
-                    تحت تلقائياً (تكدر تراجعها أو تعدّل أي وحدة يدوياً قبل الحفظ).
+                    💡 يحسب لكل صنف السعر اللي يرجّع نفس سعرك العادي بالضبط
+                    بعد ما المنصة تخصم عمولتها، ويعبّي كل الخانات تحت
+                    تلقائياً (تكدر تراجعها أو تعدّل أي وحدة يدوياً قبل الحفظ).
                 </p>
+            </div>
+
+            <!-- 🆕 خصم مؤقت لفترة محددة - يرجع تلقائياً للسعر العادي بعد
+                 انتهاء التاريخ، بدون ما تحتاج تطفيه يدوياً -->
+            <div style="background:#1a1020;border:1px solid #c084fc;border-radius:8px;
+                        padding:10px;margin-bottom:12px;">
+                <div style="font-size:0.8rem;color:#c084fc;font-weight:900;margin-bottom:6px;">
+                    🏷️ عرض/خصم مؤقت لفترة محددة
+                </div>
+                <p style="font-size:0.7rem;color:#999;margin-bottom:8px;">
+                    💡 خصم يتفعّل تلقائياً بين تاريخين بس (مثلاً عرض أسبوع)،
+                    وبعد التاريخ يرجع السعر العادي لحاله بدون أي تدخل منك.
+                </p>
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <input type="number" id="tempPromoPct" class="gold-input-inline"
+                           placeholder="نسبة الخصم % (مثال: 50)" style="flex:1;">
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <input type="date" id="tempPromoFrom" class="gold-input-inline" style="flex:1;">
+                    <input type="date" id="tempPromoTo" class="gold-input-inline" style="flex:1;">
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button onclick="saveTempPlatformPromo()" class="gold-btn"
+                            style="flex:1;background:#c084fc;color:#000;font-weight:900;">
+                        تفعيل العرض
+                    </button>
+                    <button onclick="removeTempPlatformPromo()" class="gold-btn"
+                            style="flex:1;background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;">
+                        إلغاء العرض
+                    </button>
+                </div>
+                <p id="tempPromoStatus" style="font-size:0.72rem;color:#888;margin-top:6px;"></p>
             </div>
 
             <div id="platformPricesList" style="max-height:400px;overflow-y:auto;"></div>
@@ -2406,7 +2472,7 @@
 
 </div><!-- end adminMainApp -->
 
-<script src="app.js?v=1781"></script>
+<script src="app.js?v=1782"></script>
 <script>
 /* ==========================================
    PIN الأدمن
@@ -4550,6 +4616,61 @@ function renderEmployeeFinanceHistory(emp) {
 // 🆕 تطبيق نسبة (مثلاً عمولة المنصة) تلقائياً على كل الأصناف دفعة وحدة -
 // يحسب: السعر العادي + النسبة، ويعبّي كل خانة تلقائياً (تبقى قابلة
 // للمراجعة اليدوية قبل الحفظ النهائي)
+// 🆕 خصم مؤقت لفترة محددة - يتفعّل تلقائياً بين تاريخين، ويرجع للسعر
+// العادي تلقائياً بعد انتهاء التاريخ بدون أي تدخل يدوي
+function saveTempPlatformPromo() {
+    const platformName = document.getElementById('platformPricesTargetName').value;
+    const pct  = cleanPrice(document.getElementById('tempPromoPct').value);
+    const from = document.getElementById('tempPromoFrom').value;
+    const to   = document.getElementById('tempPromoTo').value;
+
+    if (!pct || pct <= 0 || pct >= 100) return alert('⚠️ أدخل نسبة خصم منطقية بين 1 و99.');
+    if (!from || !to) return alert('⚠️ حدد تاريخ البداية والنهاية.');
+    if (to < from) return alert('⚠️ تاريخ النهاية قبل البداية.');
+
+    let platforms = getData('sys_delivery_platforms') || [];
+    const platform = platforms.find(p => p.name === platformName);
+    if (!platform) return;
+
+    platform.tempPromo = { pct, fromDate: from, toDate: to };
+    setData('sys_delivery_platforms', platforms);
+    loadTempPlatformPromoStatus(platformName);
+    alert('✅ تم تفعيل عرض ' + pct + '% من ' + from + ' لين ' + to + ' - يرجع تلقائياً للسعر العادي بعدها.');
+}
+
+function removeTempPlatformPromo() {
+    const platformName = document.getElementById('platformPricesTargetName').value;
+    let platforms = getData('sys_delivery_platforms') || [];
+    const platform = platforms.find(p => p.name === platformName);
+    if (!platform) return;
+
+    delete platform.tempPromo;
+    setData('sys_delivery_platforms', platforms);
+    document.getElementById('tempPromoPct').value = '';
+    document.getElementById('tempPromoFrom').value = '';
+    document.getElementById('tempPromoTo').value = '';
+    loadTempPlatformPromoStatus(platformName);
+}
+
+function loadTempPlatformPromoStatus(platformName) {
+    const statusEl = document.getElementById('tempPromoStatus');
+    if (!statusEl) return;
+    const platforms = getData('sys_delivery_platforms') || [];
+    const platform = platforms.find(p => p.name === platformName);
+    const promo = platform && platform.tempPromo;
+
+    if (!promo) { statusEl.innerText = '⚪ ماكو عرض مفعّل حالياً.'; return; }
+
+    const today = getTodayString();
+    const isActive = today >= promo.fromDate && today <= promo.toDate;
+    document.getElementById('tempPromoPct').value = promo.pct;
+    document.getElementById('tempPromoFrom').value = promo.fromDate;
+    document.getElementById('tempPromoTo').value = promo.toDate;
+    statusEl.innerHTML = isActive
+        ? '🟢 عرض ' + promo.pct + '% <strong>مفعّل الآن</strong> لين ' + promo.toDate
+        : '🟡 عرض ' + promo.pct + '% مجدول (' + promo.fromDate + ' → ' + promo.toDate + ') - مو مفعّل اليوم بعد.';
+}
+
 function applyBulkPlatformCommission() {
     const pct = parseFloat(document.getElementById('bulkCommissionPct')?.value);
     if (isNaN(pct)) return alert('⚠️ أدخل نسبة صحيحة (مثال: 26).');
@@ -4581,6 +4702,7 @@ function applyBulkPlatformCommission() {
 function openPlatformPricesModal(platformName) {
     document.getElementById('platformPricesTargetName').value = platformName;
     document.getElementById('platformPricesTitle').innerText = '💰 أسعار خاصة — ' + platformName;
+    loadTempPlatformPromoStatus(platformName);
 
     const items = (getData('sys_items') || []).filter(i => !i.isPaused);
     const box = document.getElementById('platformPricesList');
@@ -4675,6 +4797,10 @@ function renderAdminPlatformsList() {
             'class="gold-btn btn-sm" style="width:auto;padding:5px 12px;' +
             'background:#f59e0b;color:#000;font-weight:900;">' +
             '💰 أسعار خاصة</button>' +
+            '<button onclick="openPlatformDiscountModal(\'' + p.id + '\')" ' +
+            'class="gold-btn btn-sm" style="width:auto;padding:5px 12px;' +
+            'background:#ec4899;color:#fff;font-weight:900;">' +
+            '🏷️ عرض خصم مؤقت</button>' +
             '<button onclick="deletePlatformFromAdmin(\'' + p.id + '\')" ' +
             'class="gold-btn btn-danger btn-sm" style="width:auto;padding:5px 12px;">' +
             '🗑️ حذف</button>' +
@@ -4696,7 +4822,85 @@ function renderAdminPlatformsList() {
 
 // بناء قسم شهر واحد لمنصة معيّنة (كشف الحساب + التسوية) - معزول تماماً
 // داخل بطاقة تلك المنصة بس
+// 🆕 فتح نافذة تصدير كشف الحساب - نحفظ معرّف المجموعة المطلوب تصديرها
+let activeExportGroupId = null;
+function openPlatformExportModal(groupId) {
+    activeExportGroupId = groupId;
+    openModal('platformExportModal');
+}
+
+// 🆕 إنشاء كشف حساب مطبوع بالحقول المختارة - يفتح بنافذة جديدة، والمالك
+// يحفظه PDF من نافذة الطباعة نفسها (Save as PDF) ويرسله واتساب براحته
+function generatePlatformExportPdf() {
+    const g = window.platformGroupsCache && window.platformGroupsCache[activeExportGroupId];
+    if (!g) return alert('⚠️ تعذّر إيجاد بيانات الكشف - جرب تفتحه من جديد.');
+
+    const showOrderNum = document.getElementById('exportColOrderNum').checked;
+    const showItems    = document.getElementById('exportColItems').checked;
+    const showPrice    = document.getElementById('exportColPrice').checked;
+    const showNet      = document.getElementById('exportColNet').checked;
+
+    const platforms = getData('sys_delivery_platforms') || [];
+    const platformObj = platforms.find(p => p.name === g.platform);
+    const commissionPct = platformObj ? cleanPrice(platformObj.commissionPct) : 0;
+
+    let totalPrice = 0, totalNet = 0;
+    const rows = g.orders.map(o => {
+        const adjusted = o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null;
+        const displayAmt = adjusted ? cleanPrice(o.platformAdjustedAmount) : cleanPrice(o.totalAmount);
+        const netAfterCommission = Math.round(displayAmt * (1 - commissionPct / 100));
+        totalPrice += displayAmt;
+        totalNet   += netAfterCommission;
+        const itemsLine = (o.items || []).map(it => it.name + ' ×' + cleanPrice(it.qty)).join('، ');
+
+        let cells = '';
+        if (showOrderNum) cells += '<td>#' + o.orderNum +
+            (o.platformOrderRef ? '<br><span style="color:#888;font-size:0.75em;">رقمهم: ' + o.platformOrderRef + '</span>' : '') +
+            '</td>';
+        if (showItems) cells += '<td>' + (itemsLine || '-') + '</td>';
+        if (showPrice) cells += '<td>' + displayAmt.toLocaleString('ar-IQ') + '</td>';
+        if (showNet) cells += '<td>' + netAfterCommission.toLocaleString('ar-IQ') + '</td>';
+        return '<tr>' + cells + '</tr>';
+    }).join('');
+
+    let headers = '';
+    if (showOrderNum) headers += '<th>رقم الطلب</th>';
+    if (showItems) headers += '<th>الأصناف</th>';
+    if (showPrice) headers += '<th>السعر</th>';
+    if (showNet) headers += '<th>الصافي المتوقع</th>';
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+        <title>كشف حساب ${g.platform} - ${g.yearMonth}</title>
+        <style>
+            body { font-family: Tahoma, Arial, sans-serif; padding: 20px; }
+            h2 { text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 13px; }
+            th { background: #eee; }
+            .totals { margin-top: 15px; font-weight: bold; font-size: 15px; }
+        </style></head>
+        <body>
+            <h2>MIM89 FAST FOOD — كشف حساب ${g.platform}</h2>
+            <p style="text-align:center;">شهر ${g.yearMonth} — ${g.orders.length} طلب</p>
+            <table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>
+            <div class="totals">
+                ${showPrice ? 'إجمالي السعر: ' + totalPrice.toLocaleString('ar-IQ') + ' د.ع<br>' : ''}
+                ${showNet ? 'إجمالي الصافي المتوقع: ' + totalNet.toLocaleString('ar-IQ') + ' د.ع' : ''}
+            </div>
+            <script>window.onload = () => window.print();</script>
+        </body></html>
+    `);
+    win.document.close();
+    closeModal('platformExportModal');
+}
+
 function buildPlatformMonthGroupHtml(g, groupId) {
+    // 🆕 نخزّن بيانات المجموعة بذاكرة عامة يقدر يوصلها زر التصدير لاحقاً
+    window.platformGroupsCache = window.platformGroupsCache || {};
+    window.platformGroupsCache[groupId] = g;
+
     // 🆕 نجيب نسبة عمولة هذي المنصة لحساب "الصافي" لكل طلب تلقائياً
     const platforms = getData('sys_delivery_platforms') || [];
     const platformObj = platforms.find(p => p.name === g.platform);
@@ -4755,11 +4959,17 @@ function buildPlatformMonthGroupHtml(g, groupId) {
             totalNet.toLocaleString('ar-IQ') + ' د.ع</span>' : '') + ' ' +
         '<span style="font-size:0.7rem;color:#888;">▾ كشف الحساب</span></div>' +
         '</div>' +
+        '<div style="display:flex;gap:6px;">' +
+        '<button onclick="event.stopPropagation();openPlatformExportModal(\'' + groupId + '\')" ' +
+        'class="gold-btn btn-sm" ' +
+        'style="background:#38bdf8;color:#000;border:none;padding:8px 12px;' +
+        'font-weight:900;white-space:nowrap;">📄 تصدير</button>' +
         '<button onclick="event.stopPropagation();settlePlatformMonth(\'' +
         g.platform.replace(/'/g,"\\'") + '\',\'' + g.yearMonth + '\')" ' +
         'class="gold-btn btn-sm" ' +
         'style="background:#c084fc;color:#000;border:none;padding:8px 12px;' +
         'font-weight:900;white-space:nowrap;">💰 تسوية الشهر</button>' +
+        '</div>' +
         '</div>' +
         '<div id="' + groupId + '" style="display:none;margin-top:8px;' +
         'border-top:1px solid #24392c;padding-top:8px;">' +
@@ -5344,7 +5554,7 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1781'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1781)
+    const CURRENT_PAGE_VERSION = '1782'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1782)
 
     async function checkForFreshPageVersion() {
         try {
