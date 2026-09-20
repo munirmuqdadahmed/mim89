@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1783';
+const MIM89_APP_VERSION = '1784';
 
 /* ==========================================
    المتغيرات العامة
@@ -1717,6 +1717,12 @@ function getPosCustomerInfo() {
 // 🗺️ أجور التوصيل حسب المنطقة
 function getPosDeliveryFee() {
     if (selectedPosOrderType !== 'delivery') return 0;
+
+    // 🆕🛠️ توصيل عن طريق منصة (بلي/طلبات...) = خارج حساب المطعم تماماً،
+    // لا نحتسب أي أجرة منطقة داخلية له (التوصيل عليهم مالي دخل بالمطعم)
+    const driverName = document.getElementById('posDriverSelect')?.value;
+    if (driverName && isPlatformDeliveryName(driverName)) return 0;
+
     const areaSelect  = document.getElementById('posAreaSelect');
     const selectedArea = areaSelect ? areaSelect.value : '';
     const areas        = getData('sys_areas') || [];
@@ -2324,8 +2330,13 @@ async function proceedToPrintAfterCash() {
     const custInfo   = getPosCustomerInfo();
     const driverName = selectedPosOrderType === 'delivery'
         ? (document.getElementById('posDriverSelect')?.value || 'غير محدد') : '-';
+    // 🆕🛠️ توصيل عن طريق منصة = لا منطقة إله أي معنى (لا بالكاشير ولا
+    // بتذكرة المطبخ ولا بفاتورة الزبون) - المنصة توصّل بطريقتها الخاصة
+    const isPlatformOrder = selectedPosOrderType === 'delivery' &&
+        driverName && driverName !== 'غير محدد' && isPlatformDeliveryName(driverName);
     const areaVal    = document.getElementById('posAreaSelect')?.value || '';
-    const area       = areaVal === '__other__' ? 'منطقة أخرى'
+    const area       = isPlatformOrder ? ''
+        : areaVal === '__other__' ? 'منطقة أخرى'
         : (areaVal || (selectedPosOrderType === 'delivery' ? 'توصيل' : 'داخل المطعم'));
 
     // ✅ رقم الطلب محلي فوري - لا انتظار
@@ -2968,7 +2979,13 @@ function buildCustomerReceiptLines(ord) {
     L.push({ separator: 'dash' });
 
     // نوع الخدمة + طريقة الدفع (مدمجين بسطر وحد يوفّر مسافة، مطابق للفاتورة المرجعية)
-    L.push({ text: ord.orderType + ' | الدفع: ' + (ord.paymentMethod || 'كاش'),
+    // 🆕 لو الطلب توصيل عن طريق منصة (بلي، طلبات...)، نبيّن اسم المنصة
+    // صراحة بدل كلمة "توصيل" العامة بس - نفس منطق تذكرة المطبخ بالضبط
+    const custOrderTypeLabel = (ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-' &&
+        typeof isPlatformDeliveryName === 'function' && isPlatformDeliveryName(ord.driverName))
+        ? 'توصيل ' + ord.driverName
+        : ord.orderType;
+    L.push({ text: custOrderTypeLabel + ' | الدفع: ' + (ord.paymentMethod || 'كاش'),
         size:'big', align:'center', bold:true });
     if (design.showCustomerName && ord.customerName)
         L.push({ text: 'الزبون: ' + ord.customerName, size:'normal', align:'right' });
@@ -2976,7 +2993,11 @@ function buildCustomerReceiptLines(ord) {
         L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
     if (design.showDriverArea && ord.orderType === 'توصيل') {
         if (ord.area) L.push({ text: 'المنطقة: ' + ord.area, size:'normal', align:'right' });
-        if (ord.driverName && ord.driverName !== '-')
+        // 🆕 اسم المنصة صار مطبوع أصلاً بالسطر الرئيسي فوق ("توصيل بلي")
+        // - نطبع سطر "السائق:" بس لو سائق حقيقي تابع للمطعم، تجنباً للتكرار
+        const isPlatform = ord.driverName &&
+            typeof isPlatformDeliveryName === 'function' && isPlatformDeliveryName(ord.driverName);
+        if (ord.driverName && ord.driverName !== '-' && !isPlatform)
             L.push({ text: 'السائق: ' + ord.driverName, size:'normal', align:'right' });
     }
     // 🆕 سطر إضافي مخصص (رقم هاتف المحل، عنوان، رقم ضريبي...) يضبطه الأدمن
@@ -4623,12 +4644,27 @@ function onPosDriverSelectChanged() {
 
     // 🆕 إظهار/إخفاء خانة رقم فاتورة المنصة - بغض النظر عن حالة السلة
     const refBox = document.getElementById('platformOrderRefBox');
+    const isPlatform = selectedName && isPlatformDeliveryName(selectedName);
     if (refBox) {
-        const isPlatform = selectedName && isPlatformDeliveryName(selectedName);
         refBox.style.display = isPlatform ? 'block' : 'none';
         if (!isPlatform) {
             const refInput = document.getElementById('posPlatformOrderRef');
             if (refInput) refInput.value = '';
+        }
+    }
+
+    // 🆕🛠️ التوصيل عن طريق منصة (بلي/طلبات...) خارج عن سيطرة المطعم تماماً
+    // - لا سعر منطقة ولا اسم منطقة إله أي معنى هنا (المنصة توصّل بطريقتها
+    // الخاصة). فقرة "المنطقة" تظهر فقط لما يكون التوصيل بسائق المطعم نفسه.
+    const areaBox = document.getElementById('posAreaBox');
+    if (areaBox && selectedPosOrderType === 'delivery') {
+        if (isPlatform) {
+            areaBox.style.display = 'none';
+            const areaSel = document.getElementById('posAreaSelect');
+            if (areaSel) areaSel.value = '';
+        } else {
+            areaBox.style.display = 'block';
+            loadPosDeliveryAreas();
         }
     }
 
