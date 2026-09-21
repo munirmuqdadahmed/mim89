@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1784';
+const MIM89_APP_VERSION = '1785';
 
 /* ==========================================
    المتغيرات العامة
@@ -761,53 +761,15 @@ async function pullLatestFromCloud() {
     if (!db) return { ok: false };
     let changed = false;
 
-    // الأصناف
-    try {
-        // 🆕 مهلة 7 ثواني مباشرة على هذا الاستعلام تحديداً - أهم استعلام
-        // بالتطبيق (يوقف عرض المينيو بالكامل لو تعلّق)
-        const snap = await Promise.race([
-            db.collection("menu_items").get({ source: 'server' }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 7000))
-        ]);
-        if (!snap.empty) {
-            const cloudItems = [];
-            snap.forEach(doc => {
-                const d = doc.data();
-                cloudItems.push({
-                    ...d,
-                    docId:      doc.id,
-                    id:         d.id || doc.id,
-                    categoryId: cleanPrice(d.categoryId || d.catId || d.category || 1)
-                });
-            });
-            const before = localStorage.getItem('sys_items');
-            const after  = JSON.stringify(cloudItems);
-            if (before !== after) {
-                localStorage.setItem('sys_items', after);
-                changed = true;
-            }
-        }
-    } catch (e) {
-        console.warn("تعذّر سحب الأصناف:", e);
-        window.lastMenuLoadError = 'pull: ' + ((e && e.code) ? (e.code + ': ' + e.message) : String(e));
-    }
-
-    // الأقسام
-    try {
-        const catDoc = await db.collection("system_store").doc("sys_categories")
-            .get({ source: 'server' });
-        if (catDoc.exists && catDoc.data() && catDoc.data().content) {
-            const cats = JSON.parse(catDoc.data().content);
-            if (Array.isArray(cats) && cats.length > 0) {
-                const before = localStorage.getItem('sys_categories');
-                const after  = JSON.stringify(cats);
-                if (before !== after) {
-                    localStorage.setItem('sys_categories', after);
-                    changed = true;
-                }
-            }
-        }
-    } catch (e) { console.warn("تعذّر سحب الأقسام:", e); }
+    // 🆕🛠️ إصلاح جذري خطير جداً إضافي لاستهلاك الحصة اليومية: الأصناف
+    // والأقسام كانت تُقرأ هنا بالكامل (كل الأصناف + مستند الأقسام) من
+    // جديد كل 90 ثانية، **بالإضافة** لمستمعين لحظيين (setupCloudRealtimeSync
+    // و setupCategoriesRealtimeSync) شغالين بنفس الوقت على نفس البيانات
+    // بالضبط - قراءة مكررة تماماً بلا أي داعي، من كل جهاز كاشير/أدمن/مخزن
+    // مفتوح طول اليوم. المستمعين اللحظيين أصلاً يوفّرون البيانات فور
+    // اتصالهم (onSnapshot يرجّع اللقطة الكاملة فوراً عند أول ربط) ويحدّثونها
+    // تلقائياً بأي تغيير حقيقي بعدها - فحذف هذا الاستعلام المكرر هنا يوقف
+    // هدر آلاف القراءات يومياً من كل جهاز موظف بدون أي خسارة وظيفية إطلاقاً.
 
     // الفواتير
     // 🛠️ إصلاح جذري خطير جداً لاستهلاك الحصة اليومية بفايرستور: كنا نعيد
