@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1785';
+const MIM89_APP_VERSION = '1786';
 
 /* ==========================================
    المتغيرات العامة
@@ -1323,6 +1323,19 @@ function refreshActiveUI(force) {
         if (typeof renderAdminCategories === 'function') renderAdminCategories();
         if (typeof renderAdminItems      === 'function') renderAdminItems();
         if (typeof renderCategoriesManagementList === 'function') renderCategoriesManagementList();
+        // 🆕🛠️ إصلاح جذري: صندوقي "تسجيلات حضور مشبوهة" و"حالة جهاز
+        // الكاشير" بالصفحة الرئيسية للأدمن كانا يترسمان مرة وحدة بس عند
+        // تسجيل الدخول (loadAdminTabsData) - أي بيانات جديدة توصل بعدها
+        // بالخلفية (كل 90 ثانية عبر pullLatestFromCloud) تتحدث فعلياً
+        // بالذاكرة المحلية، لكن هذولة الصندوقين ما يعرفون إنهم لازم
+        // يعيدون الرسم، فيضل الأدمن شايف "صورة" قديمة من لحظة الدخول
+        // طول ما الجلسة مفتوحة - حتى لو موظف سجّل حضور مشبوه بعدها بساعات.
+        if (typeof renderOutsideLocationAlert === 'function' &&
+            document.getElementById('outsideLocationAlertBox'))
+            renderOutsideLocationAlert();
+        if (typeof renderCashierHeartbeatStatus === 'function' &&
+            document.getElementById('cashierHeartbeatBox'))
+            renderCashierHeartbeatStatus();
     } else if (document.getElementById('inventoryTableBody')) {
         if (typeof renderInventoryTable === 'function') renderInventoryTable();
     } else if (document.getElementById('driverOrdersList')) {
@@ -7820,11 +7833,34 @@ function cleanupStorage() {
 function setupPublicMenuRealtimeListener(retryCount) {
     retryCount = retryCount || 0;
     if (db) {
+        // 🆕🛠️ إصلاح جذري خطير: لو الاتصال "تعلّق بصمت" (لا نجاح ولا فشل
+        // واضح - يصير غالباً وقت استهلاك الحصة اليومية بفايرستور)، لا
+        // onSnapshot ولا err يشتغلون إطلاقاً، فيضل الزبون عالق على "جاري
+        // التحميل" للأبد بدون أي رسالة خطأ توضح السبب. مهلة 12 ثانية هنا
+        // تضمن ظهور رسالة تشخيصية واضحة بكل الحالات، حتى لو الاتصال نفسه
+        // ما رجّع أي جواب صريح (نجاح أو فشل) لأي سبب.
+        let resolved = false;
+        const hangTimeout = setTimeout(() => {
+            if (resolved) return;
+            resolved = true;
+            window.lastMenuLoadError = 'timeout: لا رد من السحابة خلال 12 ثانية ' +
+                '(الأرجح: الحصة اليومية بفايرستور محروقة اليوم - راجع جهاز الكاشير/الأدمن).';
+            renderPublicMenuUI();
+            if (retryCount < 4) {
+                setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 1500 * (retryCount + 1));
+            } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
+                sessionStorage.setItem('mim89_auto_reload_done', '1');
+                setTimeout(() => location.reload(), 2000);
+            }
+        }, 12000);
+
         db.collection("menu_items").onSnapshot(
             { includeMetadataChanges: true },
             snapshot => {
                 if (snapshot.empty) return;
                 if (snapshot.metadata && snapshot.metadata.fromCache) return;
+                resolved = true;
+                clearTimeout(hangTimeout);
                 const cloudItems = [];
                 snapshot.forEach(doc => {
                     cloudItems.push({ ...doc.data(), docId:doc.id, id:doc.data().id||doc.id });
@@ -7835,6 +7871,9 @@ function setupPublicMenuRealtimeListener(retryCount) {
                 }
             },
             err => {
+                if (resolved) return;
+                resolved = true;
+                clearTimeout(hangTimeout);
                 console.warn('⚠️ خطأ بمستمع المينيو العام:', err);
                 // 🆕 نحفظ الخطأ الفعلي عالمياً حتى نقدر نعرضه بالشاشة
                 // العالقة مباشرة - بدل ما نخمّن السبب من بعيد، نخلي
