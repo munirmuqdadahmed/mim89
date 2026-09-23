@@ -222,14 +222,24 @@
                             </select>
                         </div>
 
-                        <!-- 🆕 رقم فاتورة المنصة - يظهر بس لو اخترت منصة
-                             توصيل (بلي/طلبات...)، يربط رقم فاتورتك الداخلي
-                             برقم فاتورة المنصة نفسها -->
-                        <div id="platformOrderRefBox" style="display:none;margin:3px 0;
-                                    background:#1a1020;padding:5px 6px;border-radius:7px;
+                        <!-- 🆕🛠️ رقم فاتورة المنصة - صار بنفس نمط "إضافة على
+                             فاتورة سابقة" بالضبط (تشيك بوكس + خانة تظهر تحته)،
+                             بدل صندوق يظهر/يختفي تلقائياً بلا أي تحكم يدوي.
+                             يتفعّل تلقائياً (يتأشر ✓ لحاله) لما تختار منصة
+                             توصيل من القائمة فوق، وتقدر تلغيه يدوياً بأي وقت. -->
+                        <label style="display:flex;align-items:center;gap:6px;
+                                      font-size:0.78rem;color:#c084fc;cursor:pointer;
+                                      margin:4px 0;">
+                            <input type="checkbox" id="posHasPlatformRef"
+                                   onchange="togglePlatformRefBox()"
+                                   style="width:16px;height:16px;">
+                            #️⃣ رقم فاتورة المنصة (بلي/طلبات...)؟
+                        </label>
+                        <div id="platformOrderRefBox" style="display:none;margin:3px 0 6px;
+                                    background:#1a1020;padding:6px;border-radius:7px;
                                     border:1px solid #c084fc;">
                             <span class="section-label" style="color:#c084fc;">
-                                <i class="fa-solid fa-hashtag"></i> رقم فاتورة المنصة:
+                                رقم فاتورة المنصة:
                             </span>
                             <input type="text" id="posPlatformOrderRef" class="gold-input-inline"
                                    placeholder="مثال: 28609818" style="direction:ltr;text-align:left;">
@@ -537,8 +547,6 @@
         <p class="hint" style="text-align:center;margin-bottom:6px;">
             🔒 يعرض فواتير الشيفت الحالي فقط - يُصفَّر تلقائياً بعد كل تقفيل شيفت
         </p>
-        <!-- 🔒 تم إخفاء إجمالي المبيعات وعدد الفواتير هنا بطلب الإدارة -
-             السجل الآن للبحث وإعادة الطباعة فقط -->
         <div id="ordersLogSummary" style="display:none;"></div>
         <div id="completedOrdersList"
              style="max-height:320px;overflow-y:auto;font-size:0.8rem;">
@@ -744,9 +752,6 @@
     </div>
 </div>
 
-<!-- ملاحظات المطبخ -->
-<!-- 🔒 نافذة "ملاحظات المطبخ" انتقلت للأدمن (تبويب العمليات اليومية) -->
-
 <!-- أوقات الدوام -->
 <div id="workingHoursModal" class="modal-overlay">
     <div class="modal-body" style="max-width:380px;">
@@ -778,19 +783,14 @@
     </div>
 </div>
 
-<!-- 🔒 نافذتا "إدارة النفاد" و"الكوبونات" انتقلتا للأدمن (تبويب العمليات اليومية) -->
-
-
 <!-- السكريبت -->
-<script src="app.js?v=1781"></script>
+<script src="app.js?v=1788"></script>
 <script>
 /* ==========================================
    PIN الكاشير
    ========================================== */
 var cashierPin = "";
 
-// 🛠️ نفس إصلاح شاشة الأدمن: تحقق صامت بعد كل رقم بدل الإرسال التلقائي عند
-// 4 أرقام دائماً، لأن كل كاشير ممكن يكون له رمز بطول مختلف.
 function updateCashierPinDots() {
     const box = document.getElementById('pinDots');
     if (!box) return;
@@ -825,7 +825,6 @@ function cashierPinSubmit() {
     if (typeof loginCashier === 'function') {
         loginCashier();
     }
-    // إذا فشل نُظهر رسالة خطأ
     setTimeout(() => {
         const errEl = document.getElementById('authError');
         if (errEl && errEl.innerText) {
@@ -840,7 +839,6 @@ function cashierPinSubmit() {
     }, 150);
 }
 
-// دعم لوحة مفاتيح الكمبيوتر
 document.addEventListener('keydown', (e) => {
     const overlay = document.getElementById('authOverlay');
     if (!overlay || overlay.style.display === 'none') return;
@@ -857,11 +855,6 @@ function toggleBrandMenu() {
     if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
-// 🛠️ إصلاح: كان أي ضغط على زر "أدوات الفحص" (أو أي زر آخر داخل القائمة لا يستدعي
-// toggleBrandMenu بنفسه) يُغلق القائمة كاملة فوراً، لأن هذا المستمع كان يتحقق فقط
-// من ".brand-btn" ويتجاهل أن الضغط قد يكون داخل القائمة المنسدلة نفسها. الآن أي
-// ضغط داخل #brandDropdownMenu لا يُغلق القائمة تلقائياً (الأزرار التي يجب أن
-// تُغلق القائمة بعد تنفيذ أمرها تستدعي toggleBrandMenu() بنفسها أصلاً).
 window.onclick = function(e) {
     if (!e.target.closest('.brand-btn') && !e.target.closest('#brandDropdownMenu')) {
         const menu = document.getElementById('brandDropdownMenu');
@@ -876,6 +869,18 @@ function toggleMaintenanceTools() {
     const open  = box.style.display === 'block';
     box.style.display  = open ? 'none' : 'block';
     if (arrow) arrow.innerText = open ? '▼' : '▲';
+}
+
+// 🆕🛠️ تشيك بوكس رقم فاتورة المنصة - نفس منطق togglePrevOrderLinkBox
+// بالضبط (إظهار/إخفاء يدوي، وتفريغ الحقل عند الإلغاء)
+function togglePlatformRefBox() {
+    const box = document.getElementById('platformOrderRefBox');
+    const checked = document.getElementById('posHasPlatformRef')?.checked;
+    if (box) box.style.display = checked ? 'block' : 'none';
+    if (!checked) {
+        const input = document.getElementById('posPlatformOrderRef');
+        if (input) input.value = '';
+    }
 }
 
 function initOfflineMonitor() {
@@ -906,11 +911,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ==========================================
-   🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل (الكاشير ممكن يكون
-   بمنتصف طلب زبون، وإعادة تحميل قسرية تمسح السلة الحالية بالكامل!)
+   🆕 تنبيه تحديث متوفر
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1781'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1781)
+    const CURRENT_PAGE_VERSION = '1788';
 
     async function checkForFreshPageVersion() {
         try {
@@ -939,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(bar);
     }
 
-    setInterval(checkForFreshPageVersion, 120000); // كل دقيقتين
+    setInterval(checkForFreshPageVersion, 120000);
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) checkForFreshPageVersion();
     });
