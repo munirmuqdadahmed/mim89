@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1786';
+const MIM89_APP_VERSION = '1787';
 
 /* ==========================================
    المتغيرات العامة
@@ -1668,6 +1668,19 @@ function selectOrderType(btnElement) {
             selectedPosOrderType === 'delivery' ? 'block' : 'none';
         if (selectedPosOrderType === 'delivery') loadPosDeliveryAreas();
     }
+
+    // 🆕🛠️ إصلاح: صندوق "رقم فاتورة المنصة" كان يضل ظاهر حتى لو بدّلت
+    // نوع الطلب من توصيل لصالة/سفري (كان يتحكم فيه اختيار السائق/المنصة
+    // بس، بدون فحص نوع الطلب). الحين ينحجب فوراً مع أي نوع غير التوصيل.
+    if (selectedPosOrderType !== 'delivery') {
+        const refBox = document.getElementById('platformOrderRefBox');
+        if (refBox) {
+            refBox.style.display = 'none';
+            const refInput = document.getElementById('posPlatformOrderRef');
+            if (refInput) refInput.value = '';
+        }
+    }
+
     renderPosCart();
 }
 
