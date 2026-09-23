@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1787';
+const MIM89_APP_VERSION = '1788';
 
 /* ==========================================
    المتغيرات العامة
@@ -1670,9 +1670,11 @@ function selectOrderType(btnElement) {
     }
 
     // 🆕🛠️ إصلاح: صندوق "رقم فاتورة المنصة" كان يضل ظاهر حتى لو بدّلت
-    // نوع الطلب من توصيل لصالة/سفري (كان يتحكم فيه اختيار السائق/المنصة
-    // بس، بدون فحص نوع الطلب). الحين ينحجب فوراً مع أي نوع غير التوصيل.
+    // نوع الطلب من توصيل لصالة/سفري. الحين ينحجب فوراً مع أي نوع غير
+    // التوصيل، ويلغي تأشير التشيك بوكس معه (نفس نمط "إضافة على فاتورة سابقة").
     if (selectedPosOrderType !== 'delivery') {
+        const refCheckbox = document.getElementById('posHasPlatformRef');
+        if (refCheckbox) refCheckbox.checked = false;
         const refBox = document.getElementById('platformOrderRefBox');
         if (refBox) {
             refBox.style.display = 'none';
@@ -4630,9 +4632,13 @@ function isPlatformDeliveryName(driverName) {
 function onPosDriverSelectChanged() {
     const selectedName = document.getElementById('posDriverSelect')?.value;
 
-    // 🆕 إظهار/إخفاء خانة رقم فاتورة المنصة - بغض النظر عن حالة السلة
+    // 🆕🛠️ صندوق رقم فاتورة المنصة صار تشيك بوكس (نفس نمط "إضافة على
+    // فاتورة سابقة") - نأشره تلقائياً ✓ ونظهر الخانة لما تختار منصة،
+    // ونلغيه تلقائياً لو رجعت لسائق حقيقي - يضل قابل للتحكم اليدوي كمان.
+    const refCheckbox = document.getElementById('posHasPlatformRef');
     const refBox = document.getElementById('platformOrderRefBox');
     const isPlatform = selectedName && isPlatformDeliveryName(selectedName);
+    if (refCheckbox) refCheckbox.checked = isPlatform;
     if (refBox) {
         refBox.style.display = isPlatform ? 'block' : 'none';
         if (!isPlatform) {
