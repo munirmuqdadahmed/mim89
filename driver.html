@@ -102,6 +102,7 @@
         <div style="font-size:0.75rem;color:#888;margin-top:2px;">
             <span id="driverOrdersCount">0</span> طلب لسا ما تسوّى
         </div>
+        <div id="driverDeductionNote" style="font-size:0.74rem;color:#f59e0b;margin-top:6px;"></div>
         <p style="font-size:0.7rem;color:#666;margin-top:8px;">
             💡 "استلام" الطلب هنا يعني إنك أخذته للتوصيل بس - تسليم الفلوس
             وتصفير الذمة يصير من الكاشير أو الأدمن لما ترجع.
@@ -121,7 +122,7 @@
 
 </div>
 
-<script src="app.js?v=1735"></script>
+<script src="app.js?v=1787"></script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
@@ -136,8 +137,6 @@ function driverLogin() {
     if (!typedName) { errEl.innerText = '⚠️ اكتب اسمك.'; return; }
     if (!pin)       { errEl.innerText = '⚠️ اكتب رمز الدخول.'; return; }
 
-    // 🛠️ إصلاح أمني: الدخول الحين برمز خاص لكل سائق (يحدده الأدمن) بدل
-    // رقم الهاتف - أصعب على أي شخص ثاني يخمّنه أو يوصله بالصدفة.
     const drivers = getData('sys_drivers') || [];
     const driver  = drivers.find(d => String(d.pin || '').trim() === pin);
 
@@ -146,8 +145,6 @@ function driverLogin() {
         return;
     }
 
-    // نستخدم الاسم المسجّل بالضبط (وليس اللي كتبه السائق) حتى يطابق تماماً
-    // اسم السائق المخزّن على الطلبات نفسها من طرف الكاشير
     activeDriverName = driver.name;
     activeDriverId   = driver.id;
     try { localStorage.setItem('sys_active_driver_id', driver.id); } catch (_) {}
@@ -156,9 +153,6 @@ function driverLogin() {
     document.getElementById('driverMainScreen').style.display  = 'block';
     document.getElementById('driverNameHeader').innerText = driver.name;
 
-    // 🛠️ إصلاح: نسحب فوراً من السحابة أول ما يدخل (بدل ما نعرض بيانات
-    // محلية قديمة وننتظر أول دورة تحديث بعد 8 ثواني) - يضمن يشوف آخر حالة
-    // فعلية (مثلاً لو تسوّى حسابه للتو من الكاشير)
     fetchDriverOrdersFromCloud();
     renderDriverOrders();
     startDriverAutoRefresh();
@@ -181,7 +175,6 @@ function renderDriverOrders() {
     if (!activeDriverName) return;
     const all = getData('sys_completed_orders') || [];
 
-    // فلتر أساسي مشترك: طلب توصيل حقيقي (مو ناقص/وهمي) وغير مسوّى
     const validDeliveryOrder = o =>
         o.orderType === 'توصيل' && !o.isSettled &&
         o.orderNum !== undefined && o.orderNum !== null &&
@@ -190,9 +183,6 @@ function renderDriverOrders() {
     const myOrders   = all.filter(o => validDeliveryOrder(o) && o.driverName === activeDriverName);
     const poolOrders = all.filter(o => validDeliveryOrder(o) && o.driverName === OPEN_DRIVER_POOL_MARKER);
 
-    // 🆕 كشف الطلبات الجديدة (بالحوض المفتوح أو المستلمة) وإطلاق تنبيه صوتي
-    // مستمر لها - أول مرة نحمّل فيها الصفحة نسجّل الموجود بصمت بدون تنبيه،
-    // وبعدها أي طلب جديد يوصل يفعّل الصافرة فوراً.
     const currentIds = new Set([...myOrders, ...poolOrders].map(o => String(o.id)));
     if (driverKnownOrderIds === null) {
         driverKnownOrderIds = currentIds;
@@ -211,8 +201,38 @@ function renderDriverOrders() {
 
     let total = 0;
     myOrders.forEach(o => total += cleanPrice(o.totalAmount));
-    document.getElementById('driverTotalOwed').innerText   = total.toLocaleString('ar-IQ') + ' د.ع';
+
+    // 🆕🛠️ إصلاح جذري: كان الرصيد المعروض للسائق = إجمالي مبالغ الطلبات
+    // بذمته بس، بدون أي خصم للسلف/الرواتب اللي صرفها له المطعم (بصفته
+    // مسجّل كمان بقائمة الموظفين). يعني لو استلم سلفة 50,000 من المطعم،
+    // رصيده هنا يضل نفسه بدون ما ينعكس عليه شي - يعطي صورة غلط عن شكد
+    // فعلياً لسا بذمته. الحين نخصم سلف ورواتب هذا الشهر (المسجّلة باسمه
+    // بقسم الموظفين) من إجمالي الطلبات، ونعرض تفصيل الخصم بوضوح.
+    const thisMonth = getTodayString().slice(0, 7);
+    const expenses  = getData('sys_expenses') || [];
+    const salaries  = getData('sys_salaries') || [];
+    const advancesThisMonth = expenses
+        .filter(e => e.type === 'سلفة' && e.employee === activeDriverName &&
+                     String(e.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,e) => s + cleanPrice(e.amount), 0);
+    const salaryThisMonth = salaries
+        .filter(s => s.employee === activeDriverName &&
+                     String(s.dateDate).slice(0,7) === thisMonth)
+        .reduce((s,x) => s + cleanPrice(x.amount), 0);
+    const totalDeductions = advancesThisMonth + salaryThisMonth;
+    const netTotal = Math.max(0, total - totalDeductions);
+
+    document.getElementById('driverTotalOwed').innerText   = netTotal.toLocaleString('ar-IQ') + ' د.ع';
     document.getElementById('driverOrdersCount').innerText = myOrders.length;
+
+    const noteEl = document.getElementById('driverDeductionNote');
+    if (noteEl) {
+        noteEl.innerText = totalDeductions > 0
+            ? '(مخصوم منها ' + totalDeductions.toLocaleString('ar-IQ') +
+              ' د.ع سلف/رواتب هذا الشهر — إجمالي الطلبات فعلياً: ' +
+              total.toLocaleString('ar-IQ') + ' د.ع)'
+            : '';
+    }
 
     // ---------- حوض الطلبات المفتوح ----------
     const poolSection = document.getElementById('driverPoolSection');
@@ -287,7 +307,6 @@ async function claimDriverOrder(orderId) {
             driverName: activeDriverName,
             claimedAt: Date.now()
         });
-        // تحديث محلي فوري (المستمع اللحظي بيحدّثه رسمياً كمان خلال لحظات)
         let all = getData('sys_completed_orders') || [];
         const ord = all.find(o => String(o.id) === String(orderId));
         if (ord) { ord.driverName = activeDriverName; localStorage.setItem('sys_completed_orders', JSON.stringify(all)); }
@@ -299,15 +318,12 @@ async function claimDriverOrder(orderId) {
     }
 }
 
-// إيقاف صافرة الطلب الجديد لما السائق يضغط الشريط (يشوف الطلب فعلياً)
 function acknowledgeNewOrder() {
     if (typeof stopContinuousAlert === 'function') stopContinuousAlert();
     const banner = document.getElementById('driverNewOrderBanner');
     if (banner) banner.style.display = 'none';
 }
 
-// تأكيد إن السائق استلم الطلب فعلياً (خرج للتوصيل) - لا يصفّر الذمة،
-// التصفير الفعلي (استلام الفلوس) يصير من الكاشير/الأدمن لاحقاً
 function markPickedUp(orderId) {
     let all = getData('sys_completed_orders') || [];
     const order = all.find(o => String(o.id) === String(orderId));
@@ -326,11 +342,6 @@ function markPickedUp(orderId) {
     renderDriverOrders();
 }
 
-// 🛠️ إصلاح جذري: التحديث كان دوري بس (كل 8 ثواني) - صار الحين مستمع لحظي
-// حقيقي (onSnapshot) يوصل الطلب الجديد فوراً بمجرد ما ينحفظ بالسحابة، مو
-// بعد انتظار دورة السحب التالية. هذا يحل مشكلة "الصفحة ما تتحدث مباشرة".
-// 🆕 الاستعلام الحين يشمل طلبات هذا السائق + حوض السواق المفتوح دفعة وحدة
-// (استعلام "in" بحقل واحد، ما يحتاج فهرس مركّب بفايرستور)
 let driverUnsubscribe = null;
 function startDriverAutoRefresh() {
     if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
@@ -382,8 +393,6 @@ document.addEventListener('visibilitychange', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        // محاولة استرجاع آخر سائق سجّل دخول بهذا الجهاز (راحة فقط، ما زال
-        // يحتاج يكتب رقمه لو تغيّر أو مسح بيانات المتصفح)
         try {
             const savedId = localStorage.getItem('sys_active_driver_id');
             if (savedId) {
@@ -392,14 +401,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (saved) document.getElementById('driverNameLogin').value = saved.name;
             }
         } catch (_) {}
-    }, 800); // انتظار بسيط حتى تكتمل تهيئة البيانات المحلية من app.js
+    }, 800);
 });
 
 /* ==========================================
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1735';
+    const CURRENT_PAGE_VERSION = '1787';
 
     async function checkForFreshPageVersion() {
         try {
