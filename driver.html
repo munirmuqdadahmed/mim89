@@ -122,7 +122,12 @@
 
 </div>
 
-<script src="app.js?v=1787"></script>
+<script>
+    // 🆕🛠️ إصلاح جذري: بدل رقم ثابت مكتوب يدوياً كان لازم نحدّثه بكل ملف
+    // مع كل رفعة - الحل: ختم وقت تلقائي بكل تحميل صفحة يضمن نسخة جديدة
+    // 100% دائماً من app.js، بدون أي تحديث يدوي مستقبلي أبداً.
+    document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');
+</script>
 <script>
 let activeDriverName = null;
 let activeDriverId   = null;
@@ -408,17 +413,19 @@ document.addEventListener('DOMContentLoaded', () => {
    🆕 تنبيه تحديث متوفر - بدون فرض إعادة تحميل
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1787';
-
+    // 🆕🛠️ إصلاح جذري: نقرأ رقم إصدار app.js الحقيقي من داخل app.js نفسه
+    // (المتغيّر MIM89_APP_VERSION) بدل رقم منفصل مكتوب يدوياً هنا.
     async function checkForFreshPageVersion() {
         try {
-            const res = await fetch(
-                location.pathname + '?_nocache=' + Date.now(), { cache: 'no-store' }
-            );
+            const runningVersion = typeof MIM89_APP_VERSION !== 'undefined'
+                ? MIM89_APP_VERSION : null;
+            if (!runningVersion) return;
+
+            const res = await fetch('app.js?_nocache=' + Date.now(), { cache: 'no-store' });
             if (!res.ok) return;
-            const html  = await res.text();
-            const match = html.match(/app\.js\?v=(\d+)/);
-            if (match && match[1] && match[1] !== CURRENT_PAGE_VERSION) showPageUpdateBanner();
+            const jsText = await res.text();
+            const match  = jsText.match(/MIM89_APP_VERSION\s*=\s*'(\d+)'/);
+            if (match && match[1] && match[1] !== runningVersion) showPageUpdateBanner();
         } catch (_) {}
     }
 
