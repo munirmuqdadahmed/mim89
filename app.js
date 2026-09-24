@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1788';
+const MIM89_APP_VERSION = '1789';
 
 /* ==========================================
    المتغيرات العامة
@@ -6269,12 +6269,19 @@ async function addNewMenuCategory() {
     if (categories.some(c => String(c.name).trim() === name))
         return alert("⚠️ يوجد قسم بنفس الاسم!");
 
+    // 🆕 قسم خاص بالكاشير فقط - إذا فعّلت التشيك بوكس، القسم ينحفظ
+    // مُستبعد من المينيو الإلكتروني من أول لحظة، بدون داعي تروح بعدها
+    // تخفيه يدوياً من جدول الأقسام
+    const hideChk = document.getElementById('newCategoryHiddenFromMenu');
+    const hidden  = !!(hideChk && hideChk.checked);
+
     const newId = categories.length > 0
         ? Math.max(...categories.map(c => cleanPrice(c.id))) + 1 : 1;
-    categories.push({ id: newId, name });
+    categories.push({ id: newId, name, hiddenFromPublicMenu: hidden });
 
     const res = await saveCategoriesToCloud(categories);
     if (input) input.value = '';
+    if (hideChk) hideChk.checked = false;
     alert(res.ok
         ? "✅ تم إضافة القسم على السحابة."
         : "⚠️ حُفظ محلياً فقط! " + (res.error || ''));
@@ -6312,6 +6319,16 @@ function deleteMenuCategory(catId) {
     }
 }
 
+async function toggleCategoryPublicVisibility(catId) {
+    let categories = await fetchFreshCategoriesFromCloud();
+    const cat = categories.find(c => cleanPrice(c.id) === cleanPrice(catId));
+    if (!cat) return;
+    cat.hiddenFromPublicMenu = !cat.hiddenFromPublicMenu;
+    const res = await saveCategoriesToCloud(categories);
+    if (!res.ok) alert("⚠️ حُفظ محلياً فقط! " + (res.error || ''));
+    renderCategoriesManagementList();
+}
+
 function renderCategoriesManagementList() {
     const tbody = document.getElementById('categoriesManagementTable');
     if (!tbody) return;
@@ -6320,17 +6337,28 @@ function renderCategoriesManagementList() {
 
     if (categories.length === 0) {
         tbody.innerHTML =
-            '<tr><td colspan="4" style="text-align:center;color:#666;padding:14px;">' +
+            '<tr><td colspan="5" style="text-align:center;color:#666;padding:14px;">' +
             'لا توجد أقسام</td></tr>';
         return;
     }
 
     tbody.innerHTML = categories.map((cat, idx) => {
-        const count = items.filter(i => getItemCategory(i) === cleanPrice(cat.id)).length;
+        const count  = items.filter(i => getItemCategory(i) === cleanPrice(cat.id)).length;
+        const hidden = !!cat.hiddenFromPublicMenu;
         return '<tr>' +
             '<td>' + (idx+1) + '</td>' +
             '<td><strong>' + cat.name + '</strong></td>' +
             '<td><span style="color:#888;font-size:0.8rem;">' + count + ' صنف</span></td>' +
+            '<td>' +
+            '<button class="gold-btn btn-sm" ' +
+            'onclick="toggleCategoryPublicVisibility(\'' + cat.id + '\')" ' +
+            'style="padding:4px 8px;font-size:0.72rem;' +
+            (hidden
+                ? 'background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;'
+                : 'background:#0d1a14;color:#10b981;border:1px solid #10b981;') + '">' +
+            (hidden ? '🚫 كاشير فقط' : '🌐 بالمينيو') +
+            '</button>' +
+            '</td>' +
             '<td>' +
             '<button class="gold-btn btn-sm" ' +
             'onclick="renameMenuCategory(\'' + cat.id + '\')" ' +
@@ -7915,7 +7943,23 @@ function setupPublicMenuRealtimeListener(retryCount) {
             }
         );
     } else {
+        // 🆕🛠️ إصلاح جذري خطير جداً: لو مكتبة فايربيس نفسها ما تحمّلت
+        // (db = null - يصير مثلاً لو خوادم gstatic.com محجوبة أو بطيئة
+        // جداً بشبكة الزبون تحديداً)، كان الكود يرسم "جاري التحميل" مرة
+        // وحدة بس ويسكت للأبد - صفر رسالة خطأ، صفر إعادة محاولة. هذا
+        // بالضبط سبب "يضل عالق بدون أي رسالة حتى بعد الانتظار الطويل".
+        // الحين نعرض سبب واضح ونعيد المحاولة تلقائياً زي باقي الحالات.
+        window.lastMenuLoadError = 'no-firebase: مكتبة الاتصال بالسحابة ' +
+            '(Firebase) ما تحمّلت بهذا الجهاز/الشبكة - جرب شبكة ثانية ' +
+            '(بيانات الجوال بدل الواي فاي مثلاً) أو تأكد الشبكة ما تحجب ' +
+            'gstatic.com.';
         renderPublicMenuUI();
+        if (retryCount < 4) {
+            setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 2000 * (retryCount + 1));
+        } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
+            sessionStorage.setItem('mim89_auto_reload_done', '1');
+            setTimeout(() => location.reload(), 2000);
+        }
     }
 }
 
@@ -8030,6 +8074,9 @@ function renderPublicMenuUI() {
     navContainer.appendChild(allBtn);
 
     categories.forEach(cat => {
+        // 🆕 قسم مخصص للكاشير فقط (hiddenFromPublicMenu على القسم نفسه)
+        // - يضل شغّال عادي بالكاشير، بس ما يظهر إطلاقاً بالمينيو الإلكتروني
+        if (cat.hiddenFromPublicMenu) return;
         const btn      = document.createElement('button');
         btn.className  = 'category-tab';
         btn.innerText  = cat.name;
