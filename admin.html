@@ -468,7 +468,7 @@
             </p>
             <div style="display:flex;gap:8px;">
                 <input type="text" id="newCategoryNameInput" class="gold-input-inline"
-                       placeholder="مثال: 🍕 قسم البيتزا">
+                       placeholder="مثال: 🍕 قسم البركر">
                 <button onclick="addNewMenuCategoryFromAdminTab()" class="gold-btn"
                         style="white-space:nowrap;">إضافة</button>
             </div>
@@ -768,7 +768,7 @@
 
                 <label class="section-label">سطر إضافي مخصص (اختياري):</label>
                 <input type="text" id="invoiceCustomExtraLine" class="gold-input-inline"
-                       placeholder="مثال: 📞 07701234567 أو رقم ضريبي..."
+                       placeholder="مثال: 📞 07750008630 أو رقم ضريبي..."
                        style="margin-bottom:6px;" oninput="renderInvoiceDesignPreview()">
                 <p class="hint" style="margin-bottom:14px;">
                     💡 يطبع كسطر إضافي وسط الفاتورة (رقم هاتف المحل، رقم
@@ -5669,17 +5669,17 @@ document.addEventListener('DOMContentLoaded', () => {
    تعديل نموذج أو إدخال بيانات، وإعادة تحميل قسرية تمسح كل شي كتبه!)
    ========================================== */
 (function () {
-    const CURRENT_PAGE_VERSION = '1782'; // 🔴 حدّثه هنا مع كل رفعة جديدة (نفس رقم app.js?v=1782)
-
     async function checkForFreshPageVersion() {
         try {
-            const res = await fetch(
-                location.pathname + '?_nocache=' + Date.now(), { cache: 'no-store' }
-            );
+            const runningVersion = typeof MIM89_APP_VERSION !== 'undefined'
+                ? MIM89_APP_VERSION : null;
+            if (!runningVersion) return;
+
+            const res = await fetch('app.js?_nocache=' + Date.now(), { cache: 'no-store' });
             if (!res.ok) return;
-            const html  = await res.text();
-            const match = html.match(/app\.js\?v=(\d+)/);
-            if (match && match[1] && match[1] !== CURRENT_PAGE_VERSION) showPageUpdateBanner();
+            const jsText = await res.text();
+            const match  = jsText.match(/MIM89_APP_VERSION\s*=\s*'(\d+)'/);
+            if (match && match[1] && match[1] !== runningVersion) showPageUpdateBanner();
         } catch (_) {}
     }
 
