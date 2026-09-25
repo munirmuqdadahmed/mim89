@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1790';
+const MIM89_APP_VERSION = '1791';
 
 /* ==========================================
    المتغيرات العامة
@@ -8044,6 +8044,11 @@ function renderPublicMenuUI() {
             '<div style="text-align:center;padding:70px 20px;color:#999;">' +
             '<div style="font-size:2.2rem;margin-bottom:10px;">⏳</div>' +
             '<div style="font-weight:900;">جاري تحضير المينيو...</div>' +
+            (window.lastMenuLoadError
+                ? '<div style="margin-top:16px;font-size:0.68rem;color:#555;' +
+                  'direction:ltr;word-break:break-all;padding:0 10px;">' +
+                  window.lastMenuLoadError + '</div>'
+                : '') +
             '</div>';
         return;
     }
