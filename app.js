@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1793';
+const MIM89_APP_VERSION = '1794';
 
 /* ==========================================
    المتغيرات العامة
@@ -7893,6 +7893,8 @@ function cleanupStorage() {
    ========================================== */
 function setupPublicMenuRealtimeListener(retryCount) {
     retryCount = retryCount || 0;
+    window.mim89ListenerCallCount = (window.mim89ListenerCallCount || 0) + 1;
+    try {
     if (db) {
         // 🆕🛠️ إصلاح جذري خطير: لو الاتصال "تعلّق بصمت" (لا نجاح ولا فشل
         // واضح - يصير غالباً وقت استهلاك الحصة اليومية بفايرستور)، لا
@@ -7967,6 +7969,13 @@ function setupPublicMenuRealtimeListener(retryCount) {
         setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
             Math.min(2000 * (retryCount + 1), 15000));
     }
+    } catch (e) {
+        // 🆕 لو صار خطأ فوري (متزامن) بأي مكان بهذي الدالة - قبل حتى ما
+        // توصل لمهلة الـ12 ثانية - نلتقطه هنا مباشرة بدل ما يضل مخفي
+        // ويمنع أي رسالة تشخيصية من الظهور إطلاقاً
+        window.lastMenuLoadError = 'sync-throw: ' + (e && e.message ? e.message : String(e));
+        try { renderPublicMenuUI(); } catch (_) {}
+    }
 }
 
 // 🆕 شريط تشخيص صغير جداً (أسفل الشاشة، غير مزعج) يتحدّث بنفسه كل ثانية
@@ -7994,6 +8003,8 @@ function startPublicMenuDiagnosticBar() {
                 't=' + secs + 's fb=' + (typeof firebase !== 'undefined' ? '1' : '0') +
                 ' db=' + (typeof db !== 'undefined' && db ? '1' : '0') +
                 ' auth=' + (typeof auth !== 'undefined' && auth ? '1' : '0') +
+                ' stage=' + (window.mim89LoadStage || '-') +
+                ' calls=' + (window.mim89ListenerCallCount || 0) +
                 ' items=' + itemsCount +
                 ' err=' + (window.lastMenuLoadError || '-');
         }, 1000);
@@ -8002,6 +8013,7 @@ function startPublicMenuDiagnosticBar() {
 
 async function loadPublicMenu() {
     startPublicMenuDiagnosticBar();
+    window.mim89LoadStage = 'start';
 
     // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
     // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
@@ -8022,6 +8034,7 @@ async function loadPublicMenu() {
     if (!localStorage.getItem('sys_menu_announcement'))
         localStorage.setItem('sys_menu_announcement', JSON.stringify(DEFAULT_DATA.menuAnnouncement));
 
+    window.mim89LoadStage = 'awaiting-auth';
     // 🛠️ إصلاح جذري مهم جداً: كان هذا يفعّل مستمع المينيو فوراً بدون ما
     // ينتظر اكتمال تسجيل الدخول المجهول. لو الشبكة بطيئة شوي (خصوصاً أول
     // زيارة على جهاز ما سجّل دخول مجهول فيه قبل)، أول محاولة قراءة تنرفض
@@ -8030,9 +8043,11 @@ async function loadPublicMenu() {
     // تسجيل الدخول أولاً قبل ما نحاول نقرا أي شي من قاعدة البيانات.
     try { await firebaseAuthReadyPromise; } catch (_) {}
 
+    window.mim89LoadStage = 'starting-listeners';
     setupPublicMenuRealtimeListener();     // مينيو (لحظي وخفيف)
     setupCategoriesRealtimeSync();         // أقسام (لحظي وخفيف)
     setupPublicSettingsRealtimeSync();     // إعدادات عامة خفيفة (لحظي، بلا استعلامات دورية)
+    window.mim89LoadStage = 'listeners-started';
 
     if (typeof renderStatusBadge === 'function') renderStatusBadge();
 }
