@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1792';
+const MIM89_APP_VERSION = '1793';
 
 /* ==========================================
    المتغيرات العامة
@@ -312,6 +312,20 @@ try {
     if (typeof firebase !== 'undefined') {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
+
+        // 🆕🛠️ إصلاح جذري جداً: الاتصال الافتراضي لفايرستور (WebChannel
+        // Streaming) بعض شبكات الموبايل/الاتصال بالعراق تحجبه أو "تعلّقه"
+        // بصمت تام - بدون أي خطأ صريح، الاتصال يضل معلّق للأبد وما توصل
+        // ولا بيانات ولا رسالة خطأ (بالضبط الأعراض اللي شفناها: يشتغل زين
+        // بالواي فاي/الحاسوب، ويعلّق للأبد على بيانات الموبايل). الحل
+        // القياسي المعروف لفايرستور: نجبره يكتشف تلقائياً ويستخدم
+        // "Long Polling" (طلبات HTTP عادية متكررة) بدل الاتصال المباشر
+        // المستمر لما يكتشف إن الشبكة تمنع الأخير - يشتغل بكل الحالات.
+        try {
+            db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+        } catch (e) {
+            console.warn('Firestore long-polling settings error:', e);
+        }
 
         // 🔒 إصلاح أمني مهم جداً: تسجيل دخول "مجهول" (Anonymous Auth)
         // تلقائي وشفاف تماماً - ما يحتاج الموظف يسوي أي شي إضافي، ونفس
