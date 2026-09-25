@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1794';
+const MIM89_APP_VERSION = '1795';
 
 /* ==========================================
    المتغيرات العامة
@@ -7987,10 +7987,10 @@ function startPublicMenuDiagnosticBar() {
         const bar = document.createElement('div');
         bar.id = 'mim89DiagBar';
         bar.style.cssText =
-            'position:fixed;bottom:2px;left:2px;z-index:999999;font-size:9px;' +
-            'color:#555;font-family:monospace;direction:ltr;background:rgba(0,0,0,0.35);' +
-            'padding:2px 6px;border-radius:5px;pointer-events:none;max-width:97vw;' +
-            'white-space:pre-wrap;line-height:1.5;';
+            'position:fixed;top:2px;left:2px;right:2px;z-index:999999;font-size:11px;' +
+            'color:#0f0;font-family:monospace;direction:ltr;background:rgba(0,0,0,0.75);' +
+            'padding:4px 8px;border-radius:5px;pointer-events:none;' +
+            'white-space:pre-wrap;line-height:1.6;text-align:center;';
         document.body.appendChild(bar);
 
         const startTs = Date.now();
