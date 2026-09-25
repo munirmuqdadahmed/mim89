@@ -7893,12 +7893,11 @@ function setupPublicMenuRealtimeListener(retryCount) {
             window.lastMenuLoadError = 'timeout: لا رد من السحابة خلال 12 ثانية ' +
                 '(الأرجح: الحصة اليومية بفايرستور محروقة اليوم - راجع جهاز الكاشير/الأدمن).';
             renderPublicMenuUI();
-            if (retryCount < 4) {
-                setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 1500 * (retryCount + 1));
-            } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
-                sessionStorage.setItem('mim89_auto_reload_done', '1');
-                setTimeout(() => location.reload(), 2000);
-            }
+            // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون زر
+            // يدوي وبدون إعادة تحميل قسرية تقاطع الزبون. المهلة تكبر
+            // تدريجياً لين تثبت عند 15 ثانية كحد أقصى بين كل محاولتين
+            setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
+                Math.min(2000 * (retryCount + 1), 15000));
         }, 12000);
 
         db.collection("menu_items").onSnapshot(
@@ -7922,24 +7921,13 @@ function setupPublicMenuRealtimeListener(retryCount) {
                 resolved = true;
                 clearTimeout(hangTimeout);
                 console.warn('⚠️ خطأ بمستمع المينيو العام:', err);
-                // 🆕 نحفظ الخطأ الفعلي عالمياً حتى نقدر نعرضه بالشاشة
-                // العالقة مباشرة - بدل ما نخمّن السبب من بعيد، نخلي
-                // المستخدم يشوفه بعينه ويرسلّه لينا
+                // 🆕 نحفظ الخطأ بالكونسول فقط للمتابعة الفنية - ما يظهر للزبون إطلاقاً
                 window.lastMenuLoadError = (err && err.code) ? (err.code + ': ' + err.message) : String(err);
                 renderPublicMenuUI();
-                // 🆕 شبكة أمان: لو المستمع فشل (مثلاً رفض مؤقت من قواعد
-                // الحماية قبل ما يخلص تسجيل الدخول المجهول)، نعيد المحاولة
-                // تلقائياً بدل ما يضل الزبون عالق على "جاري التحميل" للأبد
-                if (retryCount < 4) {
-                    setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 1500 * (retryCount + 1));
-                } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
-                    // 🆕 كل المحاولات فشلت - إعادة تحميل كاملة تلقائية
-                    // (مرة وحدة بس بهذي الجلسة، حتى ما تصير حلقة تحديث
-                    // لا نهائية) تعيد تهيئة كل شي من الصفر (تسجيل الدخول
-                    // المجهول، الاتصال بالسحابة...) بدل تكرار نفس المحاولة
-                    sessionStorage.setItem('mim89_auto_reload_done', '1');
-                    setTimeout(() => location.reload(), 2000);
-                }
+                // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون
+                // زر يدوي وبدون إعادة تحميل قسرية تقاطع الزبون
+                setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
+                    Math.min(1500 * (retryCount + 1), 15000));
             }
         );
     } else {
@@ -7954,12 +7942,10 @@ function setupPublicMenuRealtimeListener(retryCount) {
             '(بيانات الجوال بدل الواي فاي مثلاً) أو تأكد الشبكة ما تحجب ' +
             'gstatic.com.';
         renderPublicMenuUI();
-        if (retryCount < 4) {
-            setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1), 2000 * (retryCount + 1));
-        } else if (!sessionStorage.getItem('mim89_auto_reload_done')) {
-            sessionStorage.setItem('mim89_auto_reload_done', '1');
-            setTimeout(() => location.reload(), 2000);
-        }
+        // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون زر يدوي
+        // وبدون إعادة تحميل قسرية
+        setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
+            Math.min(2000 * (retryCount + 1), 15000));
     }
 }
 
@@ -8043,26 +8029,15 @@ function renderPublicMenuUI() {
     navContainer.innerHTML    = '';
     sectionsContainer.innerHTML = '';
 
-    // 🆕 تحسين تجربة: لو ما وصلت أصناف بعد (أول ثواني تحميل الصفحة)، نعرض
-    // رسالة تحميل واضحة بدل فراغ صامت يخلي الزبون يظن المينيو معطّل
-    // 🛠️ إصلاح إضافي: زر "أعد المحاولة" فوري - شبكة أمان يدوية للزبون
-    // لو انحاصر لأي سبب (حتى لو 4 محاولات تلقائية فشلت)، تحديث الصفحة
-    // كاملة يحل أغلب حالات التعليق بغض النظر عن السبب الجذري
+    // 🆕 بطلب صريح: لا رسائل تحذيرية ولا زر "إعادة تحميل" ولا تفاصيل تقنية
+    // تظهر للزبون - بس مؤشر هادئ بسيط ريثما توصل البيانات. المستمع اللحظي
+    // (مع إعادة المحاولة اللا نهائية الصامتة بالخلفية أعلاه) يعيد رسم
+    // الصفحة تلقائياً فور وصول البيانات بدون أي تدخل من الزبون
     if (!items || items.length === 0) {
         sectionsContainer.innerHTML =
-            '<div style="text-align:center;padding:60px 20px;color:#999;">' +
-            '<div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>' +
-            '<div style="font-weight:900;">جاري تحميل المينيو...</div>' +
-            '<div style="font-size:0.8rem;margin-top:6px;">تأكد من اتصالك بالإنترنت</div>' +
-            (window.lastMenuLoadError
-                ? '<div style="margin-top:14px;padding:10px;background:#1a0d0d;' +
-                  'border:1px solid #ef4444;border-radius:8px;font-size:0.72rem;' +
-                  'color:#fca5a5;direction:ltr;text-align:left;word-break:break-all;">' +
-                  '⚠️ تفاصيل تقنية (صوّرها وأرسلها):<br>' + window.lastMenuLoadError + '</div>'
-                : '') +
-            '<button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;' +
-            'background:var(--gold-primary,#ffd700);color:#000;border:none;border-radius:8px;' +
-            'font-weight:900;font-size:0.85rem;cursor:pointer;">🔄 إعادة تحميل الصفحة</button>' +
+            '<div style="text-align:center;padding:70px 20px;color:#999;">' +
+            '<div style="font-size:2.2rem;margin-bottom:10px;">⏳</div>' +
+            '<div style="font-weight:900;">جاري تحضير المينيو...</div>' +
             '</div>';
         return;
     }
