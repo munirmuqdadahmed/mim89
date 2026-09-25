@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1796';
+const MIM89_APP_VERSION = '1797';
 
 /* ==========================================
    المتغيرات العامة
@@ -8007,10 +8007,30 @@ function startPublicMenuDiagnosticBar() {
                 ' calls=' + (window.mim89ListenerCallCount || 0) +
                 ' ctrl=' + (window.mim89CtrlTimerCount || 0) +
                 ' items=' + itemsCount +
-                ' err=' + (window.lastMenuLoadError || '-');
+                ' err=' + (window.lastMenuLoadError || '-') +
+                '\nglobalErr=' + ((window.mim89GlobalErrors && window.mim89GlobalErrors.length)
+                    ? window.mim89GlobalErrors.join(' | ') : '-');
         }, 1000);
     } catch (_) {}
 }
+
+// 🆕 شبكة أمان أخيرة: نلتقط أي خطأ جافاسكريبت غير ملتقط بأي مكان بالصفحة
+// (حتى لو صار بعمق داخل مكتبة فايربيس نفسها، بعيد عن كل try/catch عندنا) -
+// هذا يغطي احتمال إن المشكلة الحقيقية خطأ داخلي بمكتبة الاتصال نفسها ما
+// وصل أبداً لأي من نقاط الالتقاط اللي عملناها يدوياً
+window.mim89GlobalErrors = [];
+window.addEventListener('error', (event) => {
+    window.mim89GlobalErrors.push(
+        (event.message || 'error') + ' @' + (event.filename || '?') + ':' + (event.lineno || '?'));
+    if (window.mim89GlobalErrors.length > 3) window.mim89GlobalErrors.shift();
+});
+window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    window.mim89GlobalErrors.push('promise: ' +
+        (reason && reason.code ? reason.code + ': ' + reason.message
+            : (reason && reason.message) ? reason.message : String(reason)));
+    if (window.mim89GlobalErrors.length > 3) window.mim89GlobalErrors.shift();
+});
 
 async function loadPublicMenu() {
     startPublicMenuDiagnosticBar();
