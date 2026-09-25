@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1789';
+const MIM89_APP_VERSION = '1790';
 
 /* ==========================================
    المتغيرات العامة
@@ -7904,7 +7904,13 @@ function setupPublicMenuRealtimeListener(retryCount) {
             { includeMetadataChanges: true },
             snapshot => {
                 if (snapshot.empty) return;
-                if (snapshot.metadata && snapshot.metadata.fromCache) return;
+                // 🆕🛠️ إصلاح جذري: كنا نتجاهل أي نسخة "من الكاش" (fromCache)
+                // وننتظر فقط رد مباشر من السحابة - فلو نت الزبون بطيء أو
+                // متقطع (بدون انقطاع كامل)، يضل عالق "جاري التحميل" للأبد
+                // رغم إن المينيو محفوظ أصلاً بذاكرة المتصفح (كاش فايرستور)
+                // وجاهز للعرض فوراً. الحين نعرض أي بيانات توصل (كاش أو
+                // سحابة) فوراً، والمستمع يستمر شغّال ويحدّث تلقائياً لو
+                // وصلت نسخة أحدث من السحابة بعدين.
                 resolved = true;
                 clearTimeout(hangTimeout);
                 const cloudItems = [];
