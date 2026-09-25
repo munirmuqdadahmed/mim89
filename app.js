@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1791';
+const MIM89_APP_VERSION = '1792';
 
 /* ==========================================
    المتغيرات العامة
@@ -7955,7 +7955,40 @@ function setupPublicMenuRealtimeListener(retryCount) {
     }
 }
 
+// 🆕 شريط تشخيص صغير جداً (أسفل الشاشة، غير مزعج) يتحدّث بنفسه كل ثانية
+// بشكل مستقل تماماً عن مستمعي فايرستور - يوضح بالضبط وين تعلّقت العملية
+// حتى لو فشلت كل مسارات الخطأ العادية بصمت بدون ما تشتغل. مهم جداً
+// للتشخيص عن بعد لأننا ما نقدر نشوف Console المتصفح مباشرة.
+function startPublicMenuDiagnosticBar() {
+    try {
+        const bar = document.createElement('div');
+        bar.id = 'mim89DiagBar';
+        bar.style.cssText =
+            'position:fixed;bottom:2px;left:2px;z-index:999999;font-size:9px;' +
+            'color:#555;font-family:monospace;direction:ltr;background:rgba(0,0,0,0.35);' +
+            'padding:2px 6px;border-radius:5px;pointer-events:none;max-width:97vw;' +
+            'white-space:pre-wrap;line-height:1.5;';
+        document.body.appendChild(bar);
+
+        const startTs = Date.now();
+        setInterval(() => {
+            const secs = Math.floor((Date.now() - startTs) / 1000);
+            let itemsCount = 'err';
+            try { itemsCount = (JSON.parse(localStorage.getItem('sys_items') || '[]')).length; }
+            catch (_) {}
+            bar.innerText =
+                't=' + secs + 's fb=' + (typeof firebase !== 'undefined' ? '1' : '0') +
+                ' db=' + (typeof db !== 'undefined' && db ? '1' : '0') +
+                ' auth=' + (typeof auth !== 'undefined' && auth ? '1' : '0') +
+                ' items=' + itemsCount +
+                ' err=' + (window.lastMenuLoadError || '-');
+        }, 1000);
+    } catch (_) {}
+}
+
 async function loadPublicMenu() {
+    startPublicMenuDiagnosticBar();
+
     // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
     // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
     // (لا سحب فواتير، لا صرفيات، لا رواتب، لا كلمات مرور - المينيو العام
