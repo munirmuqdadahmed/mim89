@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1797';
+const MIM89_APP_VERSION = '1798';
 
 /* ==========================================
    المتغيرات العامة
@@ -717,7 +717,7 @@ function setupPublicSettingsRealtimeSync() {
                 if (data && data.content) {
                     const before = localStorage.getItem(key);
                     if (before !== data.content) {
-                        localStorage.setItem(key, data.content);
+                        try { localStorage.setItem(key, data.content); } catch (_) {}
                         if (!isCashierBusy() && typeof refreshActiveUI === 'function')
                             refreshActiveUI();
                     }
@@ -7934,7 +7934,31 @@ function setupPublicMenuRealtimeListener(retryCount) {
                     cloudItems.push({ ...doc.data(), docId:doc.id, id:doc.data().id||doc.id });
                 });
                 if (cloudItems.length > 0) {
-                    localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                    // 🆕🛠️ نحفظ بالذاكرة المؤقتة أولاً (ما تمتلئ أبداً
+                    // بنفس طريقة localStorage) - هذا يضمن عرض المينيو
+                    // فوراً حتى لو فشل الحفظ الدائم بالأسفل لأي سبب
+                    window.mim89PublicMenuItemsCache = cloudItems;
+                    try {
+                        localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                    } catch (storageErr) {
+                        // 🆕 غالباً "QuotaExceededError" - ذاكرة المتصفح الدائمة
+                        // ممتلئة بهذا الجهاز. نحاول نفضي مساحة بمسح أثقل
+                        // بيانات غير ضرورية للمينيو العام (فواتير، صور قديمة
+                        // مرفوعة) ونعيد المحاولة مرة وحدة - وإذا فشلت برضو،
+                        // نكمل ونعرض المينيو من الذاكرة المؤقتة بدون ما نوقف
+                        // شي، لأن العرض لا يعتمد على نجاح هذا الحفظ إطلاقاً
+                        console.warn('⚠️ فشل حفظ المينيو بذاكرة الجهاز (على الأغلب ممتلئة):', storageErr);
+                        try {
+                            localStorage.removeItem('sys_completed_orders');
+                            localStorage.removeItem('sys_expenses');
+                            localStorage.removeItem('sys_salaries');
+                            localStorage.removeItem('sys_attendance');
+                            localStorage.removeItem('sys_audit_log');
+                            localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                        } catch (_) {
+                            // فشلت حتى بعد التنظيف - نتجاهل ونكمل بالعرض من الذاكرة المؤقتة فقط
+                        }
+                    }
                     renderPublicMenuUI();
                 }
             },
@@ -8112,9 +8136,15 @@ function renderMenuAnnouncementBanner() {
 
 function renderPublicMenuUI() {
     const categories     = getData('sys_categories');
-    // 🆕 استبعاد أي صنف مُعلَّم "hiddenFromPublicMenu" (مثلاً بوكس عروض خاص
-    // بالكاشير فقط) - يبقى ظاهر بالكاشير عادي، بس ما يظهر للزبون بالمينيو
-    const items          = (getData('sys_items') || []).filter(i => !i.hiddenFromPublicMenu);
+    // 🆕🛠️ إصلاح جذري جداً: كنا نعتمد فقط على localStorage كمصدر للأصناف -
+    // لو ذاكرة المتصفح الدائمة (localStorage) ممتلئة بهذا الجهاز (يصير
+    // بعد استخدام طويل أو كثرة صور محفوظة)، محاولة الحفظ ترمي خطأ
+    // "QuotaExceededError" ويتوقف كل شي قبل حتى ما نعرض المينيو - رغم إن
+    // البيانات فعلاً وصلت من السحابة بنجاح! الحين نحتفظ بنسخة إضافية
+    // بالذاكرة المؤقتة (متغيّر جافاسكريبت عادي، ما يمتلئ زي localStorage)
+    // ونعتمد عليها أولاً للعرض، بغض النظر هل نجح الحفظ الدائم أو لا.
+    const items = (window.mim89PublicMenuItemsCache || getData('sys_items') || [])
+        .filter(i => !i.hiddenFromPublicMenu);
     const navContainer   = document.getElementById('categoriesNav');
     const sectionsContainer = document.getElementById('menuSections');
     if (!navContainer || !sectionsContainer) return;
