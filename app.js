@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1795';
+const MIM89_APP_VERSION = '1796';
 
 /* ==========================================
    المتغيرات العامة
@@ -8005,6 +8005,7 @@ function startPublicMenuDiagnosticBar() {
                 ' auth=' + (typeof auth !== 'undefined' && auth ? '1' : '0') +
                 ' stage=' + (window.mim89LoadStage || '-') +
                 ' calls=' + (window.mim89ListenerCallCount || 0) +
+                ' ctrl=' + (window.mim89CtrlTimerCount || 0) +
                 ' items=' + itemsCount +
                 ' err=' + (window.lastMenuLoadError || '-');
         }, 1000);
@@ -8014,6 +8015,12 @@ function startPublicMenuDiagnosticBar() {
 async function loadPublicMenu() {
     startPublicMenuDiagnosticBar();
     window.mim89LoadStage = 'start';
+
+    // 🆕 اختبار تحكم مستقل تماماً - مؤقت بسيط جداً بلا أي علاقة بفايرستور
+    // إطلاقاً، حتى نتأكد 100% إن مؤقتات جافاسكريبت نفسها تشتغل طبيعي
+    // بهذا المتصفح/الجهاز، أو نستبعد هذا الاحتمال نهائياً
+    window.mim89CtrlTimerCount = 0;
+    setInterval(() => { window.mim89CtrlTimerCount++; }, 5000);
 
     // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
     // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
