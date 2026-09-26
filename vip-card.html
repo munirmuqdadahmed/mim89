@@ -205,19 +205,15 @@
             const box = document.getElementById('ordersHistoryBox');
             try {
                 const cleanPhone = String(phone || '').replace(/[^0-9]/g,'');
-                // 🛠️ استعلام بحقل واحد بس (phone) لتفادي الحاجة لفهرس مركّب
-                // بفايرستور - الفرز والتحديد يصير بالجافاسكربت بعد الجلب
-                const snap = await db.collection('completed_orders')
-                    .where('phone', '==', cleanPhone)
-                    .limit(50)
-                    .get({ source: 'server' });
+                // 🆕🛠️ إصلاح جذري: نستخدم fetch() المباشر (عبر دالة مشتركة
+                // بملف app.js) بدل استعلام المكتبة الداخلي - أثبتنا إن
+                // الأخير يتعلّق للأبد بصمت على بعض شبكات الموبايل
+                let orders = await window.restQueryByField('completed_orders', 'phone', cleanPhone, 50);
 
-                if (snap.empty) {
+                if (!orders || orders.length === 0) {
                     box.innerHTML = '<p class="empty-note">ماكو طلبات بعد</p>';
                     return;
                 }
-
-                let orders = snap.docs.map(d => d.data());
                 orders.sort((a,b) => (cleanPrice(b.createdTimestamp)) - (cleanPrice(a.createdTimestamp)));
                 orders = orders.slice(0, 15);
 
