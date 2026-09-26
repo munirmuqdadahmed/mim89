@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1804';
+const MIM89_APP_VERSION = '1805';
 
 /* ==========================================
    المتغيرات العامة
@@ -8254,10 +8254,15 @@ function filterCategory(catId, btnElement) {
 
 window.openItemCustomizationModal = function(itemId) {
     const items = getData('sys_items');
-    const item  = items.find(i =>
-        String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId)
+    let item  = items.find(i =>
+        String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId) ||
+        String(i.docId) === String(itemId)
     );
-    if (!item) return;
+    if (!item) {
+        console.warn('⚠️ لم يُعثر على الصنف لفتح نافذة التفاصيل. itemId=', itemId,
+            'أول 3 أصناف محفوظة:', items.slice(0, 3));
+        return;
+    }
     currentDetailItem = item;
 
     const titleEl = document.getElementById('detailTitle');
