@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1800';
+const MIM89_APP_VERSION = '1801';
 
 /* ==========================================
    المتغيرات العامة
@@ -8001,7 +8001,53 @@ function setupPublicMenuRealtimeListener(retryCount) {
     }
 }
 
+// 🆕 شريط تشخيص مخفي تماماً بشكل افتراضي - ما يشوفه أي زبون عادي إطلاقاً.
+// يظهر بس لو ضغط أحد بإصبعه بثبات على الشاشة لمدة 3 ثواني كاملة (اختبار
+// فني مقصود، ما يصير بالصدفة أبداً بالاستخدام العادي)
+function startHiddenDiagnosticBar() {
+    try {
+        const bar = document.createElement('div');
+        bar.id = 'mim89DiagBar';
+        bar.style.cssText =
+            'position:fixed;top:2px;left:2px;right:2px;z-index:999999;font-size:10px;' +
+            'color:#0f0;font-family:monospace;direction:ltr;background:rgba(0,0,0,0.85);' +
+            'padding:5px 8px;border-radius:5px;pointer-events:none;display:none;' +
+            'white-space:pre-wrap;line-height:1.6;text-align:center;';
+        document.body.appendChild(bar);
+
+        const startTs = Date.now();
+        setInterval(() => {
+            const secs = Math.floor((Date.now() - startTs) / 1000);
+            let itemsCount = 'err';
+            try { itemsCount = (JSON.parse(localStorage.getItem('sys_items') || '[]')).length; }
+            catch (_) {}
+            bar.innerText =
+                't=' + secs + 's fb=' + (typeof firebase !== 'undefined' ? '1' : '0') +
+                ' db=' + (typeof db !== 'undefined' && db ? '1' : '0') +
+                ' auth=' + (typeof auth !== 'undefined' && auth ? '1' : '0') +
+                ' cache=' + (window.mim89PublicMenuItemsCache ? window.mim89PublicMenuItemsCache.length : 0) +
+                ' items=' + itemsCount +
+                ' err=' + (window.lastMenuLoadError || '-');
+        }, 1000);
+
+        let pressTimer = null;
+        const startPress = () => {
+            pressTimer = setTimeout(() => {
+                bar.style.display = (bar.style.display === 'none') ? 'block' : 'none';
+            }, 3000);
+        };
+        const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+        document.addEventListener('touchstart', startPress, { passive: true });
+        document.addEventListener('touchend', cancelPress);
+        document.addEventListener('touchmove', cancelPress);
+        document.addEventListener('mousedown', startPress);
+        document.addEventListener('mouseup', cancelPress);
+    } catch (_) {}
+}
+
 async function loadPublicMenu() {
+    startHiddenDiagnosticBar();
+
     // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
     // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
     // (لا سحب فواتير، لا صرفيات، لا رواتب، لا كلمات مرور - المينيو العام
