@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1810';
+const MIM89_APP_VERSION = '1811';
 
 /* ==========================================
    المتغيرات العامة
@@ -2976,23 +2976,26 @@ function buildCustomerReceiptLines(ord) {
     }
     L.push({ separator: 'dash' });
 
-    // بيانات الفاتورة
-    L.push({ text: ord.timestamp + ' — ' + ord.dateDate, size:'normal', align:'center' });
-    if (!design.compactMode)
-        L.push({ text: 'الكاشير: ' + (ord.cashierName||'الرئيسي'), size:'normal', align:'right' });
-    L.push({ separator: 'dash' });
-
-    // نوع الخدمة + طريقة الدفع (مدمجين بسطر وحد يوفّر مسافة، مطابق للفاتورة المرجعية)
-    // 🆕 لو الطلب توصيل عن طريق منصة (بلي، طلبات...)، نبيّن اسم المنصة
-    // صراحة بدل كلمة "توصيل" العامة بس - نفس منطق تذكرة المطبخ بالضبط
+    // 🆕 نوع الخدمة (صالة/سفري/توصيل) مباشرة تحت رقم الطلب - نفس منطق
+    // اسم المنصة الصريح بدل "توصيل" العامة
     const custOrderTypeLabel = (ord.orderType === 'توصيل' && ord.driverName && ord.driverName !== '-' &&
         typeof isPlatformDeliveryName === 'function' && isPlatformDeliveryName(ord.driverName))
         ? 'توصيل ' + ord.driverName
         : ord.orderType;
-    L.push({ text: custOrderTypeLabel + ' | الدفع: ' + (ord.paymentMethod || 'كاش'),
-        size:'big', align:'center', bold:true });
+    L.push({ text: custOrderTypeLabel, size:'big', align:'center', bold:true });
+
+    // 🆕 التاريخ مع الوقت تحت نوع الخدمة مباشرة
+    L.push({ text: ord.dateDate + ' — ' + ord.timestamp, size:'normal', align:'center' });
+    if (!design.compactMode)
+        L.push({ text: 'الكاشير: ' + (ord.cashierName||'الرئيسي'), size:'normal', align:'right' });
+    L.push({ separator: 'dash' });
+
+    // 🆕 الزبون وطريقة الدفع بسطر وحد صغير (بدل سطر كبير منفصل لطريقة الدفع)
+    const custPaymentBits = [];
     if (design.showCustomerName && ord.customerName)
-        L.push({ text: 'الزبون: ' + ord.customerName, size:'normal', align:'right' });
+        custPaymentBits.push('الزبون: ' + ord.customerName);
+    custPaymentBits.push('الدفع: ' + (ord.paymentMethod || 'كاش'));
+    L.push({ text: custPaymentBits.join('  |  '), size:'normal', align:'right' });
     if (design.showPhone && ord.phone && ord.phone !== '-')
         L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
     if (design.showDriverArea && ord.orderType === 'توصيل') {
