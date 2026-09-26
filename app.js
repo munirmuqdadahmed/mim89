@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1803';
+const MIM89_APP_VERSION = '1804';
 
 /* ==========================================
    المتغيرات العامة
@@ -7899,24 +7899,71 @@ function cleanupStorage() {
 // اتصال لحظي دائم (onSnapshot)، نستخدم طلب عادي (.get()) نكرره كل مدة
 // قصيرة - نفس فكرة تحديث الصفحة يدوياً، بس تلقائي وبالخلفية. هذا يعطي
 // تحديثات شبه لحظية (كل 20 ثانية) بدون الاعتماد على اتصال قد يُحجب.
+// 🆕🛠️ إصلاح جذري نهائي جداً: تبيّن إن حتى db.collection().get() العادي
+// يستخدم نفس القناة الداخلية لمكتبة فايرستور (مو طلب HTTP عادي حقيقي)،
+// فيعلّق بنفس طريقة onSnapshot على هذي الشبكة بالذات. الفحص المباشر
+// أثبت إن طلب fetch() المتصفحي الصريح لعنوان فايرستور (REST API) هو
+// اللي يوصل فعلاً. الحل: نستخدم fetch() مباشرة (بدون المرور بمكتبة
+// فايرستور إطلاقاً لجلب البيانات نفسها) مع رمز الدخول المجهول، ونحوّل
+// الرد (بصيغة فايرستور الخاصة) لكائنات جافاسكريبت عادية يدوياً.
+function firestoreRestValueToJs(value) {
+    if (!value || typeof value !== 'object') return null;
+    if ('stringValue' in value)  return value.stringValue;
+    if ('integerValue' in value) return parseInt(value.integerValue, 10);
+    if ('doubleValue' in value)  return value.doubleValue;
+    if ('booleanValue' in value) return value.booleanValue;
+    if ('nullValue' in value)    return null;
+    if ('timestampValue' in value) return value.timestampValue;
+    if ('mapValue' in value)    return firestoreRestFieldsToJs((value.mapValue && value.mapValue.fields) || {});
+    if ('arrayValue' in value)  return ((value.arrayValue && value.arrayValue.values) || []).map(firestoreRestValueToJs);
+    return null;
+}
+function firestoreRestFieldsToJs(fields) {
+    const obj = {};
+    Object.keys(fields || {}).forEach(k => { obj[k] = firestoreRestValueToJs(fields[k]); });
+    return obj;
+}
+
+const MIM89_FIRESTORE_PROJECT_ID = 'mim89-ff938';
+
 async function fetchPublicMenuItemsOnce() {
-    if (!db) return false;
+    window.mim89FetchAttempts = (window.mim89FetchAttempts || 0) + 1;
+    if (!auth) return false;
     try {
-        const snapshot = await db.collection("menu_items").get({ source: 'default' });
-        if (snapshot.empty) return false;
-        const cloudItems = [];
-        snapshot.forEach(doc => {
-            cloudItems.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
-        });
-        if (cloudItems.length === 0) return false;
+        // ننتظر لين يصير عندنا مستخدم مسجّل دخول مجهول (لازم للحصول على
+        // رمز دخول Bearer يقبله فايرستور حسب قواعد الحماية الحالية)
+        if (!auth.currentUser) {
+            try { await firebaseAuthReadyPromise; } catch (_) {}
+        }
+        if (!auth.currentUser) return false;
+
+        const token = await auth.currentUser.getIdToken();
+        let allDocs = [];
+        let pageToken = '';
+        do {
+            const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+                '/databases/(default)/documents/menu_items?pageSize=300' +
+                (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            (data.documents || []).forEach(doc => {
+                const docId  = doc.name.split('/').pop();
+                const fields = firestoreRestFieldsToJs(doc.fields);
+                allDocs.push({ ...fields, docId, id: fields.id || docId });
+            });
+            pageToken = data.nextPageToken || '';
+        } while (pageToken);
+
+        if (allDocs.length === 0) return false;
 
         window.lastMenuLoadError = null;
         // 🆕🛠️ نحفظ بالذاكرة المؤقتة أولاً (ما تمتلئ أبداً بنفس طريقة
         // localStorage) - هذا يضمن عرض المينيو فوراً حتى لو فشل الحفظ
         // الدائم بالأسفل لأي سبب
-        window.mim89PublicMenuItemsCache = cloudItems;
+        window.mim89PublicMenuItemsCache = allDocs;
         try {
-            localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+            localStorage.setItem('sys_items', JSON.stringify(allDocs));
         } catch (storageErr) {
             // 🆕 غالباً "QuotaExceededError" - ذاكرة المتصفح الدائمة ممتلئة
             // بهذا الجهاز. نحاول نفضي مساحة بمسح أثقل بيانات غير ضرورية
@@ -7930,7 +7977,7 @@ async function fetchPublicMenuItemsOnce() {
                 localStorage.removeItem('sys_salaries');
                 localStorage.removeItem('sys_attendance');
                 localStorage.removeItem('sys_audit_log');
-                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+                localStorage.setItem('sys_items', JSON.stringify(allDocs));
             } catch (_) {
                 // فشلت حتى بعد التنظيف - نتجاهل ونكمل بالعرض من الذاكرة المؤقتة فقط
             }
@@ -7939,7 +7986,7 @@ async function fetchPublicMenuItemsOnce() {
         return true;
     } catch (err) {
         console.warn('⚠️ فشل جلب المينيو العام:', err);
-        window.lastMenuLoadError = (err && err.code) ? (err.code + ': ' + err.message) : String(err);
+        window.lastMenuLoadError = (err && err.message) ? err.message : String(err);
         renderPublicMenuUI();
         return false;
     }
@@ -7998,6 +8045,7 @@ function startHiddenDiagnosticBar() {
                 ' cache=' + (window.mim89PublicMenuItemsCache ? window.mim89PublicMenuItemsCache.length : 0) +
                 ' authUser=' + ((typeof auth !== 'undefined' && auth && auth.currentUser) ? '1' : '0') +
                 ' restTest=' + (window.mim89RestTestResult || 'pending') +
+                ' fetchAttempts=' + (window.mim89FetchAttempts || 0) +
                 ' items=' + itemsCount +
                 ' err=' + (window.lastMenuLoadError || '-');
         }, 1000);
