@@ -68,7 +68,14 @@
         <p class="empty-note">⏳ جاري التحميل...</p>
     </div>
 
-    <script src="app.js?v=1731"></script>
+    <script>
+        // 🆕🛠️ إصلاح جذري: بدل رقم إصدار ثابت مكتوب يدوياً (app.js?v=1731) كان
+        // عالق يجيب نسخة قديمة من app.js للأبد من كاش المتصفح تحت نفس الرابط
+        // القديم بالضبط - نفس السبب اللي كان يعلّق صفحات ثانية بالنظام. الحل:
+        // نبني رابط app.js بختم وقت (Date.now()) وقت كل تحميل صفحة، فيصير
+        // الرابط مختلف كل مرة ويجبر المتصفح يجيب أحدث نسخة من السيرفر دائماً.
+        document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');
+    </script>
     <script>
         (async function initVipCard() {
             const content = document.getElementById('content');
