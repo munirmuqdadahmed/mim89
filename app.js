@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1808';
+const MIM89_APP_VERSION = '1809';
 
 /* ==========================================
    المتغيرات العامة
@@ -8271,7 +8271,14 @@ window.openItemCustomizationModal = function(itemId) {
     const imgEl   = document.getElementById('detailImg');
     if (titleEl) titleEl.innerText = item.name;
     if (ingEl)   ingEl.innerText   = item.ingredients || item.desc || 'وجبة طازجة.';
-    if (imgEl)   imgEl.src         = item.image || item.img || '';
+    if (imgEl) {
+        // 🆕🛠️ إصلاح: لو صنف سابق ما كان له صورة، onerror يخفي هذا العنصر
+        // نهائياً (display:none) - وبما إن كل الأصناف تستخدم نفس عنصر
+        // الصورة بالنافذة، تضل مخفية للأبد حتى لو الصنف الجديد له صورة
+        // فعلية. نرجّع إظهارها من جديد قبل ما نحمّل صورة الصنف الحالي.
+        imgEl.style.display = '';
+        imgEl.src = item.image || item.img || '';
+    }
 
     const normalRadio = document.querySelector('input[name="mealSizeRadio"][value="عادي"]');
     if (normalRadio) normalRadio.checked = true;
