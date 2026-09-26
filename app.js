@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1805';
+const MIM89_APP_VERSION = '1806';
 
 /* ==========================================
    المتغيرات العامة
@@ -8253,6 +8253,19 @@ function filterCategory(catId, btnElement) {
 }
 
 window.openItemCustomizationModal = function(itemId) {
+    // 🆕 اختبار تشخيصي مؤقت جداً: إشارة مرئية فورية تؤكد وصول الضغطة
+    // لهذا الكود بالضبط - نشيلها بمجرد ما نعرف المشكلة وين بالضبط
+    try {
+        const flash = document.createElement('div');
+        flash.style.cssText =
+            'position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);' +
+            'background:#10b981;color:#fff;padding:14px 22px;border-radius:10px;' +
+            'font-weight:900;font-size:1rem;z-index:9999999;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+        flash.innerText = '✅ تم استلام الضغطة (itemId=' + itemId + ')';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 2500);
+    } catch (_) {}
+
     const items = getData('sys_items');
     let item  = items.find(i =>
         String(i.id) === String(itemId) || cleanPrice(i.id) === cleanPrice(itemId) ||
