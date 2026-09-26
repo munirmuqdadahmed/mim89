@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1809';
+const MIM89_APP_VERSION = '1810';
 
 /* ==========================================
    المتغيرات العامة
@@ -3693,6 +3693,9 @@ function clearCurrentVipPhone() {
 // 📝 تسجيل عضو جديد بـ MIM89 VIP - برقم الهاتف ورمز شخصي بس
 // 🆕 يدعم "رمز دعوة" اختياري (رقم هاتف صديق مسجّل أصلاً) - لو صحيح، يمنح
 // نقاط ترحيبية للعضو الجديد + نقاط مكافأة لصاحب الدعوة تلقائياً
+// 🆕🛠️ إصلاح جذري: تحوّل لاستخدام REST المباشر (fetch) بدل قناة المكتبة
+// الداخلية - أثبتنا إن الأخيرة تتعلّق للأبد بصمت على بعض شبكات الموبايل
+// حتى بعمليات القراءة/الكتابة الفردية، بينما fetch() المباشر يشتغل دائماً.
 async function signUpLoyaltyMember(name, phone, birthdate, gender, pin, referredByPhone) {
     const cleanPhone = String(phone).replace(/[^0-9]/g,'');
     if (!cleanPhone) throw { code: 'vip/invalid-phone', message: 'رقم الهاتف غير صحيح' };
@@ -3700,8 +3703,8 @@ async function signUpLoyaltyMember(name, phone, birthdate, gender, pin, referred
 
     await ensureAnonymousSignedIn();
 
-    const existing = await db.collection('loyalty_members').doc(cleanPhone).get();
-    if (existing.exists)
+    const existing = await restGetDocument('loyalty_members', cleanPhone);
+    if (existing)
         throw { code: 'vip/already-exists', message: 'هذا الرقم مسجّل عضوية أصلاً - سجّل دخولك' };
 
     const settings = getLoyaltySettings();
@@ -3712,25 +3715,24 @@ async function signUpLoyaltyMember(name, phone, birthdate, gender, pin, referred
     if (referredByPhone) {
         const cleanReferrer = String(referredByPhone).replace(/[^0-9]/g,'');
         if (cleanReferrer && cleanReferrer !== cleanPhone) {
-            const referrerDoc = await db.collection('loyalty_members').doc(cleanReferrer).get();
-            if (referrerDoc.exists) {
+            const referrerData = await restGetDocument('loyalty_members', cleanReferrer);
+            if (referrerData) {
                 referrerPhone  = cleanReferrer;
                 startingPoints = cleanPrice(settings.referralBonusNewbie);
                 // منح صاحب الدعوة نقاطه فوراً
-                const referrerData = referrerDoc.data();
-                await db.collection('loyalty_members').doc(cleanReferrer).set({
+                await restSetDocument('loyalty_members', cleanReferrer, {
                     points: cleanPrice(referrerData.points) + cleanPrice(settings.referralBonusReferrer),
                     referralsCount: cleanPrice(referrerData.referralsCount) + 1
-                }, { merge: true });
+                }, true);
             }
         }
     }
 
-    await db.collection('loyalty_members').doc(cleanPhone).set({
+    await restSetDocument('loyalty_members', cleanPhone, {
         name, phone: cleanPhone, birthdate, gender, pin,
         points: startingPoints, joinedAt: Date.now(), lastOrderDate: null,
         referredBy: referrerPhone, referralsCount: 0
-    });
+    }, false);
 
     setCurrentVipPhone(cleanPhone);
     return { phone: cleanPhone, welcomeBonus: startingPoints };
@@ -3740,10 +3742,10 @@ async function logInLoyaltyMember(phone, pin) {
     const cleanPhone = String(phone).replace(/[^0-9]/g,'');
     await ensureAnonymousSignedIn();
 
-    const doc = await db.collection('loyalty_members').doc(cleanPhone).get();
-    if (!doc.exists)
+    const data = await restGetDocument('loyalty_members', cleanPhone);
+    if (!data)
         throw { code: 'vip/not-found', message: 'ماكو عضوية بهذا الرقم' };
-    if (String(doc.data().pin) !== String(pin))
+    if (String(data.pin) !== String(pin))
         throw { code: 'vip/wrong-pin', message: 'الرمز غلط' };
 
     setCurrentVipPhone(cleanPhone);
@@ -3765,8 +3767,9 @@ async function ensureAnonymousSignedIn() {
 
 async function getLoyaltyMemberInfo(phone) {
     if (!phone) return null;
-    const doc = await db.collection('loyalty_members').doc(phone).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    await ensureAnonymousSignedIn();
+    const data = await restGetDocument('loyalty_members', phone);
+    return data ? { id: phone, ...data } : null;
 }
 
 // 🔍 البحث عن عضو بواسطة رقم الهاتف (يُستخدم وقت منح النقاط تلقائياً)
@@ -7924,7 +7927,105 @@ function firestoreRestFieldsToJs(fields) {
     return obj;
 }
 
+// 🆕 الاتجاه العكسي: تحويل قيم جافاسكريبت العادية لصيغة فايرستور REST
+// الخاصة، حتى نقدر نكتب مستندات (تسجيل عضو VIP مثلاً) بنفس طريقة
+// fetch() المباشرة المضمونة، بدل الاعتماد على قناة المكتبة الداخلية
+// اللي أثبتنا إنها تتعلق على بعض شبكات الموبايل.
+function jsValueToFirestoreRest(value) {
+    if (value === null || value === undefined) return { nullValue: null };
+    if (typeof value === 'string')  return { stringValue: value };
+    if (typeof value === 'boolean') return { booleanValue: value };
+    if (typeof value === 'number') {
+        return Number.isInteger(value)
+            ? { integerValue: String(value) }
+            : { doubleValue: value };
+    }
+    if (Array.isArray(value)) {
+        return { arrayValue: { values: value.map(jsValueToFirestoreRest) } };
+    }
+    if (typeof value === 'object') {
+        return { mapValue: { fields: jsObjectToFirestoreRestFields(value) } };
+    }
+    return { stringValue: String(value) };
+}
+function jsObjectToFirestoreRestFields(obj) {
+    const fields = {};
+    Object.keys(obj || {}).forEach(k => { fields[k] = jsValueToFirestoreRest(obj[k]); });
+    return fields;
+}
+
 const MIM89_FIRESTORE_PROJECT_ID = 'mim89-ff938';
+
+// 🆕 قراءة مستند وحيد مباشرة عبر REST (بدون قناة المكتبة الداخلية).
+// يرجّع null لو المستند غير موجود (404)، أو يرمي خطأ لأي مشكلة ثانية.
+async function restGetDocument(collection, docId) {
+    if (!auth.currentUser) await ensureAnonymousSignedIn();
+    const token = await auth.currentUser.getIdToken();
+    const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+        '/databases/(default)/documents/' + collection + '/' + encodeURIComponent(docId);
+    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    return firestoreRestFieldsToJs(data.fields);
+}
+
+// 🆕 كتابة/تحديث مستند وحيد مباشرة عبر REST. merge=true يحدّث الحقول
+// المذكورة بس (زي set(...,{merge:true})), merge=false يستبدل المستند
+// بالكامل (زي set() العادي).
+async function restSetDocument(collection, docId, data, merge) {
+    if (!auth.currentUser) await ensureAnonymousSignedIn();
+    const token = await auth.currentUser.getIdToken();
+    let url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+        '/databases/(default)/documents/' + collection + '/' + encodeURIComponent(docId);
+    if (merge) {
+        const maskParams = Object.keys(data)
+            .map(k => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+        url += '?' + maskParams;
+    }
+    const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: jsObjectToFirestoreRestFields(data) })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return true;
+}
+
+// 🆕 استعلام بسيط (حقل = قيمة) مباشرة عبر REST - بديل عن
+// db.collection().where().get() اللي يعلّق على نفس الشبكات المتأثرة
+window.restQueryByField = async function(collection, field, value, limitCount) {
+    if (!auth.currentUser) await ensureAnonymousSignedIn();
+    const token = await auth.currentUser.getIdToken();
+    const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+        '/databases/(default)/documents:runQuery';
+    const body = {
+        structuredQuery: {
+            from:  [{ collectionId: collection }],
+            where: {
+                fieldFilter: {
+                    field: { fieldPath: field },
+                    op: 'EQUAL',
+                    value: jsValueToFirestoreRest(value)
+                }
+            },
+            limit: limitCount || 100
+        }
+    };
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    return (rows || [])
+        .filter(r => r.document)
+        .map(r => {
+            const docId = r.document.name.split('/').pop();
+            return { id: docId, ...firestoreRestFieldsToJs(r.document.fields) };
+        });
+};
 
 async function fetchPublicMenuItemsOnce() {
     window.mim89FetchAttempts = (window.mim89FetchAttempts || 0) + 1;
