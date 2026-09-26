@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1801';
+const MIM89_APP_VERSION = '1802';
 
 /* ==========================================
    المتغيرات العامة
@@ -8026,6 +8026,8 @@ function startHiddenDiagnosticBar() {
                 ' db=' + (typeof db !== 'undefined' && db ? '1' : '0') +
                 ' auth=' + (typeof auth !== 'undefined' && auth ? '1' : '0') +
                 ' cache=' + (window.mim89PublicMenuItemsCache ? window.mim89PublicMenuItemsCache.length : 0) +
+                ' authUser=' + ((typeof auth !== 'undefined' && auth && auth.currentUser) ? '1' : '0') +
+                ' restTest=' + (window.mim89RestTestResult || 'pending') +
                 ' items=' + itemsCount +
                 ' err=' + (window.lastMenuLoadError || '-');
         }, 1000);
@@ -8047,6 +8049,24 @@ function startHiddenDiagnosticBar() {
 
 async function loadPublicMenu() {
     startHiddenDiagnosticBar();
+
+    // 🆕 اختبار مستقل تماماً عن مكتبة فايربيس: طلب HTTP عادي مباشر لعنوان
+    // فايرستور (REST API) - يوضح هل الشبكة تحجب نطاق فايرستور بالكامل، أو
+    // بس البروتوكول الخاص اللي تستخدمه المكتبة (WebChannel/Streaming)
+    (async () => {
+        try {
+            const ctrl = new AbortController();
+            const to = setTimeout(() => ctrl.abort(), 8000);
+            await fetch(
+                'https://firestore.googleapis.com/v1/projects/mim89-ff938/databases/(default)/documents/menu_items',
+                { mode: 'cors', signal: ctrl.signal }
+            );
+            clearTimeout(to);
+            window.mim89RestTestResult = 'reached';
+        } catch (e) {
+            window.mim89RestTestResult = (e && e.name === 'AbortError') ? 'blocked/timeout' : ('error:' + e.message);
+        }
+    })();
 
     // 🆕 قيم افتراضية محلية بس للحقول اللي المينيو العام فعلاً يحتاجها -
     // ريثما توصل بيانات السحابة الحقيقية عبر المستمعين اللحظيين تحت.
