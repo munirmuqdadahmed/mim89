@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1802';
+const MIM89_APP_VERSION = '1803';
 
 /* ==========================================
    المتغيرات العامة
@@ -7891,114 +7891,84 @@ function cleanupStorage() {
 /* ==========================================
    🌐 المينيو الإلكتروني للزبائن
    ========================================== */
-function setupPublicMenuRealtimeListener(retryCount) {
-    retryCount = retryCount || 0;
+// 🆕🛠️ إصلاح جذري نهائي: أثبت الفحص إن طلبات HTTP العادية (REST) توصل
+// بنجاح لخوادم فايرستور حتى على الشبكات اللي تعلّق فيها onSnapshot
+// (الاتصال المباشر المستمر) للأبد بدون أي رد - يعني بعض شبكات الموبايل
+// تحجب/تعلّق نوع الاتصال المستمر (Streaming) تحديداً، بينما الطلبات
+// العادية (طلب - رد - تسكر) تعدّي بدون مشكلة. الحل: بدل الاعتماد على
+// اتصال لحظي دائم (onSnapshot)، نستخدم طلب عادي (.get()) نكرره كل مدة
+// قصيرة - نفس فكرة تحديث الصفحة يدوياً، بس تلقائي وبالخلفية. هذا يعطي
+// تحديثات شبه لحظية (كل 20 ثانية) بدون الاعتماد على اتصال قد يُحجب.
+async function fetchPublicMenuItemsOnce() {
+    if (!db) return false;
     try {
-    if (db) {
-        // 🆕🛠️ إصلاح جذري خطير: لو الاتصال "تعلّق بصمت" (لا نجاح ولا فشل
-        // واضح - يصير غالباً وقت استهلاك الحصة اليومية بفايرستور)، لا
-        // onSnapshot ولا err يشتغلون إطلاقاً، فيضل الزبون عالق على "جاري
-        // التحميل" للأبد بدون أي رسالة خطأ توضح السبب. مهلة 12 ثانية هنا
-        // تضمن ظهور رسالة تشخيصية واضحة بكل الحالات، حتى لو الاتصال نفسه
-        // ما رجّع أي جواب صريح (نجاح أو فشل) لأي سبب.
-        let resolved = false;
-        const hangTimeout = setTimeout(() => {
-            if (resolved) return;
-            resolved = true;
-            window.lastMenuLoadError = 'timeout: لا رد من السحابة خلال 12 ثانية ' +
-                '(انقطاع أو بطء مؤقت بالاتصال - يعيد المحاولة تلقائياً بالخلفية).';
-            renderPublicMenuUI();
-            // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون زر
-            // يدوي وبدون إعادة تحميل قسرية تقاطع الزبون. المهلة تكبر
-            // تدريجياً لين تثبت عند 15 ثانية كحد أقصى بين كل محاولتين
-            setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
-                Math.min(2000 * (retryCount + 1), 15000));
-        }, 12000);
+        const snapshot = await db.collection("menu_items").get({ source: 'default' });
+        if (snapshot.empty) return false;
+        const cloudItems = [];
+        snapshot.forEach(doc => {
+            cloudItems.push({ ...doc.data(), docId: doc.id, id: doc.data().id || doc.id });
+        });
+        if (cloudItems.length === 0) return false;
 
-        db.collection("menu_items").onSnapshot(
-            { includeMetadataChanges: true },
-            snapshot => {
-                if (snapshot.empty) return;
-                // 🆕🛠️ إصلاح جذري: كنا نتجاهل أي نسخة "من الكاش" (fromCache)
-                // وننتظر فقط رد مباشر من السحابة - فلو نت الزبون بطيء أو
-                // متقطع (بدون انقطاع كامل)، يضل عالق "جاري التحميل" للأبد
-                // رغم إن المينيو محفوظ أصلاً بذاكرة المتصفح (كاش فايرستور)
-                // وجاهز للعرض فوراً. الحين نعرض أي بيانات توصل (كاش أو
-                // سحابة) فوراً، والمستمع يستمر شغّال ويحدّث تلقائياً لو
-                // وصلت نسخة أحدث من السحابة بعدين.
-                resolved = true;
-                clearTimeout(hangTimeout);
-                const cloudItems = [];
-                snapshot.forEach(doc => {
-                    cloudItems.push({ ...doc.data(), docId:doc.id, id:doc.data().id||doc.id });
-                });
-                if (cloudItems.length > 0) {
-                    // 🆕🛠️ نحفظ بالذاكرة المؤقتة أولاً (ما تمتلئ أبداً
-                    // بنفس طريقة localStorage) - هذا يضمن عرض المينيو
-                    // فوراً حتى لو فشل الحفظ الدائم بالأسفل لأي سبب
-                    window.mim89PublicMenuItemsCache = cloudItems;
-                    try {
-                        localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-                    } catch (storageErr) {
-                        // 🆕 غالباً "QuotaExceededError" - ذاكرة المتصفح الدائمة
-                        // ممتلئة بهذا الجهاز. نحاول نفضي مساحة بمسح أثقل
-                        // بيانات غير ضرورية للمينيو العام (فواتير، صور قديمة
-                        // مرفوعة) ونعيد المحاولة مرة وحدة - وإذا فشلت برضو،
-                        // نكمل ونعرض المينيو من الذاكرة المؤقتة بدون ما نوقف
-                        // شي، لأن العرض لا يعتمد على نجاح هذا الحفظ إطلاقاً
-                        console.warn('⚠️ فشل حفظ المينيو بذاكرة الجهاز (على الأغلب ممتلئة):', storageErr);
-                        try {
-                            localStorage.removeItem('sys_completed_orders');
-                            localStorage.removeItem('sys_expenses');
-                            localStorage.removeItem('sys_salaries');
-                            localStorage.removeItem('sys_attendance');
-                            localStorage.removeItem('sys_audit_log');
-                            localStorage.setItem('sys_items', JSON.stringify(cloudItems));
-                        } catch (_) {
-                            // فشلت حتى بعد التنظيف - نتجاهل ونكمل بالعرض من الذاكرة المؤقتة فقط
-                        }
-                    }
-                    renderPublicMenuUI();
-                }
-            },
-            err => {
-                if (resolved) return;
-                resolved = true;
-                clearTimeout(hangTimeout);
-                console.warn('⚠️ خطأ بمستمع المينيو العام:', err);
-                // 🆕 نحفظ الخطأ بالكونسول فقط للمتابعة الفنية - ما يظهر للزبون إطلاقاً
-                window.lastMenuLoadError = (err && err.code) ? (err.code + ': ' + err.message) : String(err);
-                renderPublicMenuUI();
-                // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون
-                // زر يدوي وبدون إعادة تحميل قسرية تقاطع الزبون
-                setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
-                    Math.min(1500 * (retryCount + 1), 15000));
+        window.lastMenuLoadError = null;
+        // 🆕🛠️ نحفظ بالذاكرة المؤقتة أولاً (ما تمتلئ أبداً بنفس طريقة
+        // localStorage) - هذا يضمن عرض المينيو فوراً حتى لو فشل الحفظ
+        // الدائم بالأسفل لأي سبب
+        window.mim89PublicMenuItemsCache = cloudItems;
+        try {
+            localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+        } catch (storageErr) {
+            // 🆕 غالباً "QuotaExceededError" - ذاكرة المتصفح الدائمة ممتلئة
+            // بهذا الجهاز. نحاول نفضي مساحة بمسح أثقل بيانات غير ضرورية
+            // للمينيو العام (فواتير، صور قديمة مرفوعة) ونعيد المحاولة مرة
+            // وحدة - وإذا فشلت برضو، نكمل ونعرض المينيو من الذاكرة المؤقتة
+            // بدون ما نوقف شي، لأن العرض لا يعتمد على نجاح هذا الحفظ إطلاقاً
+            console.warn('⚠️ فشل حفظ المينيو بذاكرة الجهاز (على الأغلب ممتلئة):', storageErr);
+            try {
+                localStorage.removeItem('sys_completed_orders');
+                localStorage.removeItem('sys_expenses');
+                localStorage.removeItem('sys_salaries');
+                localStorage.removeItem('sys_attendance');
+                localStorage.removeItem('sys_audit_log');
+                localStorage.setItem('sys_items', JSON.stringify(cloudItems));
+            } catch (_) {
+                // فشلت حتى بعد التنظيف - نتجاهل ونكمل بالعرض من الذاكرة المؤقتة فقط
             }
-        );
-    } else {
+        }
+        renderPublicMenuUI();
+        return true;
+    } catch (err) {
+        console.warn('⚠️ فشل جلب المينيو العام:', err);
+        window.lastMenuLoadError = (err && err.code) ? (err.code + ': ' + err.message) : String(err);
+        renderPublicMenuUI();
+        return false;
+    }
+}
+
+function setupPublicMenuRealtimeListener() {
+    if (!db) {
         // 🆕🛠️ إصلاح جذري خطير جداً: لو مكتبة فايربيس نفسها ما تحمّلت
         // (db = null - يصير مثلاً لو خوادم gstatic.com محجوبة أو بطيئة
         // جداً بشبكة الزبون تحديداً)، كان الكود يرسم "جاري التحميل" مرة
-        // وحدة بس ويسكت للأبد - صفر رسالة خطأ، صفر إعادة محاولة. هذا
-        // بالضبط سبب "يضل عالق بدون أي رسالة حتى بعد الانتظار الطويل".
-        // الحين نعرض سبب واضح ونعيد المحاولة تلقائياً زي باقي الحالات.
+        // وحدة بس ويسكت للأبد - صفر رسالة خطأ، صفر إعادة محاولة.
         window.lastMenuLoadError = 'no-firebase: مكتبة الاتصال بالسحابة ' +
-            '(Firebase) ما تحمّلت بهذا الجهاز/الشبكة - جرب شبكة ثانية ' +
-            '(بيانات الجوال بدل الواي فاي مثلاً) أو تأكد الشبكة ما تحجب ' +
-            'gstatic.com.';
+            '(Firebase) ما تحمّلت بهذا الجهاز/الشبكة.';
         renderPublicMenuUI();
-        // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون زر يدوي
-        // وبدون إعادة تحميل قسرية
-        setTimeout(() => setupPublicMenuRealtimeListener(retryCount + 1),
-            Math.min(2000 * (retryCount + 1), 15000));
+        setTimeout(setupPublicMenuRealtimeListener, 8000);
+        return;
     }
-    } catch (e) {
-        // 🆕 لو صار خطأ فوري (متزامن) بأي مكان بهذي الدالة - قبل حتى ما
-        // توصل لمهلة الـ12 ثانية - نلتقطه هنا مباشرة بدل ما يضل مخفي
-        // ويمنع أي رسالة تشخيصية من الظهور إطلاقاً
-        window.lastMenuLoadError = 'sync-throw: ' + (e && e.message ? e.message : String(e));
-        try { renderPublicMenuUI(); } catch (_) {}
-    }
+
+    // أول جلب فوري، وبعدها تكرار كل 20 ثانية طول ما الصفحة مفتوحة -
+    // طلبات قصيرة منفصلة (مو اتصال مستمر) فتشتغل حتى على الشبكات اللي
+    // تحجب الاتصال المباشر الدائم
+    fetchPublicMenuItemsOnce();
+    if (window.mim89MenuPollInterval) clearInterval(window.mim89MenuPollInterval);
+    window.mim89MenuPollInterval = setInterval(fetchPublicMenuItemsOnce, 20000);
+
+    // تحديث فوري إضافي فور ما الزبون يرجع يفتح التبويب (بعد ما كان بتطبيق ثاني مثلاً)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) fetchPublicMenuItemsOnce();
+    });
 }
 
 // 🆕 شريط تشخيص مخفي تماماً بشكل افتراضي - ما يشوفه أي زبون عادي إطلاقاً.
