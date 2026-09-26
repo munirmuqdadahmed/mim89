@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1799';
+const MIM89_APP_VERSION = '1800';
 
 /* ==========================================
    المتغيرات العامة
@@ -7906,7 +7906,7 @@ function setupPublicMenuRealtimeListener(retryCount) {
             if (resolved) return;
             resolved = true;
             window.lastMenuLoadError = 'timeout: لا رد من السحابة خلال 12 ثانية ' +
-                '(الأرجح: الحصة اليومية بفايرستور محروقة اليوم - راجع جهاز الكاشير/الأدمن).';
+                '(انقطاع أو بطء مؤقت بالاتصال - يعيد المحاولة تلقائياً بالخلفية).';
             renderPublicMenuUI();
             // 🆕 بطلب صريح: نعيد المحاولة للأبد بصمت بالخلفية - بدون زر
             // يدوي وبدون إعادة تحميل قسرية تقاطع الزبون. المهلة تكبر
@@ -8087,20 +8087,17 @@ function renderPublicMenuUI() {
     navContainer.innerHTML    = '';
     sectionsContainer.innerHTML = '';
 
-    // 🆕 بطلب صريح: لا رسائل تحذيرية ولا زر "إعادة تحميل" ولا تفاصيل تقنية
-    // تظهر للزبون - بس مؤشر هادئ بسيط ريثما توصل البيانات. المستمع اللحظي
-    // (مع إعادة المحاولة اللا نهائية الصامتة بالخلفية أعلاه) يعيد رسم
-    // الصفحة تلقائياً فور وصول البيانات بدون أي تدخل من الزبون
+    // 🆕 بطلب صريح ونهائي: لا رسائل تحذيرية، لا زر "إعادة تحميل"، ولا أي
+    // تفاصيل تقنية تظهر للزبون إطلاقاً مهما كان السبب - بس مؤشر هادئ بسيط
+    // ريثما توصل البيانات. المستمع اللحظي (مع إعادة المحاولة اللا نهائية
+    // الصامتة بالخلفية أعلاه) يعيد رسم الصفحة تلقائياً فور وصول البيانات
+    // بدون أي تدخل من الزبون. أي رسالة تشخيصية (window.lastMenuLoadError)
+    // تبقى محفوظة بالخلفية فقط للمطوّر - ما تُعرض بالواجهة أبداً.
     if (!items || items.length === 0) {
         sectionsContainer.innerHTML =
             '<div style="text-align:center;padding:70px 20px;color:#999;">' +
             '<div style="font-size:2.2rem;margin-bottom:10px;">⏳</div>' +
             '<div style="font-weight:900;">جاري تحضير المينيو...</div>' +
-            (window.lastMenuLoadError
-                ? '<div style="margin-top:16px;font-size:0.68rem;color:#555;' +
-                  'direction:ltr;word-break:break-all;padding:0 10px;">' +
-                  window.lastMenuLoadError + '</div>'
-                : '') +
             '</div>';
         return;
     }
