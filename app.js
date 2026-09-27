@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1811';
+const MIM89_APP_VERSION = '1812';
 
 /* ==========================================
    المتغيرات العامة
@@ -6992,6 +6992,40 @@ function deleteKitchenNoteItem(index) {
    ========================================== */
 function initAdminPage() { initData(); }
 
+// 🆕 عرض عدد زوار المينيو الإلكتروني بلوحة الأدمن - إجمالي كلي + اليوم،
+// يوضح للمالك هل المينيو الإلكتروني فعلاً مستخدم من الزبائن أو لا
+async function renderMenuVisitsStatBox() {
+    const box = document.getElementById('menuVisitsStatBox');
+    if (!box) return;
+    box.innerHTML = '<div class="card" style="text-align:center;color:#888;padding:10px;">' +
+        '⏳ جاري جلب عدد الزوار...</div>';
+    try {
+        const today = getTodayString();
+        const data  = await restGetDocument('system_counters', 'menu_visits');
+        const total = data ? cleanPrice(data.total) : 0;
+        const byDate = (data && data.byDate) || {};
+        const todayCount = cleanPrice(byDate[today]);
+
+        box.innerHTML =
+            '<div class="card" style="border-color:#38bdf8;max-width:600px;margin:0 auto;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<h4 style="color:#38bdf8;margin:0;"><i class="fa-solid fa-eye"></i> زوار المينيو الإلكتروني</h4>' +
+            '<button onclick="renderMenuVisitsStatBox()" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:4px 10px;">🔄</button></div>' +
+            '<div style="display:flex;gap:14px;margin-top:10px;justify-content:center;">' +
+            '<div style="text-align:center;">' +
+            '<div style="font-size:1.5rem;font-weight:900;color:#fbbf24;">' + todayCount + '</div>' +
+            '<div style="font-size:0.72rem;color:#999;">زيارة اليوم</div></div>' +
+            '<div style="text-align:center;">' +
+            '<div style="font-size:1.5rem;font-weight:900;color:#10b981;">' + total + '</div>' +
+            '<div style="font-size:0.72rem;color:#999;">إجمالي كلي</div></div>' +
+            '</div></div>';
+    } catch (e) {
+        box.innerHTML = '<div class="card" style="text-align:center;color:#ef4444;padding:10px;">' +
+            '⚠️ تعذّر جلب عدد الزوار</div>';
+    }
+}
+
 function loadAdminTabsData() {
     renderAdminCategories();
     renderAdminItems();
@@ -7009,6 +7043,9 @@ function loadAdminTabsData() {
     // 🆕 فحص فوري لحالة جهاز الكاشير الحية (شغّال ومتصل أو لا)
     if (typeof renderCashierHeartbeatStatus === 'function')
         renderCashierHeartbeatStatus();
+    // 🆕 عدد زوار المينيو الإلكتروني (إجمالي + اليوم)
+    if (typeof renderMenuVisitsStatBox === 'function')
+        renderMenuVisitsStatBox();
 }
 
 function loadPrinterSettings() {
@@ -8030,6 +8067,49 @@ window.restQueryByField = async function(collection, field, value, limitCount) {
         });
 };
 
+// 🆕 زيادة حقل رقمي بمستند بمقدار ثابت، بشكل ذرّي (بدون قراءة القيمة
+// الحالية أولاً) - يمنع فقدان زيارات لو زبونين فتحوا المينيو بنفس اللحظة
+// بالضبط. يدعم حقل متداخل بصيغة "map.subfield" (مثلاً لعدّاد يومي).
+window.restIncrementField = async function(collection, docId, fieldPath, amount) {
+    if (!auth.currentUser) await ensureAnonymousSignedIn();
+    const token = await auth.currentUser.getIdToken();
+    const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+        '/databases/(default)/documents:commit';
+    const docPath = 'projects/' + MIM89_FIRESTORE_PROJECT_ID +
+        '/databases/(default)/documents/' + collection + '/' + docId;
+    const body = {
+        writes: [{
+            transform: {
+                document: docPath,
+                fieldTransforms: [{
+                    fieldPath: fieldPath,
+                    incrementValue: { integerValue: String(amount || 1) }
+                }]
+            }
+        }]
+    };
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return true;
+};
+
+// 🆕 عدّاد زوار المينيو الإلكتروني - يزيد بمجرد ما أي زبون يفتح الصفحة،
+// إجمالي كلي + عدّاد يومي منفصل (يبان بلوحة الأدمن). لا يحسب أي زيارة من
+// أجهزة الكاشير/الأدمن نفسها (بس صفحة المينيو العامة).
+async function incrementMenuVisitCounter() {
+    try {
+        const today = getTodayString();
+        await restIncrementField('system_counters', 'menu_visits', 'total', 1);
+        await restIncrementField('system_counters', 'menu_visits', 'byDate.' + today, 1);
+    } catch (e) {
+        console.warn('⚠️ فشل تسجيل زيارة المينيو:', e);
+    }
+}
+
 async function fetchPublicMenuItemsOnce() {
     window.mim89FetchAttempts = (window.mim89FetchAttempts || 0) + 1;
     if (!auth) return false;
@@ -8171,6 +8251,13 @@ function startHiddenDiagnosticBar() {
 
 async function loadPublicMenu() {
     startHiddenDiagnosticBar();
+
+    // 🆕 عدّاد زوار المينيو - مرة وحدة بس لكل جلسة تبويب (حتى لو الصفحة
+    // أعادت تشغيل بعض الأكواد لأي سبب، ما يتكرر العدّ)
+    if (!sessionStorage.getItem('mim89_visit_counted')) {
+        sessionStorage.setItem('mim89_visit_counted', '1');
+        incrementMenuVisitCounter();
+    }
 
     // 🆕 اختبار مستقل تماماً عن مكتبة فايربيس: طلب HTTP عادي مباشر لعنوان
     // فايرستور (REST API) - يوضح هل الشبكة تحجب نطاق فايرستور بالكامل، أو
