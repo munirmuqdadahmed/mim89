@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1812';
+const MIM89_APP_VERSION = '1813';
 
 /* ==========================================
    المتغيرات العامة
@@ -1453,22 +1453,25 @@ function showCloudErrorBanner(message) {
 /* ==========================================
    🔢 رقم الطلب
    ========================================== */
-let prefetchedOrderNumber = null;
-let prefetchInFlight      = false;
+// 🛠️ إصلاح جذري لتخطي أرقام الفواتير (150 ← 153): كان النظام يحجز رقم مسبقاً
+// من السحابة (Prefetch) ثم يستدعي السحابة مرة ثانية لحظة إتمام الطلب
+// "للمزامنة" ويرمي نتيجتها - فكل طلب يحرق رقمين. الحين الرقم يُحجز مرة
+// وحدة فقط، لحظة إتمام الطلب فعلياً، فلا يوجد تخطي. الدوال القديمة صارت
+// فارغة (تبقى فقط حتى لا ينكسر أي استدعاء قديم لها بالكود).
+function prefetchOrderNumber() { /* لم يعد يحجز أي رقم مسبقاً */ }
+function consumePrefetchedOrderNumber() { return null; }
 
-function prefetchOrderNumber() {
-    if (prefetchInFlight || prefetchedOrderNumber !== null) return;
-    prefetchInFlight = true;
-    getNextOrderNumberFromCloud()
-        .then(num  => { prefetchedOrderNumber = num; })
-        .catch(()  => { prefetchedOrderNumber = null; })
-        .finally(() => { prefetchInFlight = false; });
-}
-
-function consumePrefetchedOrderNumber() {
-    const n = prefetchedOrderNumber;
-    prefetchedOrderNumber = null;
-    return n;
+// أكبر رقم طلب اليوم موجود محلياً (يمنع تكرار الرقم لو الجهاز كان أوفلاين)
+function getLocalMaxOrderNumberToday() {
+    const completed = getData('sys_completed_orders') || [];
+    const todayStr  = getTodayString();
+    let maxNum = 0;
+    completed.forEach(o => {
+        if (o.dateDate !== todayStr) return;
+        const num = cleanPrice(o.orderNum || o.orderNumber);
+        if (num > maxNum) maxNum = num;
+    });
+    return maxNum;
 }
 
 // 🛠️ إصلاح: رقم محلي فوري + مزامنة السحابة في الخلفية
@@ -1484,17 +1487,11 @@ function getOrderSequenceLocal() {
         });
     }
 
-    // 🆕 نأخذ بعين الاعتبار آخر تصحيح وصل من السحابة (لو جهاز كاشير ثاني
-    // سوّى طلبات ما وصلت لسا لهذا الجهاز محلياً) - يمنع تكرار الأرقام
-    try {
-        const correction = cleanPrice(localStorage.getItem('sys_order_seq_correction'));
-        if (correction > maxNum) maxNum = correction - 1; // -1 لأن التصحيح نفسه هو "الرقم الجاي"
-    } catch (_) {}
 
     return maxNum > 0 ? maxNum + 1 : 101;
 }
 
-async function getNextOrderNumberFromCloud() {
+async function getNextOrderNumberFromCloud(localFloor) {
     const today = getTodayString();
     if (!db) return getOrderSequenceLocal();
 
@@ -1514,7 +1511,8 @@ async function getNextOrderNumberFromCloud() {
                     currentValue = 100;
                 }
             }
-            const nextValue = currentValue + 1;
+            // لو الجهاز عنده رقم أعلى (كان أوفلاين)، نبني عليه حتى ما يتكرر رقم
+            const nextValue = Math.max(currentValue, cleanPrice(localFloor) || 0) + 1;
             transaction.set(counterRef, {
                 date:       currentDate,
                 lastNumber: nextValue,
@@ -1525,6 +1523,21 @@ async function getNextOrderNumberFromCloud() {
         return newNumber;
     } catch (err) {
         console.error("فشل رقم الطلب من السحابة:", err);
+        return getOrderSequenceLocal();
+    }
+}
+
+// 🔢 حجز رقم الطلب: مرة وحدة فقط لحظة الإتمام، بمهلة 4 ثواني ثم رقم محلي
+async function allocateOrderNumber() {
+    const localFloor = getLocalMaxOrderNumberToday();
+    if (!db) return getOrderSequenceLocal();
+    try {
+        return await Promise.race([
+            getNextOrderNumberFromCloud(localFloor),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000))
+        ]);
+    } catch (e) {
+        console.warn('تعذّر حجز رقم من السحابة، استخدام رقم محلي:', e);
         return getOrderSequenceLocal();
     }
 }
@@ -2321,7 +2334,13 @@ function calculateCashChange() {
 
 // 🛠️ إصلاح كبير: رقم الطلب يُحضَّر محلياً فوراً
 // ثم يُزامن مع السحابة في الخلفية
+let isProceedingToPrint = false;
 async function proceedToPrintAfterCash() {
+    if (isProceedingToPrint) return; // يمنع الضغط المزدوج (كل ضغطة تحجز رقم)
+    isProceedingToPrint = true;
+    try { await proceedToPrintAfterCashInner(); } finally { isProceedingToPrint = false; }
+}
+async function proceedToPrintAfterCashInner() {
     const subtotal    = posCart.reduce((s,i) => s + cleanPrice(i.price)*cleanPrice(i.qty), 0);
     const deliveryFee = getPosDeliveryFee();
     const netTotal    = Math.max(0, subtotal - posDiscountAmount) + deliveryFee;
@@ -2343,26 +2362,8 @@ async function proceedToPrintAfterCash() {
         : areaVal === '__other__' ? 'منطقة أخرى'
         : (areaVal || (selectedPosOrderType === 'delivery' ? 'توصيل' : 'داخل المطعم'));
 
-    // ✅ رقم الطلب محلي فوري - لا انتظار
-    let orderNumSeq = consumePrefetchedOrderNumber();
-    if (orderNumSeq === null) orderNumSeq = getOrderSequenceLocal();
-
-    // 🛠️ إصلاح جذري مهم جداً: كان الفحص السحابي يعدّل orderNum لهذا
-    // الطلب بالذات بالخلفية بعد إنشائه - لو الطباعة صارت قبل ما يوصل رد
-    // السحابة، والحفظ بالسجل صار بعده (أو العكس)، يطلع رقمين مختلفين
-    // لنفس الطلب بالضبط (الفاتورة الورقية تقرأ رقم، والسجل يقرأ رقم ثاني).
-    // الحل: رقم هذا الطلب يضل ثابت 100% من أول لحظة لين يخلص (نفس الرقم
-    // بالطباعة والحفظ مضمون)، والفحص السحابي يصحح العداد المحلي للطلب
-    // الجاي بس (يمنع تكرار الأرقام مستقبلاً بين أكثر من جهاز كاشير).
-    getNextOrderNumberFromCloud()
-        .then(cloudNum => {
-            if (cloudNum > orderNumSeq) {
-                // نصحح العداد المحلي حتى الطلب القادم ياخذ رقم صحيح غير
-                // مكرر - بدون ما نلمس رقم الطلب الحالي المطبوع/المحفوظ
-                try { localStorage.setItem('sys_order_seq_correction', String(cloudNum)); } catch (_) {}
-            }
-        })
-        .catch(() => {});
+    // ✅ رقم الطلب يُحجز مرة وحدة فقط هنا (بدون حجز مسبق وبدون استدعاء ثاني)
+    const orderNumSeq = await allocateOrderNumber();
 
     activePendingPrintOrder = {
         id:            "ORD_" + Date.now(),
