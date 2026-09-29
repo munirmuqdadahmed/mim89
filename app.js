@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1814';
+const MIM89_APP_VERSION = '1815';
 
 /* ==========================================
    المتغيرات العامة
@@ -799,18 +799,29 @@ async function pullLatestFromCloud() {
 
     try {
         let ordSnap;
+        let cloudOrders = [];
         try {
-            ordSnap = await db.collection("completed_orders")
-                .where("dateDate", ">=", recentCutoffStr).limit(400).get({ source: 'server' });
-        } catch (whereErr) {
-            // 🛠️ استعلام احتياطي شامل لو فشل الفلتر بالتاريخ لأي سبب
-            // (مثلاً فهرسة) - يضمن وصول البيانات حتى لو الطريقة المثلى فشلت
-            console.warn("⚠️ فشل فلتر التاريخ، نجرب استعلام بديل:", whereErr);
-            ordSnap = await db.collection("completed_orders").limit(300).get({ source: 'server' });
-        }
-        if (!ordSnap.empty) {
-            const cloudOrders = [];
+            ordSnap = await Promise.race([
+                db.collection("completed_orders")
+                    .where("dateDate", ">=", recentCutoffStr).limit(400).get({ source: 'server' }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('sdk-timeout')), 8000))
+            ]);
             ordSnap.forEach(d => cloudOrders.push(d.data()));
+        } catch (whereErr) {
+            // 🆕🛠️ إصلاح جذري خطير: استعلام SDK ممكن "يتعلّق" بصمت للأبد
+            // بدون خطأ ولا رد (نفس المشكلة اللي أثّرت على المينيو العام) -
+            // خصوصاً لو الأدمن يُفتح من موبايل بشبكة بيانات بدل واي فاي
+            // المحل. بعد 8 ثواني، نستخدم fetch() مباشر (REST) كبديل مضمون
+            // بدل ما نضل عالقين أو نستسلم بصمت وتطلع المبيعات صفر بالغلط.
+            console.warn("⚠️ فشل/تعلّق استعلام SDK، نجرب REST المباشر:", whereErr);
+            try {
+                cloudOrders = await window.restQueryByField(
+                    'completed_orders', 'dateDate', recentCutoffStr, 400, 'GREATER_THAN_OR_EQUAL');
+            } catch (restErr) {
+                console.warn("⚠️ فشل استعلام REST البديل أيضاً:", restErr);
+            }
+        }
+        if (cloudOrders.length > 0) {
             const localOrders = getData('sys_completed_orders') || [];
             const byKey = {};
             cloudOrders.concat(localOrders).forEach(o => {
@@ -8068,7 +8079,7 @@ async function restSetDocument(collection, docId, data, merge) {
 
 // 🆕 استعلام بسيط (حقل = قيمة) مباشرة عبر REST - بديل عن
 // db.collection().where().get() اللي يعلّق على نفس الشبكات المتأثرة
-window.restQueryByField = async function(collection, field, value, limitCount) {
+window.restQueryByField = async function(collection, field, value, limitCount, op) {
     if (!auth.currentUser) await ensureAnonymousSignedIn();
     const token = await auth.currentUser.getIdToken();
     const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
@@ -8079,7 +8090,7 @@ window.restQueryByField = async function(collection, field, value, limitCount) {
             where: {
                 fieldFilter: {
                     field: { fieldPath: field },
-                    op: 'EQUAL',
+                    op: op || 'EQUAL',
                     value: jsValueToFirestoreRest(value)
                 }
             },
@@ -8135,12 +8146,28 @@ window.restIncrementField = async function(collection, docId, fieldPath, amount)
 // إجمالي كلي + عدّاد يومي منفصل (يبان بلوحة الأدمن). لا يحسب أي زيارة من
 // أجهزة الكاشير/الأدمن نفسها (بس صفحة المينيو العامة).
 async function incrementMenuVisitCounter() {
+    const today = getTodayString();
     try {
-        const today = getTodayString();
         await restIncrementField('system_counters', 'menu_visits', 'total', 1);
         await restIncrementField('system_counters', 'menu_visits', 'byDate.' + today, 1);
     } catch (e) {
-        console.warn('⚠️ فشل تسجيل زيارة المينيو:', e);
+        // 🆕🛠️ إصلاح خطأ صامت خطير: زيادة حقل بطريقة "transform" تتطلب
+        // إن المستند يكون موجود مسبقاً بفايرستور - وهذا المستند
+        // (system_counters/menu_visits) ما انسوى أبداً، فكل محاولة زيادة
+        // كانت تفشل بصمت من أول يوم (نفس سبب "العداد يضل صفر رغم زيارات
+        // حقيقية"). الحين، أول فشل يُنشئ المستند بقيمه الابتدائية، وبعدها
+        // الزيادة العادية تشتغل طبيعي بكل زيارة لاحقة.
+        console.warn('⚠️ فشلت الزيادة المباشرة، جاري إنشاء المستند:', e);
+        try {
+            const existing = await restGetDocument('system_counters', 'menu_visits');
+            const newTotal = (existing ? cleanPrice(existing.total) : 0) + 1;
+            const byDate   = (existing && existing.byDate) || {};
+            byDate[today]  = cleanPrice(byDate[today]) + 1;
+            await restSetDocument('system_counters', 'menu_visits',
+                { total: newTotal, byDate: byDate }, false);
+        } catch (e2) {
+            console.warn('⚠️ فشل إنشاء/تحديث عدّاد الزيارات نهائياً:', e2);
+        }
     }
 }
 
