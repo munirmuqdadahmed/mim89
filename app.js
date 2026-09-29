@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1813';
+const MIM89_APP_VERSION = '1814';
 
 /* ==========================================
    المتغيرات العامة
@@ -4005,9 +4005,22 @@ fontScale: getInvoiceDesign().fontScale || '1.0',
    💰 الصندوق والمدوّر
    ========================================== */
 function getDrawerOpeningFloat(dateStr) {
-    const target = dateStr || getTodayString();
-    const all    = getData('sys_drawer_float') || {};
-    return cleanPrice(all[target]) || 0;
+    const target  = dateStr || getTodayString();
+    const all     = getData('sys_drawer_float') || {};
+    const explicitVal = all[target];
+    if (explicitVal !== undefined && explicitVal !== null) return cleanPrice(explicitVal) || 0;
+
+    // 🛠️ إصلاح جذري: المدوّر ما كان ينتقل تلقائياً من تقفيل شيفت للي
+    // بعده - يبقى صفر لين حد يكتبه يدوياً بـ"تسجيل مدوّر". الحين، إذا
+    // ماكو قيمة محفوظة صراحة "لليوم الحالي"، نرجع آخر مبلغ فعلي عدّه
+    // آخر كاشير قفل شفته (نفس الفلوس اللي فعلياً ضلت بالصندوق) بدل
+    // الصفر - هذا اللي يفسر ليش الصندوق "يضيع" رقمه من شفت للثاني.
+    if (target === getTodayString()) {
+        const archive = getData('sys_shift_archive') || [];
+        if (archive.length > 0 && archive[0].actualCash)
+            return cleanPrice(archive[0].actualCash);
+    }
+    return 0;
 }
 
 function setDrawerOpeningFloat(amount, dateStr) {
@@ -4618,6 +4631,12 @@ function confirmCloseShiftAndLogout() {
         });
         if (archive.length > 200) archive = archive.slice(0, 200);
         setData('sys_shift_archive', archive);
+
+        // 🛠️ إصلاح جذري: نسجّل المبلغ الفعلي اللي عدّه الكاشير كـ"مدوّر"
+        // صراحة لهذا اليوم التجاري - هذا هو المبلغ اللي فعلياً ضل
+        // بالصندوق، ولازم يكون نقطة انطلاق الشفت الجاي (بدل ما يضيع
+        // ويرجع الحساب يبدأ من صفر أو من رقم قديم غلط)
+        setDrawerOpeningFloat(actualCash || expected, getTodayString());
 
         logAudit('تقفيل شيفت', {
             amount:    s.totalSales,
@@ -7535,6 +7554,20 @@ async function renderAuditLog() {
                 ' ← ' + cleanPrice(d.newPrice).toLocaleString('ar-IQ') + ')';
         if (d.note)     detail += (detail ? ' — ' : '') + d.note;
         if (d.employee) detail += ' — ' + d.employee;
+        // 🛠️ إصلاح: تقفيل الشيفت كان يسجّل "المتوقع/الفعلي/الفرق" فعلياً
+        // بقاعدة البيانات، بس ما كان يظهر إطلاقاً هنا بلوحة التدقيق - يعني
+        // المالك ما يقدر يشوف شكد الكاشير سلّم فعلياً ولا الفرق عن المتوقع
+        if (e.action === 'تقفيل شيفت') {
+            const parts = [];
+            if (d.expected !== undefined) parts.push('المتوقع: ' + cleanPrice(d.expected).toLocaleString('ar-IQ'));
+            if (d.actual   !== undefined) parts.push('الفعلي: ' +
+                (d.actual ? cleanPrice(d.actual).toLocaleString('ar-IQ') : 'لم يُدخل'));
+            if (d.diff !== undefined && d.diff !== 'لم يُدخل') {
+                const diffNum = cleanPrice(d.diff);
+                parts.push((diffNum >= 0 ? 'زيادة: ' : 'نقص: ') + Math.abs(diffNum).toLocaleString('ar-IQ'));
+            }
+            if (parts.length) detail += (detail ? ' — ' : '') + parts.join(' | ');
+        }
 
         return '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
             'gap:8px;background:#0d0d11;padding:8px 10px;border-radius:7px;margin-bottom:4px;' +
