@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>MIM89 FAST FOOD - Menu A4</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background: #121212; color: #fff; padding: 20px; }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #1e1e1e;
+            margin: 0 auto 30px auto;
+            padding: 15mm;
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #e63946;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .brand-title { font-size: 28pt; font-weight: 900; color: #e63946; text-transform: uppercase; letter-spacing: 1px; }
+        .brand-sub { font-size: 14pt; color: #d4af37; margin-top: -5px; }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a2a2a;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 9.5pt;
+            border: 1px solid #444;
+        }
+
+        .qr-box {
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 8pt;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .section-title {
+            background: #e63946;
+            color: #fff;
+            padding: 4px 10px;
+            font-size: 11pt;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .item-card {
+            display: flex;
+            align-items: center;
+            background: #262626;
+            margin-bottom: 6px;
+            padding: 6px;
+            border-radius: 6px;
+            border-right: 3px solid #d4af37;
+        }
+
+        .item-img {
+            width: 42px;
+            height: 42px;
+            background: #3a3a3a;
+            border-radius: 4px;
+            margin-left: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14pt;
+        }
+
+        .item-details { flex-grow: 1; }
+        .item-name { font-size: 9.5pt; font-weight: bold; color: #fff; }
+        .item-desc { font-size: 7.5pt; color: #bbb; line-height: 1.1; }
+        .item-price { font-size: 9.5pt; font-weight: bold; color: #d4af37; white-space: nowrap; margin-right: 6px; }
+
+        .footer-banner {
+            text-align: center;
+            margin-top: 10px;
+            padding: 6px;
+            background: #2a2a2a;
+            color: #d4af37;
+            font-weight: bold;
+            font-size: 10pt;
+            border-radius: 6px;
+        }
+
+        @media print {
+            body { background: none; padding: 0; }
+            .page { box-shadow: none; margin: 0; page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- الوجه الأول -->
+    <div class="page">
+        <div class="header">
+            <div class="brand-title">MIM89 FAST FOOD</div>
+            <div class="brand-sub">كل الطعم... في مكان واحد</div>
+        </div>
+
+        <div class="info-bar">
+            <div>
+                📍 <b>العنوان:</b> بغداد - حي القاهرة - قرب صيدلية جوهرة الشفاء<br>
+                📞 <b>الطلبات:</b> 07750008630 / 07850008630<br>
+                🛵 <b>التوصيل:</b> حي القاهرة (مجاناً) | باقي المناطق (3,000 د.ع)
+            </div>
+            <div class="qr-box">رمز QR<br>للتوصيل</div>
+        </div>
+
+        <div class="grid-container">
+            <!-- العمود الأيمن -->
+            <div>
+                <div class="section-title">🍔 قسم البركر (لحم عجل طازج)</div>
+                
+                <div class="item-card">
+                    <div class="item-img">🥩</div>
+                    <div class="item-details">
+                        <div class="item-name">بركر 89 لحم</div>
+                        <div class="item-desc">شريحتين لحم، جبن شيدر، صوص 89، بصل مقرمش، حلوم</div>
+                    </div>
+                    <div class="item-price">7,500 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍔</div>
+                    <div class="item-details">
+                        <div class="item-name">RBG بركر</div>
+                        <div class="item-desc">شريحتين لحم وجبن، مخلل، أصابع موزاريلا</div>
+                    </div>
+                    <div class="item-price">9,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍔</div>
+                    <div class="item-details">
+                        <div class="item-name">كرانشي بركر لحم</div>
+                        <div class="item-desc">لحم طازج مع خلطة وجبن 89، بطاطا كرسبي</div>
+                    </div>
+                    <div class="item-price">6,500 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🌶️</div>
+                    <div class="item-details">
+                        <div class="item-name">بركر هالبينو لحم</div>
+                        <div class="item-desc">لحم طازج، جبن شيدر، حلقات هالبينو، صوص خاص</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍄</div>
+                    <div class="item-details">
+                        <div class="item-name">مشروم بركر</div>
+                        <div class="item-desc">شريحة لحم، خس، بصل، طماطم، صوص الجبن</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🧀</div>
+                    <div class="item-details">
+                        <div class="item-name">تشيز بركر لحم</div>
+                        <div class="item-desc">شريحة لحم، جبن شيدر، صوص الجبن، مخلل</div>
+                    </div>
+                    <div class="item-price">4,500 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍔</div>
+                    <div class="item-details">
+                        <div class="item-name">بركر كلاسيك لحم</div>
+                        <div class="item-desc">شريحة لحم طازج، طماطم، خس، بصل، مخلل</div>
+                    </div>
+                    <div class="item-price">4,000 د.ع</div>
+                </div>
+            </div>
+
+            <!-- العمود الأيسر -->
+            <div>
+                <div class="section-title">🐔 قسم بركر الدجاج</div>
+                
+                <div class="item-card">
+                    <div class="item-img">🍗</div>
+                    <div class="item-details">
+                        <div class="item-name">كرانشي بركر دجاج</div>
+                        <div class="item-desc">صدر دجاج مقرمش، خلطة وجبن 89، بطاطا كرسبي</div>
+                    </div>
+                    <div class="item-price">6,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍔</div>
+                    <div class="item-details">
+                        <div class="item-name">بركر دجاج 89</div>
+                        <div class="item-desc">قطعتان دجاج مقرمش، دوريتوس، صوص 89</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🌶️</div>
+                    <div class="item-details">
+                        <div class="item-name">بركر هالبينو دجاج</div>
+                        <div class="item-desc">قطعتان دجاج كرسبي، هالبينو، خس وصوص</div>
+                    </div>
+                    <div class="item-price">4,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🧀</div>
+                    <div class="item-details">
+                        <div class="item-name">شيز بركر دجاج</div>
+                        <div class="item-desc">قطعتين دجاج مقرمش، جبن شيدر، صوص الجبن</div>
+                    </div>
+                    <div class="item-price">3,500 د.ع</div>
+                </div>
+
+                <div class="section-title" style="margin-top: 15px;">🍗 الكنتاكي والستريبس</div>
+
+                <div class="item-card">
+                    <div class="item-img">🍗</div>
+                    <div class="item-details">
+                        <div class="item-name">وجبة كنتاكي كاملة (10 قطع)</div>
+                        <div class="item-desc">10 قطع دجاج مقرمش، بطاطا، صوص الجبن، ثومية</div>
+                    </div>
+                    <div class="item-price">19,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍗</div>
+                    <div class="item-details">
+                        <div class="item-name">كنتاكي 8 قطع</div>
+                        <div class="item-desc">8 قطع دجاج مقرمش، بطاطا، صوص الجبن، ثومية</div>
+                    </div>
+                    <div class="item-price">14,500 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍗</div>
+                    <div class="item-details">
+                        <div class="item-name">3 قطع ستريبس</div>
+                        <div class="item-desc">ثومية، سلطة كولسلو، فنكر</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-banner">الوجه الأول - MIM89 FAST FOOD</div>
+    </div>
+
+    <!-- الوجه الثاني -->
+    <div class="page">
+        <div class="header">
+            <div class="brand-title">MIM89 FAST FOOD</div>
+            <div class="brand-sub">الشاورما - السندويشات - الريزو - المقبلات</div>
+        </div>
+
+        <div class="grid-container">
+            <!-- العمود الأيمن -->
+            <div>
+                <div class="section-title">🌯 قسم الشاورما (دجاج)</div>
+                
+                <div class="item-card">
+                    <div class="item-img">🌯</div>
+                    <div class="item-details">
+                        <div class="item-name">شاورما صاج سوبر</div>
+                        <div class="item-desc">4 شاورما دجاج حجم سوبر مع الصوصات والبطاطس</div>
+                    </div>
+                    <div class="item-price">12,500 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">⚖️</div>
+                    <div class="item-details">
+                        <div class="item-name">شاورما وزن 500 غرام</div>
+                        <div class="item-desc">نصف كغم شاورما دجاج صافي</div>
+                    </div>
+                    <div class="item-price">14,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🌯</div>
+                    <div class="item-details">
+                        <div class="item-name">شاورما صاج دبل</div>
+                        <div class="item-desc">خبز صاج دبل مع كمية دجاج مضاعفة</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍽️</div>
+                    <div class="item-details">
+                        <div class="item-name">وجبة شاورما عربي عادي</div>
+                        <div class="item-desc">شاورما دجاج، بطاطس، ثومية، خبز طازج</div>
+                    </div>
+                    <div class="item-price">3,500 د.ع</div>
+                </div>
+
+                <div class="section-title" style="margin-top: 15px;">🥪 قسم السندويشات</div>
+
+                <div class="item-card">
+                    <div class="item-img">🌮</div>
+                    <div class="item-details">
+                        <div class="item-name">سندويش فاهيتا دجاج</div>
+                        <div class="item-desc">دجاج متبل، فلفل ألوان، فطر، جبن ذائب، ذرة</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🥪</div>
+                    <div class="item-details">
+                        <div class="item-name">سندويش مايتي زنجر</div>
+                        <div class="item-desc">قطعتين دجاج كرسبي، خس، صوص الجبن</div>
+                    </div>
+                    <div class="item-price">4,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🌯</div>
+                    <div class="item-details">
+                        <div class="item-name">جكن تويستر باربيكيو</div>
+                        <div class="item-desc">دجاج مقرمش، خبز تورتيلا، صوص باربيكيو</div>
+                    </div>
+                    <div class="item-price">4,500 د.ع</div>
+                </div>
+            </div>
+
+            <!-- العمود الأيسر -->
+            <div>
+                <div class="section-title">🍚 قسم الريزو</div>
+                
+                <div class="item-card">
+                    <div class="item-img">🍚</div>
+                    <div class="item-details">
+                        <div class="item-name">ريزو تشيبوتلي Chipotle</div>
+                        <div class="item-desc">ريزو مع صوص التشيبوتلي اللذيذ</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🍚</div>
+                    <div class="item-details">
+                        <div class="item-name">ريزو باربيكيو / شاورما</div>
+                        <div class="item-desc">رز، قطع دجاج كرسبي أو شاورما، صوص خاص</div>
+                    </div>
+                    <div class="item-price">4,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🧀</div>
+                    <div class="item-details">
+                        <div class="item-name">ريزو جبنة / هاني ماسترد</div>
+                        <div class="item-desc">رز مع قطع دجاج مقرمشة وصوص الجبن</div>
+                    </div>
+                    <div class="item-price">4,000 د.ع</div>
+                </div>
+
+                <div class="section-title" style="margin-top: 15px;">🍟 الفنكر والمقبلات</div>
+
+                <div class="item-card">
+                    <div class="item-img">🍟</div>
+                    <div class="item-details">
+                        <div class="item-name">ستريبس شيتوس 89</div>
+                        <div class="item-desc">فنكر، دجاج مقرمش، شيتوس، دوريتوس، صوص</div>
+                    </div>
+                    <div class="item-price">5,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🧀</div>
+                    <div class="item-details">
+                        <div class="item-name">أصابع موزاريلا (3 قطع)</div>
+                        <div class="item-desc">أصابع جبن موزاريلا مقلية ذهبية</div>
+                    </div>
+                    <div class="item-price">3,000 د.ع</div>
+                </div>
+
+                <div class="item-card">
+                    <div class="item-img">🥤</div>
+                    <div class="item-details">
+                        <div class="item-name">الصوصات والمشروبات</div>
+                        <div class="item-desc">صوصات متنوعة (500 د.ع) | بيبسي، سفن، ميرندا</div>
+                    </div>
+                    <div class="item-price">250 - 500 د.ع</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-banner">صحتين وهنا من مطعم MIM89</div>
+    </div>
+
+</body>
+</html>
