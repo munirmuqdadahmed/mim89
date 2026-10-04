@@ -3077,8 +3077,8 @@ async function exportHtmlToPDF(htmlContent, filename, buttonEl) {
         const doc = iframe.contentWindow.document;
         doc.open(); doc.write(htmlContent); doc.close();
 
-        // ننتظر تحميل الخط والصور قبل الالتقاط
-        await new Promise(resolve => setTimeout(resolve, 600));
+        // ننتظر تحميل الخط والصور (ومكتبة QR الخارجية لو موجودة بالمستند) قبل الالتقاط
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const target = doc.body;
         const canvas = await html2canvas(target, {
@@ -3124,6 +3124,26 @@ async function exportHtmlToPDF(htmlContent, filename, buttonEl) {
 /* ==========================================
    🧠 المينيو الذكي - صور حقيقية + تسعير نفسي بالأحجام (يبيع نفسه)
    ========================================== */
+// 🆕 أيقونة بسيطة (SVG) لكل قسم - نختارها تلقائياً حسب اسم القسم، نفس
+// روح التصميم المرجعي (أيقونة دائرية صغيرة جنب اسم كل قسم)
+function pickCategoryIcon(catName) {
+    const n = String(catName || '');
+    if (n.includes('برجر') || n.includes('بركر')) return '🍔';
+    if (n.includes('شاورما'))  return '🌯';
+    if (n.includes('سندويش')) return '🥪';
+    if (n.includes('كنتاكي') || n.includes('قطع')) return '🍗';
+    if (n.includes('فنكر') || n.includes('مقبل')) return '🍟';
+    if (n.includes('ريزو') || n.includes('أرز'))  return '🍚';
+    if (n.includes('صوص'))    return '🥫';
+    if (n.includes('مشروب') || n.includes('كولا')) return '🥤';
+    if (n.includes('حلا') || n.includes('ديزرت'))  return '🍰';
+    return '⭐';
+}
+
+// 🆕🛠️ إعادة تصميم كاملة: نفس روح المينيو المرجعي (خلفية كريمية، تاج
+// وشعار بالأعلى، بطاقات أصناف بصورة دائرية أنيقة، أقسام بعناوين واضحة
+// بأيقونة، وتذييل فيه QR كود حقيقي + العنوان + الهاتف). يسحب تلقائياً
+// كل أصناف وصور وأسعار المينيو الحالي - ما يحتاج أي كتابة يدوية إضافية.
 function buildSmartMenuHTML() {
     let categories = [], items = [];
     try {
@@ -3133,45 +3153,77 @@ function buildSmartMenuHTML() {
 
     if (!items || items.length === 0) return null;
 
+    const invDesign = getData('sys_invoice_design') || {};
+    const logoDataUrl = invDesign.showLogo ? (invDesign.logoDataUrl || '') : '';
+    const siteUrl = 'https://mim89.com';
+
     let html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl"><head><meta charset="UTF-8">
-<title>MIM89 - المينيو الذكي</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+<title>MIM89 - المينيو</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-@page { size: A4; margin: 8mm; }
-* { box-sizing:border-box; }
-body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;margin:0;padding:6px;}
-.menu-hdr{text-align:center;border-bottom:4px double #000;padding-bottom:8px;margin-bottom:14px;}
-.menu-hdr h1{margin:0;font-size:26px;font-weight:900;letter-spacing:1px;}
-.menu-hdr p{margin:4px 0 0;font-size:12px;font-weight:bold;color:#555;}
-.cat-title{background:#111 !important;color:#ffd700 !important;padding:6px 14px;
-  font-size:15px;font-weight:900;border-radius:5px;margin:14px 0 8px;
-  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.items-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.item-card{border:1px solid #ccc;border-radius:10px;overflow:hidden;
-  page-break-inside:avoid;display:flex;flex-direction:column;}
-.item-photo{width:100%;height:95px;object-fit:cover;background:#eee;}
-.item-body{padding:6px 8px;}
-.item-name{font-weight:900;font-size:13px;margin-bottom:2px;}
-.item-desc{font-size:9.5px;color:#666;margin-bottom:4px;min-height:12px;}
-.single-price{font-size:15px;font-weight:900;color:#000;text-align:left;}
-.sizes-ladder{display:flex;gap:4px;margin-top:4px;}
-.size-chip{flex:1;text-align:center;border:1.5px solid #999;border-radius:6px;
-  padding:3px 2px;font-size:9.5px;}
-.size-chip .lbl{font-weight:bold;color:#555;}
-.size-chip .val{font-weight:900;font-size:11px;}
-.size-chip.best{border-color:#000;background:#fff8dc !important;
-  -webkit-print-color-adjust:exact;print-color-adjust:exact;position:relative;}
-.size-chip.best::before{content:"⭐ الأفضل";position:absolute;top:-9px;right:2px;
-  background:#000 !important;color:#ffd700 !important;font-size:7px;padding:1px 4px;
-  border-radius:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.footer-note{text-align:center;margin-top:16px;border-top:2px solid #000;
-  padding-top:8px;font-size:11px;font-weight:bold;}
+@page { size: A4 landscape; margin: 9mm; }
+* { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+body{font-family:'Tajawal',sans-serif;direction:rtl;background:#f8f1e4;color:#1a1a1a;margin:0;padding:10px 16px;}
+.menu-page{max-width:1280px;margin:0 auto;}
+
+/* ===== الترويسة ===== */
+.menu-top{display:flex;justify-content:space-between;align-items:center;
+  padding-bottom:10px;margin-bottom:16px;border-bottom:2px solid #d8c6a0;}
+.tagline{font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;
+  color:#5a4a2f;line-height:1.3;}
+.tagline span{display:block;}
+.tagline-ar{font-family:'Tajawal',sans-serif;font-weight:800;font-size:13px;color:#b8860b;text-align:left;}
+.brand-center{text-align:center;}
+.brand-crown{font-size:20px;}
+.brand-name{font-size:30px;font-weight:900;letter-spacing:1px;color:#1a1a1a;margin:0;}
+.brand-sub{font-size:11px;font-weight:700;letter-spacing:6px;color:#8a7a52;margin-top:-2px;}
+.brand-logo-img{height:46px;object-fit:contain;}
+
+/* ===== الأقسام ===== */
+.categories-wrap{column-count:2;column-gap:22px;}
+.cat-block{break-inside:avoid;margin-bottom:16px;}
+.cat-title{display:flex;align-items:center;gap:8px;font-weight:900;font-size:15px;
+  color:#1a1a1a;margin-bottom:8px;}
+.cat-title .ic{width:26px;height:26px;border-radius:50%;background:#f3e6c8;
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.cat-title .en{font-weight:600;font-size:10.5px;color:#9a8a60;font-family:'Poppins',sans-serif;}
+
+.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.item-card{text-align:center;}
+.item-photo-wrap{width:100%;aspect-ratio:1.3/1;border-radius:10px;overflow:hidden;
+  background:#eee0c4;margin-bottom:4px;}
+.item-photo{width:100%;height:100%;object-fit:cover;display:block;}
+.item-name{font-weight:800;font-size:10.5px;color:#1a1a1a;line-height:1.25;min-height:13px;}
+.item-desc{font-size:8px;color:#8a7a60;line-height:1.3;min-height:10px;margin-top:1px;}
+.item-price{font-weight:900;font-size:11px;color:#8a6d1f;margin-top:2px;}
+.sizes-ladder{display:flex;gap:3px;margin-top:3px;justify-content:center;}
+.size-chip{border:1px solid #c9b78a;border-radius:5px;padding:1px 4px;font-size:7.5px;}
+.size-chip.best{border-color:#8a6d1f;background:#f3e6c8;font-weight:800;}
+
+/* ===== التذييل ===== */
+.menu-footer{display:flex;justify-content:space-between;align-items:center;
+  margin-top:18px;padding-top:10px;border-top:2px solid #d8c6a0;}
+.qr-box{text-align:center;font-size:8px;color:#7a6a48;}
+.qr-box img, .qr-box canvas{width:60px;height:60px;border-radius:6px;}
+.footer-info{font-size:10px;color:#4a3f2a;text-align:center;line-height:1.6;}
+.footer-info .phone{direction:ltr;display:inline-block;}
+.footer-brand{font-family:'Poppins',sans-serif;font-weight:700;font-size:12px;color:#8a6d1f;text-align:left;}
 </style></head><body>
-<div class="menu-hdr">
-<h1>MIM89 FAST FOOD</h1>
-<p>المينيو الرسمي - بغداد / القاهرة</p>
-</div>`;
+<div class="menu-page">
+
+<div class="menu-top">
+  <div class="tagline"><span>Good Food</span><span>Good Mood</span></div>
+  <div class="brand-center">
+    ${logoDataUrl
+        ? '<img class="brand-logo-img" src="' + logoDataUrl + '">'
+        : '<div class="brand-crown">👑</div><div class="brand-name">MIM89</div><div class="brand-sub">FASTFOOD</div>'}
+  </div>
+  <div class="tagline-ar">أكل لذيذ<br>بكل لحظة 💛</div>
+</div>
+
+<div class="categories-wrap">`;
 
     categories.forEach(cat => {
         const catItems = items.filter(i => {
@@ -3181,7 +3233,10 @@ body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;m
         });
         if (catItems.length === 0) return;
 
-        html += '<div class="cat-title">' + cat.name + '</div><div class="items-grid">';
+        html += '<div class="cat-block"><div class="cat-title">' +
+            '<span class="ic">' + pickCategoryIcon(cat.name) + '</span>' +
+            '<span>' + cat.name + '</span></div>' +
+            '<div class="items-grid">';
 
         catItems.forEach(item => {
             const img = item.image || item.img || '';
@@ -3195,28 +3250,47 @@ body{font-family:'Tajawal',sans-serif;direction:rtl;background:#fff;color:#000;m
                     item.sizes.map(s => {
                         const isBest = cleanPrice(s.price) === maxPrice;
                         return '<div class="size-chip' + (isBest ? ' best' : '') + '">' +
-                            '<div class="lbl">' + s.label + '</div>' +
-                            '<div class="val">' + cleanPrice(s.price).toLocaleString('ar-IQ') + '</div>' +
+                            s.label + ' ' + cleanPrice(s.price).toLocaleString('ar-IQ') +
                             '</div>';
                     }).join('') + '</div>';
             } else {
-                priceBlock = '<div class="single-price">' +
+                priceBlock = '<div class="item-price">' +
                     cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع</div>';
             }
 
             html += '<div class="item-card">' +
-                (img ? '<img class="item-photo" src="' + img + '">' : '') +
-                '<div class="item-body">' +
+                '<div class="item-photo-wrap">' +
+                (img ? '<img class="item-photo" src="' + img + '" onerror="this.parentElement.style.display=\'none\'">' : '') +
+                '</div>' +
                 '<div class="item-name">' + item.name + '</div>' +
-                '<div class="item-desc">' + (item.ingredients || '') + '</div>' +
+                (item.ingredients ? '<div class="item-desc">' + item.ingredients + '</div>' : '') +
                 priceBlock +
-                '</div></div>';
+                '</div>';
         });
 
-        html += '</div>';
+        html += '</div></div>';
     });
 
-    html += '<div class="footer-note">MIM89 FAST FOOD - صحتين وهنا 🍔</div></body></html>';
+    html += `</div>
+
+<div class="menu-footer">
+  <div class="qr-box"><div id="menuQrCode"></div>امسح الرمز لموقعنا</div>
+  <div class="footer-info">
+    📍 بغداد - حي القاهرة &nbsp;|&nbsp; 📞 <span class="phone">07750008630 - 07850008630</span>
+  </div>
+  <div class="footer-brand">MIM89<br><span style="font-size:9px;font-weight:500;color:#9a8a60;">More Than Just Food</span></div>
+</div>
+
+</div>
+<script>
+  if (window.QRCode) {
+    new QRCode(document.getElementById('menuQrCode'), {
+      text: '${siteUrl}', width: 60, height: 60,
+      colorDark: '#1a1a1a', colorLight: '#f8f1e4'
+    });
+  }
+</script>
+</body></html>`;
     return html;
 }
 
@@ -3233,7 +3307,9 @@ function printSmartMenu() {
     }
     const doc = iframe.contentWindow.document;
     doc.open(); doc.write(html); doc.close();
-    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
+    // 🆕 مهلة أطول (900ms بدل 400) حتى تكمل مكتبة QR تحميلها من CDN
+    // وترسم الرمز قبل ما تفتح نافذة الطباعة
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 900);
 }
 
 function downloadSmartMenuPDF(btn) {
