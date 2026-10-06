@@ -16,28 +16,34 @@
 </head>
 <body class="cashier-body">
 
-<!-- 🔐 شاشة الدخول بـ PIN لمسي -->
+<!-- 🔐 شاشة دخول حقيقية (إيميل + كلمة مرور) -->
 <div id="authOverlay" class="pin-overlay">
-    <div class="pin-card">
+    <div class="pin-card" style="max-width:340px;">
         <div class="pin-logo">🍔</div>
         <h2>MIM89 POS</h2>
-        <p>أدخل رمز الكاشير</p>
-        <div class="pin-dots" id="pinDots"></div>
-        <div class="pin-keypad">
-            <button class="pin-key" onclick="cashierPinPress('3')">3</button>
-            <button class="pin-key" onclick="cashierPinPress('2')">2</button>
-            <button class="pin-key" onclick="cashierPinPress('1')">1</button>
-            <button class="pin-key" onclick="cashierPinPress('6')">6</button>
-            <button class="pin-key" onclick="cashierPinPress('5')">5</button>
-            <button class="pin-key" onclick="cashierPinPress('4')">4</button>
-            <button class="pin-key" onclick="cashierPinPress('9')">9</button>
-            <button class="pin-key" onclick="cashierPinPress('8')">8</button>
-            <button class="pin-key" onclick="cashierPinPress('7')">7</button>
-            <button class="pin-key pin-enter" onclick="cashierPinSubmit()">✓</button>
-            <button class="pin-key" onclick="cashierPinPress('0')">0</button>
-            <button class="pin-key pin-clear" onclick="cashierPinClear()">⌫</button>
-        </div>
-        <input type="hidden" id="cashierPassInput">
+        <p>دخول كاشير مصرّح له فقط</p>
+
+        <form id="cashierLoginForm" onsubmit="return false;" style="text-align:right;margin-top:14px;">
+            <label style="display:block;font-size:0.8rem;color:#aaa;margin-bottom:4px;">الإيميل:</label>
+            <input type="email" id="cashierEmailInput" autocomplete="username"
+                   placeholder="example@email.com" required
+                   style="width:100%;padding:12px;border-radius:9px;border:1px solid #333;
+                          background:#0d0d11;color:#fff;font-size:0.95rem;margin-bottom:12px;
+                          box-sizing:border-box;direction:ltr;text-align:left;">
+
+            <label style="display:block;font-size:0.8rem;color:#aaa;margin-bottom:4px;">كلمة المرور:</label>
+            <input type="password" id="cashierPasswordInput" autocomplete="current-password"
+                   placeholder="••••••••" required
+                   style="width:100%;padding:12px;border-radius:9px;border:1px solid #333;
+                          background:#0d0d11;color:#fff;font-size:0.95rem;margin-bottom:14px;
+                          box-sizing:border-box;direction:ltr;text-align:left;">
+
+            <button type="submit" id="cashierLoginBtn" onclick="attemptCashierStaffLogin()"
+                    class="gold-btn btn-block" style="padding:13px;font-weight:900;">
+                تسجيل الدخول
+            </button>
+        </form>
+
         <div class="pin-error-msg" id="authError"></div>
     </div>
 </div>
@@ -793,64 +799,88 @@
 </script>
 <script>
 /* ==========================================
-   PIN الكاشير
+   🔐 تسجيل دخول حقيقي بالخادم (إيميل + باسوورد) - بديل كامل عن رمز
+   PIN القديم. التحقق الحقيقي يصير بفايرستور نفسه (قواعد الحماية)،
+   مو بالمتصفح، فما أحد يقدر يتجاوزه حتى لو فتح أدوات المطوّر.
    ========================================== */
-var cashierPin = "";
+let cashierLoginInProgress = false;
 
-function updateCashierPinDots() {
-    const box = document.getElementById('pinDots');
-    if (!box) return;
-    box.innerHTML = Array.from({ length: cashierPin.length })
-        .map(() => '<span class="pin-dot filled"></span>').join('') +
-        (cashierPin.length === 0 ? '<span class="pin-dot"></span>'.repeat(4) : '');
-}
+async function attemptCashierStaffLogin() {
+    if (cashierLoginInProgress) return;
+    const email    = document.getElementById('cashierEmailInput').value.trim();
+    const password = document.getElementById('cashierPasswordInput').value;
+    const errBox   = document.getElementById('authError');
+    const btn      = document.getElementById('cashierLoginBtn');
+    errBox.innerText = '';
 
-function cashierPinPress(num) {
-    if (cashierPin.length >= 10) return;
-    cashierPin += String(num);
-    updateCashierPinDots();
-    if (cashierPin.length < 4) return;
-
-    const cashiers = typeof getData === 'function' ? (getData('sys_cashiers') || []) : [];
-    const matched  = cashiers.some(c => String(c.pin || c.password || '').trim() === cashierPin) ||
-        (typeof verifySystemPassword === 'function' && verifySystemPassword('cashier', cashierPin));
-
-    if (matched || cashierPin.length >= 10) setTimeout(cashierPinSubmit, 150);
-}
-updateCashierPinDots();
-
-function cashierPinClear() {
-    cashierPin = cashierPin.slice(0, -1);
-    updateCashierPinDots();
-    document.getElementById('authError').innerText = '';
-}
-
-function cashierPinSubmit() {
-    const passInput = document.getElementById('cashierPassInput');
-    if (passInput) passInput.value = cashierPin;
-    if (typeof loginCashier === 'function') {
-        loginCashier();
+    if (!email || !password) {
+        errBox.innerText = 'أدخل الإيميل وكلمة المرور.';
+        return;
     }
-    setTimeout(() => {
-        const errEl = document.getElementById('authError');
-        if (errEl && errEl.innerText) {
-            const dots = document.querySelectorAll('#pinDots .pin-dot');
-            dots.forEach(d => { d.classList.remove('filled'); d.classList.add('error'); });
-            setTimeout(() => {
-                dots.forEach(d => d.classList.remove('error'));
-                cashierPin = '';
-                updateCashierPinDots();
-            }, 700);
+
+    // ننتظر لين مكتبة فايربيس تتحمّل (ممكن توصل الضغطة قبلها بأجزاء ثانية)
+    let waited = 0;
+    while (typeof auth === 'undefined' && waited < 8000) {
+        await new Promise(r => setTimeout(r, 200));
+        waited += 200;
+    }
+    if (typeof auth === 'undefined') {
+        errBox.innerText = 'تعذّر الاتصال بالخادم - تأكد من الإنترنت وحاول مجدداً.';
+        return;
+    }
+
+    cashierLoginInProgress = true;
+    btn.disabled = true;
+    btn.innerText = 'جاري الدخول...';
+
+    try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const uid  = cred.user.uid;
+
+        // 🔒 حتى لو نجح تسجيل الدخول بفايربيس، لازم نتأكد هذا المستخدم
+        // فعلاً مذكور بقائمة الموظفين المصرّح لهم (staff) - وإلا نرفضه
+        // فوراً ونسجّل خروجه، حتى لو حسابه صحيح 100% بفايربيس
+        const staffDoc = await db.collection('staff').doc(uid).get();
+        if (!staffDoc.exists) {
+            await auth.signOut();
+            errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول.';
+            return;
         }
-    }, 150);
+
+        const staffData = staffDoc.data();
+        const user = {
+            id:   uid,
+            name: staffData.name || email.split('@')[0],
+            role: staffData.role || 'cashier'
+        };
+
+        if (typeof completeCashierLogin === 'function') {
+            completeCashierLogin(user);
+        }
+
+    } catch (err) {
+        const map = {
+            'auth/invalid-email':        'صيغة الإيميل غير صحيحة.',
+            'auth/user-disabled':        'هذا الحساب مُعطّل.',
+            'auth/user-not-found':       'ماكو حساب بهذا الإيميل.',
+            'auth/wrong-password':       'كلمة المرور غلط.',
+            'auth/invalid-credential':   'الإيميل أو كلمة المرور غلط.',
+            'auth/too-many-requests':    'محاولات كثيرة فاشلة - انتظر شوي وحاول مجدداً.',
+            'auth/network-request-failed': 'تعذّر الاتصال بالإنترنت.'
+        };
+        errBox.innerText = map[err.code] || ('خطأ: ' + (err.message || err.code || err));
+    } finally {
+        cashierLoginInProgress = false;
+        btn.disabled = false;
+        btn.innerText = 'تسجيل الدخول';
+    }
 }
 
-document.addEventListener('keydown', (e) => {
-    const overlay = document.getElementById('authOverlay');
-    if (!overlay || overlay.style.display === 'none') return;
-    if (e.key >= '0' && e.key <= '9') cashierPinPress(e.key);
-    else if (e.key === 'Enter')        cashierPinSubmit();
-    else if (e.key === 'Backspace')    cashierPinClear();
+document.getElementById('cashierPasswordInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attemptCashierStaffLogin();
+});
+document.getElementById('cashierEmailInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('cashierPasswordInput')?.focus();
 });
 
 /* ==========================================
