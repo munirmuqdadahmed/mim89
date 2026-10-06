@@ -35,20 +35,20 @@
 </head>
 <body class="admin-body">
 
-<!-- 🔐 شاشة دخول السائق -->
+<!-- 🔐 شاشة دخول حقيقية (إيميل + كلمة مرور) -->
 <div id="driverLoginScreen" class="pin-overlay" style="display:flex;">
     <div class="pin-card" style="max-width:340px;">
         <div class="pin-logo">🛵</div>
         <h2>صفحة السائق</h2>
-        <p>اكتب اسمك ورمز الدخول الخاص فيك للدخول</p>
+        <p>دخول سائق مصرّح له فقط</p>
 
-        <input type="text" id="driverNameLogin" class="gold-input-inline"
-               placeholder="👤 اسمك"
-               style="margin:14px 0 8px;font-size:0.95rem;">
-        <input type="text" id="driverPinLogin" class="gold-input-inline"
-               placeholder="🔒 رمز الدخول الخاص فيك"
-               style="margin-bottom:12px;direction:ltr;text-align:center;">
-        <button onclick="driverLogin()" class="gold-btn btn-block"
+        <input type="email" id="driverEmailLogin" class="gold-input-inline" autocomplete="username"
+               placeholder="example@email.com"
+               style="margin:14px 0 8px;font-size:0.95rem;direction:ltr;text-align:left;">
+        <input type="password" id="driverPasswordLogin" class="gold-input-inline" autocomplete="current-password"
+               placeholder="••••••••"
+               style="margin-bottom:12px;direction:ltr;text-align:left;">
+        <button onclick="attemptDriverStaffLogin()" id="driverLoginBtn" class="gold-btn btn-block"
                 style="background:#c084fc;color:#000;font-weight:900;padding:12px;">
             <i class="fa-solid fa-right-to-bracket"></i> دخول
         </button>
@@ -133,34 +133,80 @@ let activeDriverName = null;
 let activeDriverId   = null;
 let driverKnownOrderIds = null; // null = أول تحميل (ما نطلق تنبيه على طلبات موجودة أصلاً)
 
-function driverLogin() {
-    const typedName = document.getElementById('driverNameLogin').value.trim();
-    const pin = document.getElementById('driverPinLogin').value.trim();
-    const errEl = document.getElementById('driverLoginError');
+// 🆕🛠️ إصلاح أمني جذري: دخول حقيقي (إيميل+باسوورد يتحقق منه الخادم)
+// بدل اسم+رمز كان يتحقق منه المتصفح نفسه (يمكن تجاوزه من أدوات المطوّر).
+// 🔑 مهم: الاسم اللي تحطه بحساب السائق (حقل "name" بقائمة staff) لازم
+// يطابق بالضبط نفس اسمه المسجّل بقائمة السائقين بالأدمن، وإلا ما تربط
+// طلباته بحسابه صح.
+let driverLoginInProgress = false;
+
+async function attemptDriverStaffLogin() {
+    if (driverLoginInProgress) return;
+    const email    = document.getElementById('driverEmailLogin').value.trim();
+    const password = document.getElementById('driverPasswordLogin').value;
+    const errEl    = document.getElementById('driverLoginError');
+    const btn      = document.getElementById('driverLoginBtn');
     errEl.innerText = '';
 
-    if (!typedName) { errEl.innerText = '⚠️ اكتب اسمك.'; return; }
-    if (!pin)       { errEl.innerText = '⚠️ اكتب رمز الدخول.'; return; }
+    if (!email)    { errEl.innerText = '⚠️ اكتب الإيميل.'; return; }
+    if (!password) { errEl.innerText = '⚠️ اكتب كلمة المرور.'; return; }
 
-    const drivers = getData('sys_drivers') || [];
-    const driver  = drivers.find(d => String(d.pin || '').trim() === pin);
-
-    if (!driver) {
-        errEl.innerText = '⚠️ رمز الدخول غير صحيح. تواصل مع الإدارة للتأكد منه.';
+    let waited = 0;
+    while (typeof auth === 'undefined' && waited < 8000) {
+        await new Promise(r => setTimeout(r, 200));
+        waited += 200;
+    }
+    if (typeof auth === 'undefined') {
+        errEl.innerText = 'تعذّر الاتصال بالخادم - تأكد من الإنترنت وحاول مجدداً.';
         return;
     }
 
-    activeDriverName = driver.name;
-    activeDriverId   = driver.id;
-    try { localStorage.setItem('sys_active_driver_id', driver.id); } catch (_) {}
+    driverLoginInProgress = true;
+    btn.disabled = true;
+    btn.innerText = 'جاري الدخول...';
 
-    document.getElementById('driverLoginScreen').style.display = 'none';
-    document.getElementById('driverMainScreen').style.display  = 'block';
-    document.getElementById('driverNameHeader').innerText = driver.name;
+    try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const uid  = cred.user.uid;
 
-    fetchDriverOrdersFromCloud();
-    renderDriverOrders();
-    startDriverAutoRefresh();
+        const staffDoc = await db.collection('staff').doc(uid).get();
+        if (!staffDoc.exists) {
+            await auth.signOut();
+            errEl.innerText = '⚠️ هذا الحساب غير مصرّح له بالدخول.';
+            return;
+        }
+
+        const staffData = staffDoc.data();
+        const driverName = staffData.name || email.split('@')[0];
+
+        activeDriverName = driverName;
+        activeDriverId   = uid;
+        try { localStorage.setItem('sys_active_driver_id', uid); } catch (_) {}
+
+        document.getElementById('driverLoginScreen').style.display = 'none';
+        document.getElementById('driverMainScreen').style.display  = 'block';
+        document.getElementById('driverNameHeader').innerText = driverName;
+
+        fetchDriverOrdersFromCloud();
+        renderDriverOrders();
+        startDriverAutoRefresh();
+
+    } catch (err) {
+        const map = {
+            'auth/invalid-email':        'صيغة الإيميل غير صحيحة.',
+            'auth/user-disabled':        'هذا الحساب مُعطّل.',
+            'auth/user-not-found':       'ماكو حساب بهذا الإيميل.',
+            'auth/wrong-password':       'كلمة المرور غلط.',
+            'auth/invalid-credential':   'الإيميل أو كلمة المرور غلط.',
+            'auth/too-many-requests':    'محاولات كثيرة فاشلة - انتظر شوي وحاول مجدداً.',
+            'auth/network-request-failed': 'تعذّر الاتصال بالإنترنت.'
+        };
+        errEl.innerText = map[err.code] || ('خطأ: ' + (err.message || err.code || err));
+    } finally {
+        driverLoginInProgress = false;
+        btn.disabled = false;
+        btn.innerText = 'دخول';
+    }
 }
 
 function driverLogout() {
@@ -171,8 +217,9 @@ function driverLogout() {
     try { localStorage.removeItem('sys_active_driver_id'); } catch (_) {}
     document.getElementById('driverMainScreen').style.display  = 'none';
     document.getElementById('driverLoginScreen').style.display = 'flex';
-    document.getElementById('driverPinLogin').value = '';
+    document.getElementById('driverPasswordLogin').value = '';
     if (driverUnsubscribe) { driverUnsubscribe(); driverUnsubscribe = null; }
+    if (typeof auth !== 'undefined' && auth) auth.signOut().catch(() => {});
 }
 
 // عرض طلبات هذا السائق: توصيل، بذمته، لسا ما تسوّت + حوض الطلبات المفتوح
@@ -394,19 +441,6 @@ async function fetchDriverOrdersFromCloud() {
 
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden && activeDriverName) fetchDriverOrdersFromCloud();
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        try {
-            const savedId = localStorage.getItem('sys_active_driver_id');
-            if (savedId) {
-                const drivers = getData('sys_drivers') || [];
-                const saved = drivers.find(d => String(d.id) === savedId);
-                if (saved) document.getElementById('driverNameLogin').value = saved.name;
-            }
-        } catch (_) {}
-    }, 800);
 });
 
 /* ==========================================
