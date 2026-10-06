@@ -1570,58 +1570,42 @@ function showCashierLoginPin() {
     if (app) app.style.display = 'none';
 }
 
-function loginCashier() {
-    const passInput = document.getElementById('cashierPassInput');
-    const inputPass = passInput ? String(passInput.value).trim() : '';
-    if (!inputPass) return;
+// 🆕🛠️ إصلاح أمني جذري: فصلنا "شنو يصير بعد ما نعرف هوية الكاشير" (هذي
+// الدالة) عن "كيف نتحقق من هويته" - القديم كان يتحقق برمز PIN بالمتصفح
+// نفسه (يمكن تجاوزه بسهولة من أدوات المطوّر). الحين التحقق الحقيقي يصير
+// بتسجيل دخول فعلي (إيميل+باسوورد) تتحقق منه قواعد الحماية بالخادم نفسه.
+function completeCashierLogin(user) {
+    activeCashierUser = user;
+    sessionStorage.setItem('active_cashier', JSON.stringify(activeCashierUser));
+    sessionStorage.setItem('shift_start_time', new Date().toLocaleString('ar-IQ'));
+    sessionStorage.setItem('shift_start_timestamp', Date.now());
 
-    const cashiers = getData('sys_cashiers') || [];
-    let user = cashiers.find(c =>
-        String(c.pin || c.password || '').trim() === inputPass
-    );
+    logAudit('تسجيل دخول', {
+        cashier: user.name,
+        device:  navigator.userAgent.slice(0, 60)
+    });
 
-    if (!user && verifySystemPassword('cashier', inputPass)) {
-        user = { id: "c1", name: "الكاشير الرئيسي", pin: inputPass };
-    }
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = 'none';
+    const app = document.getElementById('cashierMainApp');
+    if (app) app.style.display = 'flex';
 
-    if (user) {
-        activeCashierUser = user;
-        sessionStorage.setItem('active_cashier', JSON.stringify(activeCashierUser));
-        sessionStorage.setItem('shift_start_time', new Date().toLocaleString('ar-IQ'));
-        sessionStorage.setItem('shift_start_timestamp', Date.now());
+    const nameEl = document.getElementById('activeCashierName');
+    if (nameEl) nameEl.innerText = "الكاشير: " + user.name;
 
-        logAudit('تسجيل دخول', {
-            cashier: user.name,
-            device:  navigator.userAgent.slice(0, 60)
-        });
+    const errEl = document.getElementById('authError');
+    if (errEl) errEl.innerText = '';
 
-        const overlay = document.getElementById('authOverlay');
-        if (overlay) overlay.style.display = 'none';
-        const app = document.getElementById('cashierMainApp');
-        if (app) app.style.display = 'flex';
+    loadPosDirectMenu('all');
+    loadDriversAndAppDropdowns();
+    loadPosDeliveryAreas();
+    listenForIncomingOrders();
+    prefetchOrderNumber();
 
-        const nameEl = document.getElementById('activeCashierName');
-        if (nameEl) nameEl.innerText = "الكاشير: " + user.name;
-
-        const errEl = document.getElementById('authError');
-        if (errEl) errEl.innerText = '';
-        if (passInput) passInput.value = '';
-
-        loadPosDirectMenu('all');
-        loadDriversAndAppDropdowns();
-        loadPosDeliveryAreas();
-        listenForIncomingOrders();
-        prefetchOrderNumber();
-
-        // 🆕 تطبيق رقم المتصل التلقائي (ماكرو دروب) - يجيب الرقم من
-        // رابط الصفحة نفسه (ثابت 100%، ما ينكسر أبداً مهما تغيّرت
-        // الواجهة مستقبلاً)، بدل الاعتماد على "كتابة" بمكان معيّن بالشاشة
-        applyIncomingCallerPhone();
-    } else {
-        const errEl = document.getElementById('authError');
-        if (errEl) errEl.innerText = "الرمز غير صحيح!";
-        logAudit('محاولة دخول فاشلة', { attempt: inputPass.slice(0,2) + '**' });
-    }
+    // 🆕 تطبيق رقم المتصل التلقائي (ماكرو دروب) - يجيب الرقم من
+    // رابط الصفحة نفسه (ثابت 100%، ما ينكسر أبداً مهما تغيّرت
+    // الواجهة مستقبلاً)، بدل الاعتماد على "كتابة" بمكان معيّن بالشاشة
+    applyIncomingCallerPhone();
 }
 
 // 🆕 تطبيق رقم المتصل التلقائي على خانة الهاتف بالكاشير - يعبّي الرقم
