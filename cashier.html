@@ -837,13 +837,14 @@ async function attemptCashierStaffLogin() {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const uid  = cred.user.uid;
 
-        // 🔒 حتى لو نجح تسجيل الدخول بفايربيس، لازم نتأكد هذا المستخدم
-        // فعلاً مذكور بقائمة الموظفين المصرّح لهم (staff) - وإلا نرفضه
-        // فوراً ونسجّل خروجه، حتى لو حسابه صحيح 100% بفايربيس
+        // 🔒🛠️ إصلاح أمني: لازم يكون role تحديداً cashier أو admin -
+        // وإلا أي حساب ثاني (سائق، موظف...) كان يقدر يفتح شاشة الكاشير
+        // الكاملة (طلبات، فواتير، تقفيل شيفت) بدون أي صلاحية حقيقية لها!
         const staffDoc = await db.collection('staff').doc(uid).get();
-        if (!staffDoc.exists) {
+        const allowedRoles = ['cashier', 'admin'];
+        if (!staffDoc.exists || !allowedRoles.includes(staffDoc.data().role)) {
             await auth.signOut();
-            errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول.';
+            errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول للكاشير.';
             return;
         }
 
