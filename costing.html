@@ -547,10 +547,12 @@ async function attemptCostingStaffLogin() {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const uid  = cred.user.uid;
 
+        // 🔒🛠️ إصلاح أمني: الخزينة فيها كل بيانات الأرباح والرواتب -
+        // لازم role = admin تحديداً، ما يكفي إنه "موظف" بشكل عام
         const staffDoc = await db.collection('staff').doc(uid).get();
-        if (!staffDoc.exists) {
+        if (!staffDoc.exists || staffDoc.data().role !== 'admin') {
             await auth.signOut();
-            errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول.';
+            errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول للخزينة.';
             return;
         }
 
