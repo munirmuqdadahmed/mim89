@@ -2554,11 +2554,11 @@ async function attemptStaffLogin() {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const uid  = cred.user.uid;
 
-        // 🔒 حتى لو نجح تسجيل الدخول بفايربيس، لازم نتأكد هذا المستخدم
-        // فعلاً مذكور بقائمة الموظفين المصرّح لهم (staff) - وإلا نرفضه
-        // فوراً ونسجّل خروجه، حتى لو حسابه صحيح 100% بفايربيس
+        // 🔒🛠️ إصلاح أمني: ما يكفي إنه "موظف مسجّل" بشكل عام - لازم
+        // تحديداً يكون role = admin، وإلا أي حساب (سائق، كاشير...) كان
+        // يقدر يفتح لوحة الإدارة الكاملة بكل صلاحياتها!
         const staffDoc = await db.collection('staff').doc(uid).get();
-        if (!staffDoc.exists) {
+        if (!staffDoc.exists || staffDoc.data().role !== 'admin') {
             await auth.signOut();
             errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول للوحة الإدارة.';
             return;
