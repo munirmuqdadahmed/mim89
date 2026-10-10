@@ -292,8 +292,10 @@ async function attemptEmployeeStaffLogin() {
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const uid  = cred.user.uid;
 
+        // 🔒🛠️ إصلاح أمني: لازم role = employee تحديداً (مطابقة الاسم
+        // وحدها ما تكفي - لازم الصفة الصحيحة كمان)
         const staffDoc = await db.collection('staff').doc(uid).get();
-        if (!staffDoc.exists) {
+        if (!staffDoc.exists || staffDoc.data().role !== 'employee') {
             await auth.signOut();
             errEl.innerText = '⚠️ هذا الحساب غير مصرّح له بالدخول.';
             return;
@@ -547,7 +549,7 @@ async function tryResumeEmployeeSession() {
         if (!user || activeEmployeeSession) return;
         try {
             const staffDoc = await db.collection('staff').doc(user.uid).get();
-            if (!staffDoc.exists) return;
+            if (!staffDoc.exists || staffDoc.data().role !== 'employee') return;
             const staffData = staffDoc.data();
             const employees = getData('sys_employees') || [];
             const emp = employees.find(e => String(e.name).trim() === String(staffData.name).trim());
