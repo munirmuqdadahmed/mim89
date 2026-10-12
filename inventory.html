@@ -671,7 +671,7 @@
 
 </div><!-- end invMainApp -->
 
-<script src="app.js?v=1763"></script>
+<script>document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
 /* ==========================================
    🔐 تسجيل دخول حقيقي بالخادم (إيميل + باسوورد) - بديل كامل عن رمز
@@ -713,7 +713,7 @@ async function attemptInventoryStaffLogin() {
 
         // 🔒🛠️ إصلاح أمني: لازم role يكون admin أو inventory تحديداً -
         // وإلا أي حساب ثاني كان يقدر يفتح المخزون ويعدّل الوصفات والأسعار
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         const allowedRoles = ['admin', 'inventory'];
         if (!staffDoc.exists || !allowedRoles.includes(staffDoc.data().role)) {
             await auth.signOut();
