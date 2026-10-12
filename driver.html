@@ -172,7 +172,7 @@ async function attemptDriverStaffLogin() {
         // 🔒🛠️ إصلاح أمني: لازم role = driver تحديداً - وإلا أي حساب
         // ثاني (كاشير، موظف...) كان يقدر يفتح صفحة السائق ويشوف طلبات
         // التوصيل وأرقام هواتف الزبائن بدون أي صلاحية حقيقية لها
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         const allowedRoles = ['driver', 'admin'];
         if (!staffDoc.exists || !allowedRoles.includes(staffDoc.data().role)) {
             await auth.signOut();
