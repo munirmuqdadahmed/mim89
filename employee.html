@@ -242,7 +242,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1773"></script>
+<script>document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
 /* ==========================================
    👤 بوابة الموظفين - منطق تسجيل الدخول والعرض
@@ -294,7 +294,7 @@ async function attemptEmployeeStaffLogin() {
 
         // 🔒🛠️ إصلاح أمني: لازم role = employee تحديداً (مطابقة الاسم
         // وحدها ما تكفي - لازم الصفة الصحيحة كمان)
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         if (!staffDoc.exists || staffDoc.data().role !== 'employee') {
             await auth.signOut();
             errEl.innerText = '⚠️ هذا الحساب غير مصرّح له بالدخول.';
@@ -548,7 +548,7 @@ async function tryResumeEmployeeSession() {
     auth.onAuthStateChanged(async (user) => {
         if (!user || activeEmployeeSession) return;
         try {
-            const staffDoc = await db.collection('staff').doc(user.uid).get();
+            const staffDoc = await getStaffDocSafe(user.uid);
             if (!staffDoc.exists || staffDoc.data().role !== 'employee') return;
             const staffData = staffDoc.data();
             const employees = getData('sys_employees') || [];
