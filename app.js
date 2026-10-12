@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1817';
+const MIM89_APP_VERSION = '1818';
 
 /* ==========================================
    المتغيرات العامة
@@ -377,6 +377,162 @@ try {
 } catch (e) {
     console.warn("Firebase init error:", e);
 }
+
+
+/* ==========================================
+   📱 صفحات الطاقم على شبكات الموبايل: قراءة/كتابة بـ REST مباشر
+   ------------------------------------------
+   قناة مكتبة فايرستور (SDK) تتعلق بصمت على بعض شبكات الموبايل (iPhone /
+   شبكات العراق)، فتبقى الأصناف 0 ولا تنحفظ التعديلات. هنا نسحب البيانات
+   الأساسية بـ fetch عادي بعد تسجيل دخول الموظف، ونكرر أي كتابة تتأخر
+   بنفس الطريقة (idempotent: نفس البيانات لو وصلت الكتابتين).
+   ========================================== */
+const STAFF_REST_SYNC_KEYS = [
+    'sys_categories', 'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
+    'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
+    'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance',
+    'sys_combo_deals', 'sys_delivery_platforms', 'sys_customers', 'sys_loyalty_settings',
+    'sys_fixed_expenses', 'sys_printer_settings', 'sys_employee_requests',
+    'sys_employee_settings', 'sys_employee_deductions'
+];
+
+async function restListCollectionAll(collection) {
+    if (!auth || !auth.currentUser) throw new Error('لا يوجد مستخدم مسجّل');
+    const token = await auth.currentUser.getIdToken();
+    let out = [], pageToken = '';
+    do {
+        const url = 'https://firestore.googleapis.com/v1/projects/' + MIM89_FIRESTORE_PROJECT_ID +
+            '/databases/(default)/documents/' + collection + '?pageSize=300' +
+            (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+        const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' (' + collection + ')');
+        const data = await res.json();
+        (data.documents || []).forEach(doc => {
+            const docId = doc.name.split('/').pop();
+            out.push({ docId, fields: firestoreRestFieldsToJs(doc.fields) });
+        });
+        pageToken = data.nextPageToken || '';
+    } while (pageToken);
+    return out;
+}
+
+let staffRestPullBusy = false;
+async function staffRestPull() {
+    if (!IS_STAFF_PAGE || staffRestPullBusy) return false;
+    staffRestPullBusy = true;
+    let changed = false;
+    try {
+        // الأصناف
+        try {
+            const docs = await restListCollectionAll('menu_items');
+            if (docs.length > 0) {
+                const items = docs.map(d => ({
+                    ...d.fields, docId: d.docId, id: d.fields.id || d.docId,
+                    categoryId: cleanPrice(d.fields.categoryId || d.fields.catId || d.fields.category || 1)
+                }));
+                const txt = JSON.stringify(items);
+                if (localStorage.getItem('sys_items') !== txt) {
+                    safeLocalSet('sys_items', txt);
+                    changed = true;
+                }
+            }
+        } catch (e) { console.warn('REST menu_items:', e); }
+
+        // الإعدادات المشتركة (system_store)
+        try {
+            const docs = await restListCollectionAll('system_store');
+            docs.forEach(d => {
+                const content = d.fields && d.fields.content;
+                if (!content) return;
+                if (d.docId === 'sys_passwords') {
+                    const cloudTs = cleanPrice(d.fields.updatedAt);
+                    const localTs = cleanPrice(localStorage.getItem('sys_passwords_ts'));
+                    if (cloudTs > localTs) {
+                        localStorage.setItem('sys_passwords', content);
+                        localStorage.setItem('sys_passwords_ts', String(cloudTs));
+                    }
+                    return;
+                }
+                if (STAFF_REST_SYNC_KEYS.indexOf(d.docId) === -1) return;
+                if (localStorage.getItem(d.docId) !== content) {
+                    try { localStorage.setItem(d.docId, content); changed = true; } catch (_) {}
+                }
+            });
+        } catch (e) { console.warn('REST system_store:', e); }
+
+        localStorage.setItem('mim89_last_pull', String(Date.now()));
+        if (typeof renderStatusBadge === 'function') renderStatusBadge();
+        if (changed && typeof refreshActiveUI === 'function') {
+            try { refreshActiveUI(true); } catch (_) {}
+        }
+    } finally {
+        staffRestPullBusy = false;
+    }
+    return changed;
+}
+
+// عند الرجوع للتبويب (مثلاً تطبيق ثاني ثم رجعت) نحدّث - بحد أدنى دقيقتين
+(function () {
+    if (!IS_STAFF_PAGE || typeof document === 'undefined') return;
+    let lastRun = 0;
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) return;
+        if (!auth || !auth.currentUser || auth.currentUser.isAnonymous) return;
+        if (Date.now() - lastRun < 120000) return;
+        lastRun = Date.now();
+        staffRestPull().catch(() => {});
+    });
+})();
+
+// كتابات SDK اللي تتأخر أكثر من 6 ثواني تتكرر عبر REST (set / delete)
+(function installStaffRestWriteFallback() {
+    if (!IS_STAFF_PAGE) return;
+    try {
+        if (typeof firebase === 'undefined' || !firebase.firestore ||
+            !firebase.firestore.DocumentReference) return;
+        const DR = firebase.firestore.DocumentReference.prototype;
+        if (DR.__mim89Patched) return;
+        DR.__mim89Patched = true;
+
+        const origSet = DR.set, origDelete = DR.delete;
+
+        DR.set = function (data, options) {
+            const p = origSet.call(this, data, options);
+            const parts = String(this.path || '').split('/');
+            if (parts.length === 2) {
+                let settled = false;
+                p.then(() => { settled = true; }, () => { settled = true; });
+                setTimeout(() => {
+                    if (settled) return;
+                    restSetDocument(parts[0], parts[1], data, !!(options && options.merge))
+                        .then(() => console.log('✅ كتابة REST بديلة:', this.path))
+                        .catch(e => console.warn('REST write fallback failed:', this.path, e));
+                }, 6000);
+            }
+            return p;
+        };
+
+        DR.delete = function () {
+            const p = origDelete.call(this);
+            const parts = String(this.path || '').split('/');
+            if (parts.length === 2) {
+                let settled = false;
+                p.then(() => { settled = true; }, () => { settled = true; });
+                setTimeout(async () => {
+                    if (settled) return;
+                    try {
+                        const token = await auth.currentUser.getIdToken();
+                        await fetch('https://firestore.googleapis.com/v1/projects/' +
+                            MIM89_FIRESTORE_PROJECT_ID + '/databases/(default)/documents/' +
+                            parts[0] + '/' + encodeURIComponent(parts[1]),
+                            { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+                    } catch (e) { console.warn('REST delete fallback failed:', e); }
+                }, 6000);
+            }
+            return p;
+        };
+    } catch (e) { console.warn('install REST write fallback:', e); }
+})();
 
 /* ==========================================
    🧮 دوال المساعدة
@@ -1022,7 +1178,16 @@ async function initData() {
     // مهلة 10 ثواني كحد أقصى، نكمل بعدها عادي (مع نظام إعادة المحاولة
     // اللي يشتغل بالخلفية أصلاً كشبكة أمان إضافية).
     // صفحات الطاقم: ننتظر تسجيل الدخول الحقيقي ثم نشغّل المزامنة بتوكن الموظف
-    if (IS_STAFF_PAGE) { try { await firebaseAuthReadyPromise; } catch (_) {} }
+    if (IS_STAFF_PAGE) {
+        try { await firebaseAuthReadyPromise; } catch (_) {}
+        // سحب بديل بـ REST (يشتغل على شبكات الموبايل اللي تعلّق قناة المكتبة)
+        try {
+            await Promise.race([
+                staffRestPull(),
+                new Promise(resolve => setTimeout(resolve, 15000))
+            ]);
+        } catch (_) {}
+    }
     await Promise.race([
         pullLatestFromCloud(),
         new Promise(resolve => setTimeout(resolve, 10000))
