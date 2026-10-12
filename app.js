@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1819';
+const MIM89_APP_VERSION = '1820';
 
 /* ==========================================
    المتغيرات العامة
@@ -433,12 +433,21 @@ async function staffRestPull() {
                     categoryId: cleanPrice(d.fields.categoryId || d.fields.catId || d.fields.category || 1)
                 }));
                 const txt = JSON.stringify(items);
-                if (localStorage.getItem('sys_items') !== txt) {
-                    safeLocalSet('sys_items', txt);
-                    changed = true;
-                }
+                window.mim89Mem = window.mim89Mem || {};
+                let stored = false;
+                try { localStorage.setItem('sys_items', txt); stored = true; } catch (_) {}
+                if (stored) { delete window.mim89Mem['sys_items']; }
+                else { window.mim89Mem['sys_items'] = txt; }   // الذاكرة ممتلئة: نعتمد المؤقتة
+                changed = true;
+                window.mim89StaffSyncInfo = 'REST أصناف ' + items.length +
+                    (stored ? ' ✓' : ' (ذاكرة الجهاز ممتلئة - مؤقت)');
+            } else {
+                window.mim89StaffSyncInfo = 'REST: ماكو أصناف';
             }
-        } catch (e) { console.warn('REST menu_items:', e); }
+        } catch (e) {
+            console.warn('REST menu_items:', e);
+            window.mim89StaffSyncInfo = 'REST ✗ ' + (e && e.message ? e.message : e);
+        }
 
         // الإعدادات المشتركة (system_store)
         try {
@@ -634,6 +643,9 @@ function getTodayString() {
    ========================================== */
 function getData(key) {
     try {
+        // نسخة بالذاكرة المؤقتة (لما localStorage يمتلئ، مثل iPhone مع صور الأصناف)
+        if (window.mim89Mem && window.mim89Mem[key] !== undefined)
+            return JSON.parse(window.mim89Mem[key]);
         const data = localStorage.getItem(key);
         return data ? JSON.parse(data) : [];
     } catch (e) {
@@ -1473,7 +1485,8 @@ function renderStatusBadge() {
     const t     = last ? new Date(last).toLocaleTimeString('ar-IQ',
         { hour:'2-digit', minute:'2-digit' }) : '--:--';
     el.innerHTML = 'v' + MIM89_APP_VERSION +
-        ' • 🍔 ' + items + ' • 🗂️ ' + cats + ' • ☁️ ' + t;
+        ' • 🍔 ' + items + ' • 🗂️ ' + cats + ' • ☁️ ' + t +
+        (IS_STAFF_PAGE && window.mim89StaffSyncInfo ? ' • ' + window.mim89StaffSyncInfo : '');
 }
 
 function updateSyncIndicator(highlight) {
