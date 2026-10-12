@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1815';
+const MIM89_APP_VERSION = '1817';
 
 /* ==========================================
    المتغيرات العامة
@@ -298,6 +298,13 @@ const DEFAULT_DATA = {
 // 🔥 تهيئة Firebase
 let firebaseAuthReadyPromise = Promise.resolve();
 
+// 🔒🛠️ صفحات الطاقم (أدمن/كاشير/سائق/موظف/خزينة/مخزن) تشتغل فقط بحساب إيميل
+// حقيقي. سابقاً كان التطبيق يسجّل دخول "مجهول" تلقائياً بكل صفحة، فيستبدل
+// جلسة الموظف ويشغّل المزامنة بتوكن مرفوض من قواعد الحماية → ما تظهر بيانات
+// وما يحفظ شي (خصوصاً بعد تحديث الصفحة على الموبايل).
+const IS_STAFF_PAGE = /(admin|cashier|driver|employee|costing|inventory)\d*\.html/i
+    .test(((typeof location !== 'undefined' && location.pathname) || ''));
+
 try {
     const firebaseConfig = {
         apiKey:            "AIzaSyAGpEDu0Sm2zG0AcG31XnudmC7wLsipqvI",
@@ -341,15 +348,24 @@ try {
             // ينتظره يضل معلّق للأبد - مهما أعاد الزبون تحميل الصفحة،
             // نفس التعليق يتكرر بلا نهاية. الحل: مهلة 8 ثواني كحد أقصى،
             // نكمل بعدها عادي بدل الانتظار الأبدي.
-            const authTimeout = new Promise(resolve =>
-                setTimeout(() => resolve('timeout'), 8000)
-            );
-            firebaseAuthReadyPromise = Promise.race([
-                firebase.auth().signInAnonymously().catch(err => {
-                    console.warn('⚠️ تعذّر تسجيل الدخول المجهول بفايربيس:', err);
-                }),
-                authTimeout
-            ]);
+            if (IS_STAFF_PAGE) {
+                // صفحة طاقم: ننتظر مستخدم حقيقي (غير مجهول) - بدون أي دخول مجهول
+                firebaseAuthReadyPromise = new Promise(resolve => {
+                    const unsub = firebase.auth().onAuthStateChanged(u => {
+                        if (u && !u.isAnonymous) { try { unsub(); } catch (_) {} resolve(u); }
+                    });
+                });
+            } else {
+                const authTimeout = new Promise(resolve =>
+                    setTimeout(() => resolve('timeout'), 8000)
+                );
+                firebaseAuthReadyPromise = Promise.race([
+                    firebase.auth().signInAnonymously().catch(err => {
+                        console.warn('⚠️ تعذّر تسجيل الدخول المجهول بفايربيس:', err);
+                    }),
+                    authTimeout
+                ]);
+            }
         }
 
         if (localStorage.getItem('mim89_disable_persistence') !== '1') {
@@ -945,7 +961,7 @@ async function pullLatestFromCloud() {
 async function initData() {
     // 🔒 ننتظر اكتمال تسجيل الدخول المجهول أولاً - قواعد الحماية الجديدة
     // تشترط وجود مستخدم مسجّل دخول (ولو مجهول) لأي قراءة/كتابة بالسحابة
-    try { await firebaseAuthReadyPromise; } catch (_) {}
+    if (!IS_STAFF_PAGE) { try { await firebaseAuthReadyPromise; } catch (_) {} }
 
     // 🛠️ إصلاح: لا نكتب الأقسام الافتراضية إذا كانت السحابة تحتوي بيانات
     // نضع علامة انتظار مؤقتة فقط
@@ -1005,6 +1021,8 @@ async function initData() {
     // كل التطبيق يضل معلّق للأبد حتى لو المصادقة نفسها اشتغلت صح 100%.
     // مهلة 10 ثواني كحد أقصى، نكمل بعدها عادي (مع نظام إعادة المحاولة
     // اللي يشتغل بالخلفية أصلاً كشبكة أمان إضافية).
+    // صفحات الطاقم: ننتظر تسجيل الدخول الحقيقي ثم نشغّل المزامنة بتوكن الموظف
+    if (IS_STAFF_PAGE) { try { await firebaseAuthReadyPromise; } catch (_) {} }
     await Promise.race([
         pullLatestFromCloud(),
         new Promise(resolve => setTimeout(resolve, 10000))
@@ -3757,6 +3775,11 @@ function logOutLoyaltyMember() {
 
 // تسجيل دخول مجهول (يُعاد استخدامه لو ما كان مفعّل أصلاً بهذي اللحظة)
 async function ensureAnonymousSignedIn() {
+    // صفحات الطاقم: لا دخول مجهول أبداً - لازم حساب إيميل حقيقي
+    if (IS_STAFF_PAGE) {
+        if (auth && auth.currentUser) return auth.currentUser;
+        throw new Error('يجب تسجيل الدخول أولاً');
+    }
     // ننتظر أول محاولة تسجيل دخول مجهول صارت أصلاً عند تحميل الصفحة
     try { await firebaseAuthReadyPromise; } catch (_) {}
     if (auth.currentUser) return auth.currentUser;
@@ -5733,6 +5756,39 @@ function playSingleBeep() {
 /* ==========================================
    📱 الطلبات الواردة والمينيو الإلكتروني
    ========================================== */
+// 📞 فك هوية المتصل القادم من ماكرودرويد (واتساب): العنوان يكون رقماً (غير محفوظ)
+// أو اسماً (محفوظ بجهات اتصال الموبايل - واتساب لا يمرر الرقم أبداً بهالحالة).
+// لو رقم: نبحث عن اسمه بقاعدة الزبائن. لو اسم: نبحث عن رقمه بقاعدة الزبائن
+// (مطابقة تامة أولاً ثم احتواء، بشرط نتيجة وحيدة حتى ما نختار رقم غلط).
+function resolveIncomingCaller(rawTitle) {
+    const raw = String(rawTitle || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+    const customers = getData('sys_customers') || [];
+    const digits = raw.replace(/[^0-9]/g, '');
+    const looksLikePhone = digits.length >= 9 && digits.length >= raw.replace(/\s/g,'').length - 3;
+    const normPhone = (p) => {
+        let d = String(p || '').replace(/[^0-9]/g, '');
+        if (d.startsWith('00964')) d = d.slice(5);
+        else if (d.startsWith('964')) d = d.slice(3);
+        if (d && !d.startsWith('0')) d = '0' + d;
+        return d;
+    };
+    if (looksLikePhone) {
+        const ph = normPhone(raw);
+        const c = customers.find(x => x && normPhone(x.phone) === ph);
+        return { name: c && c.name && c.name !== 'زبون هاتف' ? c.name : 'مكالمة واردة', phone: ph };
+    }
+    if (!raw) return { name: 'مكالمة واردة', phone: '' };
+    const n = raw.toLowerCase();
+    let matches = customers.filter(x => x && x.name && String(x.name).trim().toLowerCase() === n);
+    if (matches.length === 0)
+        matches = customers.filter(x => x && x.name &&
+            (String(x.name).toLowerCase().includes(n) || n.includes(String(x.name).trim().toLowerCase())));
+    const uniq = {};
+    matches.forEach(m => { uniq[normPhone(m.phone)] = m; });
+    const keys = Object.keys(uniq).filter(Boolean);
+    return { name: raw, phone: keys.length === 1 ? keys[0] : '' };
+}
+
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
 
@@ -5742,6 +5798,13 @@ function listenForIncomingOrders() {
         let lastIncomingOrder = null;
 
         ordersList.forEach(ord => {
+            // 📞 مكالمة واردة من الماكرو: نحوّل العنوان لاسم + رقم (من قاعدة الزبائن)
+            if (ord && ord.customerName === 'مكالمة واردة' && !ord._callResolved) {
+                const who = resolveIncomingCaller(ord.phone);
+                ord.customerName = who.name;
+                ord.phone = who.phone || '-';
+                ord._callResolved = true;
+            }
             const st = ord.status || '';
             const isUnhandled = !st || st === 'جديد' || st === 'new' ||
                 st === 'مقبول وكاشير' || st === 'قيد التحضير' ||
@@ -5832,7 +5895,7 @@ function loadIncomingCallToPos(docId, orderId, phone, name,
     const custName  = document.getElementById('posCustName');
     const custPhone = document.getElementById('posCustPhone');
     if (custName)  custName.value  = name  || '';
-    if (custPhone) custPhone.value = phone || '';
+    if (custPhone) custPhone.value = (phone && phone !== '-') ? phone : '';
 
     // 🛠️ تحديد نوع الطلب تلقائياً
     const oType = orderType || 'delivery';
@@ -8024,6 +8087,22 @@ function jsObjectToFirestoreRestFields(obj) {
 }
 
 const MIM89_FIRESTORE_PROJECT_ID = 'mim89-ff938';
+
+// 🔒 قراءة صلاحية الموظف (staff/{uid}) عبر REST أولاً (يشتغل على شبكات
+// الموبايل اللي تعلّق قناة المكتبة)، وبديل SDK لو فشل. يرجّع شكل مشابه لـ DocumentSnapshot.
+window.getStaffDocSafe = async function(uid) {
+    try {
+        const d = await restGetDocument('staff', uid);
+        return { exists: !!d, data: () => d || {} };
+    } catch (e) {
+        console.warn('REST staff lookup failed, trying SDK:', e);
+        const snap = await Promise.race([
+            db.collection('staff').doc(uid).get(),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('انتهت مهلة الاتصال')), 12000))
+        ]);
+        return snap;
+    }
+};
 
 // 🆕 قراءة مستند وحيد مباشرة عبر REST (بدون قناة المكتبة الداخلية).
 // يرجّع null لو المستند غير موجود (404)، أو يرمي خطأ لأي مشكلة ثانية.
