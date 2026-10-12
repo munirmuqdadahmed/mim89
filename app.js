@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1818';
+const MIM89_APP_VERSION = '1819';
 
 /* ==========================================
    المتغيرات العامة
@@ -302,7 +302,9 @@ let firebaseAuthReadyPromise = Promise.resolve();
 // حقيقي. سابقاً كان التطبيق يسجّل دخول "مجهول" تلقائياً بكل صفحة، فيستبدل
 // جلسة الموظف ويشغّل المزامنة بتوكن مرفوض من قواعد الحماية → ما تظهر بيانات
 // وما يحفظ شي (خصوصاً بعد تحديث الصفحة على الموبايل).
-const IS_STAFF_PAGE = /(admin|cashier|driver|employee|costing|inventory)\d*\.html/i
+// ملاحظة: GitHub Pages يفتح الصفحة بدون .html أيضاً (mim89.com/admin) - فلازم الكشف
+// يشتغل بالحالتين، وإلا تُعامل الصفحة كعامة وتبدأ بدخول مجهول ويفشل كل شي.
+const IS_STAFF_PAGE = /\/(admin|cashier|driver|employee|costing|inventory)\d*(\.html)?\/?$/i
     .test(((typeof location !== 'undefined' && location.pathname) || ''));
 
 try {
