@@ -840,7 +840,7 @@ async function attemptCashierStaffLogin() {
         // 🔒🛠️ إصلاح أمني: لازم يكون role تحديداً cashier أو admin -
         // وإلا أي حساب ثاني (سائق، موظف...) كان يقدر يفتح شاشة الكاشير
         // الكاملة (طلبات، فواتير، تقفيل شيفت) بدون أي صلاحية حقيقية لها!
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         const allowedRoles = ['cashier', 'admin'];
         if (!staffDoc.exists || !allowedRoles.includes(staffDoc.data().role)) {
             await auth.signOut();
