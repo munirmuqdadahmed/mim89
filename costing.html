@@ -507,7 +507,7 @@
 
 </div><!-- end mainFinancialApp -->
 
-<script src="app.js?v=1775"></script>
+<script>document.write('<script src="app.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
 /* ==========================================
    🔐 تسجيل دخول حقيقي بالخادم (إيميل + باسوورد) - بديل كامل عن رمز
@@ -549,7 +549,7 @@ async function attemptCostingStaffLogin() {
 
         // 🔒🛠️ إصلاح أمني: الخزينة فيها كل بيانات الأرباح والرواتب -
         // لازم role = admin تحديداً، ما يكفي إنه "موظف" بشكل عام
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         if (!staffDoc.exists || staffDoc.data().role !== 'admin') {
             await auth.signOut();
             errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول للخزينة.';
