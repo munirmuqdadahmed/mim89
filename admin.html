@@ -2557,7 +2557,7 @@ async function attemptStaffLogin() {
         // 🔒🛠️ إصلاح أمني: ما يكفي إنه "موظف مسجّل" بشكل عام - لازم
         // تحديداً يكون role = admin، وإلا أي حساب (سائق، كاشير...) كان
         // يقدر يفتح لوحة الإدارة الكاملة بكل صلاحياتها!
-        const staffDoc = await db.collection('staff').doc(uid).get();
+        const staffDoc = await getStaffDocSafe(uid);
         if (!staffDoc.exists || staffDoc.data().role !== 'admin') {
             await auth.signOut();
             errBox.innerText = 'هذا الحساب غير مصرّح له بالدخول للوحة الإدارة.';
