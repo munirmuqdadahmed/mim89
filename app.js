@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1820';
+const MIM89_APP_VERSION = '1821';
 
 /* ==========================================
    المتغيرات العامة
@@ -5969,6 +5969,42 @@ function resolveIncomingCaller(rawTitle) {
     return { name: raw, phone: keys.length === 1 ? keys[0] : '' };
 }
 
+// 🧹 أدوات منع تكرار إشعارات الواتساب (إشعار واحد لكل زبون + فترة هدوء بعد التعامل)
+const CALL_COOLDOWN_MS = 30 * 60 * 1000;
+
+function callPingKey(ord) {
+    const ph = String((ord && (ord.phone || ord.customerPhone)) || '').replace(/[^0-9]/g, '');
+    if (ph.length >= 9) return 'p' + ph.slice(-10);
+    return 'n' + String((ord && ord.customerName) || '').trim().toLowerCase();
+}
+
+function getCallCooldowns() {
+    try { return JSON.parse(localStorage.getItem('mim89_call_cd') || '{}') || {}; }
+    catch (e) { return window.mim89CdMem || {}; }
+}
+
+function markCallHandled(key) {
+    const m = getCallCooldowns();
+    const now = Date.now();
+    m[key] = now;
+    Object.keys(m).forEach(k => { if (now - m[k] > 24 * 3600 * 1000) delete m[k]; });
+    window.mim89CdMem = m;
+    try { localStorage.setItem('mim89_call_cd', JSON.stringify(m)); } catch (e) {}
+}
+
+function isCallInCooldown(key) {
+    const t = getCallCooldowns()[key];
+    return !!t && (Date.now() - t) < CALL_COOLDOWN_MS;
+}
+
+function deleteCallPingDoc(docId) {
+    if (!db || !docId || String(docId).startsWith('temp_')) return;
+    window.mim89PingDeleting = window.mim89PingDeleting || new Set();
+    if (window.mim89PingDeleting.has(docId)) return;
+    window.mim89PingDeleting.add(docId);
+    try { db.collection('orders').doc(docId).delete().catch(() => {}); } catch (e) {}
+}
+
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
 
@@ -5977,6 +6013,7 @@ function listenForIncomingOrders() {
         let html = '';
         let lastIncomingOrder = null;
 
+        const seenPingKeys = {};
         ordersList.forEach(ord => {
             // 📞 مكالمة واردة من الماكرو: نحوّل العنوان لاسم + رقم (من قاعدة الزبائن)
             if (ord && ord.customerName === 'مكالمة واردة' && !ord._callResolved) {
@@ -5984,6 +6021,23 @@ function listenForIncomingOrders() {
                 ord.customerName = who.name;
                 ord.phone = who.phone || '-';
                 ord._callResolved = true;
+                ord._isPing = true;
+                const pKey = callPingKey(ord);
+                const pSt  = ord.status || '';
+                const pDocId = String(ord.docId || '');
+                // 🧹 تنظيف تلقائي: لا نعرض/نخزن إلا إشعار واحد لكل زبون
+                //  - إشعار بدون اسم/رقم (فاضي)
+                //  - إشعار انتقل للكاشير مسبقاً
+                //  - إشعار مكرر لنفس الزبون (يبقى الأول فقط)
+                //  - إشعار من زبون تعاملنا وياه قبل أقل من 30 دقيقة
+                const emptyPing = (ord.customerName === 'مكالمة واردة' && ord.phone === '-');
+                const handledBefore = (pSt && pSt !== 'جديد' && pSt !== 'new');
+                if (emptyPing || handledBefore || seenPingKeys[pKey] || isCallInCooldown(pKey)) {
+                    deleteCallPingDoc(pDocId);
+                    return;
+                }
+                seenPingKeys[pKey] = true;
+                (window.mim89PingDocs = window.mim89PingDocs || new Set()).add(pDocId);
             }
             const st = ord.status || '';
             const isUnhandled = !st || st === 'جديد' || st === 'new' ||
@@ -6153,7 +6207,12 @@ function loadIncomingCallToPos(docId, orderId, phone, name,
     }
 
     // تحديث حالة الطلب بالسحابة
-    if (db && docId && !docId.startsWith('temp_')) {
+    const isPingDoc = !!(window.mim89PingDocs && window.mim89PingDocs.has(docId));
+    if (isPingDoc) {
+        // إشعار واتساب/مكالمة: نحذفه من الواردة نهائياً ونسجّل الزبون بفترة هدوء
+        markCallHandled(callPingKey({ phone: phone, customerName: name }));
+        deleteCallPingDoc(docId);
+    } else if (db && docId && !docId.startsWith('temp_')) {
         db.collection("orders").doc(docId)
             .update({ status: 'مقبول وكاشير' })
             .catch(() => {});
@@ -6284,6 +6343,15 @@ function markOrderPreparing(docId, orderId) {
 
 function cancelIncomingOrder(docId, orderId) {
     if (!confirm("حذف هذا الطلب؟")) return;
+    try {
+        // إذا إشعار واتساب: نسجّل فترة هدوء حتى ما يرجع نفس الزبون بكل رسالة
+        if (window.mim89PingDocs && window.mim89PingDocs.has(docId)) {
+            const card = document.getElementById('order_card_' + docId);
+            const txt = card ? card.textContent : '';
+            const m = txt.match(/👤\s*(.+?)\s*\(([^)]*)\)/);
+            if (m) markCallHandled(callPingKey({ phone: m[2], customerName: m[1] }));
+        }
+    } catch (e) {}
     if (db) db.collection("orders").doc(docId).delete().catch(() => {});
     let orders = getData('sys_live_orders');
     orders = orders.filter(o =>
