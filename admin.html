@@ -570,7 +570,7 @@
             <input type="text" id="driverPhoneInput" class="gold-input-inline"
                    placeholder="رقم الهاتف" style="margin-bottom:8px;">
             <input type="text" id="driverPinInput" class="gold-input-inline"
-                   placeholder="رمز دخول صفحته (4 أرقام مثلاً)" style="margin-bottom:8px;">
+                   placeholder="رمز الدخول (8 أرقام) - اتركه فاضي ويتولّد تلقائي" style="margin-bottom:8px;">
             <button onclick="saveDeliveryDriver()" class="gold-btn btn-block"
                     style="margin-top:8px;">حفظ السائق</button>
             <p class="hint" style="margin-top:6px;">
@@ -4814,12 +4814,80 @@ function renderEmployeeFinanceHistory(emp) {
     }
 
     box.innerHTML = combined.map(r =>
-        '<div style="display:flex;justify-content:space-between;padding:6px 0;' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;' +
         'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
-        '<span>' + r.dateDate + ' — <span style="color:' + r.color + ';font-weight:bold;">' + r.kind + '</span></span>' +
+        '<span style="flex:1;">' + r.dateDate + ' — <span style="color:' + r.color + ';font-weight:bold;">' + r.kind + '</span></span>' +
         '<span style="font-weight:900;color:#fbbf24;">' + cleanPrice(r.amount).toLocaleString('ar-IQ') + ' د.ع</span>' +
+        '<button onclick="editEmployeeFinanceRecord(\'' + r.kind + '\',\'' + r.id + '\')" ' +
+        'style="background:#1e1e28;border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">✏️ تعديل</button>' +
+        '<button onclick="deleteEmployeeFinanceRecord(\'' + r.kind + '\',\'' + r.id + '\')" ' +
+        'style="background:#1e1e28;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">🗑️</button>' +
         '</div>'
     ).join('');
+}
+
+// ✏️ تصحيح مبلغ سلفة/راتب مسجّل غلط (مثلاً صفر زيادة) - بدون أي رمز، لأنك مسجّل دخول كأدمن أصلاً
+function editEmployeeFinanceRecord(kind, id) {
+    const isAdvance = (kind === 'سلفة');
+    const key  = isAdvance ? 'sys_expenses' : 'sys_salaries';
+    const coll = isAdvance ? 'expenses' : 'salaries';
+    const list = getData(key) || [];
+    const rec  = list.find(x => String(x.id) === String(id));
+    if (!rec) return alert('⚠️ ما لقيت هذا السجل.');
+
+    const oldAmount = cleanPrice(rec.amount);
+    const input = prompt('المبلغ الصحيح لهذه ' + kind + ' (الحالي: ' + oldAmount.toLocaleString('ar-IQ') + ' د.ع):', String(oldAmount));
+    if (input === null) return;
+    const newAmount = cleanPrice(input);
+    if (!newAmount || newAmount <= 0) return alert('⚠️ اكتب مبلغ صحيح أكبر من صفر.');
+    if (newAmount === oldAmount) return;
+
+    rec.amount     = newAmount;
+    rec.oldAmount  = rec.oldAmount || oldAmount;   // نحتفظ بالمبلغ الأصلي للتدقيق
+    rec.editedAt   = Date.now();
+    setData(key, list);
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection(coll).doc(String(id)).set(
+            { amount: newAmount, oldAmount: rec.oldAmount, editedAt: rec.editedAt, editedBy: 'الأدمن' },
+            { merge: true }
+        ).catch(err => console.warn('تعذّر رفع التعديل للسحابة:', err));
+    }
+    try {
+        if (typeof logAudit === 'function')
+            logAudit('تعديل مبلغ ' + kind, { employee: rec.employee || '-', from: oldAmount, to: newAmount, id: id });
+    } catch (_) {}
+
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (emp) { renderEmployeeFinanceHistory(emp); renderEmployeeFinanceStats(emp); }
+    if (typeof renderEmployeesTab === 'function') renderEmployeesTab();
+    alert('✅ تم تعديل المبلغ من ' + oldAmount.toLocaleString('ar-IQ') + ' إلى ' + newAmount.toLocaleString('ar-IQ') + ' د.ع');
+}
+
+// 🗑️ حذف سجل سلفة/راتب كلياً (إدخال مكرر أو بالغلط)
+function deleteEmployeeFinanceRecord(kind, id) {
+    if (!confirm('حذف هذه ' + kind + ' نهائياً؟')) return;
+    const isAdvance = (kind === 'سلفة');
+    const key  = isAdvance ? 'sys_expenses' : 'sys_salaries';
+    const coll = isAdvance ? 'expenses' : 'salaries';
+    const list = getData(key) || [];
+    const rec  = list.find(x => String(x.id) === String(id));
+    setData(key, list.filter(x => String(x.id) !== String(id)));
+
+    if (typeof db !== 'undefined' && db) {
+        db.collection(coll).doc(String(id)).delete()
+            .catch(err => console.warn('تعذّر حذف السجل من السحابة:', err));
+    }
+    try {
+        if (typeof logAudit === 'function' && rec)
+            logAudit('حذف ' + kind, { employee: rec.employee || '-', amount: cleanPrice(rec.amount), id: id });
+    } catch (_) {}
+
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (emp) { renderEmployeeFinanceHistory(emp); renderEmployeeFinanceStats(emp); }
+    if (typeof renderEmployeesTab === 'function') renderEmployeesTab();
 }
 
 // 🛠️ إعادة بناء كاملة: كل منصة توصيل صارت ببطاقة مستقلة تماماً عن
