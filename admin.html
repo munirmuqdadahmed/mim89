@@ -64,6 +64,27 @@
         }
         .dash-cards-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
+
+        /* 🏠 اللوحة الرئيسية الجديدة */
+        .home-card {
+            background: #111116; border: 1.5px solid #1e1e28; border-radius: 12px;
+            padding: 12px 14px; margin-bottom: 12px;
+        }
+        .home-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;
+            margin-bottom: 12px;
+        }
+        .home-seg {
+            flex: 1; padding: 8px 6px; background: #1e1e28; color: #aaa; border: 1px solid #333;
+            border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.8rem;
+        }
+        .home-seg.active { background: #ffd700; color: #000; border-color: #ffd700; }
+        .home-more {
+            margin-top: 22px; background: #0d0d11; border: 1px solid #222; border-radius: 12px; padding: 10px 14px;
+        }
+        .home-more summary { cursor: pointer; color: #aaa; font-weight: 900; font-size: 0.85rem; }
+        .sidebar-toggle-group { cursor: pointer; user-select: none; }
+
         @media (max-width: 900px) {
             .admin-sidebar {
                 position: fixed; right: -260px; top: 0; z-index: 500;
@@ -154,12 +175,23 @@
                 <i class="fa-solid fa-house"></i> الرئيسية
             </button>
 
-            <div class="sidebar-group-label">🍔 المينيو والمخزون</div>
+            <div class="sidebar-group-label">💰 المبيعات</div>
+            <button class="sidebar-item" onclick="switchAdminTab('tabDailyOpsControl',this)">
+                <i class="fa-solid fa-list-check"></i> العمليات اليومية
+            </button>
+            <button class="sidebar-item" onclick="switchAdminTab('tabInvoiceManager',this)">
+                <i class="fa-solid fa-magnifying-glass-dollar"></i> 🧾 إدارة الفواتير
+            </button>
+
+            <div class="sidebar-group-label">🍔 المينيو</div>
             <button class="sidebar-item" onclick="switchAdminTab('tabMenuControl',this)">
                 <i class="fa-solid fa-utensils"></i> الأصناف
             </button>
             <button class="sidebar-item" onclick="switchAdminTab('tabCategoriesControl',this)">
                 <i class="fa-solid fa-layer-group"></i> الأقسام
+            </button>
+            <button class="sidebar-item" onclick="switchAdminTab('tabComboDealsControl',this)">
+                <i class="fa-solid fa-gift"></i> عروض وبوكسات
             </button>
             <button class="sidebar-item" onclick="switchAdminTab('tabAreasControl',this)">
                 <i class="fa-solid fa-map-location-dot"></i> المناطق
@@ -182,16 +214,7 @@
                 <i class="fa-solid fa-star"></i> أعضاء VIP
             </button>
 
-            <div class="sidebar-group-label">💰 المبيعات والعروض</div>
-            <button class="sidebar-item" onclick="switchAdminTab('tabDailyOpsControl',this)">
-                <i class="fa-solid fa-list-check"></i> العمليات اليومية
-            </button>
-            <button class="sidebar-item" onclick="switchAdminTab('tabInvoiceManager',this)">
-                <i class="fa-solid fa-magnifying-glass-dollar"></i> 🧾 إدارة الفواتير
-            </button>
-            <button class="sidebar-item" onclick="switchAdminTab('tabComboDealsControl',this)">
-                <i class="fa-solid fa-gift"></i> عروض وبوكسات
-            </button>
+            <div class="sidebar-group-label">🖨️ الفاتورة والطباعة</div>
             <button class="sidebar-item" onclick="switchAdminTab('tabInvoiceDesignControl',this)">
                 <i class="fa-solid fa-receipt"></i> تصميم الفاتورة
             </button>
@@ -199,7 +222,10 @@
                 <i class="fa-solid fa-print"></i> الطابعات
             </button>
 
-            <div class="sidebar-group-label">⚙️ النظام والحماية</div>
+            <div class="sidebar-group-label sidebar-toggle-group" onclick="toggleSidebarSystemGroup()">
+                ⚙️ النظام والحماية <span id="sidebarSystemArrow">◂</span>
+            </div>
+            <div id="sidebarSystemGroup" style="display:none;">
             <button class="sidebar-item" onclick="switchAdminTab('tabSecurityControl',this)">
                 <i class="fa-solid fa-shield-halved"></i> الحماية
             </button>
@@ -215,6 +241,7 @@
             <button class="sidebar-item" onclick="switchAdminTab('tabBackupControl',this)">
                 <i class="fa-solid fa-cloud-arrow-down"></i> النسخ الاحتياطي
             </button>
+            </div>
         </nav>
 
         <button class="sidebar-lock-btn" onclick="location.reload()">
@@ -227,104 +254,151 @@
 
     <!-- 🏠 الصفحة الرئيسية (Dashboard) -->
     <div id="tabDashboardHome" class="tab-content active">
+
+        <!-- 💰 مبيعات اليوم + زر تحديث -->
         <div class="dash-hero">
             <div>
-                <div class="sales-label">💰 مبيعات اليوم (كل الشفتات)</div>
+                <div class="sales-label">💰 مبيعات اليوم</div>
                 <div class="sales-amount" id="liveShiftSalesBadge">0 د.ع</div>
-                <span id="cloudSyncIndicator"></span>
+                <div style="font-size:0.7rem;color:#777;margin-top:4px;">
+                    <span id="homeLastUpdate">لم يتم التحديث بعد</span>
+                    <span id="cloudSyncIndicator"></span>
+                </div>
             </div>
-            <div style="display:flex;gap:8px;">
-                <button onclick="confirmCloseShiftAndLogout()"
-                        class="gold-btn btn-danger" style="padding:10px 18px;font-weight:900;">
-                    🔒 تقفيل الشيفت
-                </button>
-                <button onclick="repairShiftWindow()" class="gold-btn btn-sm"
-                        style="background:#1e1e28;color:#888;border:1px solid #333;">
-                    🔧 إصلاح الشيفت
-                </button>
-            </div>
-        </div>
-
-        <!-- 🆕 تنبيه الحضور من خارج موقع المطعم - يظهر بس لو فيه شي مشبوه -->
-        <!-- 🆕 حالة جهاز الكاشير الحية - تعرف من أي مكان هل شغّال ومتصل الآن -->
-        <div id="cashierHeartbeatBox" style="max-width:600px;margin:0 auto 16px;"></div>
-
-        <div id="outsideLocationAlertBox"></div>
-
-        <!-- 🆕 عدد زوار المينيو الإلكتروني -->
-        <div id="menuVisitsStatBox" style="max-width:600px;margin:0 auto 16px;"></div>
-
-        <div class="dash-section-title">🖨️ المينيو والطباعة</div>
-        <div class="dash-cards-row">
-            <button onclick="printPaperMenu()" class="gold-btn btn-sm"
-                    style="background:#ffd700;color:#000;border:none;font-weight:900;">
-                <i class="fa-solid fa-print"></i> مينيو ورقي
-            </button>
-            <button onclick="downloadPaperMenuPDF(this)" class="gold-btn btn-sm"
-                    style="background:#1e1e28;color:#ffd700;border:1px solid #ffd700;font-weight:900;">
-                <i class="fa-solid fa-file-pdf"></i> PDF
-            </button>
-            <button onclick="openDeliveryMenuEditor()" class="gold-btn btn-sm"
-                    style="background:#f59e0b;color:#000;border:none;font-weight:900;">
-                <i class="fa-solid fa-motorcycle"></i> مينيو التوصيل
-            </button>
-            <button onclick="printSmartMenu()" class="gold-btn btn-sm"
-                    style="background:#8b5cf6;color:#fff;border:none;font-weight:900;">
-                <i class="fa-solid fa-brain"></i> المينيو الذكي
-            </button>
-            <button onclick="downloadSmartMenuPDF(this)" class="gold-btn btn-sm"
-                    style="background:#1e1e28;color:#8b5cf6;border:1px solid #8b5cf6;font-weight:900;">
-                <i class="fa-solid fa-file-pdf"></i> PDF ذكي
+            <button id="homeRefreshBtn" onclick="refreshAdminHome(true)" class="gold-btn"
+                    style="width:auto;padding:12px 20px;font-weight:900;background:#10b981;color:#000;border:none;">
+                🔄 تحديث
             </button>
         </div>
 
-        <div class="dash-section-title">📊 التقارير</div>
+        <!-- 💵 الكاش بالدرج (مخفي بعين) -->
+        <div class="home-card" style="border-color:#10b981;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <div>
+                    <div style="font-size:0.78rem;color:#999;">💵 الكاش الموجود بالدرج (متوقع)</div>
+                    <div id="homeDrawerAmount" style="font-size:1.6rem;font-weight:900;color:#10b981;margin-top:2px;
+                         letter-spacing:2px;">••••••</div>
+                </div>
+                <button id="homeEyeBtn" onclick="toggleHomeDrawer()" title="إظهار / إخفاء المبلغ"
+                        style="background:#1e1e28;border:1px solid #10b981;color:#10b981;border-radius:50%;
+                               width:46px;height:46px;font-size:1.3rem;cursor:pointer;">👁️</button>
+            </div>
+            <div id="homeDrawerDetail" style="display:none;font-size:0.74rem;color:#888;margin-top:8px;
+                 border-top:1px dashed #222;padding-top:8px;line-height:1.9;"></div>
+        </div>
+
+        <!-- 📊 المبيعات: اليوم / الأسبوع / الشهر -->
+        <div class="dash-section-title">📊 شكد بعت؟</div>
+        <div id="homePeriods" class="home-grid"></div>
+
+        <!-- 🏆 الأكثر مبيعاً -->
+        <div class="dash-section-title">🏆 أكثر الأصناف مبيعاً</div>
+        <div class="home-card">
+            <div style="display:flex;gap:6px;margin-bottom:10px;">
+                <button class="home-seg active" id="homeSegToday" onclick="setHomeTopRange('today')">اليوم</button>
+                <button class="home-seg" id="homeSegWeek"  onclick="setHomeTopRange('week')">آخر 7 أيام</button>
+                <button class="home-seg" id="homeSegMonth" onclick="setHomeTopRange('month')">هذا الشهر</button>
+            </div>
+            <div id="homeTopItems"></div>
+        </div>
+
+        <!-- 📱 المنصات -->
+        <div class="dash-section-title">📱 المبيعات للمنصات (بلي وغيرها)</div>
+        <div id="homePlatforms"></div>
+
+        <!-- ⚡ اختصارات -->
+        <div class="dash-section-title">⚡ اختصارات</div>
         <div class="dash-cards-row">
+            <button onclick="openDailyReportModal()" class="gold-btn btn-sm"
+                    style="background:#3b82f6;color:#fff;border:none;font-weight:900;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> الكشف اليومي
+            </button>
             <button onclick="openItemsReportModal()" class="gold-btn btn-sm"
                     style="background:#f59e0b;color:#000;border:none;font-weight:900;">
                 <i class="fa-solid fa-chart-column"></i> مبيعات الأصناف
             </button>
-            <button onclick="openDailyReportModal()" class="gold-btn btn-sm"
-                    style="background:#3b82f6;color:#fff;border:none;font-weight:900;">
-                <i class="fa-solid fa-file-invoice-dollar"></i> الكشف اليومي
+            <button onclick="openExpenseManagerModal()" class="gold-btn btn-sm"
+                    style="background:#ef4444;color:#fff;border:none;font-weight:900;">
+                💸 الصرفيات
+            </button>
+            <button onclick="openSalaryManagerModal()" class="gold-btn btn-sm"
+                    style="background:#10b981;color:#000;border:none;font-weight:900;">
+                👥 الرواتب والسلف
+            </button>
+            <button onclick="openPendingDeliveriesModal()" class="gold-btn btn-sm"
+                    style="background:#1e1e28;color:#f59e0b;border:1px solid #f59e0b;font-weight:900;">
+                🛵 ذمة السائقين
+            </button>
+            <button onclick="openPlatformSettlementModal()" class="gold-btn btn-sm"
+                    style="background:#1e1e28;color:#c084fc;border:1px solid #c084fc;font-weight:900;">
+                📱 ذمة المنصات
             </button>
         </div>
 
         <div class="dash-section-title">🔗 صفحات ثانية</div>
         <div class="dash-cards-row">
             <a href="costing.html" target="_blank" class="gold-btn btn-sm"
-               style="background:#0d0d11;border:1px solid var(--gold-primary);
-                      color:#fbbf24;text-decoration:none;">
+               style="background:#0d0d11;border:1px solid var(--gold-primary);color:#fbbf24;text-decoration:none;">
                 <i class="fa-solid fa-vault"></i> الخزينة
             </a>
             <a href="inventory.html" target="_blank" class="gold-btn btn-sm"
-               style="background:#0d0d11;border:1px solid var(--gold-primary);
-                      color:#fbbf24;text-decoration:none;">
+               style="background:#0d0d11;border:1px solid var(--gold-primary);color:#fbbf24;text-decoration:none;">
                 <i class="fa-solid fa-boxes-stacked"></i> المخزن
             </a>
             <a href="cashier.html" target="_blank" class="gold-btn btn-sm"
-               style="background:#0d0d11;border:1px solid var(--gold-primary);
-                      color:#fbbf24;text-decoration:none;">
+               style="background:#0d0d11;border:1px solid var(--gold-primary);color:#fbbf24;text-decoration:none;">
                 <i class="fa-solid fa-cash-register"></i> الكاشير
             </a>
             <a href="employee.html" target="_blank" class="gold-btn btn-sm"
-               style="background:#0d0d11;border:1px solid #38bdf8;
-                      color:#38bdf8;text-decoration:none;">
+               style="background:#0d0d11;border:1px solid #38bdf8;color:#38bdf8;text-decoration:none;">
                 <i class="fa-solid fa-users"></i> بوابة الموظفين
             </a>
         </div>
 
-        <div class="dash-section-title">🔧 أدوات فنية</div>
-        <div class="dash-cards-row">
-            <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
-                    style="background:#3b82f6;color:#fff;border:none;">
-                <i class="fa-solid fa-stethoscope"></i> فحص السحابة
-            </button>
-            <button onclick="repairCloudSync(this)" class="gold-btn btn-sm"
-                    style="background:#f59e0b;color:#000;border:none;font-weight:900;">
-                <i class="fa-solid fa-wrench"></i> إصلاح المزامنة
-            </button>
-        </div>
+        <!-- 🧰 كل الأدوات الثانوية بمكان واحد -->
+        <details class="home-more">
+            <summary>🧰 أدوات إضافية (المينيو، الطباعة، فحص النظام)</summary>
+            <div style="padding-top:10px;">
+                <div style="font-size:0.78rem;color:#888;margin-bottom:6px;">🖨️ المينيو</div>
+                <div class="dash-cards-row" style="margin-bottom:12px;">
+                    <button onclick="printPaperMenu()" class="gold-btn btn-sm"
+                            style="background:#ffd700;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-print"></i> مينيو ورقي
+                    </button>
+                    <button onclick="downloadPaperMenuPDF(this)" class="gold-btn btn-sm"
+                            style="background:#1e1e28;color:#ffd700;border:1px solid #ffd700;font-weight:900;">
+                        <i class="fa-solid fa-file-pdf"></i> PDF
+                    </button>
+                    <button onclick="openDeliveryMenuEditor()" class="gold-btn btn-sm"
+                            style="background:#f59e0b;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-motorcycle"></i> مينيو التوصيل
+                    </button>
+                    <button onclick="printSmartMenu()" class="gold-btn btn-sm"
+                            style="background:#8b5cf6;color:#fff;border:none;font-weight:900;">
+                        <i class="fa-solid fa-brain"></i> المينيو الذكي
+                    </button>
+                    <button onclick="downloadSmartMenuPDF(this)" class="gold-btn btn-sm"
+                            style="background:#1e1e28;color:#8b5cf6;border:1px solid #8b5cf6;font-weight:900;">
+                        <i class="fa-solid fa-file-pdf"></i> PDF ذكي
+                    </button>
+                </div>
+                <div style="font-size:0.78rem;color:#888;margin-bottom:6px;">🔧 فحص النظام</div>
+                <div class="dash-cards-row" style="margin-bottom:12px;">
+                    <button onclick="runCloudDiagnostics(this)" class="gold-btn btn-sm"
+                            style="background:#3b82f6;color:#fff;border:none;">
+                        <i class="fa-solid fa-stethoscope"></i> فحص السحابة
+                    </button>
+                    <button onclick="repairCloudSync(this)" class="gold-btn btn-sm"
+                            style="background:#f59e0b;color:#000;border:none;font-weight:900;">
+                        <i class="fa-solid fa-wrench"></i> إصلاح المزامنة
+                    </button>
+                </div>
+                <div style="font-size:0.78rem;color:#888;margin-bottom:6px;">📡 حالة الأجهزة والمينيو</div>
+                <div id="cashierHeartbeatBox" style="max-width:600px;margin:0 0 12px;"></div>
+                <div id="outsideLocationAlertBox"></div>
+                <div id="menuVisitsStatBox" style="max-width:600px;margin:0 0 4px;"></div>
+            </div>
+        </details>
     </div>
 
     <!-- 1. تبويب الأصناف -->
@@ -901,10 +975,6 @@
     <!-- 6.6 تبويب العمليات اليومية (منقولة من الكاشير) -->
     <div id="tabDailyOpsControl" class="tab-content"
          style="margin-top:15px;display:none;">
-        <p class="hint" style="margin-bottom:14px;text-align:center;">
-            💡 هذه الأدوات كانت متاحة سابقاً من واجهة الكاشير، وأصبحت الآن
-            من صلاحيات الأدمن فقط بطلب الإدارة.
-        </p>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
                     gap:12px;max-width:900px;margin:0 auto 16px auto;">
 
@@ -1615,8 +1685,11 @@
                 <input type="text" id="invMgrSearchInput" class="gold-input-inline"
                        placeholder="🔍 بحث برقم الطلب أو الاسم أو الهاتف..."
                        style="flex:2;min-width:200px;" oninput="renderInvoiceManagerList()">
+                <select id="invMgrPlatformFilter" class="gold-input-inline" onchange="renderInvoiceManagerList()"
+                        style="flex:1;min-width:140px;"></select>
                 <button onclick="document.getElementById('invMgrDateFilter').value='';
                                  document.getElementById('invMgrSearchInput').value='';
+                                 document.getElementById('invMgrPlatformFilter').value='';
                                  renderInvoiceManagerList();"
                         class="gold-btn btn-sm" style="width:auto;">مسح الفلتر</button>
             </div>
@@ -2602,6 +2675,15 @@ document.getElementById('staffEmailInput')?.addEventListener('keydown', (e) => {
 function toggleAdminSidebar() {
     document.getElementById('adminSidebar')?.classList.toggle('open');
     document.getElementById('adminSidebarOverlay')?.classList.toggle('open');
+}
+
+function toggleSidebarSystemGroup() {
+    const g = document.getElementById('sidebarSystemGroup');
+    const ar = document.getElementById('sidebarSystemArrow');
+    if (!g) return;
+    const open = g.style.display === 'none';
+    g.style.display = open ? 'block' : 'none';
+    if (ar) ar.innerText = open ? '▾' : '◂';
 }
 
 function switchAdminTab(tabId, btn) {
@@ -3929,7 +4011,23 @@ function renderInvoiceManagerList() {
 
     let list = getData('sys_completed_orders') || [];
 
+    // 🆕 فلتر المنصة: الكل / مبيعات مباشرة (بدون منصات) / كل المنصات / منصة معيّنة
+    const platSel = document.getElementById('invMgrPlatformFilter');
+    const platforms = getData('sys_delivery_platforms') || [];
+    if (platSel && platSel.options.length !== platforms.length + 3) {
+        const keep = platSel.value;
+        platSel.innerHTML = '<option value="">كل الفواتير</option>' +
+            '<option value="__direct__">🏪 بدون منصات</option>' +
+            '<option value="__all_platforms__">📱 كل المنصات</option>' +
+            platforms.map(p => '<option value="' + p.name.replace(/"/g, '&quot;') + '">📱 ' + p.name + '</option>').join('');
+        platSel.value = keep || '';
+    }
+    const platFilter = platSel ? platSel.value : '';
+
     if (dateFilter) list = list.filter(o => o.dateDate === dateFilter);
+    if (platFilter === '__direct__')          list = list.filter(o => !isPlatformDeliveryName(o.driverName));
+    else if (platFilter === '__all_platforms__') list = list.filter(o => isPlatformDeliveryName(o.driverName));
+    else if (platFilter)                       list = list.filter(o => o.driverName === platFilter);
     if (searchRaw) {
         list = list.filter(o =>
             String(o.orderNum || '').includes(searchRaw) ||
@@ -3945,9 +4043,13 @@ function renderInvoiceManagerList() {
 
     if (summaryEl) {
         const total = list.reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
+        const platList = list.filter(o => isPlatformDeliveryName(o.driverName));
+        const platTotal = platList.reduce((s,o) => s + cleanPrice(o.totalAmount), 0);
         summaryEl.innerHTML = 'النتائج: <strong style="color:#fbbf24;">' + list.length +
             '</strong> &nbsp;|&nbsp; الإجمالي: <strong style="color:#10b981;">' +
             total.toLocaleString('ar-IQ') + ' د.ع</strong>' +
+            (platList.length ? ' &nbsp;|&nbsp; 📱 للمنصات: <strong style="color:#c084fc;">' +
+                platTotal.toLocaleString('ar-IQ') + ' د.ع</strong> (' + platList.length + ' فاتورة)' : '') +
             (list.length === 200 ? ' <span style="color:#888;">(أول 200 نتيجة - ضيّق البحث لو تريد أدق)</span>' : '');
     }
 
@@ -3970,7 +4072,10 @@ function renderInvoiceManagerList() {
             (o.dateDate||'') + ' ' + (o.timestamp||'') + ' • ' + (o.customerName||'زبون') +
             (o.phone ? ' • 📞' + o.phone : '') +
             (o.driverName && o.driverName!=='-'
-                ? ' • 🛵 ' + (o.driverName === OPEN_DRIVER_POOL_MARKER ? '🔓 بانتظار سائق' : o.driverName)
+                ? (isPlatformDeliveryName(o.driverName)
+                    ? ' • <span style="background:#c084fc;color:#000;padding:1px 7px;border-radius:5px;font-weight:900;">📱 ' + o.driverName + '</span>' +
+                      (o.platformOrderRef ? ' <span style="color:#c084fc;">#' + o.platformOrderRef + '</span>' : '')
+                    : ' • 🛵 ' + (o.driverName === OPEN_DRIVER_POOL_MARKER ? '🔓 بانتظار سائق' : o.driverName))
                 : '') +
             (o.isSettled ? ' • <span style="color:#10b981;">✅ مسوّاة</span>' : ' • <span style="color:#f59e0b;">⏳ غير مسوّاة</span>') +
             '</div></div>' +
@@ -5827,6 +5932,282 @@ function repairShiftWindow() {
         updateLiveShiftSalesBadge();
     alert('✅ تم إعادة ضبط الشيفت.\nيشمل الآن ' + times.length + ' فاتورة.');
 }
+
+/* ==========================================
+   🏠 اللوحة الرئيسية الجديدة للأدمن
+   - مبيعات اليوم / آخر 7 أيام / هذا الشهر
+   - الأكثر مبيعاً + مبيعات المنصات
+   - الكاش بالدرج مخفي بعين
+   ========================================== */
+let homeCloudOrders = {};     // فواتير الشهر من السحابة (بالذاكرة فقط - ما نلمس التخزين المحلي)
+let homeFullLoaded  = false;
+let homeLoading     = false;
+let homeTopRange    = 'today';
+let homeDrawerShown = false;
+let homeLastTry    = 0;
+
+function homeEsc(s) {
+    return String(s === undefined || s === null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function homeFmt(n) { return Math.round(cleanPrice(n)).toLocaleString('ar-IQ'); }
+
+function homeAddDays(dateStr, delta) {
+    const p = String(dateStr).split('-').map(Number);
+    const dt = new Date(Date.UTC(p[0], p[1] - 1, p[2] + delta));
+    return dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') +
+           '-' + String(dt.getUTCDate()).padStart(2, '0');
+}
+function homeRanges() {
+    const today = getTodayString();
+    return { today: today, weekStart: homeAddDays(today, -6), monthStart: today.slice(0, 8) + '01' };
+}
+
+function homeKey(o)   { return String(o.id || (o.orderNum + '_' + o.createdTimestamp)); }
+function homeStamp(o) { return cleanPrice(o.lastModified) || cleanPrice(o.createdTimestamp); }
+
+// كل الفواتير المتاحة: المحلي + اللي جبناه من السحابة (الأحدث يفوز)
+function homeAllOrders() {
+    const map = {};
+    const put = o => {
+        if (!o) return;
+        const k = homeKey(o), prev = map[k];
+        if (!prev || homeStamp(o) >= homeStamp(prev)) map[k] = o;
+    };
+    (getData('sys_completed_orders') || []).forEach(put);
+    Object.keys(homeCloudOrders).forEach(k => put(homeCloudOrders[k]));
+    return Object.keys(map).map(k => map[k]);
+}
+
+// تجميع فواتير فترة (من تاريخ إلى تاريخ، شاملة)
+function homeAggregate(orders, from, to) {
+    const r = { count: 0, sales: 0, cash: 0, visa: 0, platform: 0, items: {}, byPlatform: {} };
+    orders.forEach(o => {
+        const d = o.dateDate;
+        if (!d || d < from || d > to) return;
+        const amt = cleanPrice(o.totalAmount);
+        r.count++;
+        r.sales += amt;
+        const isPlat = isPlatformDeliveryName(o.driverName);
+        if (isPlat) {
+            const adj = (o.platformAdjustedAmount !== undefined && o.platformAdjustedAmount !== null)
+                ? cleanPrice(o.platformAdjustedAmount) : amt;
+            r.platform += adj;
+            const b = r.byPlatform[o.driverName] || (r.byPlatform[o.driverName] = { count: 0, amount: 0 });
+            b.count++; b.amount += adj;
+        } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
+            r.visa += amt;
+        } else {
+            r.cash += amt;
+        }
+        (o.items || []).forEach(it => {
+            if (!it || !it.name) return;
+            const qty = cleanPrice(it.qty) || 1;
+            const row = r.items[it.name] || (r.items[it.name] = { qty: 0, total: 0 });
+            row.qty += qty;
+            row.total += cleanPrice(it.price) * qty;
+        });
+    });
+    return r;
+}
+
+function homeDrawerCalc(orders, today) {
+    const todayOrders = orders.filter(o => o.dateDate === today);
+    let cash = 0;
+    todayOrders.forEach(o => {
+        if (isPlatformDeliveryName(o.driverName)) return;
+        if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) return;
+        cash += cleanPrice(o.totalAmount);
+    });
+    const exp = (getData('sys_expenses') || []).filter(e => e.dateDate === today)
+        .reduce((s, e) => s + cleanPrice(e.amount), 0);
+    const sal = (getData('sys_salaries') || []).filter(s => s.dateDate === today)
+        .reduce((s, e) => s + cleanPrice(e.amount), 0);
+    const float = (typeof getDrawerOpeningFloat === 'function') ? getDrawerOpeningFloat(today) : 0;
+    return { float: float, cash: cash, exp: exp, sal: sal, net: Math.max(0, float + cash - exp - sal) };
+}
+
+function renderAdminHome() {
+    if (!document.getElementById('homePeriods')) return;
+    const rg = homeRanges();
+    const orders = homeAllOrders();
+    const dToday = homeAggregate(orders, rg.today, rg.today);
+    const dWeek  = homeAggregate(orders, rg.weekStart, rg.today);
+    const dMonth = homeAggregate(orders, rg.monthStart, rg.today);
+
+    // 1) شارة مبيعات اليوم
+    const badge = document.getElementById('liveShiftSalesBadge');
+    if (badge) badge.innerHTML = homeFmt(dToday.sales) + ' د.ع' +
+        ' <span style="font-size:0.72rem;color:#aaa;font-weight:normal;">(' + dToday.count + ' فاتورة)</span>';
+
+    // 2) الكاش بالدرج (مخفي افتراضياً)
+    const dr = homeDrawerCalc(orders, rg.today);
+    const amtEl = document.getElementById('homeDrawerAmount');
+    const detEl = document.getElementById('homeDrawerDetail');
+    if (amtEl) amtEl.innerText = homeDrawerShown ? (homeFmt(dr.net) + ' د.ع') : '••••••';
+    if (detEl) {
+        detEl.style.display = homeDrawerShown ? 'block' : 'none';
+        detEl.innerHTML =
+            'المدوّر: <b style="color:#ddd;">' + homeFmt(dr.float) + '</b> &nbsp;+&nbsp; ' +
+            'كاش المبيعات: <b style="color:#ddd;">' + homeFmt(dr.cash) + '</b><br>' +
+            'ناقص صرفيات: <b style="color:#ef4444;">' + homeFmt(dr.exp) + '</b> &nbsp;−&nbsp; ' +
+            'رواتب وسلف: <b style="color:#ef4444;">' + homeFmt(dr.sal) + '</b><br>' +
+            '<span style="color:#666;">(مبيعات المنصات والفيزا غير محسوبة لأنها مو كاش بالدرج)</span>';
+    }
+    const eye = document.getElementById('homeEyeBtn');
+    if (eye) eye.innerText = homeDrawerShown ? '🙈' : '👁️';
+
+    // 3) بطاقات الفترات
+    const card = (title, color, a) =>
+        '<div class="home-card" style="border-color:' + color + ';margin:0;">' +
+        '<div style="font-size:0.78rem;color:#999;">' + title + '</div>' +
+        '<div style="font-size:1.35rem;font-weight:900;color:' + color + ';margin:4px 0;">' + homeFmt(a.sales) + ' <span style="font-size:0.75rem;">د.ع</span></div>' +
+        '<div style="font-size:0.74rem;color:#aaa;line-height:1.8;">' +
+        a.count + ' فاتورة' + (a.count ? ' • معدل ' + homeFmt(a.sales / a.count) : '') + '<br>' +
+        '<span style="color:#c084fc;">📱 منصات: ' + homeFmt(a.platform) + '</span></div></div>';
+    document.getElementById('homePeriods').innerHTML =
+        card('☀️ اليوم', '#ffd700', dToday) +
+        card('📅 آخر 7 أيام', '#38bdf8', dWeek) +
+        card('🗓️ هذا الشهر', '#10b981', dMonth);
+
+    // 4) الأكثر مبيعاً
+    renderHomeTopItems(dToday, dWeek, dMonth);
+
+    // 5) المنصات
+    renderHomePlatforms(dToday, dWeek, dMonth);
+}
+
+function renderHomeTopItems(dToday, dWeek, dMonth) {
+    const box = document.getElementById('homeTopItems');
+    if (!box) return;
+    ['Today', 'Week', 'Month'].forEach(k => {
+        const b = document.getElementById('homeSeg' + k);
+        if (b) b.classList.toggle('active', homeTopRange === k.toLowerCase());
+    });
+    const a = homeTopRange === 'week' ? dWeek : homeTopRange === 'month' ? dMonth : dToday;
+    const rows = Object.keys(a.items).map(n => ({ name: n, qty: a.items[n].qty, total: a.items[n].total }))
+        .sort((x, y) => y.qty - x.qty).slice(0, 10);
+    if (rows.length === 0) {
+        box.innerHTML = '<p style="text-align:center;color:#666;font-size:0.82rem;padding:10px;">ماكو مبيعات بهذي الفترة</p>';
+        return;
+    }
+    const max = rows[0].qty || 1;
+    box.innerHTML = rows.map((r, i) =>
+        '<div style="margin-bottom:8px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;gap:8px;">' +
+        '<span style="color:' + (i === 0 ? '#ffd700' : '#ddd') + ';font-weight:' + (i < 3 ? '900' : 'normal') + ';">' +
+        (i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : (i + 1) + '. ') + homeEsc(r.name) + '</span>' +
+        '<span style="white-space:nowrap;"><b style="color:#10b981;">' + homeFmt(r.qty) + '</b> ' +
+        '<span style="color:#777;font-size:0.72rem;">قطعة • ' + homeFmt(r.total) + ' د.ع</span></span></div>' +
+        '<div style="background:#1e1e28;border-radius:4px;height:5px;margin-top:3px;overflow:hidden;">' +
+        '<div style="background:' + (i === 0 ? '#ffd700' : '#f59e0b') + ';height:100%;width:' +
+        Math.round(r.qty / max * 100) + '%;"></div></div></div>'
+    ).join('');
+}
+
+function setHomeTopRange(r) { homeTopRange = r; renderAdminHome(); }
+
+function renderHomePlatforms(dToday, dWeek, dMonth) {
+    const box = document.getElementById('homePlatforms');
+    if (!box) return;
+    const platforms = getData('sys_delivery_platforms') || [];
+    if (platforms.length === 0) {
+        box.innerHTML = '<div class="home-card"><p style="color:#666;font-size:0.82rem;text-align:center;margin:0;">' +
+            'ماكو منصات مسجّلة. أضفها من: العمليات اليومية ← ذمة تطبيقات التوصيل.</p></div>';
+        return;
+    }
+    const share = dMonth.sales > 0 ? Math.round(dMonth.platform / dMonth.sales * 100) : 0;
+    const line = (label, a, name) => {
+        const b = a.byPlatform[name] || { count: 0, amount: 0 };
+        return '<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:4px 0;' +
+            'border-bottom:1px dashed #222;"><span style="color:#aaa;">' + label + '</span>' +
+            '<span><b style="color:#fbbf24;">' + homeFmt(b.amount) + '</b> ' +
+            '<span style="color:#777;font-size:0.72rem;">د.ع • ' + b.count + ' طلب</span></span></div>';
+    };
+    box.innerHTML =
+        '<div style="font-size:0.78rem;color:#999;margin-bottom:8px;">المنصات مجتمعة تمثل <b style="color:#c084fc;">' +
+        share + '%</b> من مبيعات هذا الشهر (' + homeFmt(dMonth.platform) + ' د.ع)</div>' +
+        '<div class="home-grid">' +
+        platforms.map(p => {
+            const pct = cleanPrice(p.commissionPct);
+            const mo  = (dMonth.byPlatform[p.name] || { amount: 0 }).amount;
+            const commission = Math.round(mo * pct / 100);
+            return '<div class="home-card" style="border-color:#c084fc;margin:0;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                '<strong style="color:#c084fc;font-size:1rem;">📱 ' + homeEsc(p.name) + '</strong>' +
+                '<span style="color:#777;font-size:0.72rem;">عمولة ' + pct + '%</span></div>' +
+                line('اليوم', dToday, p.name) + line('آخر 7 أيام', dWeek, p.name) + line('هذا الشهر', dMonth, p.name) +
+                '<div style="font-size:0.76rem;color:#aaa;margin-top:8px;line-height:1.8;">' +
+                'عمولة الشهر: <b style="color:#ef4444;">' + homeFmt(commission) + '</b> • ' +
+                'الصافي لك: <b style="color:#10b981;">' + homeFmt(mo - commission) + '</b> د.ع</div></div>';
+        }).join('') + '</div>';
+}
+
+function toggleHomeDrawer() { homeDrawerShown = !homeDrawerShown; renderAdminHome(); }
+
+// جلب فواتير من السحابة من تاريخ معيّن (SDK بمهلة ثم REST بديل)
+async function homeFetchOrdersSince(fromStr) {
+    let rows = [];
+    try {
+        const snap = await Promise.race([
+            db.collection('completed_orders').where('dateDate', '>=', fromStr).limit(5000).get({ source: 'server' }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('sdk-timeout')), 10000))
+        ]);
+        snap.forEach(d => rows.push(d.data()));
+    } catch (e) {
+        console.warn('home: SDK بطيء/فشل، نجرب REST', e);
+        rows = await window.restQueryByField('completed_orders', 'dateDate', fromStr, 5000, 'GREATER_THAN_OR_EQUAL');
+    }
+    return rows;
+}
+
+async function refreshAdminHome(force) {
+    if (homeLoading) return;
+    if (!(typeof auth !== 'undefined' && auth && auth.currentUser && !auth.currentUser.isAnonymous)) {
+        renderAdminHome();
+        return;
+    }
+    homeLoading = true;
+    homeLastTry = Date.now();
+    const btn = document.getElementById('homeRefreshBtn');
+    const stamp = document.getElementById('homeLastUpdate');
+    if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري التحديث...'; }
+    try {
+        const rg = homeRanges();
+        // أول مرة: كل الشهر (أو آخر 7 أيام إذا أكبر). بعدها: من أمس فقط (يوفّر قراءات)
+        const first = !homeFullLoaded;
+        const from = first
+            ? (rg.monthStart < rg.weekStart ? rg.monthStart : rg.weekStart)
+            : homeAddDays(rg.today, -1);
+        const rows = await homeFetchOrdersSince(from);
+        rows.forEach(o => { homeCloudOrders[homeKey(o)] = o; });
+        homeFullLoaded = true;
+
+        // نحدّث الصرفيات والرواتب والمدوّر كمان (حتى رقم الدرج يطلع صح)
+        if (force && typeof pullLatestFromCloud === 'function') {
+            try {
+                await Promise.race([pullLatestFromCloud(), new Promise(r => setTimeout(r, 12000))]);
+            } catch (_) {}
+        }
+        if (stamp) stamp.innerText = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        console.warn('home refresh failed', e);
+        if (stamp) stamp.innerText = '⚠️ تعذّر التحديث من السحابة - الأرقام من بيانات الجهاز';
+    } finally {
+        homeLoading = false;
+        if (btn) { btn.disabled = false; btn.innerText = '🔄 تحديث'; }
+        renderAdminHome();
+    }
+}
+
+// نستبدل محدّث الشارة القديم (كان يحسب من الشيفت/المحلي فقط) بالنظام الجديد
+window.updateLiveShiftSalesBadge = function () {
+    try {
+        renderAdminHome();
+        if (!homeFullLoaded && !homeLoading && Date.now() - homeLastTry > 60000) refreshAdminHome(false);
+    } catch (e) { console.warn(e); }
+};
+
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof initAdminPage === 'function') initAdminPage();
