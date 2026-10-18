@@ -260,7 +260,11 @@ const DEFAULT_DATA = {
         title:    "لمناسبتكم... جاهزين! 🎉",
         subtitle: "نوفر لكم أفضل الأكلات للأعراس والمناسبات والتجمعات",
         phone1:   "",
-        phone2:   ""
+        phone2:   "",
+        theme:    "gold",
+        fromDate: "",
+        toDate:   "",
+        callBtn:  false
     },
     cashiers: [
         { id: "c1", name: "الكاشير الرئيسي", pin: "1111" }
@@ -4930,11 +4934,13 @@ function onPosDriverSelectChanged() {
         const baseItem = allItems.find(i =>
             String(i.id) === String(cartItem.id) || cleanPrice(i.id) === cleanPrice(cartItem.id)
         );
-        if (!baseItem || !baseItem.platformPrices) return;
-        const platPrice = baseItem.platformPrices[selectedName];
-        if (platPrice === undefined || platPrice === null || platPrice === '') return;
+        if (!baseItem) return;
+        const platPrice = baseItem.platformPrices ? baseItem.platformPrices[selectedName] : undefined;
+        const hasPlatPrice = !(platPrice === undefined || platPrice === null || platPrice === '');
+        // بدون سعر خاص: الخصم المؤقت ينطبق على السعر العادي، وبدون خصم ما نغيّر شي
+        if (!hasPlatPrice && !promoActive) return;
 
-        let newPrice = cleanPrice(platPrice);
+        let newPrice = cleanPrice(hasPlatPrice ? platPrice : baseItem.price);
         // 🆕 نطبّق نسبة الخصم المؤقت فوق سعر المنصة، لو العرض مفعّل اليوم
         if (promoActive) newPrice = Math.round(newPrice * (1 - promo.pct / 100));
 
@@ -7558,24 +7564,54 @@ function loadMenuAnnouncementForm() {
     setVal('announcementSubtitle', ann.subtitle || '');
     setVal('announcementPhone1',   ann.phone1   || '');
     setVal('announcementPhone2',   ann.phone2   || '');
+    setVal('announcementFrom',     ann.fromDate || '');
+    setVal('announcementTo',       ann.toDate   || '');
+    setVal('announcementTheme',    ann.theme    || 'gold');
+    setChk('announcementCallBtn',  ann.callBtn);
+    previewMenuAnnouncement();
+}
+
+function readMenuAnnouncementForm() {
+    const v = id => (document.getElementById(id)?.value || '').trim();
+    return {
+        enabled:  document.getElementById('announcementEnabled')?.checked || false,
+        title:    v('announcementTitle'),
+        subtitle: v('announcementSubtitle'),
+        phone1:   v('announcementPhone1'),
+        phone2:   v('announcementPhone2'),
+        theme:    v('announcementTheme') || 'gold',
+        fromDate: v('announcementFrom'),
+        toDate:   v('announcementTo'),
+        callBtn:  document.getElementById('announcementCallBtn')?.checked || false
+    };
+}
+
+function previewMenuAnnouncement() {
+    const box = document.getElementById('announcementPreviewBox');
+    if (!box) return;
+    const ann = readMenuAnnouncementForm();
+    box.innerHTML = ann.title
+        ? buildMenuAnnouncementHtml(ann)
+        : '<p style="color:#666;font-size:0.8rem;text-align:center;">اكتب عنواناً لتظهر المعاينة</p>';
 }
 
 function saveMenuAnnouncement() {
-    const ann = {
-        enabled:  document.getElementById('announcementEnabled')?.checked || false,
-        title:    document.getElementById('announcementTitle')?.value.trim() || '',
-        subtitle: document.getElementById('announcementSubtitle')?.value.trim() || '',
-        phone1:   document.getElementById('announcementPhone1')?.value.trim() || '',
-        phone2:   document.getElementById('announcementPhone2')?.value.trim() || ''
-    };
-
+    const ann = readMenuAnnouncementForm();
     if (ann.enabled && !ann.title)
         return alert('⚠️ أدخل عنوان الإعلان قبل التفعيل.');
+    if (ann.fromDate && ann.toDate && ann.toDate < ann.fromDate)
+        return alert('⚠️ تاريخ النهاية قبل تاريخ البداية.');
 
     setData('sys_menu_announcement', ann);
     alert(ann.enabled
         ? '✅ تم حفظ وتفعيل الإعلان! يطلع الآن بالمينيو الإلكتروني.'
         : '✅ تم الحفظ (الإعلان غير مفعّل حالياً).');
+}
+
+function clearMenuAnnouncement() {
+    if (!confirm('إيقاف الإعلان ومسح محتواه؟')) return;
+    setData('sys_menu_announcement', { ...DEFAULT_DATA.menuAnnouncement, enabled: false, title: '', subtitle: '' });
+    loadMenuAnnouncementForm();
 }
 
 // رفع شعار (لوكو) وتصغيره تلقائياً قبل الحفظ
@@ -8009,11 +8045,6 @@ async function renderAuditLog() {
             '</div>';
     }
 
-    if (entries.length === 0) {
-        box.innerHTML = '<p style="color:#666;text-align:center;padding:16px;">لا توجد عمليات</p>';
-        return;
-    }
-
     const colorOf = a =>
         a === 'خصم مجاني'           ? '#ef4444' :
         a === 'تعديل سعر'           ? '#f59e0b' :
@@ -8023,7 +8054,7 @@ async function renderAuditLog() {
         a === 'تقفيل شيفت'          ? '#38bdf8' :
         a === 'تسجيل دخول'          ? '#888'    : '#10b981';
 
-    box.innerHTML = entries.slice(0, 200).map(e => {
+    const entryHtml = e => {
         const d = e.details || {};
         let detail = '';
         if (d.itemName) detail += d.itemName;
@@ -8061,6 +8092,58 @@ async function renderAuditLog() {
             '<div style="font-size:0.7rem;color:#666;white-space:nowrap;">' +
             (e.atText||'') + '</div>' +
             '</div>';
+    };
+
+    const esc = t => String(t === undefined || t === null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const fmt = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+
+    // ملخص كل يوم: العمليات + الصرفيات الفعلية (من سجل الصرفيات نفسه)
+    const allExp = (getData('sys_expenses') || []);
+    const allSal = (getData('sys_salaries') || []);
+    const inRange = d => d && (!from || d >= from) && (!to || d <= to);
+    const dayMap = {};
+    const dayOf = d => dayMap[d] || (dayMap[d] = { entries: [], exp: [], adv: [], sal: [] });
+    entries.forEach(e => { if (e.dateDate) dayOf(e.dateDate).entries.push(e); });
+    if (typeFilter === 'all' || typeFilter === 'صرفية' || typeFilter === 'راتب / صرفية موظف') {
+        allExp.forEach(x => { if (inRange(x.dateDate)) (x.type === 'سلفة' ? dayOf(x.dateDate).adv : dayOf(x.dateDate).exp).push(x); });
+        allSal.forEach(x => { if (inRange(x.dateDate)) dayOf(x.dateDate).sal.push(x); });
+    }
+    let days = Object.keys(dayMap).sort().reverse();
+    if (!from && !to) days = days.slice(0, 31);
+
+    if (days.length === 0) {
+        box.innerHTML = '<p style="color:#666;text-align:center;padding:16px;">لا توجد عمليات</p>';
+        return;
+    }
+
+    const sum = arr => arr.reduce((s, x) => s + cleanPrice(x.amount), 0);
+    box.innerHTML = days.map(day => {
+        const d = dayMap[day];
+        const ops = d.entries.filter(e => typeFilter !== 'all' || e.action !== 'تسجيل دخول');
+        const expTotal = sum(d.exp), advTotal = sum(d.adv), salTotal = sum(d.sal);
+        const free = ops.filter(e => e.action === 'خصم مجاني').length;
+        const line = (x, extra) => '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 8px;' +
+            'background:#0d0d11;border-radius:6px;margin-bottom:3px;font-size:0.8rem;">' +
+            '<span>' + esc(extra) + ' ' + esc(x.note || x.employee || '') + '</span>' +
+            '<strong style="color:#f59e0b;white-space:nowrap;">' + fmt(x.amount) + ' د.ع</strong></div>';
+        const expRows = d.exp.map(x => line(x, x.type || 'صرفية')).join('') +
+            d.adv.map(x => line(x, '💵 سلفة')).join('') +
+            d.sal.map(x => line(x, '👤 راتب')).join('');
+        return '<details style="background:#101018;border:1px solid #1e1e28;border-radius:10px;margin-bottom:8px;">' +
+            '<summary style="cursor:pointer;padding:10px 12px;list-style:none;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
+            '<strong style="color:#fbbf24;">📅 ' + esc(day) + '</strong>' +
+            '<span style="font-size:0.78rem;color:#ccc;">' +
+            '💸 صرفيات: <strong style="color:#f59e0b;">' + fmt(expTotal) + '</strong>' +
+            (advTotal ? ' • سلف: <strong>' + fmt(advTotal) + '</strong>' : '') +
+            (salTotal ? ' • رواتب: <strong>' + fmt(salTotal) + '</strong>' : '') +
+            (free ? ' • <span style="color:#ef4444;">🔴 ' + free + ' خصم مجاني</span>' : '') +
+            ' • ' + ops.length + ' عملية</span></div></summary>' +
+            '<div style="padding:4px 12px 12px;">' +
+            (expRows ? '<div style="color:#888;font-size:0.75rem;margin:6px 0 4px;">صرفيات اليوم</div>' + expRows : '') +
+            (ops.length ? '<div style="color:#888;font-size:0.75rem;margin:10px 0 4px;">العمليات</div>' +
+                ops.slice(0, 80).map(entryHtml).join('') : '') +
+            '</div></details>';
     }).join('');
 }
 
@@ -8235,7 +8318,10 @@ async function testPrintBridge(btnElement) {
             alert('⚠️ الجسر رد برمز ' + resp.status);
         }
     } catch (_) {
-        alert('❌ الجسر غير متاح.\n\nتأكد أن برنامج الجسر مشغّل على الكمبيوتر.');
+        alert('❌ الجسر غير متاح من هذا الجهاز.\n\n' +
+            '• الجسر يشتغل فقط على كمبيوتر المطعم، فالفحص من الموبايل أو من جهاز ثاني ما ينفع.\n' +
+            '• تأكد أن برنامج الجسر مشغّل.\n' +
+            '• العنوان الحالي: ' + getPrintBridgeUrl());
     } finally {
         if (btnElement) { btnElement.innerHTML = orig; btnElement.disabled = false; }
     }
@@ -8857,34 +8943,46 @@ async function loadPublicMenu() {
 }
 
 // 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل (نص، عرض/إخفاء)
+function buildMenuAnnouncementHtml(ann) {
+    const esc = t => String(t === undefined || t === null ? '' : t)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const themes = {
+        gold:  { bg: 'linear-gradient(135deg,#1a1a08,#0d0d11)', border: '#ffd700', title: '#ffd700', accent: '#fbbf24' },
+        red:   { bg: 'linear-gradient(135deg,#2a0a0a,#0d0d11)', border: '#ef4444', title: '#ff6b6b', accent: '#fca5a5' },
+        green: { bg: 'linear-gradient(135deg,#08200f,#0d0d11)', border: '#10b981', title: '#34d399', accent: '#6ee7b7' },
+        blue:  { bg: 'linear-gradient(135deg,#08162a,#0d0d11)', border: '#38bdf8', title: '#7dd3fc', accent: '#bae6fd' }
+    };
+    const t = themes[ann.theme] || themes.gold;
+    const phones = [ann.phone1, ann.phone2].filter(Boolean);
+    const telHref = ann.phone1 ? 'tel:' + String(ann.phone1).replace(/[^0-9+]/g, '') : '';
+    return '<div style="background:' + t.bg + ';border:2px solid ' + t.border + ';border-radius:14px;' +
+        'margin:10px 12px;padding:16px 14px;text-align:center;">' +
+        '<div style="font-size:1.15rem;font-weight:900;color:' + t.title + ';margin-bottom:4px;">' + esc(ann.title) + '</div>' +
+        (ann.subtitle ? '<div style="font-size:0.82rem;color:#ddd;margin-bottom:8px;line-height:1.6;">' + esc(ann.subtitle) + '</div>' : '') +
+        (phones.length ? '<div style="font-size:0.8rem;color:' + t.accent + ';font-weight:900;">📞 للحجز والاستفسار: ' +
+            phones.map(esc).join(' — ') + '</div>' : '') +
+        ((ann.callBtn && telHref) ? '<a href="' + telHref + '" style="display:inline-block;margin-top:10px;padding:8px 22px;' +
+            'background:' + t.border + ';color:#000;font-weight:900;border-radius:20px;text-decoration:none;">📞 اتصل الآن</a>' : '') +
+        '</div>';
+}
+
+// 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل (نص، لون، فترة، عرض/إخفاء)
 function renderMenuAnnouncementBanner() {
     const banner = document.getElementById('menuAnnouncementBanner');
     if (!banner) return;
 
     const ann = getData('sys_menu_announcement') || DEFAULT_DATA.menuAnnouncement;
-    if (!ann.enabled || !ann.title) {
+    const today = (typeof getTodayString === 'function') ? getTodayString() : '';
+    const outOfRange = (ann.fromDate && today && today < ann.fromDate) ||
+                       (ann.toDate   && today && today > ann.toDate);
+    if (!ann.enabled || !ann.title || outOfRange) {
         banner.style.display = 'none';
         banner.innerHTML = '';
         return;
     }
 
     banner.style.display = 'block';
-    banner.innerHTML =
-        '<div style="background:linear-gradient(135deg,#1a1a08,#0d0d11);' +
-        'border:2px solid #ffd700;border-radius:14px;margin:10px 12px;' +
-        'padding:16px 14px;text-align:center;">' +
-        '<div style="font-size:1.15rem;font-weight:900;color:#ffd700;' +
-        'margin-bottom:4px;">' + ann.title + '</div>' +
-        (ann.subtitle
-            ? '<div style="font-size:0.82rem;color:#ddd;margin-bottom:8px;' +
-              'line-height:1.6;">' + ann.subtitle + '</div>'
-            : '') +
-        ((ann.phone1 || ann.phone2)
-            ? '<div style="font-size:0.8rem;color:#fbbf24;font-weight:900;">' +
-              '📞 للحجز والاستفسار: ' +
-              [ann.phone1, ann.phone2].filter(Boolean).join(' — ') + '</div>'
-            : '') +
-        '</div>';
+    banner.innerHTML = buildMenuAnnouncementHtml(ann);
 }
 
 function renderPublicMenuUI() {
