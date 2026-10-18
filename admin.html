@@ -264,6 +264,7 @@
                     <span id="homeLastUpdate">لم يتم التحديث بعد</span>
                     <span id="cloudSyncIndicator"></span>
                 </div>
+                <div id="homeDiagLine" style="font-size:0.68rem;color:#666;margin-top:3px;"></div>
             </div>
             <button id="homeRefreshBtn" onclick="refreshAdminHome(true)" class="gold-btn"
                     style="width:auto;padding:12px 20px;font-weight:900;background:#10b981;color:#000;border:none;">
@@ -290,6 +291,9 @@
         <!-- 📊 المبيعات: اليوم / الأسبوع / الشهر -->
         <div class="dash-section-title">📊 شكد بعت؟</div>
         <div id="homePeriods" class="home-grid"></div>
+
+        <div class="dash-section-title">📅 يوم بيوم (آخر 7 أيام)</div>
+        <div class="home-card"><div id="homeDays"></div></div>
 
         <!-- 🏆 الأكثر مبيعاً -->
         <div class="dash-section-title">🏆 أكثر الأصناف مبيعاً</div>
@@ -5945,6 +5949,7 @@ let homeLoading     = false;
 let homeTopRange    = 'today';
 let homeDrawerShown = false;
 let homeLastTry    = 0;
+let homeDiag       = { source: '-', cloud: 0, err: '' };
 
 function homeEsc(s) {
     return String(s === undefined || s === null ? '' : s)
@@ -6070,11 +6075,50 @@ function renderAdminHome() {
         card('📅 آخر 7 أيام', '#38bdf8', dWeek) +
         card('🗓️ هذا الشهر', '#10b981', dMonth);
 
+    // 3.5) يوم بيوم + سطر التشخيص
+    try { renderHomeDays(orders, rg.today); } catch (e) { console.warn('home days', e); }
+    try {
+        const diag = document.getElementById('homeDiagLine');
+        if (diag) {
+            const localN = (getData('sys_completed_orders') || []).length;
+            let newest = '-';
+            orders.forEach(o => { if (o.dateDate && (newest === '-' || o.dateDate > newest)) newest = o.dateDate; });
+            diag.innerHTML = 'يوم العمل: ' + rg.today + ' • فواتير بالجهاز: ' + localN +
+                ' • من السحابة: ' + Object.keys(homeCloudOrders).length + ' • أحدث فاتورة: ' + newest +
+                (homeDiag.err ? ' • <span style="color:#ef4444;">خطأ: ' + homeEsc(homeDiag.err) + '</span>' : '');
+        }
+    } catch (_) {}
+
     // 4) الأكثر مبيعاً
     renderHomeTopItems(dToday, dWeek, dMonth);
 
     // 5) المنصات
     renderHomePlatforms(dToday, dWeek, dMonth);
+}
+
+function renderHomeDays(orders, today) {
+    const box = document.getElementById('homeDays');
+    if (!box) return;
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const d = homeAddDays(today, -i);
+        const a = homeAggregate(orders, d, d);
+        days.push({ d: d, sales: a.sales, count: a.count, platform: a.platform });
+    }
+    const max = Math.max.apply(null, days.map(x => x.sales).concat([1]));
+    const best = days.reduce((m, x) => x.sales > m.sales ? x : m, days[0]);
+    box.innerHTML = days.map(x =>
+        '<div style="margin-bottom:8px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.8rem;gap:8px;">' +
+        '<span style="color:' + (x.d === best.d && x.sales > 0 ? '#ffd700' : '#ccc') + ';">' +
+        (x.d === best.d && x.sales > 0 ? '🏆 ' : '') + x.d + (x.d === today ? ' (اليوم)' : '') + '</span>' +
+        '<span><b style="color:#10b981;">' + homeFmt(x.sales) + '</b> ' +
+        '<span style="color:#777;font-size:0.72rem;">د.ع • ' + x.count + ' فاتورة' +
+        (x.platform ? ' • 📱 ' + homeFmt(x.platform) : '') + '</span></span></div>' +
+        '<div style="background:#1e1e28;border-radius:4px;height:5px;margin-top:3px;overflow:hidden;">' +
+        '<div style="background:' + (x.d === best.d && x.sales > 0 ? '#ffd700' : '#38bdf8') + ';height:100%;width:' +
+        Math.round(x.sales / max * 100) + '%;"></div></div></div>'
+    ).join('');
 }
 
 function renderHomeTopItems(dToday, dWeek, dMonth) {
@@ -6143,6 +6187,24 @@ function renderHomePlatforms(dToday, dWeek, dMonth) {
         }).join('') + '</div>';
 }
 
+// ندمج فواتير السحابة بالتخزين المحلي (بدون رفع للسحابة) - يغطي كل الشهر للأدمن
+function homeMergeIntoLocal(rows) {
+    try {
+        if (!rows || !rows.length || typeof safeLocalSet !== 'function') return;
+        const local = getData('sys_completed_orders') || [];
+        const byKey = {};
+        rows.concat(local).forEach(o => {
+            const k = homeKey(o), p = byKey[k];
+            if (!p || homeStamp(o) > homeStamp(p) ||
+                (homeStamp(o) === homeStamp(p) && o.isSettled && !p.isSettled)) byKey[k] = o;
+        });
+        const merged = Object.keys(byKey).map(k => byKey[k])
+            .sort((a, b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp))
+            .slice(0, 1200);
+        safeLocalSet('sys_completed_orders', JSON.stringify(merged));
+    } catch (e) { console.warn('home merge local', e); }
+}
+
 function toggleHomeDrawer() { homeDrawerShown = !homeDrawerShown; renderAdminHome(); }
 
 // جلب فواتير من السحابة من تاريخ معيّن (SDK بمهلة ثم REST بديل)
@@ -6154,8 +6216,10 @@ async function homeFetchOrdersSince(fromStr) {
             new Promise((_, rej) => setTimeout(() => rej(new Error('sdk-timeout')), 10000))
         ]);
         snap.forEach(d => rows.push(d.data()));
+        homeDiag.source = 'SDK';
     } catch (e) {
         console.warn('home: SDK بطيء/فشل، نجرب REST', e);
+        homeDiag.source = 'REST';
         rows = await window.restQueryByField('completed_orders', 'dateDate', fromStr, 5000, 'GREATER_THAN_OR_EQUAL');
     }
     return rows;
@@ -6181,7 +6245,10 @@ async function refreshAdminHome(force) {
             : homeAddDays(rg.today, -1);
         const rows = await homeFetchOrdersSince(from);
         rows.forEach(o => { homeCloudOrders[homeKey(o)] = o; });
+        homeMergeIntoLocal(rows);   // حتى تشوفها كل التقارير القديمة (الكشف اليومي، جرد الوجبات، إدارة الفواتير)
         homeFullLoaded = true;
+        homeDiag.err = '';
+        homeDiag.cloud = rows.length;
 
         // نحدّث الصرفيات والرواتب والمدوّر كمان (حتى رقم الدرج يطلع صح)
         if (force && typeof pullLatestFromCloud === 'function') {
@@ -6192,6 +6259,7 @@ async function refreshAdminHome(force) {
         if (stamp) stamp.innerText = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
         console.warn('home refresh failed', e);
+        homeDiag.err = String((e && (e.message || e.code)) || e);
         if (stamp) stamp.innerText = '⚠️ تعذّر التحديث من السحابة - الأرقام من بيانات الجهاز';
     } finally {
         homeLoading = false;
