@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1821';
+const MIM89_APP_VERSION = '1825';
 
 /* ==========================================
    المتغيرات العامة
@@ -306,6 +306,7 @@ let firebaseAuthReadyPromise = Promise.resolve();
 // يشتغل بالحالتين، وإلا تُعامل الصفحة كعامة وتبدأ بدخول مجهول ويفشل كل شي.
 const IS_STAFF_PAGE = /\/(admin|cashier|driver|employee|costing|inventory)\d*(\.html)?\/?$/i
     .test(((typeof location !== 'undefined' && location.pathname) || ''));
+const IS_DRIVER_PAGE = /\/driver\d*(\.html)?\/?$/i.test(location.pathname);
 
 try {
     const firebaseConfig = {
@@ -395,7 +396,7 @@ const STAFF_REST_SYNC_KEYS = [
     'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance',
     'sys_combo_deals', 'sys_delivery_platforms', 'sys_customers', 'sys_loyalty_settings',
     'sys_fixed_expenses', 'sys_printer_settings', 'sys_employee_requests',
-    'sys_employee_settings', 'sys_employee_deductions'
+    'sys_employee_settings', 'sys_employee_deductions', 'sys_wa_templates'
 ];
 
 async function restListCollectionAll(collection) {
@@ -1021,7 +1022,7 @@ async function pullLatestFromCloud() {
             });
             const merged  = Object.values(byKey).sort((a,b) =>
                 cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp)
-            ).slice(0, 300);
+            ).slice(0, (/\/admin\d*(\.html)?\/?$/i.test(location.pathname) ? 1200 : 300));
             const after = JSON.stringify(merged);
             if (after !== JSON.stringify(localOrders)) {
                 safeLocalSet('sys_completed_orders', after);
@@ -1089,7 +1090,8 @@ async function pullLatestFromCloud() {
         'sys_customers', 'sys_loyalty_settings', 'sys_fixed_expenses', 'sys_printer_settings',
         // 🆕 بوابة الموظفين - طلبات السلف والإجازات لازم تتزامن فوراً
         // بين جهاز الموظف والأدمن حتى يقدر المالك يوافق/يرفض بسرعة
-        'sys_employee_requests', 'sys_employee_settings', 'sys_employee_deductions'
+        'sys_employee_requests', 'sys_employee_settings', 'sys_employee_deductions',
+        'sys_wa_templates'
     ];
     try {
         const pDoc = await db.collection("system_store").doc('sys_passwords')
@@ -1182,6 +1184,13 @@ async function initData() {
     }
 
     refreshActiveUI();
+
+    // 🛵 صفحة السائق: حسابه محدود الصلاحيات (طلبات التوصيل فقط) - ما نسحب
+    // بقية بيانات النظام، والصفحة تجلب طلباتها بنفسها
+    if (IS_DRIVER_PAGE) {
+        if (typeof renderStatusBadge === 'function') renderStatusBadge();
+        return;
+    }
 
     // سحب من السحابة يتفوق على المحلي
     // 🛠️ إصلاح جذري خطير آخر: نفس فئة مشكلة "التعليق الأبدي" اللي
@@ -2605,8 +2614,10 @@ async function proceedToPrintAfterCashInner() {
         createdTimestamp: Date.now(),
         cashierName:   activeCashierUser ? activeCashierUser.name : 'الرئيسي',
         isSettled:     false,
+        webOrderDocId: window.mim89LinkedWebDocId || null,
         orderNotes:    document.getElementById('posOrderNotesInput')?.value.trim() || ''
     };
+    window.mim89LinkedWebDocId = null;
 
     // حفظ بيانات الزبون
     if (custInfo.phone !== '-') {
@@ -6007,6 +6018,7 @@ function deleteCallPingDoc(docId) {
 
 function listenForIncomingOrders() {
     const container = document.getElementById('liveOrdersContainer');
+    try { ensureWaTemplateEditor(); } catch (e) {}
 
     const processOrdersList = (ordersList) => {
         let unhandledCount = 0;
@@ -6045,6 +6057,7 @@ function listenForIncomingOrders() {
                 st === 'خرج للتوصيل';
 
             if (isUnhandled) {
+                (window.mim89IncomingCache = window.mim89IncomingCache || {})[String(ord.docId || ord.id)] = ord;
                 unhandledCount++;
                 const orderKey = ord.docId || ord.id || ('temp_' + Math.random());
                 knownOrderIds.add(orderKey);
@@ -6208,6 +6221,8 @@ function loadIncomingCallToPos(docId, orderId, phone, name,
 
     // تحديث حالة الطلب بالسحابة
     const isPingDoc = !!(window.mim89PingDocs && window.mim89PingDocs.has(docId));
+    // 🔗 نربط فاتورة الكاشير بطلب المينيو حتى الدلفري لما يسلّم يحدّث حالة الطلب للزبون
+    window.mim89LinkedWebDocId = (!isPingDoc && docId && !String(docId).startsWith('temp_')) ? String(docId) : null;
     if (isPingDoc) {
         // إشعار واتساب/مكالمة: نحذفه من الواردة نهائياً ونسجّل الزبون بفترة هدوء
         markCallHandled(callPingKey({ phone: phone, customerName: name }));
@@ -6310,13 +6325,10 @@ function generateOrderCardHTML(ord, docId) {
         'onclick="markOrderPreparing(\'' + safeDocId + '\',\'' + safeOrdId + '\')">🍳 تحضير</button>' +
         '<button class="gold-btn btn-sm" ' +
         'style="flex:1;background:#38bdf8;color:#000;border:none;font-size:0.66rem;" ' +
-        'onclick="updateOrderStatus(\'' + safeDocId + '\',\'' + safeOrdId +
-        '\',\'خرج للتوصيل\')">🛵 خرج</button>' +
-        '<button class="gold-btn btn-sm" ' +
-        'style="flex:1;background:#10b981;color:#fff;border:none;font-size:0.66rem;" ' +
-        'onclick="updateOrderStatus(\'' + safeDocId + '\',\'' + safeOrdId +
-        '\',\'تم التسليم\')">✅ سُلّم</button>' +
-        '</div></div></div>';
+        'onclick="markOrderOut(\'' + safeDocId + '\',\'' + safeOrdId + '\')">🛵 خرج</button>' +
+        '</div>' +
+        '<div style="font-size:0.64rem;color:#666;margin-top:4px;">✅ التسليم يتم من صفحة الدلفري</div>' +
+        '</div></div>';
 }
 
 function updateOrderStatus(docId, orderId, newStatus, prepMinutes) {
@@ -6335,10 +6347,103 @@ function updateOrderStatus(docId, orderId, newStatus, prepMinutes) {
         .catch(err => alert('⚠️ تعذّر: ' + (err.message || err)));
 }
 
+/* ==========================================
+   💬 رسائل واتساب للزبون عند التحضير / الخروج
+   (تفتح واتساب برسالة جاهزة من رقم المطعم، والكاشير يضغط إرسال)
+   ========================================== */
+const WA_DEFAULT_TEMPLATES = {
+    prep: 'أهلاً {name} 🌹\nطلبك رقم {order} صار قيد التحضير ⏱\nالمدة المتوقعة: {minutes} دقيقة.\nشكراً لاختيارك MIM89 🍔',
+    out:  'أهلاً {name} 🛵\nطلبك رقم {order} خرج للتوصيل، يرجى أن تكونوا مستعدين لاستلامه.\nشكراً لاختيارك MIM89 🍔'
+};
+
+function getWaTemplates() {
+    const t = getData('sys_wa_templates');
+    return {
+        prep: (t && t.prep) ? t.prep : WA_DEFAULT_TEMPLATES.prep,
+        out:  (t && t.out)  ? t.out  : WA_DEFAULT_TEMPLATES.out
+    };
+}
+
+function normalizeWaPhone(p) {
+    let d = String(p || '').replace(/[^0-9]/g, '');
+    if (!d) return '';
+    if (d.startsWith('00')) d = d.slice(2);
+    if (d.startsWith('964')) return d;
+    if (d.startsWith('0')) return '964' + d.slice(1);
+    return '964' + d;
+}
+
+function openWaStatusMessage(kind, docId, minutes) {
+    try {
+        const ord = (window.mim89IncomingCache || {})[docId];
+        if (!ord) return;
+        const phone = normalizeWaPhone(ord.phone || ord.customerPhone);
+        if (phone.length < 11) {
+            alert('⚠️ ما كدرت أرسل واتساب: ماكو رقم هاتف صحيح لهذا الزبون.');
+            return;
+        }
+        let msg = getWaTemplates()[kind] || '';
+        const nm = (ord.customerName && ord.customerName !== 'مكالمة واردة') ? ord.customerName : '';
+        const ordRef = String(ord.orderId || ord.orderNum || '');
+        if (!ordRef) msg = msg.replace(/\s*رقم\s*\{order\}/g, '').replace(/\{order\}/g, '');
+        msg = msg.replace(/\{name\}/g, nm || 'عزيزي الزبون')
+                 .replace(/\{minutes\}/g, String(minutes || ''))
+                 .replace(/\{order\}/g, String(ord.orderId || ord.orderNum || ''))
+                 .replace(/\{total\}/g, cleanPrice(ord.totalAmount || 0).toLocaleString('ar-IQ'));
+        msg = msg.replace(/[ \t]+\n/g, '\n').replace(/  +/g, ' ').trim();
+        window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+    } catch (e) { console.warn('wa message error', e); }
+}
+
 function markOrderPreparing(docId, orderId) {
     const m = prompt("كم دقيقة للتجهيز؟", "20");
     if (m === null) return;
-    updateOrderStatus(docId, orderId, 'قيد التحضير', cleanPrice(m) || 20);
+    const mins = cleanPrice(m) || 20;
+    openWaStatusMessage('prep', docId, mins);   // قبل أي await حتى ما يحجبه المتصفح
+    updateOrderStatus(docId, orderId, 'قيد التحضير', mins);
+}
+
+function markOrderOut(docId, orderId) {
+    openWaStatusMessage('out', docId, '');
+    updateOrderStatus(docId, orderId, 'خرج للتوصيل');
+}
+
+// ⚙️ فقرة تعديل نص الرسائل (فوق قائمة الواردة)
+function ensureWaTemplateEditor() {
+    const container = document.getElementById('liveOrdersContainer');
+    if (!container || !container.parentNode || document.getElementById('waTplBox')) return;
+    const t = getWaTemplates();
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const box = document.createElement('details');
+    box.id = 'waTplBox';
+    box.style.cssText = 'background:#111116;border:1px solid #25d366;border-radius:9px;padding:8px 10px;margin-bottom:8px;';
+    box.innerHTML =
+        '<summary style="cursor:pointer;color:#25d366;font-weight:900;font-size:0.82rem;">💬 نص رسائل الواتساب للزبون (اضغط للتعديل)</summary>' +
+        '<div style="font-size:0.7rem;color:#999;margin:6px 0;">يمكنك استخدام: {name} اسم الزبون — {minutes} مدة التحضير — {order} رقم الطلب — {total} المبلغ</div>' +
+        '<label style="font-size:0.75rem;color:#fbbf24;">🍳 رسالة التحضير:</label>' +
+        '<textarea id="waTplPrep" rows="4" style="width:100%;background:#0d0d11;color:#fff;border:1px solid #333;border-radius:6px;padding:6px;margin-bottom:6px;">' + esc(t.prep) + '</textarea>' +
+        '<label style="font-size:0.75rem;color:#38bdf8;">🛵 رسالة الخروج للتوصيل:</label>' +
+        '<textarea id="waTplOut" rows="4" style="width:100%;background:#0d0d11;color:#fff;border:1px solid #333;border-radius:6px;padding:6px;margin-bottom:6px;">' + esc(t.out) + '</textarea>' +
+        '<div style="display:flex;gap:6px;">' +
+        '<button class="gold-btn btn-sm" style="flex:1;" onclick="saveWaTemplates()">💾 حفظ النص</button>' +
+        '<button class="gold-btn btn-sm" style="flex:1;background:#444;color:#fff;" onclick="resetWaTemplates()">↩️ الافتراضي</button>' +
+        '</div>';
+    container.parentNode.insertBefore(box, container);
+}
+
+function saveWaTemplates() {
+    const prep = (document.getElementById('waTplPrep') || {}).value || '';
+    const out  = (document.getElementById('waTplOut')  || {}).value || '';
+    setData('sys_wa_templates', { prep: prep.trim(), out: out.trim() });
+    alert('✅ تم حفظ نص الرسائل.');
+}
+
+function resetWaTemplates() {
+    if (!confirm('الرجوع للنص الافتراضي؟')) return;
+    setData('sys_wa_templates', { prep: WA_DEFAULT_TEMPLATES.prep, out: WA_DEFAULT_TEMPLATES.out });
+    const p = document.getElementById('waTplPrep'), o = document.getElementById('waTplOut');
+    if (p) p.value = WA_DEFAULT_TEMPLATES.prep;
+    if (o) o.value = WA_DEFAULT_TEMPLATES.out;
 }
 
 function cancelIncomingOrder(docId, orderId) {
@@ -7704,28 +7809,93 @@ function renderAdminDrivers() {
           ).join('');
 }
 
+// 🔢 حساب دخول السائق بالرمز: يُنشأ تلقائياً من الأدمن (بدون ما تسوي إيميل بالكونسول)
+//    الإيميل الداخلي: d<الرمز>@driver.mim89.com  — كلمة المرور: mim89<الرمز>
+//    (السائق يكتب الرمز بس، والصفحة تبني الباقي)
+function driverCodeToCreds(code) {
+    const c = String(code || '').replace(/[^0-9]/g, '');
+    return { email: 'd' + c + '@driver.mim89.com', password: 'mim89' + c };
+}
+
+function generateDriverCode() {
+    let c = '';
+    for (let i = 0; i < 8; i++) c += Math.floor(Math.random() * 10);
+    if (c[0] === '0') c = '7' + c.slice(1);
+    return c;
+}
+
+// ينشئ (أو يربط) حساب Firebase للسائق + مستند staff بدور driver. يرجّع uid.
+async function ensureDriverAuthAccount(code, driverName) {
+    if (typeof firebase === 'undefined' || !db) throw new Error('ماكو اتصال بالسحابة');
+    const creds = driverCodeToCreds(code);
+    let secApp = null;
+    try { secApp = firebase.apps.find(a => a.name === 'drvCreate') || null; } catch (_) {}
+    if (!secApp) secApp = firebase.initializeApp(firebase.app().options, 'drvCreate');
+    const secAuth = secApp.auth();
+    let uid;
+    try {
+        const cred = await secAuth.createUserWithEmailAndPassword(creds.email, creds.password);
+        uid = cred.user.uid;
+    } catch (e) {
+        if (e && e.code === 'auth/email-already-in-use') {
+            const cred = await secAuth.signInWithEmailAndPassword(creds.email, creds.password);
+            uid = cred.user.uid;
+        } else { throw e; }
+    }
+    try { await secAuth.signOut(); } catch (_) {}
+    await db.collection('staff').doc(uid).set({
+        role: 'driver', name: driverName, createdAt: Date.now(), viaDriverCode: true
+    }, { merge: true });
+    return uid;
+}
+
+// يعطّل دخول رمز قديم (نحذف مستند staff حتى ما يبقى له أي صلاحية)
+async function revokeDriverAuthAccount(uid) {
+    if (!uid || !db) return;
+    try { await db.collection('staff').doc(String(uid)).delete(); } catch (e) { console.warn('revoke driver', e); }
+}
+
+function validateDriverCode(code) {
+    return /^[0-9]{8}$/.test(String(code || '').trim());
+}
+
 // تعيين/تعديل رمز دخول سائق موجود مسبقاً
-function setDriverPin(driverId) {
+async function setDriverPin(driverId) {
     const drivers = getData('sys_drivers') || [];
     const driver  = drivers.find(d => String(d.id) === String(driverId));
     if (!driver) return;
-    const newPin = prompt('🔒 رمز دخول جديد لـ "' + driver.name + '":', driver.pin || '');
+    const suggested = generateDriverCode();
+    const newPin = prompt('🔒 رمز دخول جديد لـ "' + driver.name + '" (8 أرقام).\nمقترح جاهز، أو اكتب رمزك:', suggested);
     if (newPin === null) return;
-    if (!newPin.trim()) return alert('⚠️ الرمز ما يصير فاضي.');
+    if (!validateDriverCode(newPin)) return alert('⚠️ الرمز لازم يكون 8 أرقام بالضبط (حماية للنظام).');
+    try {
+        const uid = await ensureDriverAuthAccount(newPin.trim(), driver.name);
+        if (driver.authUid && driver.authUid !== uid) await revokeDriverAuthAccount(driver.authUid);
+        driver.authUid = uid;
+    } catch (e) {
+        return alert('⚠️ تعذّر إنشاء حساب الدخول: ' + (e.message || e.code || e));
+    }
     driver.pin = newPin.trim();
     setData('sys_drivers', drivers);
     renderAdminDrivers();
-    alert('✅ تم تحديث رمز ' + driver.name);
+    alert('✅ تم تحديث رمز ' + driver.name + '\nالرمز: ' + driver.pin + '\nأعطه للسائق، يكتبه مرة وحدة بصفحته.');
 }
 
-function saveDeliveryDriver() {
+async function saveDeliveryDriver() {
     const name  = document.getElementById('driverNameInput')?.value.trim();
     const phone = document.getElementById('driverPhoneInput')?.value.trim();
-    const pin   = document.getElementById('driverPinInput')?.value.trim();
+    let   pin   = document.getElementById('driverPinInput')?.value.trim();
     if (!name) return alert("⚠️ أدخل اسم السائق!");
-    if (!pin)  return alert("⚠️ أدخل رمز دخول لصفحته!");
+    if (!pin)  pin = generateDriverCode();   // إذا تركته فاضي نولّد رمز تلقائي
+    if (!validateDriverCode(pin)) return alert("⚠️ الرمز لازم يكون 8 أرقام بالضبط، أو اتركه فاضي حتى يتولّد تلقائياً.");
+    let uid;
+    try {
+        uid = await ensureDriverAuthAccount(pin, name);
+    } catch (e) {
+        return alert('⚠️ تعذّر إنشاء حساب الدخول: ' + (e.message || e.code || e));
+    }
     const drivers = getData('sys_drivers') || [];
-    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '', pin });
+    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '', pin, authUid: uid });
     setData('sys_drivers', drivers);
     if (document.getElementById('driverPinInput'))
         document.getElementById('driverPinInput').value = '';
@@ -7734,12 +7904,15 @@ function saveDeliveryDriver() {
     if (document.getElementById('driverPhoneInput'))
         document.getElementById('driverPhoneInput').value = '';
     renderAdminDrivers();
-    alert("✅ تم إضافة السائق!");
+    alert("✅ تم إضافة السائق!\nرمز دخوله: " + pin + "\nأعطه إياه، يكتبه مرة وحدة بصفحته.");
 }
 
-function deleteDriver(id) {
+async function deleteDriver(id) {
     if (!confirm("حذف هذا السائق؟")) return;
-    let drivers = (getData('sys_drivers')||[]).filter(d => String(d.id) !== String(id));
+    const all = getData('sys_drivers') || [];
+    const d = all.find(x => String(x.id) === String(id));
+    if (d && d.authUid) await revokeDriverAuthAccount(d.authUid);   // يلغي رمزه فوراً
+    let drivers = all.filter(x => String(x.id) !== String(id));
     setData('sys_drivers', drivers);
     renderAdminDrivers();
 }
