@@ -208,7 +208,9 @@
                 // 🆕🛠️ إصلاح جذري: نستخدم fetch() المباشر (عبر دالة مشتركة
                 // بملف app.js) بدل استعلام المكتبة الداخلي - أثبتنا إن
                 // الأخير يتعلّق للأبد بصمت على بعض شبكات الموبايل
-                let orders = await window.restQueryByField('completed_orders', 'phone', cleanPhone, 50);
+                // 🔒 سجل الطلبات صار محفوظ ببطاقة العضو نفسها (يكتبه الكاشير)، بدل قراءة الفواتير
+                const mem = await getLoyaltyMemberInfo(cleanPhone);
+                let orders = (mem && Array.isArray(mem.recentOrders)) ? mem.recentOrders.slice() : [];
 
                 if (!orders || orders.length === 0) {
                     box.innerHTML = '<p class="empty-note">ماكو طلبات بعد</p>';
