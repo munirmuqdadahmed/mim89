@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1826';
+const MIM89_APP_VERSION = '1829';
 
 /* ==========================================
    المتغيرات العامة
@@ -1189,8 +1189,8 @@ async function initData() {
 
     refreshActiveUI();
 
-    // 🛵 صفحة السائق: حسابه محدود الصلاحيات (طلبات التوصيل فقط) - ما نسحب
-    // بقية بيانات النظام، والصفحة تجلب طلباتها بنفسها
+    // 🛵 صفحة السائق: حسابه محدود الصلاحيات (طلباته فقط) - قواعد الحماية تمنعه من
+    // بقية بيانات النظام، فما نحاول نسحبها. الصفحة تجلب طلباتها بنفسها.
     if (IS_DRIVER_PAGE) {
         if (typeof renderStatusBadge === 'function') renderStatusBadge();
         return;
@@ -3924,30 +3924,24 @@ async function signUpLoyaltyMember(name, phone, birthdate, gender, pin, referred
     let referrerPhone  = null;
 
     // 🎁 التحقق من رمز الدعوة (رقم هاتف صديق مسجّل)
+    // 🔒 حماية: الزبون ما يكدر يعدّل نقاط أي عضو. فقط نسجّل "من دعاه"،
+    // والنقاط (للصديق ولصاحب الدعوة) تنضاف تلقائياً من الكاشير عند أول طلب للعضو الجديد.
     if (referredByPhone) {
         const cleanReferrer = String(referredByPhone).replace(/[^0-9]/g,'');
         if (cleanReferrer && cleanReferrer !== cleanPhone) {
             const referrerData = await restGetDocument('loyalty_members', cleanReferrer);
-            if (referrerData) {
-                referrerPhone  = cleanReferrer;
-                startingPoints = cleanPrice(settings.referralBonusNewbie);
-                // منح صاحب الدعوة نقاطه فوراً
-                await restSetDocument('loyalty_members', cleanReferrer, {
-                    points: cleanPrice(referrerData.points) + cleanPrice(settings.referralBonusReferrer),
-                    referralsCount: cleanPrice(referrerData.referralsCount) + 1
-                }, true);
-            }
+            if (referrerData) referrerPhone = cleanReferrer;
         }
     }
 
     await restSetDocument('loyalty_members', cleanPhone, {
         name, phone: cleanPhone, birthdate, gender, pin,
-        points: startingPoints, joinedAt: Date.now(), lastOrderDate: null,
+        points: 0, joinedAt: Date.now(), lastOrderDate: null,
         referredBy: referrerPhone, referralsCount: 0
     }, false);
 
     setCurrentVipPhone(cleanPhone);
-    return { phone: cleanPhone, welcomeBonus: startingPoints };
+    return { phone: cleanPhone, welcomeBonus: 0, pendingReferralBonus: !!referrerPhone };
 }
 
 async function logInLoyaltyMember(phone, pin) {
@@ -4011,13 +4005,37 @@ async function awardLoyaltyPoints(order) {
 
     const settings   = getLoyaltySettings();
     const earned     = Math.floor(cleanPrice(order.totalAmount) / 1000) * settings.pointsPerThousand;
-    if (earned <= 0) return;
 
-    const newPoints = cleanPrice(member.points) + earned;
+    // 🔒 سجل آخر الطلبات يُحفظ ببطاقة العضو (الزبون ما عاد يكدر يقرأ الفواتير)
+    const entry = {
+        orderNum: order.orderNum || '', timestamp: order.timestamp || '',
+        createdTimestamp: order.createdTimestamp || Date.now(),
+        totalAmount: cleanPrice(order.totalAmount)
+    };
+    const prevRecent = Array.isArray(member.recentOrders) ? member.recentOrders : [];
+    const recent = [entry].concat(prevRecent.filter(r => String(r.orderNum) !== String(entry.orderNum))).slice(0, 15);
+
+    let bonus = 0;
+    const patch = { lastOrderDate: Date.now(), recentOrders: recent };
+    // 🎁 مكافأة الدعوة: تنضاف مرة وحدة عند أول طلب للعضو المدعو (من الكاشير فقط)
+    if (member.referredBy && !member.referralPaid) {
+        bonus = cleanPrice(settings.referralBonusNewbie);
+        patch.referralPaid = true;
+        try {
+            const refDoc = await db.collection('loyalty_members').doc(String(member.referredBy)).get();
+            if (refDoc.exists) {
+                const r = refDoc.data();
+                await db.collection('loyalty_members').doc(String(member.referredBy)).set({
+                    points: cleanPrice(r.points) + cleanPrice(settings.referralBonusReferrer),
+                    referralsCount: cleanPrice(r.referralsCount) + 1
+                }, { merge: true });
+            }
+        } catch (err) { console.warn('تعذّر منح مكافأة الدعوة:', err); }
+    }
+
+    patch.points = cleanPrice(member.points) + Math.max(0, earned) + bonus;
     try {
-        await db.collection('loyalty_members').doc(member.id).set({
-            points: newPoints, lastOrderDate: Date.now()
-        }, { merge: true });
+        await db.collection('loyalty_members').doc(member.id).set(patch, { merge: true });
     } catch (err) {
         console.warn('تعذّر منح نقاط VIP:', err);
     }
@@ -7863,93 +7881,27 @@ function renderAdminDrivers() {
           ).join('');
 }
 
-// 🔢 حساب دخول السائق بالرمز: يُنشأ تلقائياً من الأدمن (بدون ما تسوي إيميل بالكونسول)
-//    الإيميل الداخلي: d<الرمز>@driver.mim89.com  — كلمة المرور: mim89<الرمز>
-//    (السائق يكتب الرمز بس، والصفحة تبني الباقي)
-function driverCodeToCreds(code) {
-    const c = String(code || '').replace(/[^0-9]/g, '');
-    return { email: 'd' + c + '@driver.mim89.com', password: 'mim89' + c };
-}
-
-function generateDriverCode() {
-    let c = '';
-    for (let i = 0; i < 8; i++) c += Math.floor(Math.random() * 10);
-    if (c[0] === '0') c = '7' + c.slice(1);
-    return c;
-}
-
-// ينشئ (أو يربط) حساب Firebase للسائق + مستند staff بدور driver. يرجّع uid.
-async function ensureDriverAuthAccount(code, driverName) {
-    if (typeof firebase === 'undefined' || !db) throw new Error('ماكو اتصال بالسحابة');
-    const creds = driverCodeToCreds(code);
-    let secApp = null;
-    try { secApp = firebase.apps.find(a => a.name === 'drvCreate') || null; } catch (_) {}
-    if (!secApp) secApp = firebase.initializeApp(firebase.app().options, 'drvCreate');
-    const secAuth = secApp.auth();
-    let uid;
-    try {
-        const cred = await secAuth.createUserWithEmailAndPassword(creds.email, creds.password);
-        uid = cred.user.uid;
-    } catch (e) {
-        if (e && e.code === 'auth/email-already-in-use') {
-            const cred = await secAuth.signInWithEmailAndPassword(creds.email, creds.password);
-            uid = cred.user.uid;
-        } else { throw e; }
-    }
-    try { await secAuth.signOut(); } catch (_) {}
-    await db.collection('staff').doc(uid).set({
-        role: 'driver', name: driverName, createdAt: Date.now(), viaDriverCode: true
-    }, { merge: true });
-    return uid;
-}
-
-// يعطّل دخول رمز قديم (نحذف مستند staff حتى ما يبقى له أي صلاحية)
-async function revokeDriverAuthAccount(uid) {
-    if (!uid || !db) return;
-    try { await db.collection('staff').doc(String(uid)).delete(); } catch (e) { console.warn('revoke driver', e); }
-}
-
-function validateDriverCode(code) {
-    return /^[0-9]{8}$/.test(String(code || '').trim());
-}
-
 // تعيين/تعديل رمز دخول سائق موجود مسبقاً
-async function setDriverPin(driverId) {
+function setDriverPin(driverId) {
     const drivers = getData('sys_drivers') || [];
     const driver  = drivers.find(d => String(d.id) === String(driverId));
     if (!driver) return;
-    const suggested = generateDriverCode();
-    const newPin = prompt('🔒 رمز دخول جديد لـ "' + driver.name + '" (8 أرقام).\nمقترح جاهز، أو اكتب رمزك:', suggested);
+    const newPin = prompt('🔒 رمز دخول جديد لـ "' + driver.name + '":', driver.pin || '');
     if (newPin === null) return;
-    if (!validateDriverCode(newPin)) return alert('⚠️ الرمز لازم يكون 8 أرقام بالضبط (حماية للنظام).');
-    try {
-        const uid = await ensureDriverAuthAccount(newPin.trim(), driver.name);
-        if (driver.authUid && driver.authUid !== uid) await revokeDriverAuthAccount(driver.authUid);
-        driver.authUid = uid;
-    } catch (e) {
-        return alert('⚠️ تعذّر إنشاء حساب الدخول: ' + (e.message || e.code || e));
-    }
+    if (!newPin.trim()) return alert('⚠️ الرمز ما يصير فاضي.');
     driver.pin = newPin.trim();
     setData('sys_drivers', drivers);
     renderAdminDrivers();
-    alert('✅ تم تحديث رمز ' + driver.name + '\nالرمز: ' + driver.pin + '\nأعطه للسائق، يكتبه مرة وحدة بصفحته.');
+    alert('✅ تم تحديث رمز ' + driver.name);
 }
 
-async function saveDeliveryDriver() {
+function saveDeliveryDriver() {
     const name  = document.getElementById('driverNameInput')?.value.trim();
     const phone = document.getElementById('driverPhoneInput')?.value.trim();
-    let   pin   = document.getElementById('driverPinInput')?.value.trim();
+    const pin   = document.getElementById('driverPinInput')?.value.trim();
     if (!name) return alert("⚠️ أدخل اسم السائق!");
-    if (!pin)  pin = generateDriverCode();   // إذا تركته فاضي نولّد رمز تلقائي
-    if (!validateDriverCode(pin)) return alert("⚠️ الرمز لازم يكون 8 أرقام بالضبط، أو اتركه فاضي حتى يتولّد تلقائياً.");
-    let uid;
-    try {
-        uid = await ensureDriverAuthAccount(pin, name);
-    } catch (e) {
-        return alert('⚠️ تعذّر إنشاء حساب الدخول: ' + (e.message || e.code || e));
-    }
     const drivers = getData('sys_drivers') || [];
-    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '', pin, authUid: uid });
+    drivers.push({ id: 'drv_' + Date.now(), name, phone: phone || '', pin });
     setData('sys_drivers', drivers);
     if (document.getElementById('driverPinInput'))
         document.getElementById('driverPinInput').value = '';
@@ -7958,15 +7910,12 @@ async function saveDeliveryDriver() {
     if (document.getElementById('driverPhoneInput'))
         document.getElementById('driverPhoneInput').value = '';
     renderAdminDrivers();
-    alert("✅ تم إضافة السائق!\nرمز دخوله: " + pin + "\nأعطه إياه، يكتبه مرة وحدة بصفحته.");
+    alert("✅ تم إضافة السائق!");
 }
 
-async function deleteDriver(id) {
+function deleteDriver(id) {
     if (!confirm("حذف هذا السائق؟")) return;
-    const all = getData('sys_drivers') || [];
-    const d = all.find(x => String(x.id) === String(id));
-    if (d && d.authUid) await revokeDriverAuthAccount(d.authUid);   // يلغي رمزه فوراً
-    let drivers = all.filter(x => String(x.id) !== String(id));
+    let drivers = (getData('sys_drivers')||[]).filter(d => String(d.id) !== String(id));
     setData('sys_drivers', drivers);
     renderAdminDrivers();
 }
