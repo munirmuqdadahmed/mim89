@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1825';
+const MIM89_APP_VERSION = '1826';
 
 /* ==========================================
    المتغيرات العامة
@@ -6028,6 +6028,7 @@ function listenForIncomingOrders() {
 
     const processOrdersList = (ordersList) => {
         let unhandledCount = 0;
+        let newCount = 0;          // طلبات جديدة لم تُنقل للكاشير بعد (هي فقط تستدعي التنبيه)
         let html = '';
         let lastIncomingOrder = null;
 
@@ -6068,7 +6069,10 @@ function listenForIncomingOrders() {
                 const orderKey = ord.docId || ord.id || ('temp_' + Math.random());
                 knownOrderIds.add(orderKey);
                 html += generateOrderCardHTML(ord, orderKey);
-                lastIncomingOrder = ord;
+                if (!st || st === 'جديد' || st === 'new') {
+                    newCount++;
+                    lastIncomingOrder = ord;
+                }
             }
         });
 
@@ -6083,7 +6087,9 @@ function listenForIncomingOrders() {
 
         if (unhandledCount > 0) {
             if (badge) { badge.innerText = unhandledCount; badge.style.display = 'inline-block'; }
+        } else if (badge) { badge.style.display = 'none'; }
 
+        if (newCount > 0) {
             if (alertBanner && lastIncomingOrder) {
                 const phone   = String(lastIncomingOrder.phone ||
                     lastIncomingOrder.customerPhone || '-');
@@ -6117,7 +6123,6 @@ function listenForIncomingOrders() {
             }
             startContinuousAlert();
         } else {
-            if (badge) badge.style.display = 'none';
             if (alertBanner) alertBanner.style.display = 'none';
             stopContinuousAlert();
         }
@@ -6140,6 +6145,18 @@ function listenForIncomingOrders() {
 function loadIncomingCallToPos(docId, orderId, phone, name,
                                 area, address, itemsEncodedStr,
                                 orderType, deliveryFee) {
+    // 🛡️ منع تكرار الفاتورة: لو هذا الطلب نُقل للكاشير أو صدرت له فاتورة قبل، نسأل أول
+    try {
+        const cached = (window.mim89IncomingCache || {})[String(docId)] || {};
+        const cst = cached.status || '';
+        const alreadyMoved = cst === 'مقبول وكاشير' || cst === 'قيد التحضير' || cst === 'خرج للتوصيل';
+        const hasInvoice = (getData('sys_completed_orders') || [])
+            .some(o => o.webOrderDocId && String(o.webOrderDocId) === String(docId));
+        if ((alreadyMoved || hasInvoice) &&
+            !confirm('⚠️ هذا الطلب نُقل للكاشير' + (hasInvoice ? ' وصدرت له فاتورة' : '') +
+                     ' من قبل.\nإذا تنقله مرة ثانية راح تتكرر الفاتورة والطباعة.\n\nمتأكد تريد نقله مرة ثانية؟'))
+            return;
+    } catch (_) {}
     // الانتقال لتبويب البيع المباشر
     const btnDirect = document.querySelector(".pos-sidebar .toggle-btn");
     switchCashierTab('tabPosDirect', btnDirect);
@@ -6284,6 +6301,7 @@ function generateOrderCardHTML(ord, docId) {
         'خرج للتوصيل':   { t:'🛵 بالطريق',      c:'#38bdf8' }
     };
     const stInfo = statusMap[ord.status||''] || { t: ord.status||'جديد', c:'#888' };
+    const isMoved = !!ord.status && ord.status !== 'جديد' && ord.status !== 'new';
 
     return '<div id="order_card_' + safeDocId + '" ' +
         'style="background:#111116;border:1px solid ' +
@@ -6313,11 +6331,11 @@ function generateOrderCardHTML(ord, docId) {
         '</div>' +
         '<div style="display:flex;gap:5px;margin-bottom:6px;">' +
         '<button class="gold-btn btn-sm" ' +
-        'style="flex:1;background:#10b981;color:#fff;border:none;" ' +
+        'style="flex:1;' + (isMoved ? 'background:#2a2a33;color:#9ca3af;border:1px dashed #555;' : 'background:#10b981;color:#fff;border:none;') + '" ' +
         'onclick="loadIncomingCallToPos(\'' + safeDocId + '\',\'' + safeOrdId +
         '\',\'' + rawPhone + '\',\'' + safeName + '\',\'' + area + '\',\'' +
         addr + '\',\'' + encoded + '\',\'' + oType + '\',' + dFee + ')">' +
-        '📥 نقل للكاشير</button>' +
+        (isMoved ? '✅ منقول (نقل مرة ثانية؟)' : '📥 نقل للكاشير') + '</button>' +
         '<button class="gold-btn btn-sm" ' +
         'style="flex:1;background:#ef4444;color:#fff;border:none;" ' +
         'onclick="cancelIncomingOrder(\'' + safeDocId + '\',\'' + safeOrdId + '\')">' +
