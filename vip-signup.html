@@ -130,8 +130,8 @@
 
             try {
                 const result = await signUpLoyaltyMember(name, phone, birthdate, gender, pin, referrer);
-                if (result.welcomeBonus > 0) {
-                    alert('🎉 مبروك! حصلت على ' + result.welcomeBonus + ' نقطة ترحيبية بفضل دعوة صديقك!');
+                if (result.pendingReferralBonus) {
+                    alert('🎉 مبروك! النقاط الترحيبية بفضل دعوة صديقك راح تنضاف لبطاقتك مع أول طلب لك.');
                 }
                 window.location.href = 'vip-card.html';
             } catch (err) {
