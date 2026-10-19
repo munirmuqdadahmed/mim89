@@ -1224,17 +1224,16 @@
         if (type === 'delivery' && typeof db !== 'undefined' && db) {
             (async () => {
                 try {
-                    let orderNumSeq = 1;
+                    // 🔒 رقم الطلب: نقرأ عدّاد الرقم اليومي (مسموح للزبون قراءته فقط) بدل قراءة
+                    // كل فواتير اليوم (صارت ممنوعة لغير الموظفين حمايةً لبيانات الزبائن)
+                    let orderNumSeq = 101;
                     try {
-                        const todaySnap = await db.collection('completed_orders')
-                            .where('dateDate', '==', (typeof getTodayString === 'function' ? getTodayString() : ''))
-                            .get({ source: 'server' });
-                        let maxNum = 0;
-                        todaySnap.forEach(doc => {
-                            const n = cleanPrice(doc.data().orderNum);
-                            if (n > maxNum) maxNum = n;
-                        });
-                        orderNumSeq = maxNum + 1;
+                        const today = (typeof getTodayString === 'function' ? getTodayString() : '');
+                        const cDoc = await db.collection('system_counters').doc('daily_order_counter').get({ source: 'server' });
+                        if (cDoc.exists) {
+                            const cd = cDoc.data() || {};
+                            if (cd.date === today) orderNumSeq = (cleanPrice(cd.lastNumber) || 100) + 1;
+                        }
                     } catch (_) {}
 
                     const gpsLoc = typeof getCapturedCustomerGpsLocation === 'function'
