@@ -675,9 +675,9 @@
                 <i class="fa-solid fa-mobile-screen"></i> 🆕 صفحة السائق
             </h4>
             <p class="hint" style="margin-bottom:8px;line-height:1.7;">
-                أرسل هذا الرابط لكل سائق (يحفظه بموبايله). يدخل باسمه ورمز
-                الدخول الخاص فيه (تحدده أنت بالأسفل)، ويشوف طلباته الحالية
-                بذمته ويأكد استلامها.
+                أرسل هذا الرابط لكل سائق (يحفظه بموبايله). يدخل بإيميله
+                وكلمة المرور الخاصة فيه، ويشوف طلباته الحالية بذمته،
+                ويأكد استلامها وتسليمها.
             </p>
             <div style="background:#0d0d11;padding:8px;border-radius:6px;
                         font-family:monospace;font-size:0.82rem;color:#10b981;
@@ -692,12 +692,12 @@
             <input type="text" id="driverPhoneInput" class="gold-input-inline"
                    placeholder="رقم الهاتف" style="margin-bottom:8px;">
             <input type="text" id="driverPinInput" class="gold-input-inline"
-                   placeholder="رمز الدخول (8 أرقام) - اتركه فاضي ويتولّد تلقائي" style="margin-bottom:8px;">
+                   placeholder="رمز (اختياري - للتوثيق فقط)" style="margin-bottom:8px;">
             <button onclick="saveDeliveryDriver()" class="gold-btn btn-block"
                     style="margin-top:8px;">حفظ السائق</button>
             <p class="hint" style="margin-top:6px;">
-                🔒 رمز الدخول هذا هو اللي يستخدمه السائق (مع اسمه) بصفحته
-                الخاصة - أعطه لهذا السائق تحديداً بس، ولا تشاركه.
+                🔒 دخول السائق لصفحته يتم بإيميل وكلمة مرور (حساب يُنشأ له من
+                Firebase بدور driver). الاسم هنا لازم يطابق اسمه بحسابه تماماً.
             </p>
         </div>
         <div class="card">
@@ -2068,7 +2068,7 @@
 
         <!-- طلبات الموظفين (سلف/إجازات) -->
         <!-- 🆕 طلبات الموظفين المعلّقة (سلف وإجازات) -->
-        <div class="card" style="max-width:900px;margin:0 auto 14px;border-color:#f59e0b;">
+        <div class="card" id="empRequestsCard" style="max-width:900px;margin:0 auto 14px;border-color:#f59e0b;display:none;">
             <h4 style="color:#f59e0b;margin-bottom:10px;">
                 📋 طلبات الموظفين
                 <span id="empPendingRequestsCount" style="font-size:0.75rem;color:#888;"></span>
@@ -2116,239 +2116,79 @@
 
         </details>
 
-        <!-- إعدادات (نادراً تتغير) -->
-        <details class="home-more" style="max-width:900px;margin:0 auto 14px;">
-            <summary>⚙️ إعدادات الموظفين (ساعات الدوام + موقع المطعم)</summary>
-        <!-- 🆕 إعداد ساعات الدوام القياسية - أساس حساب راتب الساعة -->
-        <div class="card" style="margin:10px 0 0;border-color:#38bdf8;">
-            <h4 style="color:#38bdf8;margin-bottom:8px;">⏱️ ساعات الدوام القياسية باليوم</h4>
-            <p class="hint" style="margin-bottom:8px;">
-                💡 هذا الرقم أساس حساب "راتب الساعة" لكل الموظفين: الراتب
-                الشهري ÷ 30 يوم ÷ هذا الرقم = راتب الساعة الواحدة.
-            </p>
-            <div style="display:flex;gap:8px;">
-                <input type="number" id="empStandardHours" class="gold-input-inline"
-                       placeholder="مثال: 8" style="flex:1;">
-                <button onclick="saveStandardWorkHours()" class="gold-btn"
-                        style="background:#38bdf8;color:#000;font-weight:900;">حفظ</button>
-            </div>
-        </div>
 
-        <!-- 🆕 موقع المطعم الحقيقي - للتحقق الصامت من مواقع تسجيل الحضور -->
-        <div class="card" style="margin:10px 0 0;border-color:#8b5cf6;">
-            <h4 style="color:#8b5cf6;margin-bottom:8px;">📍 موقع المطعم الحقيقي</h4>
-            <p class="hint" style="margin-bottom:8px;">
-                💡 يستخدم للتحقق الصامت: لما موظف يسجّل حضور، نقارن موقعه
-                الفعلي بهذا الموقع بدون ما يعرف هو إنه فيه فحص أصلاً. لو
-                سجّل من برا (البيت مثلاً)، يطلعلك علامة تحذير بسجله.
-            </p>
-            <label class="section-label">الطريقة 1: الصق رابط طويل فيه إحداثيات</label>
-            <div style="display:flex;gap:6px;margin-bottom:4px;">
-                <input type="text" id="restaurantGpsLinkInput" class="gold-input-inline"
-                       placeholder="رابط فيه @25.276,55.296 مثلاً"
-                       style="flex:1;direction:ltr;text-align:left;">
-                <button onclick="saveRestaurantLocation()" class="gold-btn"
-                        style="background:#8b5cf6;color:#fff;font-weight:900;white-space:nowrap;">حفظ</button>
-            </div>
-            <p class="hint" style="margin-bottom:10px;color:#f59e0b;">
-                ⚠️ الروابط المختصرة (maps.app.goo.gl) ما تنفع مباشرة - افتح
-                الرابط بالمتصفح أول، وبعدها انسخ الرابط الطويل اللي يطلع
-                بخانة العنوان فوق (يحتوي أرقام إحداثيات).
-            </p>
-            <label class="section-label">الطريقة 2 (أسهل): أدخل الإحداثيات يدوياً</label>
-            <p class="hint" style="margin-bottom:6px;">
-                افتح موقع المطعم بخرائط جوجل، اضغط مطولاً على المكان بالضبط،
-                يطلعلك رقمين (خط العرض، خط الطول) - انسخهم هنا:
-            </p>
-            <div style="display:flex;gap:6px;margin-bottom:6px;">
-                <input type="number" id="restaurantLatInput" class="gold-input-inline"
-                       placeholder="خط العرض (Latitude)" step="0.000001" style="flex:1;">
-                <input type="number" id="restaurantLngInput" class="gold-input-inline"
-                       placeholder="خط الطول (Longitude)" step="0.000001" style="flex:1;">
-                <button onclick="saveRestaurantLocationManual()" class="gold-btn"
-                        style="background:#8b5cf6;color:#fff;font-weight:900;white-space:nowrap;">حفظ</button>
-            </div>
-            <p id="restaurantLocationStatus" style="font-size:0.75rem;color:#888;"></p>
-        </div>
-
-        </details>
     </div>
 
-    <!-- 👤 نافذة تفاصيل الموظف الكاملة -->
-    <div id="employeeDetailModal" class="modal-overlay">
-        <div class="modal-body" style="max-width:550px;max-height:85vh;overflow-y:auto;">
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                        margin-bottom:12px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
-                <h4 id="empDetailTitle" style="color:#38bdf8;"></h4>
-                <button onclick="closeModal('employeeDetailModal')"
-                        class="gold-btn btn-sm" style="width:auto;">✕</button>
+    <!-- 👤 كشف حساب الموظف -->
+    <div id="empStatementModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:560px;max-height:88vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #1e1e28;padding-bottom:6px;">
+                <h4 id="empStTitle" style="color:#38bdf8;"></h4>
+                <button onclick="closeModal('empStatementModal')" class="gold-btn btn-sm" style="width:auto;">✕</button>
             </div>
 
-            <!-- تسجيل حضور اليوم -->
-            <div style="display:flex;gap:8px;margin-bottom:14px;">
-                <button id="empPresentBtn" onclick="markAttendance('present')" class="gold-btn btn-block"
-                        style="background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">
-                    ✅ حاضر اليوم
-                </button>
-                <button id="empAbsentBtn" onclick="markAttendance('absent')" class="gold-btn btn-block"
-                        style="background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;font-weight:900;">
-                    ❌ غائب اليوم
-                </button>
+            <div id="empStSummary"></div>
+
+            <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
+                <button onclick="openEmpPayModal(activeEmployeeDetailId)" class="gold-btn btn-block"
+                        style="flex:2;background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">💸 دفع سلفة / جزء من الراتب</button>
+                <button onclick="settleEmployeeAccount()" class="gold-btn btn-block"
+                        style="flex:1;background:#1a1a2a;color:#fbbf24;border:1px solid #fbbf24;font-weight:900;">✅ تصفية الحساب</button>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                <div class="info-stat-box">
-                    <div style="font-size:0.7rem;color:#888;">سلف هذا الشهر</div>
-                    <div id="empMonthAdvances" style="font-size:1.1rem;font-weight:900;color:#f59e0b;"></div>
-                </div>
-                <div class="info-stat-box">
-                    <div style="font-size:0.7rem;color:#888;">رواتب مدفوعة هذا الشهر</div>
-                    <div id="empMonthSalaryPaid" style="font-size:1.1rem;font-weight:900;color:#10b981;"></div>
-                </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-                <div class="info-stat-box">
-                    <div style="font-size:0.7rem;color:#888;">🗓️ أيام الحضور هذا الشهر</div>
-                    <div id="empDaysWorked" style="font-size:1.1rem;font-weight:900;color:#38bdf8;"></div>
-                </div>
-                <div class="info-stat-box">
-                    <div style="font-size:0.7rem;color:#888;">💵 الراتب المستحق لين الحين</div>
-                    <div id="empAccruedSalary" style="font-size:1.1rem;font-weight:900;color:#10b981;"></div>
-                </div>
+            <h5 style="color:#aaa;margin:10px 0 4px;">📜 السحوبات (من تاريخ الاستحقاق)</h5>
+            <div id="empStPayments"></div>
+
+            <h5 style="color:#aaa;margin:14px 0 4px;">➖ الخصومات</h5>
+            <div id="empStDeductions"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                <input type="number" id="empDedAmount" class="gold-input-inline" placeholder="المبلغ" style="flex:1;min-width:90px;">
+                <input type="text" id="empDedReason" class="gold-input-inline" placeholder="السبب (غياب، تأخير...)" style="flex:2;min-width:130px;">
+                <button onclick="addEmployeeDeduction()" class="gold-btn btn-sm" style="width:auto;padding:8px 12px;background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;">خصم</button>
+                <button onclick="addEmployeeAbsenceDay()" class="gold-btn btn-sm" style="width:auto;padding:8px 12px;">غياب يوم</button>
             </div>
 
-            <!-- 🆕 رصيد إضافي مستحق - لأيام/مبالغ من قبل هذا النظام (مثلاً
-                 الشهر الماضي) - مبلغ ثابت تحدده أنت، ينضاف تلقائياً على
-                 الراتب المستحق بالساعات، وما يحتاج أي شي بصفحة الموظف -->
-            <div style="border:1.5px solid #ec4899;border-radius:10px;padding:12px;
-                        background:#1f0a16;margin-bottom:14px;">
-                <h5 style="color:#ec4899;font-size:0.88rem;margin-bottom:6px;">
-                    💰 رصيد إضافي مستحق (من قبل هذا النظام)
-                </h5>
-                <p class="hint" style="margin-bottom:8px;">
-                    💡 لموظف له أيام أو مبلغ مستحق من قبل ما نبدأ نظام
-                    الساعات (مثلاً الشهر الماضي) - حدد المبلغ يدوياً هنا،
-                    وينضاف تلقائياً على راتبه المستحق فوق (عند الموظف وعندك
-                    بالأدمن)، بدون أي إضافة أو تعقيد بصفحته هو.
-                </p>
-                <div style="display:flex;gap:8px;">
-                    <input type="number" id="empCarryoverAmount" class="gold-input-inline"
-                           placeholder="المبلغ بالدينار" style="flex:1;">
-                    <button onclick="saveEmployeeCarryoverAmount()" class="gold-btn"
-                            style="background:#ec4899;color:#fff;font-weight:900;">حفظ</button>
+            <h5 style="color:#aaa;margin:14px 0 4px;">⚙️ ضبط الحساب</h5>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div>
+                    <label class="section-label">يستحق من تاريخ:</label>
+                    <input type="date" id="empPayFromInput" class="gold-input-inline">
+                </div>
+                <div>
+                    <label class="section-label">رصيد سابق (+ له / − عليه):</label>
+                    <input type="number" id="empCarryInput" class="gold-input-inline" placeholder="0">
                 </div>
             </div>
-
-            <!-- 🆕 خصم على الموظف - يحتاج سبب مكتوب، ويشوفه الموظف نفسه بشفافية -->
-            <div style="border:1.5px solid #ef4444;border-radius:10px;padding:12px;
-                        background:#2a0d0d;margin-bottom:14px;">
-                <h5 style="color:#ef4444;font-size:0.88rem;margin-bottom:6px;">
-                    ⚠️ خصم على الموظف
-                </h5>
-                <p class="hint" style="margin-bottom:8px;">
-                    💡 ينقص من راتبه المستحق هذا الشهر، ويشوفه هو نفسه
-                    بصفحته مع السبب (شفافية كاملة) - عكس الرصيد الإضافي
-                    اللي فوق (هذاك يضل مخفي عنه).
-                </p>
-                <div style="display:flex;gap:6px;margin-bottom:8px;">
-                    <button onclick="document.getElementById('empDeductionAmount').value=5000"
-                            class="gold-btn btn-sm" style="background:#1e1e28;color:#ef4444;
-                            border:1px solid #ef4444;">5,000</button>
-                    <button onclick="document.getElementById('empDeductionAmount').value=10000"
-                            class="gold-btn btn-sm" style="background:#1e1e28;color:#ef4444;
-                            border:1px solid #ef4444;">10,000</button>
-                    <button onclick="document.getElementById('empDeductionAmount').value=25000"
-                            class="gold-btn btn-sm" style="background:#1e1e28;color:#ef4444;
-                            border:1px solid #ef4444;">25,000</button>
-                    <input type="number" id="empDeductionAmount" class="gold-input-inline"
-                           placeholder="أو مبلغ آخر" style="flex:1;">
-                </div>
-                <input type="text" id="empDeductionReason" class="gold-input-inline"
-                       placeholder="السبب (مثلاً: تأخير، إتلاف مادة...)"
-                       style="margin-bottom:8px;">
-                <button onclick="applyEmployeeDeductionFromAdmin()" class="gold-btn btn-block"
-                        style="background:#ef4444;color:#fff;font-weight:900;">
-                    تطبيق الخصم
-                </button>
-                <div id="empDeductionsHistory" style="margin-top:10px;"></div>
-            </div>
-
-            <!-- 🆕 إضافة ساعات عمل يدوياً بأثر رجعي - لموظف قديم قبل هذا
-                 النظام، أو تصحيح سجل معيّن -->
-            <div style="border:1.5px solid #10b981;border-radius:10px;padding:12px;
-                        background:#0a1f16;margin-bottom:14px;">
-                <h5 style="color:#10b981;font-size:0.88rem;margin-bottom:8px;">
-                    ➕ إضافة/تعديل ساعات يدوياً
-                </h5>
-                <p class="hint" style="margin-bottom:8px;">
-                    💡 لموظف شغال من قبل هذا النظام - أدخل تاريخ واحد، أو
-                    فترة كاملة (مثلاً شهرين) بمعدل ساعات يومي تقريبي، ويتم
-                    تسجيلها كأنه داوم فعلياً كل يوم بهذي الفترة.
-                </p>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                    <div>
-                        <label class="section-label">من تاريخ:</label>
-                        <input type="date" id="manualHoursFromDate" class="gold-input-inline">
-                    </div>
-                    <div>
-                        <label class="section-label">لين تاريخ (اختياري):</label>
-                        <input type="date" id="manualHoursToDate" class="gold-input-inline">
-                    </div>
-                </div>
-                <label class="section-label">معدل ساعات العمل باليوم الواحد:</label>
-                <input type="number" id="manualHoursPerDay" class="gold-input-inline"
-                       placeholder="مثال: 8" style="margin-bottom:8px;">
-                <p class="hint" style="margin-bottom:8px;">
-                    ⚠️ لو حددت "لين تاريخ"، يسجّل نفس المعدل لكل يوم بالفترة
-                    (عدا الجمعة تلقائياً - عدّلها يدوياً لو تشتغلون كل الأيام).
-                </p>
-                <button onclick="addManualEmployeeHours()" class="gold-btn btn-block"
-                        style="background:#10b981;color:#000;font-weight:900;">
-                    <i class="fa-solid fa-clock"></i> إضافة الساعات
-                </button>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <h5 style="color:#ccc;font-size:0.85rem;">📋 سجل الحضور (آخر 30 يوم)</h5>
-                <button onclick="resetEmployeeAttendanceRecord()" class="gold-btn btn-sm"
-                        style="width:auto;padding:4px 10px;background:#3d0d0d;color:#ef4444;
-                               border:1px solid #ef4444;font-size:0.72rem;">
-                    🔄 تصفير كل السجل
-                </button>
-            </div>
-            <div id="empAttendanceHistory" style="max-height:150px;overflow-y:auto;margin-bottom:14px;"></div>
-
-            <h5 style="color:#ccc;font-size:0.85rem;margin-bottom:6px;">💰 سجل السلف والرواتب</h5>
-            <div id="empFinanceHistory" style="max-height:200px;overflow-y:auto;margin-bottom:14px;"></div>
-
-            <!-- 🆕 حاسبة التصفية النهائية - لموظف يريد يترك العمل -->
-            <div style="border:1.5px solid #38bdf8;border-radius:10px;padding:12px;background:#0a1420;">
-                <h5 style="color:#38bdf8;font-size:0.88rem;margin-bottom:8px;">
-                    🏁 حاسبة التصفية النهائية
-                </h5>
-                <p class="hint" style="margin-bottom:10px;">
-                    حدد الفترة (مثلاً من أول الشهر لين اليوم)، وتحسب لك
-                    بالضبط: أيام حضوره الفعلية × راتبه اليومي، ناقص أي
-                    سلف أو رواتب مدفوعة بنفس الفترة = الصافي المستحق له بالضبط.
-                </p>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                    <div>
-                        <label class="section-label">من تاريخ:</label>
-                        <input type="date" id="settlementFromDate" class="gold-input-inline">
-                    </div>
-                    <div>
-                        <label class="section-label">لين تاريخ:</label>
-                        <input type="date" id="settlementToDate" class="gold-input-inline">
-                    </div>
-                </div>
-                <button onclick="calculateEmployeeSettlement()" class="gold-btn btn-block"
-                        style="background:#38bdf8;color:#000;font-weight:900;margin-bottom:10px;">
-                    🧮 احسب التصفية
-                </button>
-                <div id="settlementResult"></div>
-            </div>
+            <button onclick="saveEmployeeAccountSettings()" class="gold-btn btn-block" style="margin-top:8px;">حفظ الضبط</button>
         </div>
     </div>
+
+    <!-- 💸 نافذة دفع سلفة / راتب من الأدمن (خارج درج الكاشير) -->
+    <div id="empPayModal" class="modal-overlay">
+        <div class="modal-body" style="max-width:420px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h4 id="empPayTitle" style="color:#10b981;"></h4>
+                <button onclick="closeModal('empPayModal')" class="gold-btn btn-sm" style="width:auto;">✕</button>
+            </div>
+            <input type="hidden" id="empPayEmpId">
+            <p id="empPayInfo" class="hint" style="margin-bottom:8px;"></p>
+            <label class="section-label">نوع الدفعة:</label>
+            <select id="empPayType" class="gold-input-inline" style="margin-bottom:8px;">
+                <option value="سلفة">سلفة</option>
+                <option value="جزء من الراتب">جزء من الراتب</option>
+                <option value="راتب كامل">راتب كامل / المتبقي</option>
+            </select>
+            <label class="section-label">المبلغ (د.ع):</label>
+            <input type="number" id="empPayAmount" class="gold-input-inline" style="margin-bottom:8px;">
+            <label class="section-label">التاريخ:</label>
+            <input type="date" id="empPayDate" class="gold-input-inline" style="margin-bottom:8px;">
+            <label class="section-label">ملاحظة (اختياري):</label>
+            <input type="text" id="empPayNote" class="gold-input-inline" style="margin-bottom:8px;">
+            <p class="hint" style="margin-bottom:10px;color:#10b981;">💡 هذي الدفعة من الأدمن (خارج درج الكاشير): ما تنخصم من النقد المتوقع بالدرج، وتنحسب بتكاليف الخزينة.</p>
+            <button onclick="saveEmployeePayment()" class="gold-btn btn-block" style="background:#10b981;color:#000;font-weight:900;">✅ تسجيل الدفعة</button>
+        </div>
+    </div>
+
 
     <style>
         .info-stat-box {
@@ -2758,8 +2598,6 @@ function switchAdminTab(tabId, btn) {
     if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function') {
         renderEmployeesTab();
         if (typeof renderEmpPendingRequests === 'function') renderEmpPendingRequests();
-        if (typeof loadStandardWorkHours === 'function') loadStandardWorkHours();
-        if (typeof loadRestaurantLocationStatus === 'function') loadRestaurantLocationStatus();
     }
     if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
         renderInvoiceManagerList();
@@ -4289,91 +4127,6 @@ function deleteInvoiceFromManager(orderId) {
 /* ==========================================
    📋 طلبات الموظفين - عرض وموافقة/رفض
    ========================================== */
-// 🆕 حفظ موقع المطعم الحقيقي من رابط خرائط جوجل
-function saveRestaurantLocation() {
-    const link = document.getElementById('restaurantGpsLinkInput').value.trim();
-    if (!link) return alert('⚠️ الصق رابط الموقع أول.');
-
-    if (isShortenedMapsLink(link)) {
-        return alert('⚠️ هذا رابط مختصر (maps.app.goo.gl) وما يحتوي إحداثيات بذاته.\n\n' +
-            'افتحه بالمتصفح أول، وانسخ الرابط الطويل اللي يطلع بخانة العنوان ' +
-            '(يحتوي أرقام مثل @25.276,55.296)، أو استخدم "الطريقة 2" بالأسفل ' +
-            'وأدخل خط العرض وخط الطول مباشرة - أسهل وأضمن.');
-    }
-
-    const loc = parseGpsLinkToLatLng(link);
-    if (!loc) return alert('⚠️ تعذّر قراءة الإحداثيات من هذا الرابط. جرب "الطريقة 2" بالأسفل وأدخلها يدوياً.');
-
-    saveRestaurantLocationValue(loc);
-}
-
-// 🆕 حفظ الموقع من إدخال يدوي مباشر - الطريقة الأضمن، تشتغل دايماً
-function saveRestaurantLocationManual() {
-    const lat = parseFloat(document.getElementById('restaurantLatInput').value);
-    const lng = parseFloat(document.getElementById('restaurantLngInput').value);
-
-    if (isNaN(lat) || isNaN(lng)) return alert('⚠️ أدخل خط العرض وخط الطول (أرقام).');
-    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return alert('⚠️ الأرقام غير منطقية لموقع جغرافي حقيقي.');
-
-    // 🆕 تحقق من إن الإحداثيات منطقية لموقع بالعراق - يكشف فوراً أخطاء
-    // شائعة زي تبديل خط العرض بخط الطول بالغلط (سبب رئيسي لمسافات وهمية
-    // ضخمة تطلع بالتقارير لاحقاً)
-    const looksLikeIraq = lat >= 28 && lat <= 38 && lng >= 38 && lng <= 50;
-    if (!looksLikeIraq) {
-        const swapped = confirm(
-            '⚠️ هذي الإحداثيات ما تبين ضمن نطاق العراق المعتاد.\n\n' +
-            'خط العرض: ' + lat + ' | خط الطول: ' + lng + '\n\n' +
-            'احتمال كبير إنك بدّلت الرقمين بالغلط (خط العرض مكان الطول). ' +
-            'اضغط "موافق" حتى أبدّلهم تلقائياً وأحفظهم صح، أو "إلغاء" لتصحيحهم بنفسك.'
-        );
-        if (swapped) {
-            saveRestaurantLocationValue({ lat: lng, lng: lat });
-        } else {
-            return;
-        }
-    } else {
-        saveRestaurantLocationValue({ lat, lng });
-    }
-
-    document.getElementById('restaurantLatInput').value = '';
-    document.getElementById('restaurantLngInput').value = '';
-}
-
-function saveRestaurantLocationValue(loc) {
-    let settings = getData('sys_employee_settings') || {};
-    settings.restaurantLocation = loc;
-    setData('sys_employee_settings', settings);
-    document.getElementById('restaurantGpsLinkInput').value = '';
-    loadRestaurantLocationStatus();
-    alert('✅ تم حفظ موقع المطعم. الحين أي تسجيل حضور بعيد عنه بيتعلّم تلقائياً.');
-}
-
-function loadRestaurantLocationStatus() {
-    const statusEl = document.getElementById('restaurantLocationStatus');
-    if (!statusEl) return;
-    const loc = getRestaurantLocation();
-    if (!loc) {
-        statusEl.innerHTML = '⚠️ ماكو موقع مسجّل بعد - التحقق من الموقع غير مفعّل حالياً.';
-        return;
-    }
-    const mapsLink = 'https://www.google.com/maps?q=' + loc.lat + ',' + loc.lng;
-    statusEl.innerHTML = '✅ الموقع مسجّل حالياً (' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ') — ' +
-        '<a href="' + mapsLink + '" target="_blank" style="color:#38bdf8;text-decoration:underline;">' +
-        '🗺️ تحقق منه بخرائط جوجل</a>';
-}
-
-// 🆕 حفظ وتحميل إعداد ساعات الدوام القياسية
-function saveStandardWorkHours() {
-    const val = cleanPrice(document.getElementById('empStandardHours').value);
-    if (val <= 0 || val > 24) return alert('⚠️ أدخل رقم منطقي بين 1 و24 ساعة.');
-    setData('sys_employee_settings', { standardHoursPerDay: val });
-    alert('✅ تم الحفظ. راتب الساعة الحين يُحسب على أساس ' + val + ' ساعة باليوم.');
-}
-function loadStandardWorkHours() {
-    const input = document.getElementById('empStandardHours');
-    if (input) input.value = getStandardWorkHoursPerDay();
-}
-
 // 🆕 فحص أي تسجيل حضور مشبوه (من خارج موقع المطعم) بآخر 7 أيام، وعرضه
 // كتنبيه واضح بالصفحة الرئيسية - يوريك مين سجّل حضور وهو مو فعلياً بالمحل
 // 🆕 عرض حالة جهاز الكاشير الحية - تعرف من أي مكان هل الكاشير شغّال
@@ -4550,6 +4303,13 @@ function renderEmployeesTab() {
     });
     if (needsSave) setData('sys_employees', employees);
 
+    // كرت طلبات الموظفين يظهر فقط لو في طلبات معلّقة فعلاً
+    const reqCard = document.getElementById('empRequestsCard');
+    if (reqCard) {
+        const pend = (getData('sys_employee_requests') || []).filter(r => r.status === 'pending').length;
+        reqCard.style.display = pend > 0 ? '' : 'none';
+    }
+
     const sumBox = document.getElementById('empSummaryBox');
     if (employees.length === 0) {
         if (sumBox) sumBox.innerHTML = '';
@@ -4559,55 +4319,34 @@ function renderEmployeesTab() {
 
     const esc = t => String(t === undefined || t === null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const fmt = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
-    const today = getTodayString();
-    const thisMonth = today.slice(0, 7);
-    const attendance = getData('sys_attendance') || [];
-    const expenses = getData('sys_expenses') || [];
-    const salaries = getData('sys_salaries') || [];
+    let totSalary = 0, totAccrued = 0, totWithdrawn = 0, totRemain = 0;
 
-    let totAccrued = 0, totAdv = 0, totPaid = 0, totNet = 0;
+    const stat = (label, val, color) =>
+        '<div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;padding:7px;text-align:center;">' +
+        '<div style="font-size:0.66rem;color:#888;margin-bottom:2px;">' + label + '</div>' +
+        '<div style="font-size:0.92rem;font-weight:900;color:' + color + ';">' + val + '</div></div>';
 
     const cards = employees.map(emp => {
-        const adv = expenses.filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
-            .reduce((s,e) => s + cleanPrice(e.amount), 0);
-        const paid = salaries.filter(x => x.employee === emp.name && String(x.dateDate).slice(0,7) === thisMonth)
-            .reduce((s,x) => s + cleanPrice(x.amount), 0);
-        const accrued = getEmployeeAccruedSalary(emp);
-        const net = accrued - adv - paid;
-        const summary = getEmployeeMonthSummary(emp.id);
-        totAccrued += accrued; totAdv += adv; totPaid += paid; totNet += net;
-
-        const todayRec = attendance.find(a => a.employeeId === emp.id && a.dateDate === today);
-        const badge = todayRec
-            ? (todayRec.status === 'present'
-                ? '<span style="background:#0d3d1a;color:#10b981;font-size:0.68rem;padding:2px 8px;border-radius:8px;">✅ حاضر</span>'
-                : '<span style="background:#3d0d0d;color:#ef4444;font-size:0.68rem;padding:2px 8px;border-radius:8px;">❌ غائب</span>')
-            : '<span style="background:#1e1e28;color:#888;font-size:0.68rem;padding:2px 8px;border-radius:8px;">⏳ لم يسجّل</span>';
-
-        const stat = (label, val, color) =>
-            '<div style="background:#0d0d11;border:1px solid #1e1e28;border-radius:8px;padding:7px;text-align:center;">' +
-            '<div style="font-size:0.66rem;color:#888;margin-bottom:2px;">' + label + '</div>' +
-            '<div style="font-size:0.92rem;font-weight:900;color:' + color + ';">' + val + '</div></div>';
-
+        const st = getEmployeeStatement(emp);
+        totSalary += st.salary; totAccrued += st.accrued; totWithdrawn += st.withdrawn; totRemain += st.remaining;
         return '<div style="background:#111116;border:1px solid #24392c;border-radius:12px;padding:12px;margin-bottom:10px;">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
             '<div><strong style="color:#38bdf8;font-size:1rem;">' + esc(emp.name) + '</strong>' +
             (emp.role ? ' <span style="color:#888;font-size:0.8rem;">— ' + esc(emp.role) + '</span>' : '') +
-            '<div style="margin-top:4px;">' + badge +
-            (emp.phone ? ' <span style="font-size:0.72rem;color:#999;direction:ltr;display:inline-block;">' + esc(emp.phone) + '</span>' : '') +
-            '</div></div>' +
-            '<div style="text-align:left;"><div style="font-size:0.66rem;color:#888;">الراتب الشهري</div>' +
-            '<strong style="color:#fbbf24;">' + fmt(emp.monthlySalary) + '</strong></div></div>' +
+            '<div style="font-size:0.72rem;color:#999;margin-top:3px;">يستحق من: <strong style="color:#ddd;">' + esc(st.from) + '</strong> (' + st.days + ' يوم)' +
+            (emp.phone ? ' · <span style="direction:ltr;display:inline-block;">' + esc(emp.phone) + '</span>' : '') + '</div></div>' +
+            '<div style="text-align:left;"><div style="font-size:0.66rem;color:#888;">الراتب الأساسي</div>' +
+            '<strong style="color:#fbbf24;">' + fmt(st.salary) + '</strong></div></div>' +
             '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin-bottom:10px;">' +
-            stat('⏱️ ساعات الشهر', summary.totalHours + ' س', '#38bdf8') +
-            stat('💵 مستحق لحد الآن', fmt(accrued), '#10b981') +
-            stat('📤 سلف', fmt(adv), '#f59e0b') +
-            stat('✅ رواتب مدفوعة', fmt(paid), '#a3e635') +
-            stat('🧮 الصافي المتبقي', fmt(net), net < 0 ? '#ef4444' : '#fbbf24') +
+            stat('💵 المستحق', fmt(st.accrued), '#10b981') +
+            stat('📤 المسحوب', fmt(st.withdrawn), '#f59e0b') +
+            stat('🧮 المتبقي له', fmt(st.remaining), st.remaining < 0 ? '#ef4444' : '#fbbf24') +
             '</div>' +
             '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+            '<button onclick="openEmpPayModal(\'' + emp.id + '\')" class="gold-btn btn-sm" ' +
+            'style="flex:2;padding:7px 10px;background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">💸 دفع سلفة / راتب</button>' +
             '<button onclick="openEmployeeDetailModal(\'' + emp.id + '\')" class="gold-btn btn-sm" ' +
-            'style="flex:2;padding:7px 10px;background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;">📋 التفاصيل والسلف والخصم</button>' +
+            'style="flex:2;padding:7px 10px;background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;">📋 كشف الحساب</button>' +
             '<button onclick="editEmployee(\'' + emp.id + '\')" class="gold-btn btn-sm" style="flex:1;padding:7px 10px;">تعديل</button>' +
             '<button onclick="deleteEmployee(\'' + emp.id + '\')" class="gold-btn btn-danger btn-sm" style="flex:1;padding:7px 10px;">حذف</button>' +
             '</div></div>';
@@ -4619,8 +4358,8 @@ function renderEmployeesTab() {
             '<div style="font-size:0.7rem;color:#888;">' + label + '</div>' +
             '<div style="font-size:1.05rem;font-weight:900;color:' + color + ';">' + fmt(val) + '</div></div>';
         sumBox.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;">' +
-            tile('مستحق للجميع', totAccrued, '#10b981') + tile('سلف الشهر', totAdv, '#f59e0b') +
-            tile('رواتب مدفوعة', totPaid, '#a3e635') + tile('الصافي المتبقي', totNet, '#fbbf24') + '</div>';
+            tile('مجموع الرواتب الأساسية', totSalary, '#38bdf8') + tile('مستحق للجميع', totAccrued, '#10b981') +
+            tile('مسحوب', totWithdrawn, '#f59e0b') + tile('المتبقي للجميع', totRemain, '#fbbf24') + '</div>';
     }
     box.innerHTML = cards.join('');
 }
@@ -4708,382 +4447,205 @@ function deleteEmployee(id) {
     renderEmployeesTab();
 }
 
+/* ==========================================
+   📋 كشف حساب الموظف + دفعات الأدمن (خارج درج الكاشير)
+   ========================================== */
+function findEmployeeById(id) {
+    return (getData('sys_employees') || []).find(e => e.id === id) || null;
+}
+
 function openEmployeeDetailModal(id) {
-    const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === id);
+    const emp = findEmployeeById(id);
     if (!emp) return;
     activeEmployeeDetailId = id;
-
-    document.getElementById('empDetailTitle').innerText =
-        '👤 ' + emp.name + (emp.role ? ' — ' + emp.role : '');
-
-    renderEmployeeFinanceStats(emp);
-    renderEmployeeAttendanceHistory(emp);
-    renderEmployeeFinanceHistory(emp);
-
-    // 🆕 تواريخ افتراضية لحاسبة التصفية: من أول الشهر الحالي لين اليوم
-    const today = getTodayString();
-    document.getElementById('settlementFromDate').value = today.slice(0,8) + '01';
-    document.getElementById('settlementToDate').value = today;
-    document.getElementById('settlementResult').innerHTML = '';
-
-    openModal('employeeDetailModal');
+    refreshEmpStatement();
+    openModal('empStatementModal');
 }
 
-// 🆕 تطبيق خصم على الموظف الحالي مباشرة من نافذة تفاصيله
-async function applyEmployeeDeductionFromAdmin() {
-    if (!activeEmployeeDetailId) return;
-    const amount = cleanPrice(document.getElementById('empDeductionAmount').value);
-    const reason = document.getElementById('empDeductionReason').value.trim();
+function refreshEmpStatement() {
+    const emp = findEmployeeById(activeEmployeeDetailId);
+    const sumBox = document.getElementById('empStSummary');
+    if (!emp || !sumBox) return;
+    const esc = t => String(t === undefined || t === null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const fmt = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
+    const st = getEmployeeStatement(emp);
 
-    if (!amount || amount <= 0) return alert('⚠️ أدخل مبلغ الخصم.');
-    if (!reason) return alert('⚠️ لازم تكتب سبب الخصم (يشوفه الموظف نفسه).');
+    document.getElementById('empStTitle').innerText = '👤 ' + emp.name + (emp.role ? ' — ' + emp.role : '');
 
-    const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    const row = (label, val, color, bold) =>
+        '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #24392c;font-size:' + (bold ? '1rem' : '0.85rem') + ';">' +
+        '<span style="color:#aaa;">' + label + '</span><strong style="color:' + color + ';">' + val + '</strong></div>';
+    sumBox.innerHTML =
+        '<div style="background:#111116;border:1px solid #24392c;border-radius:10px;padding:10px;">' +
+        row('الراتب الشهري الأساسي', fmt(st.salary) + ' د.ع', '#fbbf24') +
+        row('يستحق من تاريخ', esc(st.from) + ' (' + st.days + ' يوم)', '#ddd') +
+        row('راتبه عن هذي المدة', fmt(st.earned) + ' د.ع', '#10b981') +
+        (st.carry ? row('رصيد سابق', (st.carry > 0 ? '+' : '') + fmt(st.carry) + ' د.ع', '#38bdf8') : '') +
+        (st.dedTotal ? row('الخصومات', '−' + fmt(st.dedTotal) + ' د.ع', '#ef4444') : '') +
+        row('إجمالي المستحق', fmt(st.accrued) + ' د.ع', '#10b981', true) +
+        row('سلف من درج الكاشير', '−' + fmt(st.advTotal) + ' د.ع', '#f59e0b') +
+        row('دفعات من الأدمن', '−' + fmt(st.payTotal) + ' د.ع', '#f59e0b') +
+        row('🧮 المتبقي له', fmt(st.remaining) + ' د.ع', st.remaining < 0 ? '#ef4444' : '#fbbf24', true) +
+        (st.remaining < 0 ? '<p class="hint" style="color:#ef4444;margin-top:6px;">⚠️ سحب أكثر من استحقاقه لحد الآن (سيُحسب عليه).</p>' : '') +
+        '</div>';
+
+    // السحوبات: سلف الكاشير + دفعات الأدمن
+    const recs = []
+        .concat(st.advances.map(r => ({ r, kind: 'سلفة', label: 'سلفة (من درج الكاشير)', color: '#f59e0b' })))
+        .concat(st.payments.map(r => ({ r, kind: 'راتب',
+            label: esc(r.type || 'دفعة') + (r.external ? ' (من الأدمن)' : ' (من الكاشير)'), color: r.external ? '#10b981' : '#f59e0b' })))
+        .sort((a, b) => cleanPrice(b.r.createdTimestamp) - cleanPrice(a.r.createdTimestamp));
+    const btn = (txt, color, fn) => '<button onclick="' + fn + '" style="background:#1e1e28;border:1px solid ' + color +
+        ';color:' + color + ';border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">' + txt + '</button>';
+    document.getElementById('empStPayments').innerHTML = recs.length === 0
+        ? '<p style="color:#666;font-size:0.78rem;text-align:center;padding:8px;">ماكو سحوبات بهذي المدة</p>'
+        : recs.map(x =>
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
+            '<span style="flex:1;">' + esc(x.r.dateDate) + ' — <span style="color:' + x.color + ';font-weight:bold;">' + x.label + '</span>' +
+            (x.r.note ? '<div style="color:#777;font-size:0.7rem;">' + esc(x.r.note) + '</div>' : '') + '</span>' +
+            '<span style="font-weight:900;color:#fbbf24;">' + fmt(x.r.amount) + '</span>' +
+            btn('✏️', '#38bdf8', 'editEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')') +
+            btn('🗑️', '#ef4444', 'deleteEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')') + '</div>').join('');
+
+    document.getElementById('empStDeductions').innerHTML = st.deductions.length === 0
+        ? '<p style="color:#666;font-size:0.78rem;text-align:center;padding:6px;">ماكو خصومات</p>'
+        : st.deductions.map(d =>
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed rgba(239,68,68,0.3);font-size:0.78rem;">' +
+            '<span style="flex:1;">' + esc(d.dateDate) + ' — ' + esc(d.reason) + '</span>' +
+            '<strong style="color:#fca5a5;">−' + fmt(d.amount) + '</strong>' +
+            btn('🗑️', '#ef4444', 'deleteEmployeeDeduction(\'' + d.id + '\')') + '</div>').join('');
+
+    document.getElementById('empPayFromInput').value = st.from;
+    document.getElementById('empCarryInput').value = emp.carryoverAmount || '';
+}
+
+function openEmpPayModal(id) {
+    const emp = findEmployeeById(id);
     if (!emp) return;
-
-    if (!confirm('تطبيق خصم ' + amount.toLocaleString('ar-IQ') + ' د.ع على ' + emp.name +
-        '\nالسبب: ' + reason + '\n\nمتأكد؟')) return;
-
-    await applyEmployeeDeduction(emp.id, emp.name, amount, reason);
-
-    document.getElementById('empDeductionAmount').value = '';
-    document.getElementById('empDeductionReason').value = '';
-    renderEmployeeFinanceStats(emp);
-    renderEmployeeDeductionsHistory(emp);
-    alert('✅ تم تطبيق الخصم.');
+    const st = getEmployeeStatement(emp);
+    document.getElementById('empPayEmpId').value = emp.id;
+    document.getElementById('empPayTitle').innerText = '💸 دفع لـ ' + emp.name;
+    document.getElementById('empPayInfo').innerText =
+        'الراتب الأساسي: ' + Math.round(st.salary).toLocaleString('ar-IQ') + ' — المتبقي له الآن: ' +
+        Math.round(st.remaining).toLocaleString('ar-IQ') + ' د.ع';
+    document.getElementById('empPayType').value = 'سلفة';
+    document.getElementById('empPayAmount').value = '';
+    document.getElementById('empPayDate').value = getTodayString();
+    document.getElementById('empPayNote').value = '';
+    openModal('empPayModal');
 }
 
-function renderEmployeeDeductionsHistory(emp) {
-    const box = document.getElementById('empDeductionsHistory');
-    if (!box) return;
-    const thisMonth = getTodayString().slice(0, 7);
-    const deductions = (getData('sys_employee_deductions') || [])
-        .filter(d => d.employeeId === emp.id && String(d.dateDate).slice(0,7) === thisMonth);
-
-    if (deductions.length === 0) { box.innerHTML = ''; return; }
-
-    box.innerHTML = '<h6 style="color:#888;font-size:0.72rem;margin-bottom:4px;">خصومات هذا الشهر:</h6>' +
-        deductions.map(d =>
-            '<div style="display:flex;justify-content:space-between;font-size:0.75rem;' +
-            'padding:3px 0;border-bottom:1px dashed rgba(239,68,68,0.3);">' +
-            '<span>' + d.dateDate + ' — ' + d.reason + '</span>' +
-            '<strong style="color:#fca5a5;">-' + cleanPrice(d.amount).toLocaleString('ar-IQ') + '</strong>' +
-            '</div>'
-        ).join('');
-}
-
-// 🆕 حفظ الرصيد الإضافي المستحق (مبلغ ثابت يدوي، مثلاً أيام الشهر
-// الماضي قبل نظام الساعات) - ينضاف تلقائياً على الراتب المستحق بالساعات
-function saveEmployeeCarryoverAmount() {
-    if (!activeEmployeeDetailId) return;
-    const amount = cleanPrice(document.getElementById('empCarryoverAmount').value);
-
-    let employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+function saveEmployeePayment() {
+    const emp = findEmployeeById(document.getElementById('empPayEmpId').value);
     if (!emp) return;
+    const type   = document.getElementById('empPayType').value;
+    const amount = cleanPrice(document.getElementById('empPayAmount').value);
+    const date   = document.getElementById('empPayDate').value || getTodayString();
+    const note   = document.getElementById('empPayNote').value.trim();
+    if (!amount || amount <= 0) return alert('⚠️ أدخل المبلغ.');
 
-    emp.carryoverAmount = amount;
-    setData('sys_employees', employees);
-    renderEmployeeFinanceStats(emp);
-    alert('✅ تم حفظ الرصيد الإضافي (' + amount.toLocaleString('ar-IQ') + ' د.ع) - انضاف تلقائياً على راتبه المستحق.');
-}
-
-function renderEmployeeFinanceStats(emp) {
-    const thisMonth = getTodayString().slice(0, 7); // "YYYY-MM"
-    const expenses  = getData('sys_expenses') || [];
-    const salaries  = getData('sys_salaries') || [];
-    const attendance = getData('sys_attendance') || [];
-
-    const monthAdvances = expenses
-        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
-        .reduce((s,e) => s + cleanPrice(e.amount), 0);
-
-    const monthSalaryPaid = salaries
-        .filter(s => s.employee === emp.name && String(s.dateDate).slice(0,7) === thisMonth)
-        .reduce((s,x) => s + cleanPrice(x.amount), 0);
-
-    document.getElementById('empMonthAdvances').innerText = monthAdvances.toLocaleString('ar-IQ') + ' د.ع';
-    document.getElementById('empMonthSalaryPaid').innerText = monthSalaryPaid.toLocaleString('ar-IQ') + ' د.ع';
-
-    // 🆕 تعبئة حقل الرصيد الإضافي المستحق بقيمته الحالية
-    const carryoverInput = document.getElementById('empCarryoverAmount');
-    if (carryoverInput) carryoverInput.value = cleanPrice(emp.carryoverAmount) || '';
-
-    // 🆕 عرض تاريخ الخصومات هذا الشهر
-    if (typeof renderEmployeeDeductionsHistory === 'function') renderEmployeeDeductionsHistory(emp);
-
-    // 🛠️ إصلاح جذري: نستخدم الدالة المشتركة المصلّحة (بالساعات الفعلية،
-    // مو بعدد أيام الحضور) بدل حساب مكرر هنا كان يعطي راتب يوم كامل
-    // حتى لو الموظف داوم دقيقة وحدة بس
-    const summary = getEmployeeMonthSummary(emp.id);
-    const accruedSalary = getEmployeeAccruedSalary(emp);
-
-    const daysBox = document.getElementById('empDaysWorked');
-    const accruedBox = document.getElementById('empAccruedSalary');
-    if (daysBox)    daysBox.innerText = summary.totalHours + ' ساعة (' + summary.daysPresent + ' يوم حضور)';
-    if (accruedBox) accruedBox.innerText = accruedSalary.toLocaleString('ar-IQ') + ' د.ع';
-}
-
-// 🆕 حاسبة التصفية النهائية - لموظف يريد يترك العمل: أيام حضوره الفعلية
-// خلال فترة معيّنة × الراتب اليومي، ناقص السلف المسحوبة بنفس الفترة،
-// ناقص أي راتب انصرف له أصلاً بنفس الفترة = الصافي المستحق له بالضبط
-function calculateEmployeeSettlement() {
-    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
-    if (!emp) return;
-
-    const fromDate = document.getElementById('settlementFromDate')?.value;
-    const toDate   = document.getElementById('settlementToDate')?.value || getTodayString();
-    const resultBox = document.getElementById('settlementResult');
-    if (!fromDate) { resultBox.innerHTML = '<p style="color:#ef4444;">⚠️ حدد تاريخ البداية.</p>'; return; }
-
-    const attendance = getData('sys_attendance') || [];
-    const expenses   = getData('sys_expenses') || [];
-    const salaries   = getData('sys_salaries') || [];
-
-    // 🛠️ إصلاح جذري: نحسب الساعات الفعلية المنجزة بهذي الفترة بالضبط
-    // (مو عدد أيام الحضور)، حتى لو الموظف داوم جزء من اليوم بس
-    const hoursInRange = attendance
-        .filter(a => a.employeeId === emp.id && a.status === 'present' &&
-                     a.dateDate >= fromDate && a.dateDate <= toDate)
-        .reduce((s,a) => s + (cleanPrice(a.hoursWorked) || 0), 0);
-    const presentDays = attendance.filter(a =>
-        a.employeeId === emp.id && a.status === 'present' &&
-        a.dateDate >= fromDate && a.dateDate <= toDate
-    ).length;
-
-    const advancesInRange = expenses.filter(e =>
-        e.type === 'سلفة' && e.employee === emp.name &&
-        e.dateDate >= fromDate && e.dateDate <= toDate
-    ).reduce((s,e) => s + cleanPrice(e.amount), 0);
-
-    const salaryPaidInRange = salaries.filter(s =>
-        s.employee === emp.name && s.dateDate >= fromDate && s.dateDate <= toDate
-    ).reduce((s,x) => s + cleanPrice(x.amount), 0);
-
-    // 🛠️ راتب الساعة الحقيقي: الراتب الشهري ÷ 30 يوم ÷ ساعات الدوام
-    // القياسية (إعداد قابل للتعديل، افتراضي 8) × الساعات الفعلية بالفترة
-    const hourlyRate = cleanPrice(emp.monthlySalary) / (30 * getStandardWorkHoursPerDay());
-    const earnedSalary = Math.round(hourlyRate * hoursInRange);
-    const netSettlement = earnedSalary - advancesInRange - salaryPaidInRange;
-
-    resultBox.innerHTML = `
-        <div class="info-row"><span class="lbl">الساعات الفعلية بالفترة</span><span class="val">${hoursInRange.toFixed(1)} ساعة (${presentDays} يوم حضور)</span></div>
-        <div class="info-row"><span class="lbl">الراتب المستحق عن هذي الساعات</span><span class="val" style="color:#10b981;">${earnedSalary.toLocaleString('ar-IQ')} د.ع</span></div>
-        <div class="info-row"><span class="lbl">سلف مسحوبة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${advancesInRange.toLocaleString('ar-IQ')} د.ع</span></div>
-        <div class="info-row"><span class="lbl">رواتب مصروفة بنفس الفترة</span><span class="val" style="color:#ef4444;">- ${salaryPaidInRange.toLocaleString('ar-IQ')} د.ع</span></div>
-        <div class="info-row" style="border-top:2px solid #38bdf8;margin-top:6px;padding-top:8px;">
-            <span class="lbl" style="font-weight:900;color:#fff;">${netSettlement >= 0 ? '💰 الصافي المستحق للموظف' : '⚠️ الصافي المستحق على الموظف'}</span>
-            <span class="val" style="font-size:1.1rem;color:${netSettlement >= 0 ? '#10b981' : '#ef4444'};">
-                ${Math.abs(netSettlement).toLocaleString('ar-IQ')} د.ع
-            </span>
-        </div>
-    `;
-}
-
-// 🆕 إضافة/تعديل ساعات عمل يدوياً بأثر رجعي - يدعم يوم واحد أو فترة
-// كاملة بمعدل يومي تقريبي (لموظف كان شغال قبل هذا النظام)
-async function addManualEmployeeHours() {
-    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
-    if (!emp) return;
-
-    const fromDate = document.getElementById('manualHoursFromDate').value;
-    const toDate   = document.getElementById('manualHoursToDate').value || fromDate;
-    const hoursPerDay = cleanPrice(document.getElementById('manualHoursPerDay').value);
-
-    if (!fromDate) return alert('⚠️ حدد التاريخ.');
-    if (!hoursPerDay || hoursPerDay <= 0 || hoursPerDay > 24)
-        return alert('⚠️ أدخل معدل ساعات منطقي (1-24).');
-
-    let attendance = getData('sys_attendance') || [];
-    let addedCount = 0;
-
-    const start = new Date(fromDate);
-    const end   = new Date(toDate);
-    if (end < start) return alert('⚠️ تاريخ النهاية قبل تاريخ البداية.');
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        // نتجاوز الجمعة تلقائياً كعطلة أسبوعية اعتيادية - يمكن حذف هذا
-        // الشرط لو المطعم يشتغل كل أيام الأسبوع بدون استثناء
-        if (d.getDay() === 5) continue; // 5 = الجمعة
-
-        const dateStr = d.toISOString().split('T')[0];
-        const existingIdx = attendance.findIndex(a => a.employeeId === emp.id && a.dateDate === dateStr);
-        const record = {
-            employeeId: emp.id, dateDate: dateStr, status: 'present',
-            hoursWorked: hoursPerDay, clockInTime: null, clockOutTime: null,
-            timestamp: Date.now(), isManualEntry: true
-        };
-        if (existingIdx > -1) attendance[existingIdx] = record;
-        else attendance.push(record);
-        addedCount++;
+    const st = getEmployeeStatement(emp);
+    if (amount > st.remaining) {
+        if (!confirm('المبلغ (' + amount.toLocaleString('ar-IQ') + ') أكبر من المتبقي له (' +
+            Math.round(st.remaining).toLocaleString('ar-IQ') + ' د.ع).\nيعني يصير عليه سلفة زيادة. تكمل؟')) return;
     }
 
-    setData('sys_attendance', attendance);
-    document.getElementById('manualHoursFromDate').value = '';
-    document.getElementById('manualHoursToDate').value = '';
-    document.getElementById('manualHoursPerDay').value = '';
-
-    renderEmployeeFinanceStats(emp);
-    renderEmployeeAttendanceHistory(emp);
-    alert('✅ تمت إضافة ' + addedCount + ' يوم بمعدل ' + hoursPerDay + ' ساعة (تجاوزنا أيام الجمعة تلقائياً).');
-}
-
-// 🆕 تصفير كامل سجل حضور موظف معيّن - يبدأ من الصفر (يحتاج رمز المالك
-// لأنه إجراء حساس يمحو سجل كامل)
-function resetEmployeeAttendanceRecord() {
-    const emp = (getData('sys_employees') || []).find(e => e.id === activeEmployeeDetailId);
-    if (!emp) return;
-    if (!confirm('⚠️ هذا يمسح كل سجل حضور "' + emp.name + '" نهائياً (كل الساعات المسجّلة). متأكد؟')) return;
-
-    requireOwnerPin('تصفير سجل حضور ' + emp.name, () => {
-        let attendance = getData('sys_attendance') || [];
-        attendance = attendance.filter(a => a.employeeId !== emp.id);
-        setData('sys_attendance', attendance);
-        renderEmployeeFinanceStats(emp);
-        renderEmployeeAttendanceHistory(emp);
-        alert('✅ تم تصفير سجل حضور ' + emp.name + ' بالكامل.');
-    });
-}
-
-function renderEmployeeAttendanceHistory(emp) {
-    const box = document.getElementById('empAttendanceHistory');
-    const attendance = (getData('sys_attendance') || [])
-        .filter(a => a.employeeId === emp.id)
-        .sort((a,b) => b.dateDate < a.dateDate ? -1 : 1)
-        .slice(0, 30);
-
-    const today = getTodayString();
-    const todayRec = attendance.find(a => a.dateDate === today);
-    document.getElementById('empPresentBtn').style.opacity = (todayRec && todayRec.status === 'present') ? '0.5' : '1';
-    document.getElementById('empAbsentBtn').style.opacity  = (todayRec && todayRec.status === 'absent')  ? '0.5' : '1';
-
-    if (attendance.length === 0) {
-        box.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;">ماكو سجل حضور بعد</p>';
-        return;
+    const rec = {
+        id: 'SAL_' + Date.now(), employee: emp.name, amount, type, note,
+        dateDate: date, createdTimestamp: Date.now(),
+        external: true,                 // 🔒 خارج درج الكاشير
+        cashierName: 'الأدمن'
+    };
+    const list = getData('sys_salaries') || [];
+    list.unshift(rec);
+    setData('sys_salaries', list);
+    if (typeof db !== 'undefined' && db) {
+        db.collection('salaries').doc(rec.id).set(rec).catch(err => console.warn('تعذّر رفع الدفعة للسحابة:', err));
     }
+    try { logAudit('راتب / صرفية موظف', { employee: emp.name, amount, type, approvedBy: 'الأدمن (خارج الدرج)' }); } catch (_) {}
 
-    box.innerHTML = attendance.map(a => {
-        // 🆕 إصلاح جذري: نفرّق بين 3 حالات - داخل الموقع (طبيعي)، خارج
-        // الموقع (تحذير أحمر)، أو ماكو بيانات موقع أصلاً (الموظف رفض
-        // إذن الموقع بالمتصفح، أو جهازه ما يدعمه) - قبل هذا الإصلاح،
-        // الحالة الثالثة كانت تبين وكأنها طبيعية تماماً بدون أي إشارة،
-        // فيوهم الأدمن إن التحقق شغّال وكل شي زين
-        let locationFlag = '';
-        if (a.status === 'present' && a.clockInTime) {
-            if (a.clockInLocation && a.clockInLocation.isOutsideLocation) {
-                locationFlag = '<span style="color:#ef4444;font-weight:900;margin-right:6px;" ' +
-                    'title="سجّل حضور من بعيد عن المطعم (' + a.clockInLocation.distanceMeters + ' متر)">' +
-                    '⚠️ خارج الموقع (' + a.clockInLocation.distanceMeters + 'م)</span>';
-            } else if (a.clockInLocation && !a.clockInLocation.isOutsideLocation) {
-                locationFlag = '<span style="color:#10b981;font-size:0.68rem;" title="تأكدنا إنه داخل نطاق المطعم">📍✅</span>';
-            } else if (!a.isManualEntry) {
-                // ماكو بيانات موقع إطلاقاً - غالباً رفض إذن الموقع بالمتصفح
-                locationFlag = '<span style="color:#888;font-size:0.68rem;cursor:help;" ' +
-                    'title="ماكو بيانات موقع لهذا التسجيل - الموظف على الأغلب رفض إذن الموقع بالمتصفح، فالتحقق ما اشتغل لهذا اليوم">' +
-                    '📍❔ ماكو تحقق موقع</span>';
-            }
-        }
-        // 🆕 إصلاح مهم: نبيّن وقت الدخول والخروج الفعلي بالضبط (مو بس
-        // "حاضر" وساعات مجردة) - يخلي الأدمن يعرف بالضبط شنو صار
-        const timeRange = (() => {
-            if (a.status !== 'present') return '';
-            const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'}) : null;
-            const inTime  = fmtTime(a.clockInTime);
-            const outTime = fmtTime(a.clockOutTime);
-            if (inTime && outTime)
-                return '<div style="font-size:0.7rem;color:#888;margin-top:1px;">دخل: ' + inTime + ' — خرج: ' + outTime + '</div>';
-            if (inTime && !outTime)
-                return '<div style="font-size:0.7rem;color:#f59e0b;margin-top:1px;">دخل: ' + inTime + ' — لسا ما سجّل خروج</div>';
-            if (a.isManualEntry)
-                return '<div style="font-size:0.7rem;color:#888;margin-top:1px;">إدخال يدوي - بدون أوقات محددة</div>';
-            return '';
-        })();
-
-        return '<div style="padding:4px 0;border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-        '<span>' + a.dateDate + (a.isManualEntry ? ' <span style="color:#888;font-size:0.68rem;">(يدوي)</span>' : '') + '</span>' +
-        '<span style="display:flex;align-items:center;gap:8px;">' +
-        locationFlag +
-        '<span style="color:' + (a.status === 'present' ? '#10b981' : '#ef4444') + ';font-weight:bold;">' +
-        (a.status === 'present'
-            ? '✅ ' + (cleanPrice(a.hoursWorked) > 0 ? cleanPrice(a.hoursWorked) + ' ساعة' : 'حاضر')
-            : '❌ غائب') + '</span>' +
-        '<button onclick="deleteAttendanceRecord(\'' + emp.id + '\',\'' + a.dateDate + '\')" ' +
-        'style="background:none;border:none;color:#666;cursor:pointer;font-size:0.75rem;">🗑️</button>' +
-        '</span></div>' + timeRange + '</div>';
-    }).join('');
-}
-
-// حذف سجل حضور يوم معيّن - لتصحيح إدخال غلط بدون تصفير كل السجل
-function deleteAttendanceRecord(employeeId, dateDate) {
-    if (!confirm('حذف سجل يوم ' + dateDate + '؟')) return;
-    let attendance = getData('sys_attendance') || [];
-    attendance = attendance.filter(a => !(a.employeeId === employeeId && a.dateDate === dateDate));
-    setData('sys_attendance', attendance);
-
-    const emp = (getData('sys_employees') || []).find(e => e.id === employeeId);
-    if (emp) { renderEmployeeFinanceStats(emp); renderEmployeeAttendanceHistory(emp); }
-}
-
-function markAttendance(status) {
-    if (!activeEmployeeDetailId) return;
-    const today = getTodayString();
-    let attendance = getData('sys_attendance') || [];
-
-    const existingIdx = attendance.findIndex(a =>
-        a.employeeId === activeEmployeeDetailId && a.dateDate === today);
-
-    if (existingIdx > -1) {
-        attendance[existingIdx].status = status;
-    } else {
-        attendance.push({
-            employeeId: activeEmployeeDetailId, dateDate: today,
-            status, timestamp: Date.now()
-        });
-    }
-
-    setData('sys_attendance', attendance);
-
-    const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === activeEmployeeDetailId);
-    if (emp) renderEmployeeAttendanceHistory(emp);
+    closeModal('empPayModal');
+    if (true ||
+        activeEmployeeDetailId === emp.id) { activeEmployeeDetailId = emp.id; refreshEmpStatement(); }
     renderEmployeesTab();
+    alert('✅ تم تسجيل ' + type + ' لـ ' + emp.name + ': ' + amount.toLocaleString('ar-IQ') + ' د.ع (خارج درج الكاشير)');
 }
 
-function renderEmployeeFinanceHistory(emp) {
-    const box = document.getElementById('empFinanceHistory');
-    const expenses = (getData('sys_expenses') || [])
-        .filter(e => e.type === 'سلفة' && e.employee === emp.name)
-        .map(e => ({ ...e, kind: 'سلفة', color: '#f59e0b' }));
-    const salaries = (getData('sys_salaries') || [])
-        .filter(s => s.employee === emp.name)
-        .map(s => ({ ...s, kind: 'راتب', color: '#10b981' }));
+async function addEmployeeDeduction() {
+    const emp = findEmployeeById(activeEmployeeDetailId);
+    if (!emp) return;
+    const amount = cleanPrice(document.getElementById('empDedAmount').value);
+    const reason = document.getElementById('empDedReason').value.trim();
+    if (!amount || amount <= 0) return alert('⚠️ أدخل مبلغ الخصم.');
+    if (!reason) return alert('⚠️ اكتب سبب الخصم.');
+    await applyEmployeeDeduction(emp.id, emp.name, amount, reason);
+    document.getElementById('empDedAmount').value = '';
+    document.getElementById('empDedReason').value = '';
+    refreshEmpStatement(); renderEmployeesTab();
+}
 
-    const combined = [...expenses, ...salaries]
-        .sort((a,b) => cleanPrice(b.createdTimestamp) - cleanPrice(a.createdTimestamp))
-        .slice(0, 50);
+// خصم يوم غياب = راتب يوم من الشهر الحالي
+function addEmployeeAbsenceDay() {
+    const emp = findEmployeeById(activeEmployeeDetailId);
+    if (!emp) return;
+    const now = new Date();
+    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daily = Math.round(cleanPrice(emp.monthlySalary) / dim);
+    if (!daily) return alert('⚠️ حدد الراتب الأساسي للموظف أول.');
+    document.getElementById('empDedAmount').value = daily;
+    document.getElementById('empDedReason').value = 'غياب يوم';
+}
 
-    if (combined.length === 0) {
-        box.innerHTML = '<p style="color:#666;font-size:0.78rem;text-align:center;">ماكو سجل مالي بعد</p>';
-        return;
+function deleteEmployeeDeduction(id) {
+    if (!confirm('حذف هذا الخصم؟')) return;
+    setData('sys_employee_deductions', (getData('sys_employee_deductions') || []).filter(d => String(d.id) !== String(id)));
+    refreshEmpStatement(); renderEmployeesTab();
+}
+
+function saveEmployeeAccountSettings() {
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+    const from = document.getElementById('empPayFromInput').value;
+    if (!from) return alert('⚠️ اختر تاريخ الاستحقاق.');
+    emp.payFrom = from;
+    emp.carryoverAmount = cleanPrice(document.getElementById('empCarryInput').value);
+    setData('sys_employees', employees);
+    refreshEmpStatement(); renderEmployeesTab();
+    alert('✅ تم حفظ ضبط الحساب.');
+}
+
+// ✅ تصفية الحساب: تسجيل دفع المتبقي (اختياري) وبدء فترة استحقاق جديدة من بكرة
+function settleEmployeeAccount() {
+    const employees = getData('sys_employees') || [];
+    const emp = employees.find(e => e.id === activeEmployeeDetailId);
+    if (!emp) return;
+    const st = getEmployeeStatement(emp);
+    const rem = Math.round(st.remaining);
+    let msg = 'تصفية حساب ' + emp.name + ':\nالمستحق ' + Math.round(st.accrued).toLocaleString('ar-IQ') +
+        ' − المسحوب ' + Math.round(st.withdrawn).toLocaleString('ar-IQ') + ' = المتبقي ' + rem.toLocaleString('ar-IQ') + ' د.ع\n\n';
+    if (rem > 0) msg += 'راح يتسجل دفع المتبقي (' + rem.toLocaleString('ar-IQ') + ') من الأدمن، وتبدأ فترة جديدة من بكرة.';
+    else if (rem < 0) msg += 'عليه ' + Math.abs(rem).toLocaleString('ar-IQ') + ' د.ع — راح يتحول لرصيد سابق (عليه) بالفترة الجديدة.';
+    else msg += 'الحساب متساوي، تبدأ فترة جديدة من بكرة.';
+    if (!confirm(msg + '\n\nتكمل؟')) return;
+
+    if (rem > 0) {
+        const rec = { id: 'SAL_' + Date.now(), employee: emp.name, amount: rem, type: 'راتب كامل',
+            note: 'تصفية حساب', dateDate: getTodayString(), createdTimestamp: Date.now(), external: true, cashierName: 'الأدمن' };
+        const list = getData('sys_salaries') || [];
+        list.unshift(rec); setData('sys_salaries', list);
+        if (typeof db !== 'undefined' && db) db.collection('salaries').doc(rec.id).set(rec).catch(() => {});
     }
-
-    box.innerHTML = combined.map(r =>
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;' +
-        'border-bottom:1px dashed #24392c;font-size:0.78rem;">' +
-        '<span style="flex:1;">' + r.dateDate + ' — <span style="color:' + r.color + ';font-weight:bold;">' + r.kind + '</span></span>' +
-        '<span style="font-weight:900;color:#fbbf24;">' + cleanPrice(r.amount).toLocaleString('ar-IQ') + ' د.ع</span>' +
-        '<button onclick="editEmployeeFinanceRecord(\'' + r.kind + '\',\'' + r.id + '\')" ' +
-        'style="background:#1e1e28;border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">✏️ تعديل</button>' +
-        '<button onclick="deleteEmployeeFinanceRecord(\'' + r.kind + '\',\'' + r.id + '\')" ' +
-        'style="background:#1e1e28;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">🗑️</button>' +
-        '</div>'
-    ).join('');
+    const t = new Date(getTodayString() + 'T12:00:00'); t.setDate(t.getDate() + 1);
+    emp.payFrom = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+    emp.carryoverAmount = rem < 0 ? rem : 0;
+    setData('sys_employees', employees);
+    try { logAudit('تصفية حساب موظف', { employee: emp.name, remaining: rem }); } catch (_) {}
+    refreshEmpStatement(); renderEmployeesTab();
+    alert('✅ تمت التصفية. فترة الاستحقاق الجديدة تبدأ من ' + emp.payFrom);
 }
 
-// ✏️ تصحيح مبلغ سلفة/راتب مسجّل غلط (مثلاً صفر زيادة) - بدون أي رمز، لأنك مسجّل دخول كأدمن أصلاً
+// ✏️ تصحيح مبلغ سلفة/راتب مسجّل غلط
 function editEmployeeFinanceRecord(kind, id) {
     const isAdvance = (kind === 'سلفة');
     const key  = isAdvance ? 'sys_expenses' : 'sys_salaries';
@@ -5093,58 +4655,39 @@ function editEmployeeFinanceRecord(kind, id) {
     if (!rec) return alert('⚠️ ما لقيت هذا السجل.');
 
     const oldAmount = cleanPrice(rec.amount);
-    const input = prompt('المبلغ الصحيح لهذه ' + kind + ' (الحالي: ' + oldAmount.toLocaleString('ar-IQ') + ' د.ع):', String(oldAmount));
+    const input = prompt('المبلغ الصحيح (الحالي: ' + oldAmount.toLocaleString('ar-IQ') + ' د.ع):', String(oldAmount));
     if (input === null) return;
     const newAmount = cleanPrice(input);
     if (!newAmount || newAmount <= 0) return alert('⚠️ اكتب مبلغ صحيح أكبر من صفر.');
     if (newAmount === oldAmount) return;
 
-    rec.amount     = newAmount;
-    rec.oldAmount  = rec.oldAmount || oldAmount;   // نحتفظ بالمبلغ الأصلي للتدقيق
-    rec.editedAt   = Date.now();
+    rec.amount    = newAmount;
+    rec.oldAmount = rec.oldAmount || oldAmount;
+    rec.editedAt  = Date.now();
     setData(key, list);
-
     if (typeof db !== 'undefined' && db) {
         db.collection(coll).doc(String(id)).set(
-            { amount: newAmount, oldAmount: rec.oldAmount, editedAt: rec.editedAt, editedBy: 'الأدمن' },
-            { merge: true }
+            { amount: newAmount, oldAmount: rec.oldAmount, editedAt: rec.editedAt, editedBy: 'الأدمن' }, { merge: true }
         ).catch(err => console.warn('تعذّر رفع التعديل للسحابة:', err));
     }
-    try {
-        if (typeof logAudit === 'function')
-            logAudit('تعديل مبلغ ' + kind, { employee: rec.employee || '-', from: oldAmount, to: newAmount, id: id });
-    } catch (_) {}
-
-    const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === activeEmployeeDetailId);
-    if (emp) { renderEmployeeFinanceHistory(emp); renderEmployeeFinanceStats(emp); }
-    if (typeof renderEmployeesTab === 'function') renderEmployeesTab();
-    alert('✅ تم تعديل المبلغ من ' + oldAmount.toLocaleString('ar-IQ') + ' إلى ' + newAmount.toLocaleString('ar-IQ') + ' د.ع');
+    try { logAudit('تعديل مبلغ ' + kind, { employee: rec.employee || '-', from: oldAmount, to: newAmount, id: id }); } catch (_) {}
+    refreshEmpStatement(); renderEmployeesTab();
 }
 
-// 🗑️ حذف سجل سلفة/راتب كلياً (إدخال مكرر أو بالغلط)
+// 🗑️ حذف سجل سلفة/راتب (إدخال مكرر أو بالغلط)
 function deleteEmployeeFinanceRecord(kind, id) {
-    if (!confirm('حذف هذه ' + kind + ' نهائياً؟')) return;
+    if (!confirm('حذف هذا السجل نهائياً؟')) return;
     const isAdvance = (kind === 'سلفة');
     const key  = isAdvance ? 'sys_expenses' : 'sys_salaries';
     const coll = isAdvance ? 'expenses' : 'salaries';
     const list = getData(key) || [];
     const rec  = list.find(x => String(x.id) === String(id));
     setData(key, list.filter(x => String(x.id) !== String(id)));
-
     if (typeof db !== 'undefined' && db) {
-        db.collection(coll).doc(String(id)).delete()
-            .catch(err => console.warn('تعذّر حذف السجل من السحابة:', err));
+        db.collection(coll).doc(String(id)).delete().catch(err => console.warn('تعذّر حذف السجل من السحابة:', err));
     }
-    try {
-        if (typeof logAudit === 'function' && rec)
-            logAudit('حذف ' + kind, { employee: rec.employee || '-', amount: cleanPrice(rec.amount), id: id });
-    } catch (_) {}
-
-    const employees = getData('sys_employees') || [];
-    const emp = employees.find(e => e.id === activeEmployeeDetailId);
-    if (emp) { renderEmployeeFinanceHistory(emp); renderEmployeeFinanceStats(emp); }
-    if (typeof renderEmployeesTab === 'function') renderEmployeesTab();
+    try { if (rec) logAudit('حذف ' + kind, { employee: rec.employee || '-', amount: cleanPrice(rec.amount), id: id }); } catch (_) {}
+    refreshEmpStatement(); renderEmployeesTab();
 }
 
 // 🛠️ إعادة بناء كاملة: كل منصة توصيل صارت ببطاقة مستقلة تماماً عن
@@ -6189,7 +5732,7 @@ function homeDrawerCalc(orders, today) {
     });
     const exp = (getData('sys_expenses') || []).filter(e => e.dateDate === today)
         .reduce((s, e) => s + cleanPrice(e.amount), 0);
-    const sal = (getData('sys_salaries') || []).filter(s => s.dateDate === today)
+    const sal = (getData('sys_salaries') || []).filter(s => s.dateDate === today && !s.external)
         .reduce((s, e) => s + cleanPrice(e.amount), 0);
     const float = (typeof getDrawerOpeningFloat === 'function') ? getDrawerOpeningFloat(today) : 0;
     return { float: float, cash: cash, exp: exp, sal: sal, net: Math.max(0, float + cash - exp - sal) };
