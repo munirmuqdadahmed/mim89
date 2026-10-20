@@ -4483,9 +4483,10 @@ function refreshEmpStatement() {
         (st.carry ? row('رصيد سابق', (st.carry > 0 ? '+' : '') + fmt(st.carry) + ' د.ع', '#38bdf8') : '') +
         (st.dedTotal ? row('الخصومات', '−' + fmt(st.dedTotal) + ' د.ع', '#ef4444') : '') +
         row('إجمالي المستحق', fmt(st.accrued) + ' د.ع', '#10b981', true) +
-        row('سلف من درج الكاشير', '−' + fmt(st.advTotal) + ' د.ع', '#f59e0b') +
-        row('دفعات من الأدمن', '−' + fmt(st.payTotal) + ' د.ع', '#f59e0b') +
+        row('سحوبات من درج الكاشير', '−' + fmt(st.advTotal + st.payTotal - st.extTotal) + ' د.ع', '#f59e0b') +
+        row('دفعات من الأدمن', '−' + fmt(st.extTotal) + ' د.ع', '#f59e0b') +
         row('🧮 المتبقي له', fmt(st.remaining) + ' د.ع', st.remaining < 0 ? '#ef4444' : '#fbbf24', true) +
+        (st.olderTotal ? '<p class="hint" style="color:#38bdf8;margin-top:6px;">ℹ️ عنده سحوبات ' + fmt(st.olderTotal) + ' د.ع قبل تاريخ الاستحقاق (غير محسوبة). إذا تريدها تنحسب، غيّر "يستحق من تاريخ" لتاريخ أقدم.</p>' : '') +
         (st.remaining < 0 ? '<p class="hint" style="color:#ef4444;margin-top:6px;">⚠️ سحب أكثر من استحقاقه لحد الآن (سيُحسب عليه).</p>' : '') +
         '</div>';
 
@@ -4588,9 +4589,7 @@ async function addEmployeeDeduction() {
 function addEmployeeAbsenceDay() {
     const emp = findEmployeeById(activeEmployeeDetailId);
     if (!emp) return;
-    const now = new Date();
-    const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daily = Math.round(cleanPrice(emp.monthlySalary) / dim);
+    const daily = Math.round(cleanPrice(emp.monthlySalary) / 30 / 250) * 250;
     if (!daily) return alert('⚠️ حدد الراتب الأساسي للموظف أول.');
     document.getElementById('empDedAmount').value = daily;
     document.getElementById('empDedReason').value = 'غياب يوم';
