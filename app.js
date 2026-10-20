@@ -2868,16 +2868,25 @@ function getEmployeeStatement(emp) {
     const from   = String(emp.payFrom || emp.startDate || today).slice(0, 10);
     const salary = cleanPrice(emp.monthlySalary);
 
-    let earned = 0, days = 0;
+    // الاستحقاق: كل شهر كامل = الراتب بالضبط، والشهر الناقص = (راتب ÷ 30) × أيامه
+    // (بحد أقصى الراتب)، وبعدها نقرّب لأقرب 250 دينار حتى ما تطلع كسور
+    let days = 0;
+    const perMonth = {};
     const cur = new Date(from + 'T12:00:00');
     const end = new Date(today + 'T12:00:00');
     while (cur <= end && days < 4000) {
-        const dim = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
-        earned += salary / dim;
+        const k = cur.getFullYear() + '-' + cur.getMonth();
+        perMonth[k] = (perMonth[k] || 0) + 1;
         days++;
         cur.setDate(cur.getDate() + 1);
     }
-    earned = Math.round(earned);
+    let earnedRaw = 0;
+    Object.keys(perMonth).forEach(k => {
+        const [y, m] = k.split('-').map(Number);
+        const dim = new Date(y, m + 1, 0).getDate();
+        earnedRaw += (perMonth[k] >= dim) ? salary : Math.min(salary, perMonth[k] * salary / 30);
+    });
+    const earned = Math.round(earnedRaw / 250) * 250;
 
     const carry = cleanPrice(emp.carryoverAmount);
     const deductions = (getData('sys_employee_deductions') || [])
@@ -2890,12 +2899,19 @@ function getEmployeeStatement(emp) {
         .filter(x => x.employee === emp.name && String(x.dateDate) >= from);
     const advTotal = advances.reduce((s, e) => s + cleanPrice(e.amount), 0);
     const payTotal = payments.reduce((s, x) => s + cleanPrice(x.amount), 0);
+    const extTotal = payments.filter(x => x.external).reduce((s, x) => s + cleanPrice(x.amount), 0);
+    // سحوبات قبل تاريخ الاستحقاق (مو محسوبة بهذي الفترة) - نعرضها للتنبيه فقط
+    const olderTotal =
+        (getData('sys_expenses') || []).filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate) < from)
+            .reduce((s, e) => s + cleanPrice(e.amount), 0) +
+        (getData('sys_salaries') || []).filter(x => x.employee === emp.name && String(x.dateDate) < from)
+            .reduce((s, x) => s + cleanPrice(x.amount), 0);
 
     const accrued   = earned + carry - dedTotal;
     const withdrawn = advTotal + payTotal;
     return {
         from, days, salary, earned, carry, deductions, dedTotal,
-        advances, payments, advTotal, payTotal,
+        advances, payments, advTotal, payTotal, extTotal, olderTotal,
         accrued, withdrawn, remaining: accrued - withdrawn
     };
 }
