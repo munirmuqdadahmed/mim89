@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1829';
+const MIM89_APP_VERSION = '1830';
 
 /* ==========================================
    المتغيرات العامة
@@ -1440,7 +1440,7 @@ function getShiftExpenses() {
 // 🆕 صرفيات الرواتب منفصلة
 function getShiftSalaries() {
     const startTs = getShiftStartTs();
-    const all     = getData('sys_salaries') || [];
+    const all     = (getData('sys_salaries') || []).filter(s => !s.external);   // دفعات الأدمن خارج الدرج
     return all.filter(s => {
         const ts = cleanPrice(s.createdTimestamp);
         if (!ts) return s.dateDate >= getBusinessDayString(new Date(startTs));
@@ -2855,20 +2855,49 @@ function getEmployeeMonthSummary(employeeId) {
 // 🆕 الراتب المستحق = (راتب الساعة × الساعات الفعلية هذا الشهر) +
 // رصيد إضافي مستحق (يدوي) - خصومات هذا الشهر (يدوية، بسبب مكتوب)
 function getEmployeeAccruedSalary(emp) {
-    const summary = getEmployeeMonthSummary(emp.id);
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const standardHoursPerDay = getStandardWorkHoursPerDay();
-    const hourlyRate = cleanPrice(emp.monthlySalary) / (daysInMonth * standardHoursPerDay);
-    const hoursBasedAmount = Math.round(hourlyRate * summary.totalHours);
+    return getEmployeeStatement(emp).accrued;
+}
 
-    const thisMonth = getTodayString().slice(0, 7);
-    const deductions = getData('sys_employee_deductions') || [];
-    const monthDeductions = deductions
-        .filter(d => d.employeeId === emp.id && String(d.dateDate).slice(0,7) === thisMonth)
-        .reduce((s,d) => s + cleanPrice(d.amount), 0);
+// 🆕 كشف حساب الموظف (نظام الراتب الشهري - بدون ساعات):
+// الاستحقاق يبدأ من تاريخ "يستحق من" (payFrom، وإن ما وُجد فتاريخ المباشرة)
+// ويزيد يومياً: كل يوم = راتب ذاك الشهر ÷ عدد أيام ذاك الشهر، يعني شهر
+// كامل = الراتب بالضبط. نطرح منه الخصومات، ونقارنه بكل ما سُحب (سلف من درج
+// الكاشير + دفعات من الأدمن) من نفس التاريخ.
+function getEmployeeStatement(emp) {
+    const today  = getTodayString();
+    const from   = String(emp.payFrom || emp.startDate || today).slice(0, 10);
+    const salary = cleanPrice(emp.monthlySalary);
 
-    return hoursBasedAmount + cleanPrice(emp.carryoverAmount) - monthDeductions;
+    let earned = 0, days = 0;
+    const cur = new Date(from + 'T12:00:00');
+    const end = new Date(today + 'T12:00:00');
+    while (cur <= end && days < 4000) {
+        const dim = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+        earned += salary / dim;
+        days++;
+        cur.setDate(cur.getDate() + 1);
+    }
+    earned = Math.round(earned);
+
+    const carry = cleanPrice(emp.carryoverAmount);
+    const deductions = (getData('sys_employee_deductions') || [])
+        .filter(d => d.employeeId === emp.id && String(d.dateDate) >= from);
+    const dedTotal = deductions.reduce((s, d) => s + cleanPrice(d.amount), 0);
+
+    const advances = (getData('sys_expenses') || [])
+        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate) >= from);
+    const payments = (getData('sys_salaries') || [])
+        .filter(x => x.employee === emp.name && String(x.dateDate) >= from);
+    const advTotal = advances.reduce((s, e) => s + cleanPrice(e.amount), 0);
+    const payTotal = payments.reduce((s, x) => s + cleanPrice(x.amount), 0);
+
+    const accrued   = earned + carry - dedTotal;
+    const withdrawn = advTotal + payTotal;
+    return {
+        from, days, salary, earned, carry, deductions, dedTotal,
+        advances, payments, advTotal, payTotal,
+        accrued, withdrawn, remaining: accrued - withdrawn
+    };
 }
 
 // 🆕 تسجيل خصم على موظف - يحتاج سبب مكتوب، ويظهر للموظف نفسه (شفافية)
@@ -2894,16 +2923,8 @@ function getStandardWorkHoursPerDay() {
 
 // السلف المسحوبة والرواتب المستلمة هذا الشهر
 function getEmployeeMonthFinance(emp) {
-    const thisMonth = getTodayString().slice(0, 7);
-    const expenses = getData('sys_expenses') || [];
-    const salaries = getData('sys_salaries') || [];
-    const advances = expenses
-        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate).slice(0,7) === thisMonth)
-        .reduce((s,e) => s + cleanPrice(e.amount), 0);
-    const salaryPaid = salaries
-        .filter(s => s.employee === emp.name && String(s.dateDate).slice(0,7) === thisMonth)
-        .reduce((s,x) => s + cleanPrice(x.amount), 0);
-    return { advances, salaryPaid };
+    const st = getEmployeeStatement(emp);
+    return { advances: st.advTotal, salaryPaid: st.payTotal };
 }
 
 // تقديم طلب موظف (سلفة أو إجازة/استراحة) - ينتظر موافقة الأدمن
@@ -4557,7 +4578,7 @@ function computeTodayBusinessDaySummary() {
     const today    = getTodayString();
     const orders   = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
     const expenses = (getData('sys_expenses')         || []).filter(e => e.dateDate === today);
-    const salaries = (getData('sys_salaries')         || []).filter(s => s.dateDate === today);
+    const salaries = (getData('sys_salaries')         || []).filter(s => s.dateDate === today && !s.external);
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalPlatformPending = 0,
         totalDelivery = 0, totalExp = 0, totalSal = 0;
@@ -5569,7 +5590,7 @@ function renderDailyReport(targetDate) {
     const expenses  = (getData('sys_expenses')||[])
         .filter(e => e.dateDate === targetDate);
     const salaries  = (getData('sys_salaries')||[])
-        .filter(s => s.dateDate === targetDate);
+        .filter(s => s.dateDate === targetDate && !s.external);
 
     let totalSales=0, totalCash=0, totalVisa=0, totalPlatformOwed=0,
         totalDelivery=0, netFood=0, totalExp=0, totalSal=0;
