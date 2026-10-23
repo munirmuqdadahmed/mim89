@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1833';
+const MIM89_APP_VERSION = '1834';
 
 /* ==========================================
    المتغيرات العامة
@@ -1925,6 +1925,22 @@ function selectPaymentMethod(btnElement) {
         .forEach(b => b.classList.remove('active'));
     btnElement.classList.add('active');
     selectedPosPaymentMethod = btnElement.getAttribute('data-value');
+    syncEmployeeAccountSelect();
+}
+
+// 👤 فاتورة على حساب موظف: قائمة الموظفين تظهر فقط لما يختار هذي الطريقة
+function syncEmployeeAccountSelect() {
+    const sel = document.getElementById('posEmployeeAccountSelect');
+    if (!sel) return;
+    if (selectedPosPaymentMethod === 'employee') {
+        const cur = sel.value;
+        sel.innerHTML = '<option value="">-- اختر الموظف --</option>' +
+            (getData('sys_employees') || []).map(e => '<option value="' + e.name + '">' + e.name + '</option>').join('');
+        if (cur) sel.value = cur;
+        sel.style.display = 'block';
+    } else {
+        sel.style.display = 'none';
+    }
 }
 
 function getPosCustomerInfo() {
@@ -2557,6 +2573,10 @@ async function proceedToPrintAfterCashInner() {
         return alert("⚠️ المبلغ المستلم أقل من المطلوب!");
     }
 
+    const isEmpAccount = selectedPosPaymentMethod === 'employee';
+    const empAccountName = isEmpAccount ? (document.getElementById('posEmployeeAccountSelect')?.value || '') : '';
+    if (isEmpAccount && !empAccountName) return alert('⚠️ اختر الموظف اللي راح تنسجل عليه الفاتورة!');
+
     const custInfo   = getPosCustomerInfo();
     const driverName = selectedPosOrderType === 'delivery'
         ? (document.getElementById('posDriverSelect')?.value || 'غير محدد') : '-';
@@ -2580,7 +2600,8 @@ async function proceedToPrintAfterCashInner() {
         orderType:     selectedPosOrderType === 'delivery' ? 'توصيل'
                      : selectedPosOrderType === 'takeaway' ? 'سفري' : 'صالة',
         area:          area,
-        paymentMethod: selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا',
+        paymentMethod: isEmpAccount ? 'حساب موظف' : (selectedPosPaymentMethod === 'cash' ? 'كاش' : 'فيزا'),
+        employeeAccount: isEmpAccount ? empAccountName : null,
         driverName:    driverName,
         // 🆕 لو هذي إضافة على فاتورة سابقة (زبون طلب شي زيادة بعد ما
         // طبعنا فاتورته الأولى) - نحفظ رقم الفاتورة الأصلية حتى تذكرة
@@ -2611,8 +2632,8 @@ async function proceedToPrintAfterCashInner() {
         discount:      posDiscountAmount,
         deliveryFee:   deliveryFee,
         totalAmount:   netTotal,
-        cashGiven:     cashGiven,
-        cashChange:    Math.max(0, cashGiven - netTotal),
+        cashGiven:     isEmpAccount ? 0 : cashGiven,
+        cashChange:    isEmpAccount ? 0 : Math.max(0, cashGiven - netTotal),
         dateDate:      getTodayString(),
         timestamp:     new Date().toLocaleTimeString('ar-IQ',
             { hour:'2-digit', minute:'2-digit' }),
@@ -3204,7 +3225,8 @@ function buildMiniReceiptLines(ord) {
     return [
         { text: 'طلب #' + ord.orderNum, size:'big', align:'center', bold:true },
         { text: m + ' د.ع', size:'big', align:'center', bold:true }
-    ];
+    ].concat(ord.employeeAccount
+        ? [{ text: '👤 على حساب: ' + ord.employeeAccount, size:'normal', align:'center', bold:true }] : []);
 }
 
 function buildCustomerReceiptLines(ord) {
@@ -3899,10 +3921,21 @@ function tryFinalizeAndClearOrder(silentMode) {
         addToOrderSyncRetryQueue(orderToSave);
     }
 
+    // 👤 فاتورة على حساب موظف: تنسجل عليه كسلفة (تنخصم من الدرج حتى ما يطلع نقص)
+    if (orderToSave.employeeAccount) {
+        try { recordEmployeeInvoiceAsAdvance(orderToSave); } catch (e) { console.error('تعذّر تسجيل فاتورة الموظف:', e); }
+    }
+
     // خصم المواد من المخزن
     if (typeof deductInventoryFromRecipe === 'function') {
         try { deductInventoryFromRecipe(orderToSave.items); } catch (_) {}
     }
+
+    // رجّع طريقة الدفع كاش للطلب الجاي
+    selectedPosPaymentMethod = 'cash';
+    document.querySelectorAll('#posPaymentGroup .toggle-btn').forEach(b =>
+        b.classList.toggle('active', b.getAttribute('data-value') === 'cash'));
+    syncEmployeeAccountSelect();
 
     // تفريغ السلة
     posCart             = [];
@@ -4366,6 +4399,28 @@ function toggleExpenseTypeFields() {
     const type      = document.getElementById('expenseTypeSelect')?.value;
     const empSelect = document.getElementById('expenseEmployeeSelect');
     if (empSelect) empSelect.style.display = (type === 'سلفة') ? 'block' : 'none';
+}
+
+// 👤 تسجيل فاتورة موظف كسلفة بحسابه: المبيعات تنحسب كاش بالدرج، والسلفة تنخصم
+// بنفس المبلغ من الدرج، فيتعادل الدرج بدون نقص، والمبلغ ينخصم من راتب الموظف.
+function recordEmployeeInvoiceAsAdvance(ord) {
+    const id = 'EXP_INV_' + ord.id;
+    const expenses = getData('sys_expenses') || [];
+    if (expenses.some(e => e.id === id)) return;           // ما نسجلها مرتين
+    const rec = {
+        id, type: 'سلفة', amount: cleanPrice(ord.totalAmount),
+        note: 'فاتورة موظف: ' + ord.employeeAccount + ' | طلب #' + ord.orderNum,
+        employee: ord.employeeAccount,
+        orderNum: ord.orderNum, orderId: ord.id, isEmployeeInvoice: true,
+        dateDate: ord.dateDate, createdTimestamp: Date.now(),
+        cashierName: ord.cashierName || 'الرئيسي'
+    };
+    expenses.unshift(rec);
+    setData('sys_expenses', expenses);
+    if (typeof db !== 'undefined' && db) {
+        db.collection('expenses').doc(id).set(rec).catch(err => console.warn('تعذّر رفع فاتورة الموظف للسحابة:', err));
+    }
+    try { logAudit('فاتورة على حساب موظف', { employee: ord.employeeAccount, amount: rec.amount, orderNum: ord.orderNum }); } catch (_) {}
 }
 
 function addNewExpenseRecord() {
