@@ -2611,6 +2611,10 @@ function switchAdminTab(tabId, btn) {
     }
     if (tabId === 'tabEmployeesControl' && typeof renderEmployeesTab === 'function') {
         renderEmployeesTab();
+        // سحب فوري للسلف/الفواتير/الدفعات من السحابة (من الكاشير) بدل انتظار المزامنة الدورية
+        if (typeof pullLatestFromCloud === 'function') {
+            pullLatestFromCloud().then(r => { if (r && r.changed) { renderEmployeesTab(); if (activeEmployeeDetailId) refreshEmpStatement(); } }).catch(() => {});
+        }
         if (typeof renderEmpPendingRequests === 'function') renderEmpPendingRequests();
     }
     if (tabId === 'tabInvoiceManager' && typeof renderInvoiceManagerList === 'function')
@@ -4474,6 +4478,9 @@ function openEmployeeDetailModal(id) {
     activeEmployeeDetailId = id;
     refreshEmpStatement();
     openModal('empStatementModal');
+    if (typeof pullLatestFromCloud === 'function') {
+        pullLatestFromCloud().then(r => { if (r && r.changed && activeEmployeeDetailId === id) { refreshEmpStatement(); renderEmployeesTab(); } }).catch(() => {});
+    }
 }
 
 function refreshEmpStatement() {
