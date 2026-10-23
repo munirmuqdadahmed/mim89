@@ -4506,7 +4506,7 @@ function refreshEmpStatement() {
 
     // السحوبات: سلف الكاشير + دفعات الأدمن
     const recs = []
-        .concat(st.advances.map(r => ({ r, kind: 'سلفة', label: 'سلفة (من درج الكاشير)', color: '#f59e0b' })))
+        .concat(st.advances.map(r => ({ r, kind: 'سلفة', label: r.isEmployeeInvoice ? '🧾 فاتورة موظف #' + esc(r.orderNum) : 'سلفة (من درج الكاشير)', color: '#f59e0b' })))
         .concat(st.payments.map(r => ({ r, kind: 'راتب',
             label: esc(r.type || 'دفعة') + (r.external ? ' (من الأدمن)' : ' (من الكاشير)'), color: r.external ? '#10b981' : '#f59e0b' })))
         .sort((a, b) => cleanPrice(b.r.createdTimestamp) - cleanPrice(a.r.createdTimestamp));
