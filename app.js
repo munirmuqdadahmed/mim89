@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1835';
+const MIM89_APP_VERSION = '1836';
 
 /* ==========================================
    المتغيرات العامة
@@ -4418,7 +4418,11 @@ function recordEmployeeInvoiceAsAdvance(ord) {
     expenses.unshift(rec);
     setData('sys_expenses', expenses);
     if (typeof db !== 'undefined' && db) {
-        db.collection('expenses').doc(id).set(rec).catch(err => console.warn('تعذّر رفع فاتورة الموظف للسحابة:', err));
+        db.collection('expenses').doc(id).set(rec).catch(err => {
+            console.warn('تعذّر رفع فاتورة الموظف للسحابة:', err);
+            alert('⚠️ فاتورة الموظف ' + ord.employeeAccount + ' (طلب #' + ord.orderNum + ') انسجلت بهذا الجهاز بس، وما وصلت للسحابة (' +
+                ((err && (err.code || err.message)) || 'خطأ') + ').\nما راح تظهر بالأدمن إلا إذا انحلت المشكلة - صوّرلي هذي الرسالة.');
+        });
     }
     try { logAudit('فاتورة على حساب موظف', { employee: ord.employeeAccount, amount: rec.amount, orderNum: ord.orderNum }); } catch (_) {}
 }
