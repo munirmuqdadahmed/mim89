@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1832';
+const MIM89_APP_VERSION = '1833';
 
 /* ==========================================
    المتغيرات العامة
@@ -3198,6 +3198,15 @@ function shouldPrintCustomerCopy(ord) {
     return true;
 }
 
+// 🗜️ شريط مصغّر (للصالة): رقم الطلب والمبلغ فقط
+function buildMiniReceiptLines(ord) {
+    const m = Math.round(cleanPrice(ord.totalAmount)).toLocaleString('ar-IQ');
+    return [
+        { text: 'طلب #' + ord.orderNum, size:'big', align:'center', bold:true },
+        { text: m + ' د.ع', size:'big', align:'center', bold:true }
+    ];
+}
+
 function buildCustomerReceiptLines(ord) {
     const L = [];
     const money  = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
@@ -3454,7 +3463,7 @@ fontScale: getInvoiceDesign().fontScale || '1.0',
                 (shouldPrintCustomerCopy(ord)
                     ? { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true }
                     // سطر صغير وحد (رقم الطلب) بنفس مسار الفاتورة المضمون - هذا اللي يفتح الدرج فعلياً
-                    : { printer: 'cashier', lines: [{ text: '#' + ord.orderNum + ' - ' + (ord.orderType || ''), size:'normal', align:'center', bold:true }], openDrawer: true }),
+                    : { printer: 'cashier', lines: buildMiniReceiptLines(ord), openDrawer: true }),
                 {
                     printer:    'kitchen',
                     lines:      buildKitchenTicketLines(ord),
