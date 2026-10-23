@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1831';
+const MIM89_APP_VERSION = '1832';
 
 /* ==========================================
    المتغيرات العامة
@@ -3450,10 +3450,11 @@ async function printBothViaBridge(btnElement) {
             paperWidth: getInvoiceDesign().paperWidth, // 🛠️ يحدد للجسر عرض الورق الفعلي (58/80 مم)
 fontScale: getInvoiceDesign().fontScale || '1.0',
             jobs: [
-                // 🗜️ توفير ورق: حسب إعداد "نسخة الزبون" - لو مو مطلوبة نفتح الدرج بس بدون طباعة
+                // 🗜️ توفير ورق: حسب إعداد "نسخة الزبون" - لو مو مطلوبة نطبع شريط صغير (سطر وحد) ويفتح الدرج
                 (shouldPrintCustomerCopy(ord)
                     ? { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true }
-                    : { printer: 'cashier', drawerOnly: true }),
+                    // سطر صغير وحد (رقم الطلب) بنفس مسار الفاتورة المضمون - هذا اللي يفتح الدرج فعلياً
+                    : { printer: 'cashier', lines: [{ text: '#' + ord.orderNum + ' - ' + (ord.orderType || ''), size:'normal', align:'center', bold:true }], openDrawer: true }),
                 {
                     printer:    'kitchen',
                     lines:      buildKitchenTicketLines(ord),
