@@ -3703,6 +3703,15 @@ function openPlatformSettlementModal() {
    👥 إدارة الموظفين الكاملة - بيانات، سلف، رواتب، حضور وغياب
    ========================================== */
 let activeEmployeeDetailId = null;
+// تحديث كشف الموظف تلقائياً لما تتغير بيانات الصرفيات/الرواتب من تبويب ثاني (مثلاً الكاشير بنفس الجهاز)
+window.addEventListener('storage', ev => {
+    if (!ev.key || ['sys_expenses','sys_salaries','sys_employees','sys_employee_deductions','sys_completed_orders'].indexOf(ev.key) === -1) return;
+    try {
+        if (typeof renderEmployeesTab === 'function') renderEmployeesTab();
+        const m = document.getElementById('empStatementModal');
+        if (m && m.style.display === 'flex' && activeEmployeeDetailId) refreshEmpStatement();
+    } catch (_) {}
+});
 
 /* ==========================================
    🧾 إدارة الفواتير - بحث كامل بالسجل التاريخي، تعديل، حذف
@@ -4505,6 +4514,7 @@ function refreshEmpStatement() {
         (st.dedTotal ? row('الخصومات', '−' + fmt(st.dedTotal) + ' د.ع', '#ef4444') : '') +
         row('إجمالي المستحق', fmt(st.accrued) + ' د.ع', '#10b981', true) +
         row('سحوبات من درج الكاشير', '−' + fmt(st.advTotal + st.payTotal - st.extTotal) + ' د.ع', '#f59e0b') +
+        (st.invTotal ? row('🧾 فواتير أكل على حسابه (' + st.invoices.length + ')', '−' + fmt(st.invTotal) + ' د.ع', '#f59e0b') : '') +
         row('دفعات من الأدمن', '−' + fmt(st.extTotal) + ' د.ع', '#f59e0b') +
         row('🧮 المتبقي له', fmt(st.remaining) + ' د.ع', st.remaining < 0 ? '#ef4444' : '#fbbf24', true) +
         (st.olderTotal ? '<p class="hint" style="color:#38bdf8;margin-top:6px;">ℹ️ عنده سحوبات ' + fmt(st.olderTotal) + ' د.ع قبل تاريخ الاستحقاق (غير محسوبة). إذا تريدها تنحسب، غيّر "يستحق من تاريخ" لتاريخ أقدم.</p>' : '') +
@@ -4513,9 +4523,11 @@ function refreshEmpStatement() {
 
     // السحوبات: سلف الكاشير + دفعات الأدمن
     const recs = []
-        .concat(st.advances.map(r => ({ r, kind: 'سلفة', label: r.isEmployeeInvoice ? '🧾 فاتورة موظف #' + esc(r.orderNum) : 'سلفة (من درج الكاشير)', color: '#f59e0b' })))
+        .concat(st.advances.map(r => ({ r, kind: 'سلفة', label: 'سلفة (من درج الكاشير)', color: '#f59e0b' })))
         .concat(st.payments.map(r => ({ r, kind: 'راتب',
             label: esc(r.type || 'دفعة') + (r.external ? ' (من الأدمن)' : ' (من الكاشير)'), color: r.external ? '#10b981' : '#f59e0b' })))
+        .concat(st.invoices.map(o => ({ r: { id: o.id, amount: o.totalAmount, dateDate: o.dateDate, createdTimestamp: o.createdTimestamp,
+            note: (o.items || []).map(i => i.name + '×' + i.qty).join('، ') }, kind: 'فاتورة', label: '🧾 فاتورة موظف #' + esc(o.orderNum), color: '#f59e0b' })))
         .sort((a, b) => cleanPrice(b.r.createdTimestamp) - cleanPrice(a.r.createdTimestamp));
     const btn = (txt, color, fn) => '<button onclick="' + fn + '" style="background:#1e1e28;border:1px solid ' + color +
         ';color:' + color + ';border-radius:6px;padding:2px 8px;cursor:pointer;font-size:0.72rem;">' + txt + '</button>';
@@ -4526,8 +4538,9 @@ function refreshEmpStatement() {
             '<span style="flex:1;">' + esc(x.r.dateDate) + ' — <span style="color:' + x.color + ';font-weight:bold;">' + x.label + '</span>' +
             (x.r.note ? '<div style="color:#777;font-size:0.7rem;">' + esc(x.r.note) + '</div>' : '') + '</span>' +
             '<span style="font-weight:900;color:#fbbf24;">' + fmt(x.r.amount) + '</span>' +
-            btn('✏️', '#38bdf8', 'editEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')') +
-            btn('🗑️', '#ef4444', 'deleteEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')') + '</div>').join('');
+            (x.kind === 'فاتورة' ? '<span style="font-size:0.65rem;color:#777;">(من الفواتير)</span>' :
+                btn('✏️', '#38bdf8', 'editEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')') +
+                btn('🗑️', '#ef4444', 'deleteEmployeeFinanceRecord(\'' + x.kind + '\',\'' + x.r.id + '\')')) + '</div>').join('');
 
     document.getElementById('empStDeductions').innerHTML = st.deductions.length === 0
         ? '<p style="color:#666;font-size:0.78rem;text-align:center;padding:6px;">ماكو خصومات</p>'
@@ -5746,11 +5759,12 @@ function homeDrawerCalc(orders, today) {
     const todayOrders = orders.filter(o => o.dateDate === today);
     let cash = 0;
     todayOrders.forEach(o => {
+        if (o.employeeAccount) return;
         if (isPlatformDeliveryName(o.driverName)) return;
         if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) return;
         cash += cleanPrice(o.totalAmount);
     });
-    const exp = (getData('sys_expenses') || []).filter(e => e.dateDate === today)
+    const exp = (getData('sys_expenses') || []).filter(e => e.dateDate === today && !e.isEmployeeInvoice)
         .reduce((s, e) => s + cleanPrice(e.amount), 0);
     const sal = (getData('sys_salaries') || []).filter(s => s.dateDate === today && !s.external)
         .reduce((s, e) => s + cleanPrice(e.amount), 0);
