@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1834';
+const MIM89_APP_VERSION = '1835';
 
 /* ==========================================
    المتغيرات العامة
@@ -9560,6 +9560,192 @@ document.addEventListener('DOMContentLoaded', () => {
         initData();
     }
 });
+
+/* ==========================================
+   ⌨️ كيبورد على الشاشة (لشاشات اللمس بدون كيبورد)
+   - زر ⌨️ صغير بزاوية الشاشة يشغّل/يطفّي الميزة (ينحفظ بالجهاز)
+   - لما تلمس أي خانة: أرقام ← لوحة أرقام، نص ← كيبورد عربي/إنجليزي
+   - الخانات اللي تنكتب فيها أرقام/إيميل/باسورد/إنجليزي تطلع بالإنجليزي تلقائياً
+   ========================================== */
+(function initOnScreenKeyboard() {
+    if (typeof IS_STAFF_PAGE === 'undefined' || !IS_STAFF_PAGE || IS_DRIVER_PAGE) return;
+
+    const KEY = 'mim89_osk_on';
+    const SKIP = ['checkbox','radio','button','submit','reset','file','color','range','date','time','datetime-local','month','week','hidden','image'];
+    const AR = [
+        ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
+        ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
+        ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ'],
+    ];
+    const EN = [
+        ['q','w','e','r','t','y','u','i','o','p'],
+        ['a','s','d','f','g','h','j','k','l'],
+        ['z','x','c','v','b','n','m','@','.','-','_'],
+    ];
+    let enabled = false, lang = 'ar', shift = false, cur = null, mode = 'text';
+    try { enabled = localStorage.getItem(KEY) === '1'; } catch (_) {}
+
+    const css = document.createElement('style');
+    css.textContent =
+        '#oskToggle{position:fixed;left:8px;bottom:70px;z-index:2147483000;width:44px;height:44px;border-radius:50%;' +
+        'background:#1e1e28;border:2px solid #555;color:#fff;font-size:1.3rem;cursor:pointer;opacity:.85;}' +
+        '#oskToggle.on{background:#fbbf24;border-color:#fbbf24;color:#000;opacity:1;}' +
+        '#oskBox{position:fixed;left:0;right:0;bottom:0;z-index:2147483001;background:#14141b;border-top:2px solid #fbbf24;' +
+        'padding:8px;display:none;direction:ltr;user-select:none;-webkit-user-select:none;box-shadow:0 -6px 20px rgba(0,0,0,.6);}' +
+        '#oskBox .r{display:flex;gap:5px;justify-content:center;margin-bottom:5px;}' +
+        '#oskBox button{flex:1;max-width:64px;min-height:46px;border-radius:8px;border:1px solid #333;background:#23232e;color:#fff;' +
+        'font-size:1.15rem;font-weight:bold;cursor:pointer;font-family:inherit;touch-action:manipulation;}' +
+        '#oskBox button:active{background:#fbbf24;color:#000;}' +
+        '#oskBox button.w{max-width:140px;flex:2;}' +
+        '#oskBox button.sp{max-width:340px;flex:6;}' +
+        '#oskBox button.fn{background:#2d2d3c;color:#fbbf24;}' +
+        '#oskBox button.ok{background:#0d3d1a;color:#10b981;border-color:#10b981;}' +
+        '#oskBox.num{max-width:340px;left:auto;right:auto;margin:0 auto;border-radius:12px 12px 0 0;}' +
+        '#oskBox.num button{max-width:none;min-height:54px;font-size:1.4rem;}';
+    document.head.appendChild(css);
+
+    const toggle = document.createElement('button');
+    toggle.id = 'oskToggle'; toggle.type = 'button'; toggle.textContent = '⌨️'; toggle.title = 'كيبورد على الشاشة';
+    const box = document.createElement('div'); box.id = 'oskBox';
+    const attach = () => { document.body.appendChild(toggle); document.body.appendChild(box); refreshToggle(); };
+    if (document.body) attach(); else document.addEventListener('DOMContentLoaded', attach);
+
+    function refreshToggle() { toggle.classList.toggle('on', enabled); }
+    toggle.addEventListener('click', () => {
+        enabled = !enabled;
+        try { localStorage.setItem(KEY, enabled ? '1' : '0'); } catch (_) {}
+        refreshToggle();
+        if (!enabled) hide();
+        else if (document.activeElement && isTarget(document.activeElement)) show(document.activeElement);
+    });
+
+    // لا نسرق التركيز من الخانة عند لمس الكيبورد
+    ['mousedown','touchstart','pointerdown'].forEach(ev =>
+        box.addEventListener(ev, e => { if (e.target.tagName === 'BUTTON' || e.target === box) e.preventDefault(); }, { passive: false }));
+    toggle.addEventListener('mousedown', e => e.preventDefault());
+
+    function isTarget(el) {
+        if (!el || el.readOnly || el.disabled) return false;
+        if (el.tagName === 'TEXTAREA') return true;
+        if (el.tagName !== 'INPUT') return false;
+        return SKIP.indexOf((el.type || 'text').toLowerCase()) === -1;
+    }
+
+    function pickMode(el) {
+        const t = (el.type || 'text').toLowerCase();
+        const im = (el.getAttribute('inputmode') || el.dataset.oskIm || '').toLowerCase();
+        if (t === 'number' || t === 'tel' || im === 'numeric' || im === 'decimal' || im === 'tel') return 'num';
+        return 'text';
+    }
+
+    function show(el) {
+        cur = el;
+        if (!el.dataset.oskIm) el.dataset.oskIm = el.getAttribute('inputmode') || '';
+        el.setAttribute('inputmode', 'none');            // يمنع كيبورد الجهاز
+        mode = pickMode(el);
+        const t = (el.type || '').toLowerCase();
+        if (mode === 'text') {
+            if (t === 'email' || t === 'password' || t === 'url' || el.dir === 'ltr' ||
+                (el.style && el.style.direction === 'ltr')) lang = 'en';
+            else if (!box.dataset.userLang) lang = 'ar';
+        }
+        render();
+        box.style.display = 'block';
+        document.body.style.paddingBottom = box.offsetHeight + 'px';
+        setTimeout(() => { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {} }, 50);
+    }
+    function hide() {
+        box.style.display = 'none';
+        document.body.style.paddingBottom = '';
+        cur = null;
+    }
+
+    function fire(el, type, init) { try { el.dispatchEvent(new Event(type, Object.assign({ bubbles: true }, init || {}))); } catch (_) {} }
+    function key(el, type, k) {
+        try { el.dispatchEvent(new KeyboardEvent(type, { key: k, code: k === 'Enter' ? 'Enter' : '', keyCode: k === 'Enter' ? 13 : 0, which: k === 'Enter' ? 13 : 0, bubbles: true })); } catch (_) {}
+    }
+
+    function typeChar(ch) {
+        const el = cur; if (!el) return;
+        const isNum = (el.type || '').toLowerCase() === 'number';
+        if (isNum) {
+            if (!/^[0-9.\-]$/.test(ch) && ch !== '00') return;
+            const next = String(el.value || '') + ch;
+            const prev = el.value;
+            el.value = next;
+            if (el.value !== next && !(ch === '.' )) { el.value = prev; return; }   // الجهاز رفضها
+            if (ch === '.' && el.value === '') el.value = prev;
+        } else {
+            const s = el.selectionStart, e = el.selectionEnd;
+            if (typeof s === 'number') {
+                el.setRangeText(ch, s, e, 'end');
+            } else { el.value += ch; }
+        }
+        fire(el, 'input');
+    }
+    function backspace() {
+        const el = cur; if (!el) return;
+        const isNum = (el.type || '').toLowerCase() === 'number';
+        if (isNum || typeof el.selectionStart !== 'number') {
+            el.value = String(el.value || '').slice(0, -1);
+        } else {
+            let s = el.selectionStart, e = el.selectionEnd;
+            if (s === e && s > 0) { el.setRangeText('', s - 1, e, 'end'); }
+            else if (s !== e) { el.setRangeText('', s, e, 'end'); }
+        }
+        fire(el, 'input');
+    }
+    function enter() {
+        const el = cur; if (!el) return;
+        if (el.tagName === 'TEXTAREA') { typeChar('\n'); return; }
+        key(el, 'keydown', 'Enter'); key(el, 'keypress', 'Enter'); key(el, 'keyup', 'Enter');
+        fire(el, 'change');
+    }
+
+    function btn(label, cls, fn) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+        if (cls) b.className = cls;
+        b.addEventListener('click', fn);
+        return b;
+    }
+    function row(items) { const d = document.createElement('div'); d.className = 'r'; items.forEach(i => d.appendChild(i)); return d; }
+
+    function render() {
+        box.innerHTML = '';
+        box.classList.toggle('num', mode === 'num');
+        const ch = c => btn(c, '', () => { typeChar(c); });
+        if (mode === 'num') {
+            [['7','8','9'],['4','5','6'],['1','2','3']].forEach(r => box.appendChild(row(r.map(ch))));
+            box.appendChild(row([ch('0'), ch('00'), ch('.'), btn('⌫', 'fn', backspace)]));
+            box.appendChild(row([btn('إخفاء', 'fn', hide), btn('تم ✓', 'ok w', () => { enter(); hide(); })]));
+            return;
+        }
+        const layout = lang === 'ar' ? AR : EN;
+        const fmt = c => (lang === 'en' && shift) ? c.toUpperCase() : c;
+        box.appendChild(row(['1','2','3','4','5','6','7','8','9','0'].map(ch)));
+        layout.forEach(r => box.appendChild(row(r.map(c => btn(fmt(c), '', () => { typeChar(fmt(c)); })))));
+        box.appendChild(row([
+            btn('إخفاء', 'fn', hide),
+            btn(lang === 'ar' ? 'EN' : 'ع', 'fn', () => { lang = lang === 'ar' ? 'en' : 'ar'; box.dataset.userLang = '1'; render(); }),
+            lang === 'en' ? btn('⇧', 'fn' + (shift ? ' ok' : ''), () => { shift = !shift; render(); }) : btn('،', '', () => typeChar('،')),
+            btn('مسافة', 'sp', () => typeChar(' ')),
+            btn('⌫', 'fn', backspace),
+            btn('↵', 'ok', () => { enter(); }),
+        ]));
+    }
+
+    document.addEventListener('focusin', e => { if (enabled && isTarget(e.target)) show(e.target); });
+    // (الأزرار تنعاد رسمها أثناء الضغط، فنعلّم الضغطة من الكيبورد بدل الاعتماد على contains)
+    let inBox = false;
+    box.addEventListener('click', () => { inBox = true; }, true);
+    document.addEventListener('click', e => {
+        if (inBox) { inBox = false; return; }
+        if (!enabled || !cur) return;
+        if (box.contains(e.target) || e.target === toggle) return;
+        if (isTarget(e.target)) return;
+        hide();
+    });
+})();
 
 // ==========================================
 // نهاية الجزء 4 - نهاية app.js الكامل
