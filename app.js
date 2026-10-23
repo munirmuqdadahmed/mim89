@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1837';
+const MIM89_APP_VERSION = '1839';
 
 /* ==========================================
    المتغيرات العامة
@@ -1430,7 +1430,7 @@ function getShiftOrders() {
 
 function getShiftExpenses() {
     const startTs = getShiftStartTs();
-    const all     = getData('sys_expenses') || [];
+    const all     = (getData('sys_expenses') || []).filter(e => !e.isEmployeeInvoice);
     return all.filter(e => {
         const ts = cleanPrice(e.createdTimestamp);
         if (!ts) return e.dateDate >= getBusinessDayString(new Date(startTs));
@@ -2916,7 +2916,11 @@ function getEmployeeStatement(emp) {
     const dedTotal = deductions.reduce((s, d) => s + cleanPrice(d.amount), 0);
 
     const advances = (getData('sys_expenses') || [])
-        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate) >= from);
+        .filter(e => e.type === 'سلفة' && e.employee === emp.name && String(e.dateDate) >= from && !e.isEmployeeInvoice);
+    // 🧾 فواتير الأكل على حسابه (تنقرأ مباشرة من الفواتير نفسها)
+    const invoices = (getData('sys_completed_orders') || [])
+        .filter(o => o.employeeAccount === emp.name && String(o.dateDate) >= from);
+    const invTotal = invoices.reduce((s, o) => s + cleanPrice(o.totalAmount), 0);
     const payments = (getData('sys_salaries') || [])
         .filter(x => x.employee === emp.name && String(x.dateDate) >= from);
     const advTotal = advances.reduce((s, e) => s + cleanPrice(e.amount), 0);
@@ -2930,10 +2934,10 @@ function getEmployeeStatement(emp) {
             .reduce((s, x) => s + cleanPrice(x.amount), 0);
 
     const accrued   = earned + carry - dedTotal;
-    const withdrawn = advTotal + payTotal;
+    const withdrawn = advTotal + payTotal + invTotal;
     return {
         from, days, salary, earned, carry, deductions, dedTotal,
-        advances, payments, advTotal, payTotal, extTotal, olderTotal,
+        advances, payments, advTotal, payTotal, extTotal, olderTotal, invoices, invTotal,
         accrued, withdrawn, remaining: accrued - withdrawn
     };
 }
@@ -2962,7 +2966,7 @@ function getStandardWorkHoursPerDay() {
 // السلف المسحوبة والرواتب المستلمة هذا الشهر
 function getEmployeeMonthFinance(emp) {
     const st = getEmployeeStatement(emp);
-    return { advances: st.advTotal, salaryPaid: st.payTotal };
+    return { advances: st.advTotal + st.invTotal, salaryPaid: st.payTotal };
 }
 
 // تقديم طلب موظف (سلفة أو إجازة/استراحة) - ينتظر موافقة الأدمن
@@ -3281,7 +3285,7 @@ function buildCustomerReceiptLines(ord) {
     const custPaymentBits = [];
     if (design.showCustomerName && ord.customerName)
         custPaymentBits.push('الزبون: ' + ord.customerName);
-    custPaymentBits.push('الدفع: ' + (ord.paymentMethod || 'كاش'));
+    custPaymentBits.push('الدفع: ' + (ord.paymentMethod || 'كاش') + (ord.employeeAccount ? ' (' + ord.employeeAccount + ')' : ''));
     L.push({ text: custPaymentBits.join('  |  '), size:'normal', align:'right' });
     if (design.showPhone && ord.phone && ord.phone !== '-')
         L.push({ text: 'الهاتف: ' + ord.phone, size:'normal', align:'right' });
@@ -3689,7 +3693,7 @@ function executeCustomerPrintOnly() {
         // 🛠️ دمج نوع الخدمة وطريقة الدفع بسطر واحد (بدل سطرين منفصلين) -
         // يوفّر مسافة ورق ويطابق شكل الفاتورة المرجعية النظيفة
         '<div>نوع الخدمة: <strong>' + (ord.orderType || '') + '</strong>' +
-        ' | الدفع: <strong>' + (ord.paymentMethod || 'كاش') + '</strong></div>' +
+        ' | الدفع: <strong>' + (ord.paymentMethod || 'كاش') + (ord.employeeAccount ? ' (' + ord.employeeAccount + ')' : '') + '</strong></div>' +
         // 🆕 سطر إضافي مخصص (رقم هاتف المحل، عنوان، رقم ضريبي...) - يضبطه
         // الأدمن من "تصميم الفاتورة"، يظهر بس لو مكتوب فيه شي
         (design.customExtraLine
@@ -4404,26 +4408,9 @@ function toggleExpenseTypeFields() {
 // 👤 تسجيل فاتورة موظف كسلفة بحسابه: المبيعات تنحسب كاش بالدرج، والسلفة تنخصم
 // بنفس المبلغ من الدرج، فيتعادل الدرج بدون نقص، والمبلغ ينخصم من راتب الموظف.
 function recordEmployeeInvoiceAsAdvance(ord) {
-    const id = 'EXP_INV_' + ord.id;
-    const expenses = getData('sys_expenses') || [];
-    if (expenses.some(e => e.id === id)) return;           // ما نسجلها مرتين
-    const rec = {
-        id, type: 'سلفة', amount: cleanPrice(ord.totalAmount),
-        note: 'فاتورة موظف: ' + ord.employeeAccount + ' | طلب #' + ord.orderNum,
-        employee: ord.employeeAccount,
-        orderNum: ord.orderNum, orderId: ord.id, isEmployeeInvoice: true,
-        dateDate: ord.dateDate, createdTimestamp: Date.now(),
-        cashierName: ord.cashierName || 'الرئيسي'
-    };
-    expenses.unshift(rec);
-    setData('sys_expenses', expenses);
-    if (typeof db !== 'undefined' && db) {
-        db.collection('expenses').doc(id).set(rec).catch(err => {
-            console.warn('تعذّر رفع فاتورة الموظف للسحابة:', err);
-            alert('⚠️ فاتورة الموظف ' + ord.employeeAccount + ' (طلب #' + ord.orderNum + ') انسجلت بهذا الجهاز بس، وما وصلت للسحابة (' +
-                ((err && (err.code || err.message)) || 'خطأ') + ').\nما راح تظهر بالأدمن إلا إذا انحلت المشكلة - صوّرلي هذي الرسالة.');
-        });
-    }
+    // الفاتورة نفسها هي السجل (فيها employeeAccount)، وكشف الموظف يقراها منها مباشرة،
+    // والدرج ما يحسبها كاش - فما نحتاج سجل صرفية منفصل (كان يعتمد على مزامنة إضافية).
+    const rec = { amount: cleanPrice(ord.totalAmount) };
     try { logAudit('فاتورة على حساب موظف', { employee: ord.employeeAccount, amount: rec.amount, orderNum: ord.orderNum }); } catch (_) {}
     // تأكيد ظاهر للكاشير
     try {
@@ -4486,7 +4473,7 @@ function renderExpensesList() {
     if (!container) return;
 
     const today    = getTodayString();
-    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today);
+    const expenses = (getData('sys_expenses') || []).filter(e => e.dateDate === today && !e.isEmployeeInvoice);
 
     if (expenses.length === 0) {
         container.innerHTML =
@@ -4645,7 +4632,9 @@ function computeTodaySalesSummary() {
         // بحوالة بنكية شهرية - ما نحتسبها كاش ولا فيزا إطلاقاً، حتى لو
         // انسوّت "تسوية" لها، لأن التسوية هنا معناها فقط "استلمنا الحوالة
         // بالبنك"، مو "توفر كاش بالدرج".
-        if (isPlatformDeliveryName(o.driverName)) {
+        if (o.employeeAccount) {
+            // 👤 فاتورة على حساب موظف: مبيعات، بس مو كاش بالدرج (تنخصم من راتبه)
+        } else if (isPlatformDeliveryName(o.driverName)) {
             totalPlatformPending += amt;
             platformOrdersCount++;
         } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
@@ -4686,7 +4675,7 @@ function computeTodaySalesSummary() {
 function computeTodayBusinessDaySummary() {
     const today    = getTodayString();
     const orders   = (getData('sys_completed_orders') || []).filter(o => o.dateDate === today);
-    const expenses = (getData('sys_expenses')         || []).filter(e => e.dateDate === today);
+    const expenses = (getData('sys_expenses')         || []).filter(e => e.dateDate === today && !e.isEmployeeInvoice);
     const salaries = (getData('sys_salaries')         || []).filter(s => s.dateDate === today && !s.external);
 
     let totalSales = 0, totalCash = 0, totalVisa = 0, totalPlatformPending = 0,
@@ -4696,7 +4685,9 @@ function computeTodayBusinessDaySummary() {
         const amt = cleanPrice(o.totalAmount);
         totalSales    += amt;
         totalDelivery += cleanPrice(o.deliveryFee);
-        if (isPlatformDeliveryName(o.driverName)) {
+        if (o.employeeAccount) {
+            // 👤 على حساب موظف: مو كاش بالدرج
+        } else if (isPlatformDeliveryName(o.driverName)) {
             totalPlatformPending += amt;
         } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             totalVisa += amt;
@@ -4776,7 +4767,9 @@ function renderShiftClosingReport() {
         // بحوالة بنكية شهرية - نستبعدها من الكاش والفيزا كلياً، ونحطها
         // بذمة منفصلة، حتى لو "تسوّت" لاحقاً (التسوية = وصول حوالة بنكية
         // مو كاش بالدرج).
-        if (isPlatformDeliveryName(o.driverName)) {
+        if (o.employeeAccount) {
+            // 👤 على حساب موظف: مو كاش بالدرج
+        } else if (isPlatformDeliveryName(o.driverName)) {
             platformPending += amt;
         } else if (o.paymentMethod && String(o.paymentMethod).includes('فيزا')) {
             visa += amt;
@@ -5710,7 +5703,9 @@ function renderDailyReport(targetDate) {
         totalDelivery += cleanPrice(o.deliveryFee);
         netFood       += cleanPrice(o.subtotal);
 
-        if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
+        if (o.employeeAccount) {
+            // 👤 على حساب موظف: مو كاش بالدرج
+        } else if (o.paymentMethod && o.paymentMethod.includes('فيزا')) {
             totalVisa += amt;
         } else if (isPlatformDeliveryName(o.driverName)) {
             // 🛠️ إصلاح جذري خطير: طلبات المنصات (بلي، طلبات...) فلوسها
