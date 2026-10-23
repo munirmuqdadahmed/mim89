@@ -902,6 +902,20 @@
                     </p>
                 </div>
 
+                <!-- 🗜️ نسخة الزبون -->
+                <div style="background:#0d1a2a;border:1px solid #38bdf8;border-radius:8px;padding:10px;margin-bottom:14px;">
+                    <label class="section-label" style="color:#38bdf8;">🧾 طباعة نسخة الزبون (توفير ورق):</label>
+                    <select id="invoiceCustomerCopy" class="gold-input-inline">
+                        <option value="all">دائماً (لكل الطلبات)</option>
+                        <option value="delivery">للتوصيل والسفري فقط (الصالة بدون نسخة زبون)</option>
+                        <option value="none">ما أطبع نسخة زبون (تذكرة المطبخ فقط)</option>
+                    </select>
+                    <p class="hint" style="margin-top:6px;">
+                        💡 الدرج يتفتح دائماً حتى لو ما انطبعت نسخة الزبون، وتذكرة المطبخ تنطبع كالعادة.
+                        وتكدر تطبع نسخة الزبون لأي طلب لاحقاً من سجل الفواتير.
+                    </p>
+                </div>
+
                 <label class="section-label">سطر إضافي مخصص (اختياري):</label>
                 <input type="text" id="invoiceCustomExtraLine" class="gold-input-inline"
                        placeholder="مثال: 📞 07750008630 أو رقم ضريبي..."
