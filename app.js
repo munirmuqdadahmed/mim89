@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1830';
+const MIM89_APP_VERSION = '1831';
 
 /* ==========================================
    المتغيرات العامة
@@ -252,7 +252,8 @@ const DEFAULT_DATA = {
         showDriverArea:   true,
         showOrderNotes:   true,
         showItemNotes:    true,
-        customExtraLine:  "" // 🆕 سطر إضافي حر (رقم هاتف المحل، رقم ضريبي...)
+        customExtraLine:  "", // 🆕 سطر إضافي حر (رقم هاتف المحل، رقم ضريبي...)
+        customerCopy:     "all" // all | delivery | none
     },
     // 🆕 بانر إعلاني بالمينيو الإلكتروني - يتحكم فيه الأدمن بالكامل
     menuAnnouncement: {
@@ -3188,6 +3189,15 @@ async function resyncTodayOrdersToCloud(btnElement) {
 // صيغة الأعمدة (cols/ratios/aligns) بشكل صحيح. الأصناف هنا مبنية كأسطر نصية
 // بسيطة (بمحاذاة يدوية عبر padReceiptLine) لأنها أبسط وتُنتج نفس النتيجة
 // بالضبط بأقل تعقيد، وتماماً كباقي عناصر الفاتورة الناجحة.
+// 🗜️ هل نطبع نسخة الزبون لهذا الطلب؟ (إعداد توفير الورق من تصميم الفاتورة)
+// all = دائماً | delivery = للتوصيل والسفري فقط (الصالة بدون) | none = ما نطبع (تذكرة المطبخ فقط)
+function shouldPrintCustomerCopy(ord) {
+    const mode = getInvoiceDesign().customerCopy || 'all';
+    if (mode === 'none') return false;
+    if (mode === 'delivery') return ord.orderType === 'توصيل' || ord.orderType === 'سفري';
+    return true;
+}
+
 function buildCustomerReceiptLines(ord) {
     const L = [];
     const money  = n => Math.round(cleanPrice(n)).toLocaleString('ar-IQ');
@@ -3274,7 +3284,8 @@ function buildCustomerReceiptLines(ord) {
     });
 
     L.push({ separator: 'dash' });
-    L.push({ text: 'عدد القطع: ' + totalQty, size:'normal', align:'right' });
+    if (!design.compactMode)
+        L.push({ text: 'عدد القطع: ' + totalQty, size:'normal', align:'right' });
     if (!design.compactMode) L.push({ separator: 'solid' });
 
     // الحساب
@@ -3319,9 +3330,14 @@ function buildCustomerReceiptLines(ord) {
 // ورقة المطبخ - رقم كبير + أصناف واضحة
 function buildKitchenTicketLines(ord) {
     const L = [];
-    L.push({ text: '*** مطبخ MIM89 ***', size:'big', align:'center', bold:true });
-    L.push({ text: ord.timestamp, size:'normal', align:'center' });
-    L.push({ separator: 'solid' });
+    const compact = !!getInvoiceDesign().compactMode;   // 🗜️ توفير ورق
+    if (compact) {
+        L.push({ text: 'مطبخ ' + ord.timestamp, size:'normal', align:'center' });
+    } else {
+        L.push({ text: '*** مطبخ MIM89 ***', size:'big', align:'center', bold:true });
+        L.push({ text: ord.timestamp, size:'normal', align:'center' });
+        L.push({ separator: 'solid' });
+    }
     L.push({ text: '#' + ord.orderNum, size:'huge', align:'center', bold:true });
     // 🆕 لو هذي إضافة على فاتورة سابقة، نبرزها بأوضح شكل ممكن فوق كل
     // شي ثاني - أهم معلومة بالتذكرة، حتى ما يشتبه المطبخ إنه طلب جديد مستقل
@@ -3330,7 +3346,7 @@ function buildKitchenTicketLines(ord) {
         L.push({ text: '🔗 إضافة على طلب #' + ord.linkedToOrderNum,
             size:'big', align:'center', bold:true });
     }
-    L.push({ separator: 'solid' });
+    if (!compact) L.push({ separator: 'solid' });
     // 🆕 لو الطلب توصيل عن طريق منصة (بلي، طلبات...)، نبيّن اسم المنصة
     // صراحة بدل كلمة "توصيل" العامة بس - يعرف المطبخ لأي جهة يجهزون
     const orderTypeLabel = (ord.orderType === 'توصيل' && ord.driverName &&
@@ -3342,9 +3358,9 @@ function buildKitchenTicketLines(ord) {
         L.push({ text: '📍 ' + ord.area, size:'big', align:'center', bold:true });
     if (ord.customerName && ord.customerName !== 'زبون مباشر')
         L.push({ text: ord.customerName, size:'normal', align:'center' });
-    L.push({ separator: 'solid' });
+    L.push({ separator: compact ? 'dash' : 'solid' });
 
-    (ord.items||[]).forEach(i => {
+    (ord.items||[]).forEach((i, idx, arr) => {
         L.push({
             text: '● ' + i.name + '  ×' + i.qty,
             size:'big', align:'right', bold:true
@@ -3357,7 +3373,9 @@ function buildKitchenTicketLines(ord) {
         if (i.itemNotes && i.itemNotes.length)
             L.push({ text: '⚠ ' + i.itemNotes.join(' — '),
                 size:'normal', align:'right', bold:true });
-        L.push({ separator: 'dash' });
+        // بالوضع المضغوط: فاصل بين الأصناف فقط لو الصنف عنده ملاحظات/مكونات، وإلا بدون
+        if (!compact || i.itemNotes && i.itemNotes.length || (i.isCombo && i.ingredients))
+            L.push({ separator: 'dash' });
     });
 
     if (ord.orderNotes)
@@ -3432,11 +3450,10 @@ async function printBothViaBridge(btnElement) {
             paperWidth: getInvoiceDesign().paperWidth, // 🛠️ يحدد للجسر عرض الورق الفعلي (58/80 مم)
 fontScale: getInvoiceDesign().fontScale || '1.0',
             jobs: [
-                {
-                    printer:    'cashier',
-                    lines:      buildCustomerReceiptLines(ord),
-                    openDrawer: true
-                },
+                // 🗜️ توفير ورق: حسب إعداد "نسخة الزبون" - لو مو مطلوبة نفتح الدرج بس بدون طباعة
+                (shouldPrintCustomerCopy(ord)
+                    ? { printer: 'cashier', lines: buildCustomerReceiptLines(ord), openDrawer: true }
+                    : { printer: 'cashier', drawerOnly: true }),
                 {
                     printer:    'kitchen',
                     lines:      buildKitchenTicketLines(ord),
@@ -7615,6 +7632,7 @@ function loadInvoiceDesignForm() {
     setChk('invoiceShowOrderNotes',   d.showOrderNotes);
     setChk('invoiceShowItemNotes',    d.showItemNotes);
     setChk('invoiceCompactMode',      d.compactMode);
+    setVal('invoiceCustomerCopy',     d.customerCopy || 'all');
 
     const preview = document.getElementById('invoiceLogoPreview');
     if (preview) {
@@ -7757,6 +7775,7 @@ function saveInvoiceDesign() {
         showOrderNotes:   getChk('invoiceShowOrderNotes'),
         showItemNotes:    getChk('invoiceShowItemNotes'),
         compactMode:      getChk('invoiceCompactMode'),
+        customerCopy:     getVal('invoiceCustomerCopy') || 'all',
         fontScale:        getVal('invoiceFontScale') || '1.0'
     };
 
