@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1836';
+const MIM89_APP_VERSION = '1837';
 
 /* ==========================================
    المتغيرات العامة
@@ -3923,7 +3923,7 @@ function tryFinalizeAndClearOrder(silentMode) {
 
     // 👤 فاتورة على حساب موظف: تنسجل عليه كسلفة (تنخصم من الدرج حتى ما يطلع نقص)
     if (orderToSave.employeeAccount) {
-        try { recordEmployeeInvoiceAsAdvance(orderToSave); } catch (e) { console.error('تعذّر تسجيل فاتورة الموظف:', e); }
+        try { recordEmployeeInvoiceAsAdvance(orderToSave); } catch (e) { console.error('تعذّر تسجيل فاتورة الموظف:', e); alert('⚠️ تعذّر تسجيل فاتورة الموظف بحسابه: ' + (e && e.message)); }
     }
 
     // خصم المواد من المخزن
@@ -4425,6 +4425,13 @@ function recordEmployeeInvoiceAsAdvance(ord) {
         });
     }
     try { logAudit('فاتورة على حساب موظف', { employee: ord.employeeAccount, amount: rec.amount, orderNum: ord.orderNum }); } catch (_) {}
+    // تأكيد ظاهر للكاشير
+    try {
+        const t = document.createElement('div');
+        t.textContent = '✅ انسجلت فاتورة #' + ord.orderNum + ' (' + Math.round(rec.amount).toLocaleString('ar-IQ') + ' د.ع) على حساب ' + ord.employeeAccount;
+        t.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483600;background:#0d3d1a;color:#10b981;border:2px solid #10b981;padding:12px 18px;border-radius:12px;font-weight:900;font-size:1rem;box-shadow:0 6px 20px rgba(0,0,0,.6);';
+        document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+    } catch (_) {}
 }
 
 function addNewExpenseRecord() {
