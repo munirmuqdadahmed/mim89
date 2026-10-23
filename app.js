@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1839';
+const MIM89_APP_VERSION = '1840';
 
 /* ==========================================
    المتغيرات العامة
@@ -4757,6 +4757,7 @@ function renderShiftClosingReport() {
     let totalSales = 0, cash = 0, visa = 0, platformPending = 0,
         deliveryFees = 0, discounts = 0;
     let dineIn = 0, takeaway = 0, delivery = 0;
+    const empInvoices = orders.filter(o => o.employeeAccount);
 
     orders.forEach(o => {
         const amt = cleanPrice(o.totalAmount);
@@ -4821,6 +4822,14 @@ function renderShiftClosingReport() {
     // الكلي (يشمل الفيزا) بطلب الإدارة - يبقى فقط ما يلزم لتسوية نقد الصندوق
     html += row('كاش:', money(cash), '#10b981');
     html += row('فيزا:', money(visa), '#38bdf8');
+    // 🧾 فواتير الموظفين: مبيعات، بس مو كاش بالدرج (تنخصم من رواتبهم)
+    if (empInvoices.length) {
+        html += '<div style="margin:6px 0;padding:6px;border:1px dashed #f59e0b;border-radius:8px;">';
+        html += '<div style="color:#f59e0b;font-weight:900;font-size:0.8rem;margin-bottom:4px;">🧾 على حساب موظفين (مو كاش بالدرج)</div>';
+        empInvoices.forEach(o => html += row('👤 ' + o.employeeAccount + ' — #' + o.orderNum, money(o.totalAmount), '#f59e0b'));
+        html += row('المجموع:', money(empInvoices.reduce((a, o) => a + cleanPrice(o.totalAmount), 0)), '#f59e0b', true);
+        html += '</div>';
+    }
     // 🛠️ إصلاح بطلب المالك: ذمة المنصات ما تظهر للكاشير إطلاقاً هنا،
     // تضل معلومة حصرية بالأدمن بس (حتى لو موجودة بالحساب الداخلي)
     if (discounts > 0)
