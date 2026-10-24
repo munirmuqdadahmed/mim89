@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1841';
+const MIM89_APP_VERSION = '1842';
 
 /* ==========================================
    المتغيرات العامة
@@ -5565,6 +5565,11 @@ function renderCompletedOrdersLog() {
             'class="gold-btn btn-sm" ' +
             'style="background:#1a0d1a;color:#c084fc;border:1px solid #c084fc;' +
             'font-size:0.7rem;padding:5px 8px;white-space:nowrap;">🔄 نوع الخدمة</button>' +
+            (!o.employeeAccount && !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')) && !isPlatformDeliveryName(o.driverName)
+                ? '<button onclick="openAssignEmployeeInvoice(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
+                  'style="background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-size:0.7rem;padding:5px 8px;white-space:nowrap;">' +
+                  '👤 على حساب موظف</button>'
+                : '') +
             (o.employeeAccount
                 ? '<button onclick="convertEmployeeInvoiceToCash(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
                   'style="background:#3d2a0d;color:#f59e0b;border:1px solid #f59e0b;font-size:0.7rem;padding:5px 8px;white-space:nowrap;">' +
@@ -5634,6 +5639,56 @@ function convertEmployeeInvoiceToCash(orderId) {
         try { if (typeof window[fn] === 'function') window[fn](); } catch (_) {}
     });
     alert('✅ تم: الفاتورة #' + order.orderNum + ' صارت بيع كاش، وانشالت من حساب ' + emp + '.');
+}
+
+// 👤 تحويل فاتورة كاش عادية إلى حساب موظف (أو إرجاعها لموظف بعد ما انحولت بالغلط)
+function openAssignEmployeeInvoice(orderId) {
+    const all = getData('sys_completed_orders') || [];
+    const order = all.find(o => String(o.id) === String(orderId));
+    if (!order) return alert('⚠️ تعذّر إيجاد الفاتورة.');
+    const emps = getData('sys_employees') || [];
+    if (emps.length === 0) return alert('⚠️ ماكو موظفين مسجلين.');
+    const old = document.getElementById('assignEmpInvOverlay'); if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'assignEmpInvOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2147482000;display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML =
+        '<div style="background:#14141b;border:2px solid #10b981;border-radius:14px;padding:16px;width:100%;max-width:360px;direction:rtl;color:#fff;">' +
+        '<h4 style="color:#10b981;margin-bottom:8px;">👤 فاتورة #' + order.orderNum + ' على حساب موظف</h4>' +
+        '<p style="font-size:0.8rem;color:#aaa;margin-bottom:10px;">المبلغ ' + Math.round(cleanPrice(order.totalAmount)).toLocaleString('ar-IQ') +
+        ' د.ع ينشال من نقد الدرج وينسجل على الموظف.</p>' +
+        '<select id="assignEmpInvSelect" class="gold-input-inline" style="margin-bottom:12px;">' +
+        emps.map(e => '<option value="' + String(e.name).replace(/"/g, '&quot;') + '"' +
+            (e.name === order.wasEmployeeAccount ? ' selected' : '') + '>' + e.name + '</option>').join('') +
+        '</select>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button id="assignEmpInvOk" class="gold-btn btn-block" style="background:#10b981;color:#000;font-weight:900;">تأكيد</button>' +
+        '<button id="assignEmpInvCancel" class="gold-btn btn-block">إلغاء</button></div></div>';
+    document.body.appendChild(ov);
+    document.getElementById('assignEmpInvCancel').onclick = () => ov.remove();
+    document.getElementById('assignEmpInvOk').onclick = () => {
+        const name = document.getElementById('assignEmpInvSelect').value;
+        if (!name) return;
+        const list = getData('sys_completed_orders') || [];
+        const o = list.find(x => String(x.id) === String(orderId));
+        if (!o) { ov.remove(); return; }
+        o.employeeAccount = name;
+        o.paymentMethod = 'حساب موظف';
+        o.cashGiven = 0; o.cashChange = 0;
+        o.lastModified = Date.now();
+        safeLocalSet('sys_completed_orders', JSON.stringify(list));
+        if (db) {
+            db.collection('completed_orders').doc(String(o.id)).set({
+                employeeAccount: name, paymentMethod: 'حساب موظف', cashGiven: 0, cashChange: 0, lastModified: o.lastModified
+            }, { merge: true }).catch(err => console.warn('تعذّر تحديث الفاتورة بالسحابة:', err));
+        }
+        try { logAudit('فاتورة على حساب موظف', { employee: name, amount: cleanPrice(o.totalAmount), orderNum: o.orderNum }); } catch (_) {}
+        ov.remove();
+        ['renderCompletedOrdersLog','renderInvoiceManagerList','renderEmployeesTab','renderDrawerDriverSettlement'].forEach(fn => {
+            try { if (typeof window[fn] === 'function') window[fn](); } catch (_) {}
+        });
+        alert('✅ الفاتورة #' + o.orderNum + ' صارت على حساب ' + name + '.');
+    };
 }
 
 // 🔄 تغيير نوع الخدمة لفاتورة مكتملة فعلاً (تصحيح خطأ صالة/سفري بدل توصيل)
