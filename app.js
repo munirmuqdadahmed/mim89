@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1843';
+const MIM89_APP_VERSION = '1844';
 
 /* ==========================================
    المتغيرات العامة
@@ -9282,12 +9282,23 @@ function filterCategory(catId, btnElement) {
 }
 
 // 💲 إخفاء أسعار الأصناف العادية على مينيو الزبائن (تبقى أسعار العروض/البوكسات ظاهرة)
+// أقسام العروض: اللي يحددها الأدمن، وإن ما حدد شي نكتشفها من اسم القسم (عرض / عروض / بوكس)
+function getDefaultOfferCatIds() {
+    return (getData('sys_categories') || [])
+        .filter(c => /عرض|عروض|بوكس|بوكسات|كومبو/.test(String(c.name || '')))
+        .map(c => String(c.id));
+}
+function isItemInOfferCategory(item, cfg) {
+    const ids = (cfg && Array.isArray(cfg.offerCats)) ? cfg.offerCats.map(String) : getDefaultOfferCatIds();
+    return ids.indexOf(String(item.categoryId)) !== -1;
+}
+
 function isMenuPriceHiddenFor(item) {
     const cfg = getData('sys_menu_price_display');
     if (!cfg || Array.isArray(cfg) || !item) return false;
     // توافق مع النسخة القديمة (hideRegular فقط)
     const mode = cfg.mode || (cfg.hideRegular ? 'regular' : 'all');
-    const isOffer = !!(item.isCombo || item.comboRefId);
+    const isOffer = !!(item.isCombo || item.comboRefId) || isItemInOfferCategory(item, cfg);
     if (mode === 'everything') return true;                       // كل الأسعار مخفية (حتى العروض)
     if (mode === 'regular')    return !isOffer;                   // العادية مخفية، العروض ظاهرة
     if (mode === 'categories') {                                  // أقسام محددة مخفية
