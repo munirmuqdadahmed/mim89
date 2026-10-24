@@ -1152,11 +1152,13 @@
         const itemsList = cart.map(i =>
             '▫️ ' + i.name +
             (i.customNotes ? ' (' + i.customNotes + ')' : '') +
-            ' × ' + i.qty + ' = ' +
+            ' × ' + i.qty +
+            (i.hidePrice ? '' : ' = ' +
             ((typeof cleanPrice === 'function' ? cleanPrice(i.price) : 0) *
              (typeof cleanPrice === 'function' ? cleanPrice(i.qty) : 0)).toLocaleString('ar-IQ') +
-            ' د.ع'
+            ' د.ع')
         ).join('\n');
+        const hasHiddenPrices = cart.some(i => i.hidePrice);
 
         let waMsg = '🔥 *طلب جديد - MIM89* 🔥\n';
         waMsg += '🏷️ *رقم:* ' + orderId + '\n';
@@ -1179,13 +1181,14 @@
         waMsg += '——————————————\n';
         waMsg += '🛒 *الوجبات:*\n' + itemsList + '\n';
         waMsg += '——————————————\n';
-        waMsg += '💵 *مجموع الوجبات:* ' + subtotal.toLocaleString('ar-IQ') + ' د.ع\n';
-        if (discount > 0)
+        if (!hasHiddenPrices) waMsg += '💵 *مجموع الوجبات:* ' + subtotal.toLocaleString('ar-IQ') + ' د.ع\n';
+        if (discount > 0 && !hasHiddenPrices)
             waMsg += '🏷️ *خصم الكوبون:* -' + discount.toLocaleString('ar-IQ') + ' د.ع\n';
         if (type === 'delivery')
             waMsg += '🛵 *التوصيل:* ' +
                 (fee === 0 ? 'مجاني 🎉' : fee.toLocaleString('ar-IQ') + ' د.ع') + '\n';
-        waMsg += '💰 *المجموع الكلي:* ' + total.toLocaleString('ar-IQ') + ' د.ع\n';
+        if (!hasHiddenPrices) waMsg += '💰 *المجموع الكلي:* ' + total.toLocaleString('ar-IQ') + ' د.ع\n';
+        else waMsg += '💰 *المبلغ:* يُحدَّد عند تأكيد الطلب\n';
 
         // حفظ الطلب محلياً
         const orderData = {
