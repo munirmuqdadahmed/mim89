@@ -3978,6 +3978,8 @@ function renderInvoiceManagerList() {
             (o.isSettled ? ' • <span style="color:#10b981;">✅ مسوّاة</span>' : ' • <span style="color:#f59e0b;">⏳ غير مسوّاة</span>') +
             '</div></div>' +
             '<div style="display:flex;gap:5px;">' +
+            (!o.employeeAccount && !(o.paymentMethod && String(o.paymentMethod).includes('فيزا')) && !isPlatformDeliveryName(o.driverName) ? '<button onclick="openAssignEmployeeInvoice(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:6px 12px;background:#0d3d1a;color:#10b981;border:1px solid #10b981;">👤 على موظف</button>' : '') +
             (o.employeeAccount ? '<button onclick="convertEmployeeInvoiceToCash(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
             'style="width:auto;padding:6px 12px;background:#3d2a0d;color:#f59e0b;border:1px solid #f59e0b;">↩️ حوّلها كاش</button>' : '') +
             '<button onclick="openInvoiceEditModal(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
