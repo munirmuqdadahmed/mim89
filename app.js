@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1842';
+const MIM89_APP_VERSION = '1843';
 
 /* ==========================================
    المتغيرات العامة
@@ -9284,7 +9284,17 @@ function filterCategory(catId, btnElement) {
 // 💲 إخفاء أسعار الأصناف العادية على مينيو الزبائن (تبقى أسعار العروض/البوكسات ظاهرة)
 function isMenuPriceHiddenFor(item) {
     const cfg = getData('sys_menu_price_display');
-    return !!(cfg && cfg.hideRegular && item && !item.isCombo && !item.comboRefId);
+    if (!cfg || Array.isArray(cfg) || !item) return false;
+    // توافق مع النسخة القديمة (hideRegular فقط)
+    const mode = cfg.mode || (cfg.hideRegular ? 'regular' : 'all');
+    const isOffer = !!(item.isCombo || item.comboRefId);
+    if (mode === 'everything') return true;                       // كل الأسعار مخفية (حتى العروض)
+    if (mode === 'regular')    return !isOffer;                   // العادية مخفية، العروض ظاهرة
+    if (mode === 'categories') {                                  // أقسام محددة مخفية
+        const ids = (cfg.hiddenCats || []).map(String);
+        return ids.indexOf(String(item.categoryId)) !== -1;
+    }
+    return false;                                                 // all = كل الأسعار ظاهرة
 }
 
 window.openItemCustomizationModal = function(itemId) {
