@@ -1006,6 +1006,10 @@
                 <label class="price-mode-opt"><input type="radio" name="priceMode" value="categories"> 📂 أخفي أسعار أقسام محددة فقط</label>
             </div>
             <div id="priceCatsBox" style="display:none;margin-bottom:10px;padding:8px;border:1px dashed #555;border-radius:8px;"></div>
+            <div style="margin-bottom:10px;padding:8px;border:1px dashed #10b981;border-radius:8px;">
+                <div style="font-size:0.82rem;color:#10b981;font-weight:900;margin-bottom:4px;">🎁 الأقسام اللي تعتبر "عروض" (أسعارها تبقى ظاهرة بخيار إخفاء العادية):</div>
+                <div id="offerCatsBox"></div>
+            </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button onclick="saveMenuPriceDisplay()" class="gold-btn" style="flex:2;background:#f59e0b;color:#000;font-weight:900;">💾 حفظ</button>
                 <button onclick="quickSetPriceMode('all')" class="gold-btn" style="flex:2;background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">✅ شغّل كل الأسعار الآن</button>
@@ -4602,6 +4606,18 @@ function loadMenuPriceDisplay() {
         cur.style.color = cfg.mode === 'all' ? '#10b981' : '#f59e0b';
     }
     renderPriceCatsBox();
+    renderOfferCatsBox();
+}
+function renderOfferCatsBox() {
+    const box = document.getElementById('offerCatsBox');
+    if (!box) return;
+    const cfg = getData('sys_menu_price_display');
+    const saved = (cfg && !Array.isArray(cfg) && Array.isArray(cfg.offerCats)) ? cfg.offerCats.map(String) : null;
+    const sel = saved || getDefaultOfferCatIds();
+    box.innerHTML = (getData('sys_categories') || []).map(c =>
+        '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;">' +
+        '<input type="checkbox" class="offer-cat-cb" value="' + c.id + '" style="width:18px;height:18px;"' +
+        (sel.indexOf(String(c.id)) !== -1 ? ' checked' : '') + '> ' + c.name + '</label>').join('');
 }
 function renderPriceCatsBox() {
     const box = document.getElementById('priceCatsBox');
@@ -4622,7 +4638,9 @@ function saveMenuPriceDisplay(forcedMode) {
     const hiddenCats = mode === 'categories'
         ? [...document.querySelectorAll('#priceCatsBox input:checked')].map(i => i.value) : [];
     if (mode === 'categories' && hiddenCats.length === 0) return alert('⚠️ علّم قسم واحد على الأقل.');
-    setData('sys_menu_price_display', { mode, hiddenCats, hideRegular: mode === 'regular', updatedAt: Date.now() });
+    const offerBox = document.querySelectorAll('#offerCatsBox .offer-cat-cb');
+    const offerCats = offerBox.length ? [...offerBox].filter(i => i.checked).map(i => i.value) : getDefaultOfferCatIds();
+    setData('sys_menu_price_display', { mode, hiddenCats, offerCats, hideRegular: mode === 'regular', updatedAt: Date.now() });
     try { logAudit('أسعار المينيو', { mode, hiddenCats }); } catch (_) {}
     loadMenuPriceDisplay();
     alert(mode === 'all' ? '✅ كل الأسعار صارت ظاهرة للزبائن.' : '✅ تم الحفظ. الزبائن يشوفون التغيير خلال لحظات.');
