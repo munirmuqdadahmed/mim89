@@ -194,7 +194,7 @@
                 <i class="fa-solid fa-gift"></i> عروض وبوكسات
             </button>
             <button class="sidebar-item" onclick="switchAdminTab('tabAnnouncementControl',this)">
-                <i class="fa-solid fa-bullhorn"></i> إعلان المينيو
+                <i class="fa-solid fa-bullhorn"></i> إعلان وأسعار المينيو
             </button>
             <button class="sidebar-item" onclick="switchAdminTab('tabAreasControl',this)">
                 <i class="fa-solid fa-map-location-dot"></i> المناطق
@@ -995,6 +995,22 @@
 
     <!-- 📢 تبويب إعلان المينيو -->
     <div id="tabAnnouncementControl" class="tab-content" style="margin-top:15px;display:none;">
+        <!-- 💲 إخفاء أسعار المينيو (الأصناف العادية) -->
+        <div class="card" style="max-width:620px;margin:0 auto 14px;border-color:#f59e0b;">
+            <h4 style="color:#f59e0b;margin-bottom:8px;">💲 إخفاء أسعار المينيو (مؤقت)</h4>
+            <p class="hint" style="margin-bottom:10px;line-height:1.7;">
+                لما تفعّله: الزبون يشوف الأصناف العادية <strong>بدون أسعار</strong> ويكدر يطلبها عادي،
+                وتبقى أسعار <strong>العروض والبوكسات</strong> ظاهرة. الأسعار ما تتغير عندك بالكاشير
+                ولا بالطلبات، والمبلغ الكلي للزبون يطلع "يُحدَّد عند التأكيد".
+            </p>
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.95rem;color:#fbbf24;cursor:pointer;font-weight:900;margin-bottom:10px;">
+                <input type="checkbox" id="hideRegularPricesChk" style="width:20px;height:20px;">
+                🚫 إيقاف أسعار الأصناف العادية بالمينيو
+            </label>
+            <button onclick="saveMenuPriceDisplay()" class="gold-btn btn-block" style="background:#f59e0b;color:#000;font-weight:900;">حفظ</button>
+            <p id="hideRegularPricesStatus" class="hint" style="margin-top:6px;"></p>
+        </div>
+
         <div class="card" style="max-width:620px;margin:0 auto 14px;border-color:#ffd700;">
             <h4 style="color:#ffd700;margin-bottom:10px;"><i class="fa-solid fa-bullhorn"></i> 📢 إعلان المينيو الإلكتروني</h4>
             <p class="hint" style="margin-bottom:12px;line-height:1.7;">
@@ -2601,6 +2617,8 @@ function switchAdminTab(tabId, btn) {
     }
     if (tabId === 'tabAnnouncementControl' && typeof loadMenuAnnouncementForm === 'function')
         loadMenuAnnouncementForm();
+    if (tabId === 'tabAnnouncementControl' && typeof loadMenuPriceDisplay === 'function')
+        loadMenuPriceDisplay();
     if (tabId === 'tabInvoiceDesignControl' && typeof loadInvoiceDesignForm === 'function')
         loadInvoiceDesignForm();
     if (tabId === 'tabComboDealsControl' && typeof renderComboDealsList === 'function')
@@ -3960,6 +3978,8 @@ function renderInvoiceManagerList() {
             (o.isSettled ? ' • <span style="color:#10b981;">✅ مسوّاة</span>' : ' • <span style="color:#f59e0b;">⏳ غير مسوّاة</span>') +
             '</div></div>' +
             '<div style="display:flex;gap:5px;">' +
+            (o.employeeAccount ? '<button onclick="convertEmployeeInvoiceToCash(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
+            'style="width:auto;padding:6px 12px;background:#3d2a0d;color:#f59e0b;border:1px solid #f59e0b;">↩️ حوّلها كاش</button>' : '') +
             '<button onclick="openInvoiceEditModal(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
             'style="width:auto;padding:6px 12px;background:#0d1a2a;color:#38bdf8;border:1px solid #38bdf8;">✏️ تعديل</button>' +
             '<button onclick="deleteInvoiceFromManager(\'' + o.id + '\')" class="gold-btn btn-danger btn-sm" ' +
@@ -4552,6 +4572,22 @@ function refreshEmpStatement() {
 
     document.getElementById('empPayFromInput').value = st.from;
     document.getElementById('empCarryInput').value = emp.carryoverAmount || '';
+}
+
+// 💲 إخفاء أسعار الأصناف العادية بمينيو الزبائن
+function loadMenuPriceDisplay() {
+    const cfg = getData('sys_menu_price_display') || {};
+    const chk = document.getElementById('hideRegularPricesChk');
+    if (chk) chk.checked = !!cfg.hideRegular;
+    const st = document.getElementById('hideRegularPricesStatus');
+    if (st) st.innerText = cfg.hideRegular ? '⚠️ حالياً: أسعار الأصناف العادية مخفية عن الزبائن.' : 'حالياً: كل الأسعار ظاهرة للزبائن.';
+}
+function saveMenuPriceDisplay() {
+    const hide = !!document.getElementById('hideRegularPricesChk').checked;
+    setData('sys_menu_price_display', { hideRegular: hide, updatedAt: Date.now() });
+    try { logAudit('أسعار المينيو', { hideRegular: hide }); } catch (_) {}
+    loadMenuPriceDisplay();
+    alert(hide ? '✅ تم إخفاء أسعار الأصناف العادية عن الزبائن (العروض تبقى بأسعارها).' : '✅ رجعت كل الأسعار ظاهرة للزبائن.');
 }
 
 function openEmpPayModal(id) {
