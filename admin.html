@@ -995,22 +995,28 @@
 
     <!-- 📢 تبويب إعلان المينيو -->
     <div id="tabAnnouncementControl" class="tab-content" style="margin-top:15px;display:none;">
-        <!-- 💲 إخفاء أسعار المينيو (الأصناف العادية) -->
+        <!-- 💲 التحكم بأسعار المينيو للزبائن -->
         <div class="card" style="max-width:620px;margin:0 auto 14px;border-color:#f59e0b;">
-            <h4 style="color:#f59e0b;margin-bottom:8px;">💲 إخفاء أسعار المينيو (مؤقت)</h4>
-            <p class="hint" style="margin-bottom:10px;line-height:1.7;">
-                لما تفعّله: الزبون يشوف الأصناف العادية <strong>بدون أسعار</strong> ويكدر يطلبها عادي،
-                وتبقى أسعار <strong>العروض والبوكسات</strong> ظاهرة. الأسعار ما تتغير عندك بالكاشير
-                ولا بالطلبات، والمبلغ الكلي للزبون يطلع "يُحدَّد عند التأكيد".
+            <h4 style="color:#f59e0b;margin-bottom:8px;">💲 أسعار المينيو للزبائن</h4>
+            <div id="priceModeCurrent" style="font-weight:900;margin-bottom:10px;padding:8px;border-radius:8px;background:#1a1608;text-align:center;"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+                <label class="price-mode-opt"><input type="radio" name="priceMode" value="all"> ✅ كل الأسعار ظاهرة (الوضع العادي)</label>
+                <label class="price-mode-opt"><input type="radio" name="priceMode" value="regular"> 🚫 أخفي أسعار الأصناف العادية فقط (العروض والبوكسات ظاهرة)</label>
+                <label class="price-mode-opt"><input type="radio" name="priceMode" value="everything"> 🙈 أخفي كل الأسعار (حتى العروض)</label>
+                <label class="price-mode-opt"><input type="radio" name="priceMode" value="categories"> 📂 أخفي أسعار أقسام محددة فقط</label>
+            </div>
+            <div id="priceCatsBox" style="display:none;margin-bottom:10px;padding:8px;border:1px dashed #555;border-radius:8px;"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="saveMenuPriceDisplay()" class="gold-btn" style="flex:2;background:#f59e0b;color:#000;font-weight:900;">💾 حفظ</button>
+                <button onclick="quickSetPriceMode('all')" class="gold-btn" style="flex:2;background:#0d3d1a;color:#10b981;border:1px solid #10b981;font-weight:900;">✅ شغّل كل الأسعار الآن</button>
+                <button onclick="quickSetPriceMode('regular')" class="gold-btn" style="flex:2;background:#3d0d0d;color:#ef4444;border:1px solid #ef4444;font-weight:900;">🚫 أوقف العادية الآن</button>
+            </div>
+            <p class="hint" style="margin-top:8px;line-height:1.7;">
+                الزبون يكدر يطلب عادي، بس الأسعار المخفية ما تطلع له (والمجموع يطلع "يُحدَّد عند التأكيد").
+                الأسعار الحقيقية تبقى محفوظة وتشوفها أنت بالكاشير وبالطلبات.
             </p>
-            <label style="display:flex;align-items:center;gap:8px;font-size:0.95rem;color:#fbbf24;cursor:pointer;font-weight:900;margin-bottom:10px;">
-                <input type="checkbox" id="hideRegularPricesChk" style="width:20px;height:20px;">
-                🚫 إيقاف أسعار الأصناف العادية بالمينيو
-            </label>
-            <button onclick="saveMenuPriceDisplay()" class="gold-btn btn-block" style="background:#f59e0b;color:#000;font-weight:900;">حفظ</button>
-            <p id="hideRegularPricesStatus" class="hint" style="margin-top:6px;"></p>
         </div>
-
+        <style>.price-mode-opt{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #333;border-radius:8px;cursor:pointer;font-size:0.9rem;}.price-mode-opt input{width:18px;height:18px;}</style>
         <div class="card" style="max-width:620px;margin:0 auto 14px;border-color:#ffd700;">
             <h4 style="color:#ffd700;margin-bottom:10px;"><i class="fa-solid fa-bullhorn"></i> 📢 إعلان المينيو الإلكتروني</h4>
             <p class="hint" style="margin-bottom:12px;line-height:1.7;">
@@ -4576,21 +4582,52 @@ function refreshEmpStatement() {
     document.getElementById('empCarryInput').value = emp.carryoverAmount || '';
 }
 
-// 💲 إخفاء أسعار الأصناف العادية بمينيو الزبائن
+// 💲 التحكم بأسعار المينيو للزبائن
+function getPriceCfg() {
+    const cfg = getData('sys_menu_price_display');
+    if (!cfg || Array.isArray(cfg)) return { mode: 'all', hiddenCats: [] };
+    return { mode: cfg.mode || (cfg.hideRegular ? 'regular' : 'all'), hiddenCats: cfg.hiddenCats || [] };
+}
 function loadMenuPriceDisplay() {
-    const cfg = getData('sys_menu_price_display') || {};
-    const chk = document.getElementById('hideRegularPricesChk');
-    if (chk) chk.checked = !!cfg.hideRegular;
-    const st = document.getElementById('hideRegularPricesStatus');
-    if (st) st.innerText = cfg.hideRegular ? '⚠️ حالياً: أسعار الأصناف العادية مخفية عن الزبائن.' : 'حالياً: كل الأسعار ظاهرة للزبائن.';
+    const cfg = getPriceCfg();
+    document.querySelectorAll('input[name="priceMode"]').forEach(r => {
+        r.checked = (r.value === cfg.mode);
+        r.onchange = renderPriceCatsBox;
+    });
+    const names = { all: '✅ كل الأسعار ظاهرة للزبائن', regular: '⚠️ أسعار الأصناف العادية مخفية (العروض ظاهرة)',
+        everything: '⚠️ كل الأسعار مخفية', categories: '⚠️ أسعار أقسام محددة مخفية' };
+    const cur = document.getElementById('priceModeCurrent');
+    if (cur) {
+        cur.innerText = 'الحالة الحالية: ' + names[cfg.mode];
+        cur.style.color = cfg.mode === 'all' ? '#10b981' : '#f59e0b';
+    }
+    renderPriceCatsBox();
 }
-function saveMenuPriceDisplay() {
-    const hide = !!document.getElementById('hideRegularPricesChk').checked;
-    setData('sys_menu_price_display', { hideRegular: hide, updatedAt: Date.now() });
-    try { logAudit('أسعار المينيو', { hideRegular: hide }); } catch (_) {}
+function renderPriceCatsBox() {
+    const box = document.getElementById('priceCatsBox');
+    if (!box) return;
+    const mode = (document.querySelector('input[name="priceMode"]:checked') || {}).value;
+    box.style.display = mode === 'categories' ? 'block' : 'none';
+    if (mode !== 'categories') return;
+    const hidden = getPriceCfg().hiddenCats.map(String);
+    const prev = [...box.querySelectorAll('input:checked')].map(i => i.value);
+    const cats = getData('sys_categories') || [];
+    box.innerHTML = '<div style="font-size:0.8rem;color:#aaa;margin-bottom:6px;">علّم الأقسام اللي أسعارها تنخفي:</div>' +
+        cats.map(c => '<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;">' +
+            '<input type="checkbox" value="' + c.id + '" style="width:18px;height:18px;"' +
+            ((prev.length ? prev : hidden).indexOf(String(c.id)) !== -1 ? ' checked' : '') + '> ' + c.name + '</label>').join('');
+}
+function saveMenuPriceDisplay(forcedMode) {
+    const mode = forcedMode || (document.querySelector('input[name="priceMode"]:checked') || {}).value || 'all';
+    const hiddenCats = mode === 'categories'
+        ? [...document.querySelectorAll('#priceCatsBox input:checked')].map(i => i.value) : [];
+    if (mode === 'categories' && hiddenCats.length === 0) return alert('⚠️ علّم قسم واحد على الأقل.');
+    setData('sys_menu_price_display', { mode, hiddenCats, hideRegular: mode === 'regular', updatedAt: Date.now() });
+    try { logAudit('أسعار المينيو', { mode, hiddenCats }); } catch (_) {}
     loadMenuPriceDisplay();
-    alert(hide ? '✅ تم إخفاء أسعار الأصناف العادية عن الزبائن (العروض تبقى بأسعارها).' : '✅ رجعت كل الأسعار ظاهرة للزبائن.');
+    alert(mode === 'all' ? '✅ كل الأسعار صارت ظاهرة للزبائن.' : '✅ تم الحفظ. الزبائن يشوفون التغيير خلال لحظات.');
 }
+function quickSetPriceMode(mode) { saveMenuPriceDisplay(mode); }
 
 function openEmpPayModal(id) {
     const emp = findEmployeeById(id);
