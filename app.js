@@ -16,7 +16,7 @@ document.addEventListener('keydown', event => {
 });
 
 const MIM89_VERSION     = "1100";
-const MIM89_APP_VERSION = '1840';
+const MIM89_APP_VERSION = '1841';
 
 /* ==========================================
    المتغيرات العامة
@@ -398,7 +398,7 @@ try {
 const STAFF_REST_SYNC_KEYS = [
     'sys_categories', 'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
     'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
-    'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance',
+    'sys_invoice_design', 'sys_menu_announcement', 'sys_menu_price_display', 'sys_employees', 'sys_attendance',
     'sys_combo_deals', 'sys_delivery_platforms', 'sys_customers', 'sys_loyalty_settings',
     'sys_fixed_expenses', 'sys_printer_settings', 'sys_employee_requests',
     'sys_employee_settings', 'sys_employee_deductions', 'sys_wa_templates'
@@ -895,7 +895,7 @@ function setupCategoriesRealtimeSync() {
 // (هذا كمان يسكر ثغرة كانت تسرّب بيانات داخلية حساسة لمتصفح كل زبون).
 const PUBLIC_MENU_SETTINGS_KEYS = [
     'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
-    'sys_coupons', 'sys_menu_announcement'
+    'sys_coupons', 'sys_menu_announcement', 'sys_menu_price_display'
 ];
 function setupPublicSettingsRealtimeSync() {
     if (!db) return;
@@ -1084,7 +1084,7 @@ async function pullLatestFromCloud() {
     const SHARED_KEYS = [
         'sys_working_hours', 'sys_areas', 'sys_out_of_stock',
         'sys_coupons', 'sys_cashiers', 'sys_drivers', 'sys_quick_kitchen_notes',
-        'sys_invoice_design', 'sys_menu_announcement', 'sys_employees', 'sys_attendance',
+        'sys_invoice_design', 'sys_menu_announcement', 'sys_menu_price_display', 'sys_employees', 'sys_attendance',
         // 🛠️ إصلاح جذري خطير: هذولة كانوا مفقودين تماماً من المزامنة -
         // أي تعديل عليهم بجهاز (إضافة/تعديل بوكس، تغيير عمولة منصة) كان
         // يضل حبيس هذاك الجهاز بس، وما يوصل لأي جهاز ثاني (الموبايل مثلاً)
@@ -5565,6 +5565,11 @@ function renderCompletedOrdersLog() {
             'class="gold-btn btn-sm" ' +
             'style="background:#1a0d1a;color:#c084fc;border:1px solid #c084fc;' +
             'font-size:0.7rem;padding:5px 8px;white-space:nowrap;">🔄 نوع الخدمة</button>' +
+            (o.employeeAccount
+                ? '<button onclick="convertEmployeeInvoiceToCash(\'' + o.id + '\')" class="gold-btn btn-sm" ' +
+                  'style="background:#3d2a0d;color:#f59e0b;border:1px solid #f59e0b;font-size:0.7rem;padding:5px 8px;white-space:nowrap;">' +
+                  '↩️ حوّلها كاش (من ' + String(o.employeeAccount).slice(0, 12) + ')</button>'
+                : '') +
             '</div></div>';
     }).join('');
 }
@@ -5597,6 +5602,38 @@ function previewCompletedOrder(orderId) {
 
     document.getElementById('invoicePreviewContent').innerHTML = html;
     openModal('invoicePreviewModal');
+}
+
+// ↩️ فاتورة انسجلت على حساب موظف بالغلط: نحولها لبيع كاش عادي (المبلغ يرجع لحساب الدرج
+// وينشال من حساب الموظف)
+function convertEmployeeInvoiceToCash(orderId) {
+    const all = getData('sys_completed_orders') || [];
+    const order = all.find(o => String(o.id) === String(orderId));
+    if (!order) return alert('⚠️ تعذّر إيجاد الفاتورة.');
+    if (!order.employeeAccount) return alert('هذي الفاتورة مو على حساب موظف.');
+    const emp = order.employeeAccount;
+    if (!confirm('تحويل الفاتورة #' + order.orderNum + ' من حساب "' + emp + '" إلى بيع كاش عادي؟\n' +
+        'المبلغ ' + Math.round(cleanPrice(order.totalAmount)).toLocaleString('ar-IQ') +
+        ' د.ع ينشال من حساب الموظف ويدخل بنقد الدرج.')) return;
+
+    order.wasEmployeeAccount = emp;
+    order.employeeAccount = null;
+    order.paymentMethod = 'كاش';
+    order.cashGiven = cleanPrice(order.totalAmount);
+    order.cashChange = 0;
+    order.lastModified = Date.now();
+    safeLocalSet('sys_completed_orders', JSON.stringify(all));
+    if (db) {
+        db.collection('completed_orders').doc(String(order.id)).set({
+            employeeAccount: null, wasEmployeeAccount: emp, paymentMethod: 'كاش',
+            cashGiven: order.cashGiven, cashChange: 0, lastModified: order.lastModified
+        }, { merge: true }).catch(err => console.warn('تعذّر تحديث الفاتورة بالسحابة:', err));
+    }
+    try { logAudit('تحويل فاتورة موظف إلى كاش', { orderNum: order.orderNum, employee: emp, amount: cleanPrice(order.totalAmount) }); } catch (_) {}
+    ['renderCompletedOrdersLog','renderInvoiceManagerList','renderEmployeesTab','renderDrawerDriverSettlement'].forEach(fn => {
+        try { if (typeof window[fn] === 'function') window[fn](); } catch (_) {}
+    });
+    alert('✅ تم: الفاتورة #' + order.orderNum + ' صارت بيع كاش، وانشالت من حساب ' + emp + '.');
 }
 
 // 🔄 تغيير نوع الخدمة لفاتورة مكتملة فعلاً (تصحيح خطأ صالة/سفري بدل توصيل)
@@ -9168,7 +9205,7 @@ function renderPublicMenuUI() {
                         '<p class="item-desc">' + (item.ingredients||item.desc||'') + '</p>' +
                         '<div class="item-footer">' +
                         '<span class="item-price">' +
-                        cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع</span>' +
+                        (isMenuPriceHiddenFor(item) ? '' : cleanPrice(item.price).toLocaleString('ar-IQ') + ' د.ع') + '</span>' +
                         (isOut ? ''
                             : '<button class="add-cart-btn" ' +
                               'onclick="openItemCustomizationModal(\'' + item.id + '\')">+</button>') +
@@ -9187,6 +9224,12 @@ function filterCategory(catId, btnElement) {
         sec.style.display = (catId === 'all' ||
             sec.getAttribute('data-category') == catId) ? 'block' : 'none';
     });
+}
+
+// 💲 إخفاء أسعار الأصناف العادية على مينيو الزبائن (تبقى أسعار العروض/البوكسات ظاهرة)
+function isMenuPriceHiddenFor(item) {
+    const cfg = getData('sys_menu_price_display');
+    return !!(cfg && cfg.hideRegular && item && !item.isCombo && !item.comboRefId);
 }
 
 window.openItemCustomizationModal = function(itemId) {
@@ -9236,7 +9279,7 @@ window.recalculateItemDetailTotal = function() {
         total += cleanPrice(cb.getAttribute('data-price')) || 0;
     });
     const priceDisplay = document.getElementById('detailCalculatedPrice');
-    if (priceDisplay) priceDisplay.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+    if (priceDisplay) priceDisplay.innerText = isMenuPriceHiddenFor(currentDetailItem) ? '' : total.toLocaleString('ar-IQ') + ' د.ع';
     return total;
 };
 
@@ -9257,6 +9300,7 @@ window.addCustomizedItemToCart = function() {
         name:        currentDetailItem.name,
         price:       cleanPrice(finalPrice),
         qty:         1,
+        hidePrice:   isMenuPriceHiddenFor(currentDetailItem),
         customNotes: notesArr.join(' | ')
     });
 
@@ -9270,7 +9314,7 @@ function updateCartBadge() {
     const badge        = document.getElementById('cartBadgeCount');
     const floatingTotal = document.getElementById('floatingCartTotal');
     if (badge)        badge.innerText        = count;
-    if (floatingTotal) floatingTotal.innerText = total.toLocaleString('ar-IQ') + ' د.ع';
+    if (floatingTotal) floatingTotal.innerText = cart.some(i => i.hidePrice) ? '' : total.toLocaleString('ar-IQ') + ' د.ع';
 }
 
 function openCartModal() {
@@ -9322,7 +9366,7 @@ function renderCartModalItems() {
         (item.customNotes ? '<div style="font-size:0.72rem;color:#fbbf24;margin-top:2px;">🔹 ' +
             item.customNotes + '</div>' : '') +
         '<small style="color:#fbbf24;display:block;margin-top:2px;">' +
-        (cleanPrice(item.price)*cleanPrice(item.qty)).toLocaleString('ar-IQ') + ' د.ع</small>' +
+        (item.hidePrice ? '' : (cleanPrice(item.price)*cleanPrice(item.qty)).toLocaleString('ar-IQ') + ' د.ع') + '</small>' +
         '</div>' +
         '<div style="display:flex;gap:8px;align-items:center;">' +
         '<button onclick="changeCartIndexQty(' + idx + ',-1)" ' +
@@ -9362,10 +9406,12 @@ function calculateDeliveryCostPublic() {
     const subtotalEl  = document.getElementById('subtotalPrice');
     const feeEl       = document.getElementById('deliveryFeePrice');
     const totalEl     = document.getElementById('finalTotalPrice');
-    if (subtotalEl) subtotalEl.innerText = subtotal.toLocaleString('ar-IQ') + ' د.ع';
+    const hasHidden = cart.some(i => i.hidePrice);
+    const HIDDEN_TXT = 'يُحدَّد عند التأكيد';
+    if (subtotalEl) subtotalEl.innerText = hasHidden ? HIDDEN_TXT : subtotal.toLocaleString('ar-IQ') + ' د.ع';
     if (feeEl)      feeEl.innerText      = (orderType==='delivery' && fee===0)
         ? 'مجاني 🎉' : fee.toLocaleString('ar-IQ') + ' د.ع';
-    if (totalEl)    totalEl.innerText    = (subtotal + fee).toLocaleString('ar-IQ') + ' د.ع';
+    if (totalEl)    totalEl.innerText    = hasHidden ? HIDDEN_TXT : (subtotal + fee).toLocaleString('ar-IQ') + ' د.ع';
 }
 
 function saveOrderLocally(orderData) {
